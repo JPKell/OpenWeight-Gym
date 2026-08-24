@@ -14,17 +14,17 @@ acceptance criteria and an exit condition.
 
 ## 1. Milestones
 
-| # | Milestone | Content | Exit condition |
-|---|---|---|---|
-| **M1** | Package foundation | BaseAiCore 0.4 · SetSpec 0.1–0.2 (draft payloads) · ModelRack 0.5 · SweatMeter 0.3 | A script using only these packages discovers a model, generates text, and prints machine telemetry |
-| **M2** | FreeWeight beta | FreeWeight P1–P10 | A real model is benchmarked end to end; results are drillable, comparable and exportable |
-| **M3** | FreeWeight 1.0-rc · **contract freeze** | FreeWeight P11 · SetSpec 0.3 (schemas frozen, goldens published) | An evidence bundle is consumed by a `setspec`-only harness with no FreeWeight code or DB access |
+| #      | Milestone                                | Content                                                                            | Exit condition                                                                                                     |
+| ------ | ---------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **M1** | Package foundation                       | BaseAiCore 0.4 · SetSpec 0.1–0.2 (draft payloads) · ModelRack 0.5 · SweatMeter 0.3 | A script using only these packages discovers a model, generates text, and prints machine telemetry                 |
+| **M2** | FreeWeight beta                          | FreeWeight P1–P10                                                                  | A real model is benchmarked end to end; results are drillable, comparable and exportable                           |
+| **M3** | FreeWeight 1.0-rc · **contract freeze**  | FreeWeight P11 · SetSpec 0.3 (schemas frozen, goldens published)                   | An evidence bundle is consumed by a `setspec`-only harness with no FreeWeight code or DB access                    |
 | **M4** | LoadCoach beta · **extraction complete** | LoadCoach P1–P6 · WeightsDB 0.2 · MirrorWall 0.2 · SetSpec 0.4 (`setspec.prompts`) | LoadCoach routes, executes, streams and imports FreeWeight evidence; two applications share the extracted packages |
-| **M5** | LoadCoach 1.0 | LoadCoach P7–P9 | Explainable, durable, secure routing service; published to PyPI |
-| **M6** | FreeWeight 1.0 | FreeWeight P12–P14 | FreeWeight on the shared packages, external adapters, hardened; published to PyPI |
-| **M7** | IdeaPress beta | IdeaPress P1–P6 | A complete project is produced and exported with **only Ollama** present |
-| **M8** | IdeaPress 1.0 | IdeaPress P7–P9 | Optional LoadCoach backend; hardened; published to PyPI |
-| **M9** | Suite 1.0 | Integration verification, cross-repository CI, documentation set, public release | Every gold standard met; all install paths verified; release notes published |
+| **M5** | LoadCoach 1.0                            | LoadCoach P7–P9                                                                    | Explainable, durable, secure routing service; published to PyPI                                                    |
+| **M6** | FreeWeight 1.0                           | FreeWeight P12–P14                                                                 | FreeWeight on the shared packages, external adapters, hardened; published to PyPI                                  |
+| **M7** | IdeaPress beta                           | IdeaPress P1–P6                                                                    | A complete project is produced and exported with **only Ollama** present                                           |
+| **M8** | IdeaPress 1.0                            | IdeaPress P7–P9                                                                    | Optional LoadCoach backend; hardened; published to PyPI                                                            |
+| **M9** | Suite 1.0                                | Integration verification, cross-repository CI, documentation set, public release   | Every gold standard met; all install paths verified; release notes published                                       |
 
 ---
 
