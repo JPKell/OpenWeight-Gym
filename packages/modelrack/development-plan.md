@@ -1,7 +1,7 @@
 # ModelRack — Development Plan
 
 **Sequence position:** third component. Depends on BaseAiCore Phase 4.
-**Target:** `modelrack 0.5.0` by the end of Phase 5.
+**Target:** `modelrack 0.5.0` by the end of Phase 5. **Reached 2026-08-26** — all five phases complete.
 
 The ordering is deliberate and inherited from the prior project's best decision: **the fake provider
 is built before the real one**, so that every downstream component can be developed and tested
