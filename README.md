@@ -110,10 +110,11 @@ Full index with statuses: [adr/README.md](adr/README.md).
 | Document | Contents |
 |---|---|
 | [Specification](apps/freeweight/spec.md) | Purpose, scope, non-goals, responsibilities, contracts, configuration, errors, security, performance, tests, acceptance criteria |
-| [Benchmark Catalog](apps/freeweight/benchmark-catalog.md) | Scoring ladder, categories, native suites, external adapters, manifests, capability mapping |
+| [Benchmark Catalog](apps/freeweight/benchmark-catalog.md) | Scoring ladder, categories, native suites, external adapters, goal suites, manifests, capability mapping |
+| [Subjective Goals](apps/freeweight/subjective-goals.md) | User-authored goals: the goal pack, rule and judged criteria, the calibration protocol, the jury, the authoring wizard, starter packs |
 | [Data Model](apps/freeweight/data-model.md) | Tables, run state machine, retention, query-plan requirements |
 | [API](apps/freeweight/api.md) | `/api/v1` endpoints, events, exports, the evidence integration point |
-| [Development Plan](apps/freeweight/development-plan.md) | 14 phases from first page to 1.0 |
+| [Development Plan](apps/freeweight/development-plan.md) | 14 phases (plus 8A, 8B, 10A) from first page to 1.0, with model assignment per step |
 | [Risks](apps/freeweight/risks.md) | Technical, integration, security, portability, performance, model, maintenance risks; trade-offs; traps |
 
 ### [LoadCoach](apps/loadcoach/spec.md) — manage

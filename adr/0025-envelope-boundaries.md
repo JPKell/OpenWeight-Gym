@@ -1,6 +1,7 @@
 # ADR-0025 — Envelope boundaries: what carries a SetSpec envelope
 
 **Status:** Accepted (2026-08-21)
+**Amended by:** [ADR-0035](0035-application-owned-document-schemas.md) — §1's "iff in `SUPPORTED_SCHEMAS`" test is widened to admit a document schema in the producing application's own namespace.
 **Amends:** [ADR-0009](0009-setspec-schema-strategy.md) (scope of the envelope), [Master Architecture §6](../architecture/master-architecture.md) obligation 1, [Gold Standards](../standards/gold-standards.md) G6.
 
 ## Context

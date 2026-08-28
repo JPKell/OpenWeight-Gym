@@ -53,6 +53,11 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0028](0028-prompt-pack-granularity.md) | Prompt attribution granularity and shared prompt tooling | Accepted |
 | [0029](0029-queue-mechanics.md) | Queue mechanics: ageing, attempts, admission states and leases | Accepted |
 | [0030](0030-model-cost-and-pricing.md) | Model cost: prices are dated observations, not model properties | Accepted |
+| [0031](0031-user-defined-goal-benchmarks.md) | User-defined goal benchmarks and the calibrated-judge instrument | Accepted |
+| [0032](0032-judge-validity-and-user-capability-namespace.md) | Judge validity in confidence, and the `user.*` capability namespace | Accepted |
+| [0033](0033-benchmark-interaction-protocol.md) | Benchmark interactions, the two scorer protocols, and enforced capability requirements | Accepted |
+| [0034](0034-run-level-derived-metrics.md) | Run-level derived metrics: the second benchmark seam | Accepted |
+| [0035](0035-application-owned-document-schemas.md) | Application-owned document schemas, and `benchmark.export` | Accepted |
 
 ## Writing a new ADR
 
@@ -68,3 +73,23 @@ on 2026-08-21, before implementation began. Where one of them narrows or correct
 decision, the earlier ADR carries an **Amended by** note at its head and the amending ADR states what
 it changes. No earlier decision was reversed; each was found to be under-specified at a boundary
 rather than wrong.
+
+ADR-0033 was added on 2026-08-27, during FreeWeight Phase 7, to record a decision the phase forced
+and the documentation did not contain: how a benchmark drives more than one provider call per
+sample. It is the one ADR here written *after* the code rather than before it, which is a departure
+from this directory's own rule; the code it describes was written first and the debt recorded, and
+this ADR is that debt paid before Phases 8B and 13 build on the same seam.
+
+ADRs 0031–0032 were added on 2026-08-26 to close the undelivered judge-scored capability
+mapping in FreeWeight's benchmark catalogue (§6) and to state the oracle/instrument distinction the
+testing standards implied but never wrote down. They amend ADR-0012, ADR-0017 and ADR-0022 and add
+one root to the SetSpec capability vocabulary; they reverse nothing.
+
+ADRs 0034–0035 were added on 2026-08-28, after FreeWeight Phase 10A, to close two decisions the
+phases forced and recorded as debts rather than took quietly. ADR-0034 states the aggregation
+seam that lets three suites compute run-level figures no scorer can see, and draws the boundary
+that a derived metric is a function of one run. ADR-0035 gives applications a namespace of their
+own for documents SetSpec does not describe, and amends ADR-0025 §1's "there is no third case"
+to admit the case that turned up. Both are ADRs written after the code they describe, for the
+same reason ADR-0033 was: the debt was recorded at the time and is paid here before the next
+phase builds on either seam.

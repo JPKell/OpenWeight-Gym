@@ -196,9 +196,17 @@ $XDG_CONFIG_HOME/<app>/prompts/<prompt_id>.json
 
 * An override must declare the same `prompt_id`, must validate against the record schema, and is
   loaded with its own version and hash.
-* Overridden prompts are marked in the UI and in every record that used them
+* Overridden prompts are marked in the UI and **on every run that used them**
   (`prompt_source: "user_override"`), because an overridden prompt invalidates comparison with
   results produced by the shipped one.
+
+  **The run is the granularity, and deliberately so.** An override applies to every sample of the
+  run that rendered it, so a per-sample column would store one identical value ten thousand times
+  and offer no fact the run does not already carry. A producer marks the run — in its
+  reproducibility fingerprint, which records *which* prompt ids were replaced, and as a
+  `prompt_overridden` degradation carrying `prompt_source` — and marks the prompt record itself
+  wherever it is listed. A consumer reading a sample finds the override on its run, one hop away,
+  and can still tell exactly which prompts were substituted.
 * FreeWeight refuses to run a **benchmark** with an overridden prompt unless `--allow-prompt-override`
   is passed, and records the override in the reproducibility fingerprint when it is.
 

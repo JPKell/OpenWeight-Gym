@@ -115,6 +115,13 @@ Exceeding a budget requires an ADR.
   proven by a contract test using only the exported file.
 * Evidence freshness reflects when the measurement was taken, not when it was aggregated —
   a test recomputes evidence over old runs and asserts the confidence does not rise.
+* **No judged score is ever exported without its agreement with the user beside it.** A judge is an
+  instrument, not an oracle: a user-defined goal emits capability evidence only when calibration
+  against the user's own grades reaches the gate, and `kappa_w` is never displayed or exported
+  without `n_holdout` ([ADR-0031](../adr/0031-user-defined-goal-benchmarks.md),
+  [ADR-0032](../adr/0032-judge-validity-and-user-capability-namespace.md)).
+* A user can author a measurable goal from the UI alone, without documentation, and walks away
+  owning an editable, diffable, portable JSON pack.
 * A benchmark run survives a browser refresh and a server restart with its progress intact.
 
 ### LoadCoach

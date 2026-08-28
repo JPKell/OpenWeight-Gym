@@ -80,12 +80,20 @@ debugging              agentic                 token_efficiency
 summarization          long_context            reliability
 creative_writing       judging                 energy_efficiency
 auditing               critiquing
+user                                            (v1.1, reserved root — see below)
 ```
 
 Namespaced specializations (`coding.python`, `content.article_draft`) are permitted for
 application-local use, must inherit from a generic root, and must never be required by a shared
 package. Adding a root term is a **minor** vocabulary version bump; removing or redefining one is
 **major**.
+
+The reserved root **`user`** (added at v1.1) carries FreeWeight's user-authored goal evidence as
+`user.<slug>` ([ADR-0032](../adr/0032-judge-validity-and-user-capability-namespace.md)). It is the
+only root a user's own measurement ever needs — the specialization rule above accepts every future
+goal without a further vocabulary change. No shipped benchmark maps onto it, and LoadCoach never
+weights a `user.*` capability unless a task profile names it explicitly: a capability that one
+person's taste defines must not acquire routing influence merely by existing.
 
 ### 1.5 Task profile IDs (LoadCoach v1)
 

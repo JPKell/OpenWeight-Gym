@@ -9,6 +9,12 @@ constraint filter requires.
 **Sequencing principle:** dependency order and rework risk, not calendar dates. No phase is dated,
 because a single-maintainer project's calendar is a fiction; every phase instead has prerequisites,
 acceptance criteria and an exit condition.
+**Amended 2026-08-26** by [ADR-0031](../adr/0031-user-defined-goal-benchmarks.md) and
+[ADR-0032](../adr/0032-judge-validity-and-user-capability-namespace.md): FreeWeight gains three
+phases (P8A, P8B, P10A — user-defined goal benchmarks) between its existing P8 and P11, and SetSpec
+gains Phase 3A (capability vocabulary 1.1, the goal payload schemas), landing inside the existing
+`setspec 0.3` release rather than as a new one. M2 and M3's content and exit conditions below are
+updated accordingly; no milestone number, package range or cross-application dependency edge moved.
 
 ---
 
@@ -17,8 +23,8 @@ acceptance criteria and an exit condition.
 | #      | Milestone                                | Content                                                                            | Exit condition                                                                                                     |
 | ------ | ---------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | **M1** | Package foundation                       | BaseAiCore 0.4 · SetSpec 0.1–0.2 (draft payloads) · ModelRack 0.5 · SweatMeter 0.3 | A script using only these packages discovers a model, generates text, and prints machine telemetry                 |
-| **M2** | FreeWeight beta                          | FreeWeight P1–P10                                                                  | A real model is benchmarked end to end; results are drillable, comparable and exportable                           |
-| **M3** | FreeWeight 1.0-rc · **contract freeze**  | FreeWeight P11 · SetSpec 0.3 (schemas frozen, goldens published)                   | An evidence bundle is consumed by a `setspec`-only harness with no FreeWeight code or DB access                    |
+| **M2** | FreeWeight beta                          | FreeWeight P1–P10A                                                                 | A real model is benchmarked end to end; results are drillable, comparable and exportable; a subjective goal can be authored, calibrated and scored entirely from the UI ([P10A](../apps/freeweight/development-plan.md#phase-10a--the-goal-authoring-wizard-and-starter-packs--completes-m2-beta)) |
+| **M3** | FreeWeight 1.0-rc · **contract freeze**  | FreeWeight P11 (built on P8A/P8B/P10A) · SetSpec 0.3 (schemas frozen incl. capability vocabulary 1.1 and the goal payloads, goldens published) | An evidence bundle is consumed by a `setspec`-only harness with no FreeWeight code or DB access, including a calibrated `user.*` goal record |
 | **M4** | LoadCoach beta · **extraction complete** | LoadCoach P1–P6 · WeightsDB 0.2 · MirrorWall 0.2 · SetSpec 0.4 (`setspec.prompts`) | LoadCoach routes, executes, streams and imports FreeWeight evidence; two applications share the extracted packages |
 | **M5** | LoadCoach 1.0                            | LoadCoach P7–P9                                                                    | Explainable, durable, secure routing service; published to PyPI                                                    |
 | **M6** | FreeWeight 1.0                           | FreeWeight P12–P14                                                                 | FreeWeight on the shared packages, external adapters, hardened; published to PyPI                                  |
@@ -35,7 +41,7 @@ graph TD
     BC["BaseAiCore 0.4"] --> SS["SetSpec 0.1–0.2"]
     BC --> MR["ModelRack 0.5"]
     BC --> SM["SweatMeter 0.3"]
-    SS --> FW1["FreeWeight P1–P10<br/>M2 beta"]
+    SS --> FW1["FreeWeight P1–P10A<br/>M2 beta"]
     MR --> FW1
     SM --> FW1
     FW1 --> FW2["FreeWeight P11<br/>M3 1.0-rc"]
@@ -75,7 +81,7 @@ overlap.
 | Stream | Contents |
 |---|---|
 | **A — Foundation packages** | BaseAiCore, SetSpec, ModelRack, SweatMeter |
-| **B — FreeWeight** | FreeWeight P1–P14 |
+| **B — FreeWeight** | FreeWeight P1–P14 (18 phases total: adds P8A, P8B, P10A for user-defined goal benchmarks) |
 | **C — LoadCoach + extractions** | LoadCoach P1–P9, WeightsDB, MirrorWall |
 | **D — IdeaPress** | IdeaPress P1–P9 |
 
@@ -95,9 +101,9 @@ gantt
     section B FreeWeight
     FW P1-P2 skeleton+storage :b1, after a1, 2
     FW P3-P4 models+telemetry :b2, after a3, 2
-    FW P5-P9 engine+benchmarks:b3, after b2, 5
-    FW P10 UI  (M2)           :b4, after b3, 1
-    FW P11 evidence (M3)      :b5, after b4, 1
+    FW P5-P9 + 8A/8B engine+benchmarks+goals :b3, after b2, 7
+    FW P10-P10A UI+goal wizard (M2)         :b4, after b3, 2
+    FW P11 evidence (M3)                    :b5, after b4, 1
     FW P12-P14 adopt+ext (M6) :b6, after c2, 3
 
     section C LoadCoach
@@ -120,6 +126,7 @@ gantt
 | ModelRack P1–P5 and SweatMeter P1–P4 | Both depend only on BaseAiCore; no shared surface |
 | SetSpec P1–P3 and ModelRack/SweatMeter | SetSpec does not depend on either |
 | FreeWeight P1–P2 and ModelRack P3–P5 | FreeWeight's skeleton and storage need no provider |
+| FreeWeight P8A and FreeWeight P8 | P8A's only prerequisite is P7; it does not need P8's judge infrastructure. P8B is the join point — it needs both P8 and P8A complete |
 | FreeWeight P12–P14 and LoadCoach P7–P9 | Different repositories; FreeWeight P12 needs only the *published* WeightsDB/MirrorWall |
 | IdeaPress P1–P6 and LoadCoach P5–P9 | IdeaPress standalone needs no LoadCoach, only the extracted packages |
 | IdeaPress P1–P6 and FreeWeight P12–P14 | Entirely independent |
@@ -128,6 +135,7 @@ gantt
 | These may **not** overlap | Because |
 |---|---|
 | FreeWeight P11 and SetSpec P4 (freeze) | Circular by design; sequence is draft → real results → freeze → export |
+| FreeWeight P9 and FreeWeight P8A–P8B | P9 depends only on P6 and P8, not on the goal phases; both branches must finish before P10A, but neither blocks the other |
 | LoadCoach P1 and FreeWeight's storage refactor | WeightsDB is extracted *from* FreeWeight; FreeWeight must be stable first |
 | MirrorWall extraction and FreeWeight UI changes | The extraction is a move, not a copy; a moving target breaks it |
 | IdeaPress P7 and LoadCoach P1–P9 | The LoadCoach backend requires a stable, released LoadCoach API (M5) |
@@ -153,7 +161,7 @@ is considered complete on the basis of a code review.
 | **I1** | FreeWeight ↔ ModelRack | FW P3 | Discovery through ModelRack only; no provider HTTP code in FreeWeight (asserted) |
 | **I2** | FreeWeight ↔ SweatMeter | FW P4 | Telemetry bar live; machine profile persisted; no-GPU path exercised |
 | **I3** | FreeWeight → SetSpec | FW P6, frozen at FW P11 | Exported results validate against schemas and goldens |
-| **I4** | FreeWeight → LoadCoach (evidence) | LC P6 | A bundle produced by FreeWeight changes LoadCoach routing, verified with **no shared code and no shared database** |
+| **I4** | FreeWeight → LoadCoach (evidence) | LC P6 | A bundle produced by FreeWeight changes LoadCoach routing, verified with **no shared code and no shared database**; a `user.*` goal capability in the bundle changes nothing unless a task profile names it explicitly ([ADR-0032 §6](../adr/0032-judge-validity-and-user-capability-namespace.md)) |
 | **I5** | WeightsDB ↔ two applications | LC P1, FW P12 | Two schemas, two migration histories, one package; FreeWeight's test suite passes unchanged after adoption |
 | **I6** | MirrorWall ↔ two applications | LC P4, FW P12 | Both applications' template suites render against the same version in CI |
 | **I7** | IdeaPress ↔ LoadCoach | IP P7 | Backend switch changes no workflow code; degradation and version mismatch handled; feedback lands in LoadCoach's reliability stats; every task ID in `LOADCOACH_TASK_MAP` exists in the running LoadCoach's `/task-profiles`; the prompt LoadCoach forwards equals the prompt IdeaPress rendered |
@@ -178,18 +186,43 @@ Stabilization is scheduled work, not what happens if there is time left.
 
 ## 6. Version trajectory
 
-| Component | M1 | M3 | M4 | M5 | M6 | M8 | M9 |
+**Packages**
+
+| Component | M1 | M2 | M3 | M4 | M5 | M6 | M8 | M9 |
+|---|---|---|---|---|---|---|---|---|
+| BaseAiCore | 0.4 | 0.4 | 0.4–0.5 | 0.5 | 0.5 | 0.6 | 0.6 | **1.0** |
+| SetSpec | 0.2 | 0.2 | **0.3** (frozen) | 0.3 | 0.4 | 0.4 | 0.5 | **1.0** |
+| ModelRack | 0.5 | 0.5 | 0.5 | 0.6 | 0.6 | 0.7 | 0.7 | **1.0** |
+| SweatMeter | 0.3 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | **1.0** |
+| WeightsDB | — | — | — | **0.2** | 0.2 | 0.3 | 0.3 | **1.0** |
+| MirrorWall | — | — | — | **0.2** | 0.3 | 0.3 | 0.4 | **1.0** |
+
+**Applications**
+
+| Component | M2 | M3 | M4 | M5 | M6 | M8 | M9 |
 |---|---|---|---|---|---|---|---|
-| BaseAiCore | 0.4 | 0.4–0.5 | 0.5 | 0.5 | 0.6 | 0.6 | **1.0** |
-| SetSpec | 0.2 | **0.3** (frozen) | 0.3 | 0.4 | 0.4 | 0.5 | **1.0** |
-| ModelRack | 0.5 | 0.5 | 0.6 | 0.6 | 0.7 | 0.7 | **1.0** |
-| SweatMeter | 0.3 | 0.3 | 0.4 | 0.4 | 0.4 | 0.4 | **1.0** |
-| WeightsDB | — | — | **0.2** | 0.2 | 0.3 | 0.3 | **1.0** |
-| MirrorWall | — | — | **0.2** | 0.3 | 0.3 | 0.4 | **1.0** |
+| FreeWeight | **0.9-beta** | 1.0-rc | 1.0-rc | 1.0-rc | **1.0** | 1.0 | **1.0** |
+| LoadCoach | — | — | **0.9-beta** | **1.0** | 1.0 | 1.0 | **1.0** |
+| IdeaPress | — | — | — | — | — | **1.0** | **1.0** |
+
+**FreeWeight is `0.9-beta` at M2**, not `0.1.0`. The trajectory used to start it at M3, which left
+the version of a feature-complete application undecided and understated ten delivered phases to
+anyone reading the version alone. `0.9-beta` says the true thing — every phase through 10A is
+built; the contracts are not frozen until M3 — and mirrors LoadCoach's own beta. In PEP 440 that is
+`0.9.0b0`; the tag is cut at M2 exit, not before, because the exit condition is a demonstration on a
+real model rather than a state of the source.
 
 SetSpec's M4 column is **0.4**, not 0.3: `setspec.prompts` is extracted during LoadCoach P4
 ([ADR-0028](../adr/0028-prompt-pack-granularity.md)). The schema freeze at M3 is unaffected —
 prompt tooling is additive and the frozen payload schemas do not change.
+
+SetSpec's M3 column, `0.3 (frozen)`, also carries capability vocabulary **1.1** and the
+`benchmark.goal_pack` / `benchmark.calibration_report` schemas
+([ADR-0031](../adr/0031-user-defined-goal-benchmarks.md),
+[ADR-0032](../adr/0032-judge-validity-and-user-capability-namespace.md)). These land via
+[SetSpec Phase 3A](../packages/setspec/development-plan.md#phase-3a--capability-vocabulary-11-and-the-goal-payloads),
+which ships inside the same `0.3.0` release as Phase 4 rather than as a separate one — no version
+pin in any consuming `pyproject.toml` changes.
 | FreeWeight | — | 1.0-rc | 1.0-rc | 1.0-rc | **1.0** | 1.0.x | 1.1 |
 | LoadCoach | — | — | 0.9-beta | **1.0** | 1.0.x | 1.0.x | 1.1 |
 | IdeaPress | — | — | — | — | 0.9-beta | **1.0** | 1.0.x |

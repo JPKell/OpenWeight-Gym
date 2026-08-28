@@ -1,7 +1,7 @@
 # ADR-0017 — Benchmark confidence and freshness
 
 **Status:** Accepted (2026-08-21)
-**Amended by:** [ADR-0022](0022-capability-evidence-record-contract.md) — `age_days` is measured from `measured_at`; [ADR-0023](0023-runtime-profile-resolution.md) — makes the runtime-profile separation operable in LoadCoach; [ADR-0028](0028-prompt-pack-granularity.md) — prompt separation is per benchmark.
+**Amended by:** [ADR-0022](0022-capability-evidence-record-contract.md) — `age_days` is measured from `measured_at`; [ADR-0023](0023-runtime-profile-resolution.md) — makes the runtime-profile separation operable in LoadCoach; [ADR-0028](0028-prompt-pack-granularity.md) — prompt separation is per benchmark. [ADR-0032](0032-judge-validity-and-user-capability-namespace.md) — adds `judge_validity_factor` as a sixth factor and two hard separations (`goal_hash`, judge set identity).
 
 ## Context
 
@@ -24,6 +24,12 @@ evidence so aggressively that routing has nothing to work with.
 confidence = sample_factor × consistency_factor × freshness_factor × environment_factor × identity_factor
              clamped to [0.05, 1.0]
 ```
+
+A sixth factor, `judge_validity_factor`, was added by
+[ADR-0032](0032-judge-validity-and-user-capability-namespace.md). It is **1.0 for every measurement
+scored at ladder rungs 1–4**, so no result specified before that ADR changes value; it falls below
+1.0 only for a user-defined goal's judged criteria, in proportion to the judge's measured agreement
+with the user.
 
 | Factor | Definition | Rationale |
 |---|---|---|

@@ -2,6 +2,7 @@
 
 **Status:** Accepted (2026-08-21)
 **Amends:** [ADR-0017](0017-benchmark-confidence-and-freshness.md) (freshness input), [ADR-0009](0009-setspec-schema-strategy.md) (adds a normative field list for one payload type).
+**Amended by:** [ADR-0032](0032-judge-validity-and-user-capability-namespace.md) — adds the goal-sourced field group (`goal_hash`, `score_method_mix`, `judge_set`, `calibration`, `judge_validity_factor`).
 
 ## Context
 

@@ -29,6 +29,14 @@ erDiagram
     RUNS            ||--o{ RUN_EVENTS : emits
     RUNS            ||--o{ ARTIFACTS : produces
     MODELS          ||--o{ CAPABILITY_EVIDENCE : "evidenced by"
+    GOALS           ||--o{ GOAL_CRITERIA : defines
+    GOALS           ||--o{ GOAL_TASKS : contains
+    GOALS           ||--o{ CALIBRATION_SAMPLES : "calibrated by"
+    GOALS           ||--|| BENCHMARK_SUITES : "materializes as"
+    CALIBRATION_SAMPLES ||--o{ CALIBRATION_GRADES : "graded by user"
+    GOALS           ||--o{ CALIBRATION_REPORTS : "agreement measured"
+    SAMPLES         ||--o{ CRITERION_SCORES : "scored per criterion"
+    CRITERION_SCORES||--o{ JUDGE_VERDICTS : "one per juror per repetition"
 ```
 
 ---
@@ -81,7 +89,9 @@ created_at
 ### `benchmark_suites`
 ```text
 id ULID PK · key TEXT NOT NULL · name · version TEXT NOT NULL · category
-runner TEXT NOT NULL              -- native | external
+runner TEXT NOT NULL              -- native | external | goal  (ADR-0031)
+goal_id FK→goals NULL             -- non-NULL iff runner = 'goal'
+goal_hash TEXT NULL               -- measurement-defining hash; separates results like a version
 manifest_hash TEXT NOT NULL · manifest_json · dataset_hashes_json
 prompt_subset_hash TEXT NULL · prompt_refs_json   -- the prompts THIS suite declares, and their hash;
                                                   -- this, not the pack hash, is the fingerprint input
@@ -131,7 +141,8 @@ The raw record. Every headline number drills to rows here.
 ```text
 id ULID PK · run_test_id FK ON DELETE CASCADE
 case_id TEXT NOT NULL · ordinal INT NOT NULL · repetition INT NOT NULL
-status TEXT NOT NULL                               -- completed | failed | timeout | cancelled | skipped
+status TEXT NOT NULL                               -- completed | awaiting_judgement | failed
+                                                   -- | timeout | cancelled | skipped
 prompt_hash · rendered_prompt_hash · prompt_id · prompt_version
 response_hash · response_text TEXT NULL            -- only when the run requested content storage
 input_tokens · output_tokens · thinking_tokens · tool_tokens
@@ -139,12 +150,34 @@ output_chars · output_words · output_bytes
 client_wall_ms · client_ttft_ms
 backend_load_ms · backend_prompt_eval_ms · backend_decode_ms · backend_total_ms
 finish_reason · score NUMERIC NULL · score_method TEXT   -- execution|rule|reference|human|judge
-judge_model_id FK NULL · result_json · error_code · error_text · created_at
+judge_model_id FK NULL · result_json · error_code · error_text
+started_at TIMESTAMP NULL · created_at              -- request out, response back
 UNIQUE (run_test_id, case_id, ordinal, repetition)
+CHECK (started_at IS NULL OR started_at <= created_at)
 ```
 Indexes: `(run_test_id, ordinal)`, `(run_test_id, status)`, `created_at`.
+
 Rule: a `failed`/`timeout`/`skipped` sample has `score = NULL`, never `0`, and is excluded from
 aggregates while remaining visible in counts.
+
+**`awaiting_judgement` is the one non-terminal status**, and it exists because a goal run judges in
+a second phase (spec §7.4): the model answered, the deterministic criteria scored, and the jury has
+not run yet. It carries no score and no `criterion_scores` rows — half a criterion set is exactly
+the partial read those rows exist to prevent — and it is excluded from aggregates like any other
+non-completed sample. Calling it `completed` would publish a composite computed over the rules
+alone; calling it `failed` would blame the generation for work that has not been attempted. A
+completed run never contains one: the judging phase finishes every sample, as `completed` or, when
+its jury could not be reached, as `failed` with the reason.
+
+**`started_at` and `created_at` are the two ends of one window**, recorded rather than
+reconstructed: the request went out at the first and came back at the second. That window is what
+decides which telemetry observations belong to a request, which is what lets `native.energy`
+attribute joules to *work* rather than to a run's whole wall-clock span — a span that includes the
+idle settle wait, the warm-up generations and the inter-test cooldowns. It was previously derived as
+`created_at - client_wall_ms`, an approximation that could attribute a reading to the wrong request
+whenever the sampler interval was close to the request duration. `started_at` is `NULL` for a sample
+that was never sent: a skip has no window, and a zero-length one would be indistinguishable from a
+request that took no time.
 
 ### `metric_values`
 Metrics at three levels: run, run_test and sample.
@@ -163,13 +196,36 @@ coefficient_of_variation NUMERIC NULL · created_at
 ```
 Indexes: `(run_id, metric_key)`, `(run_test_id, metric_key)`, `(metric_key, numeric_value)`.
 
+A row's `numeric_value` comes from one of three sources, resolved per test in this order: the
+sample's own provider-reported facts; a number the scorer recorded under that key in
+`samples.result_json`; or the sample's `score`. A sample that measured no value for a key is
+excluded from that metric with `unavailable_reason = "not_measured_for_this_case"` and counted in
+`excluded_count` — a rate with an empty denominator is absent, never zero
+([Benchmark Catalog §5.1](benchmark-catalog.md), [ADR-0033](../../adr/0033-benchmark-interaction-protocol.md)).
+
 ### `tool_calls`
+One row per tool invocation a model requested, so a tool metric drills to the exact call that went
+wrong rather than to a rate. Written by every suite that declares an interaction with a toolbox
+([ADR-0033](../../adr/0033-benchmark-interaction-protocol.md)).
+
 ```text
 id ULID PK · sample_id FK ON DELETE CASCADE · turn_index · call_index
 tool_name · arguments_json · schema_valid BOOLEAN · expected_tool TEXT NULL
 correct_tool BOOLEAN NULL · correct_arguments BOOLEAN NULL
 status TEXT · latency_ms · result_hash · created_at
 ```
+Index: `(sample_id, turn_index, call_index)`.
+
+`tool_name` is what the model asked for, **not** what exists: a call naming a tool that was never
+offered is a hallucinated tool, and it is a row here with `status = "unknown_tool"` rather than a
+missing one. `expected_tool` is the call the case required at this position, or `NULL` where the case
+required none; `correct_tool` and `correct_arguments` are `NULL` when the case declares no
+expectation to compare against, which is not the same as `false`
+([ADR-0016](../../adr/0016-unavailable-is-not-zero.md)).
+
+`result_hash` and never the result text: a tool result is content, and content is stored as a hash by
+default (§14 of the [specification](spec.md)). The whole trajectory, including a bounded digest of
+each result, also travels in `samples.result_json` as the scorer's own evidence.
 
 ### `telemetry_samples`
 Persisted **only** during a run. **One row per sample**, holding the host fields.
@@ -239,17 +295,165 @@ measured_at TIMESTAMP NOT NULL   -- the latest completed_at among the contributi
                                  -- not make them look new (ADR-0022 §2), and a test asserts it.
 computed_at TIMESTAMP NOT NULL   -- when this aggregation ran. Provenance and the `since` filter
                                  -- for incremental export; never a confidence input.
-policy_version TEXT NOT NULL · vocabulary_version TEXT NOT NULL
+policy_version TEXT NOT NULL · vocabulary_version TEXT NOT NULL   -- >= '1.1' for user.* records
+judge_validity_factor NUMERIC NOT NULL DEFAULT 1.0   -- 1.0 for every rung 1-4 measurement
+goal_id FK→goals NULL · goal_hash TEXT NULL · goal_pack_version TEXT NULL
+score_method_mix_json NULL           -- {"rule": 0.6, "reference": 0.0, "human": 0.0, "judge": 0.4}
+judge_set_json NULL                  -- jurors, prompt id/version, remote flag
+calibration_json NULL                -- kappa_w, rho, mae, bias, n_anchor, n_holdout,
+                                     -- graded_by, measured_at
 UNIQUE (model_id, runtime_profile_id, machine_id, capability_id, policy_version)
 ```
+Goal-sourced rows exist only above the calibration gate: a goal below
+`calibration.min_agreement` writes **no row here at all**, rather than a low-confidence one
+([ADR-0032 §3](../../adr/0032-judge-validity-and-user-capability-namespace.md)). A test asserts
+the absence, because "we emitted it quietly at the floor" is exactly the failure this rule exists
+to prevent.
 Index: `(capability_id, score DESC)`, `(model_id, capability_id)`.
+
+### `goals`
+User-authored measurement definitions ([ADR-0031](../../adr/0031-user-defined-goal-benchmarks.md),
+[Subjective Goals](subjective-goals.md)). The pack on disk is the source of truth; these rows are the
+loaded, validated projection of it.
+
+```text
+id ULID PK · slug TEXT UNIQUE NOT NULL · name · intent TEXT
+goal_pack_version TEXT NOT NULL · goal_hash TEXT NOT NULL
+contributes_to TEXT NULL              -- an existing capability root, or NULL
+capability_id TEXT NOT NULL           -- always 'user.<slug>' (ADR-0032 §1)
+judge_config_json NOT NULL · calibration_config_json NOT NULL
+pack_path TEXT NOT NULL · pack_sha256 TEXT NOT NULL
+forked_from TEXT NULL                 -- starter key, when forked
+unforked BOOLEAN NOT NULL             -- true while criteria and tasks are unedited starter content
+imported_from_json NULL               -- provenance when imported from another machine
+created_at · updated_at
+UNIQUE (slug)
+```
+
+### `goal_criteria`
+```text
+id ULID PK · goal_id FK ON DELETE CASCADE · key · name
+rung TEXT NOT NULL                    -- rule | reference | human | judge
+weight NUMERIC NOT NULL · is_gate BOOLEAN NOT NULL
+rule_json NULL                        -- rule/reference parameters; NULL for human/judge
+scale_points INT NULL · scale_descriptors_json NULL   -- required when rung = 'judge'
+mode TEXT NULL                        -- 'absolute' | 'pairwise' for judged criteria
+lint_json NULL                        -- validate findings, incl. "a rule could check this"
+UNIQUE (goal_id, key)
+```
+Rule: `rung = 'judge'` with no `scale_descriptors_json` fails validation. An unanchored ordinal scale
+reliably produces `kappa_w` near zero, so it is refused at authoring time rather than discovered
+after the user has graded twelve samples.
+
+### `goal_tasks`
+```text
+id ULID PK · goal_id FK ON DELETE CASCADE · key · name
+prompt_id · prompt_version · prompt_sha256 · rendered_prompt_hash
+source_json NULL                      -- annotated source / claim list for rung-3 criteria
+is_starter BOOLEAN NOT NULL           -- true while unedited starter content
+UNIQUE (goal_id, key)
+```
+
+### `calibration_samples`
+Candidate outputs presented to the user for grading. Content is always stored: a judged score the
+grader cannot re-read is not auditable.
+
+```text
+id ULID PK · goal_id FK ON DELETE CASCADE · goal_task_id FK
+origin TEXT NOT NULL                  -- generated | pasted | imported_run_sample
+model_id FK NULL · source_sample_id FK→samples NULL
+content TEXT NOT NULL · content_sha256 TEXT NOT NULL
+partition TEXT NOT NULL               -- anchor | holdout   (seeded, stratified, recorded)
+partition_seed INT NOT NULL · created_at
+```
+Index: `(goal_id, partition)`.
+
+### `calibration_grades`
+The user's ground truth. The most valuable rows in the database.
+
+```text
+id ULID PK · calibration_sample_id FK ON DELETE CASCADE · goal_criterion_id FK
+grade INT NOT NULL                    -- 1..scale_points
+note TEXT NULL · graded_by TEXT NOT NULL   -- free text the user supplied, never harvested
+graded_at TIMESTAMP NOT NULL
+UNIQUE (calibration_sample_id, goal_criterion_id)
+```
+
+### `calibration_reports`
+One row per criterion per calibration run, plus one `criterion_id IS NULL` row carrying the goal-level
+weighted figures and the gate verdict.
+
+```text
+id ULID PK · goal_id FK ON DELETE CASCADE · goal_criterion_id FK NULL
+goal_hash TEXT NOT NULL · judge_set_json NOT NULL
+kappa_w NUMERIC NULL · rho NUMERIC NULL · mae NUMERIC NULL · bias NUMERIC NULL
+n_anchor INT NOT NULL · n_holdout INT NOT NULL
+inter_juror_alpha NUMERIC NULL
+passed_gate BOOLEAN NOT NULL · min_agreement NUMERIC NOT NULL
+judge_validity_factor NUMERIC NOT NULL
+disagreement_json NULL                -- the worst-diverging holdout samples, both rationales
+measured_at TIMESTAMP NOT NULL · policy_version TEXT NOT NULL
+```
+Ages like evidence: `measured_at` is what staleness decays from, and `<app> health` reports it.
+
+### `criterion_scores`
+Per sample, per criterion. This is what a goal's headline number drills to.
+
+```text
+id ULID PK · sample_id FK ON DELETE CASCADE · goal_criterion_id FK
+rung TEXT NOT NULL · raw_score NUMERIC NULL     -- 0..1; NULL when skipped
+weight NUMERIC NOT NULL
+gated BOOLEAN NOT NULL                -- this criterion is a gate and it failed
+status TEXT NOT NULL                  -- scored | skipped | error
+skip_reason TEXT NULL                 -- judge_unavailable | unsupported | rule_timeout
+detail_json NULL                      -- rule hits, matched phrases, measured distributions
+UNIQUE (sample_id, goal_criterion_id)
+```
+Rule: a `skipped` criterion has `raw_score = NULL`, never `0`, and is excluded from the composite
+with the exclusion visible in the weight actually applied
+([ADR-0016](../../adr/0016-unavailable-is-not-zero.md)).
+
+### `judge_verdicts`
+One row per juror per repetition. Retained in full — the jury's dispersion *is* the measurement's
+error bar, and averaging it away at write time would destroy the thing being characterized.
+
+```text
+id ULID PK · criterion_score_id FK ON DELETE CASCADE
+juror_model_id FK · juror_ordinal INT NOT NULL · repetition INT NOT NULL
+grade INT NULL                        -- 1..scale_points; NULL for pairwise
+pairwise_choice TEXT NULL             -- candidate | reference | tie
+presentation_order TEXT NOT NULL      -- recorded, because order bias is measured not assumed
+rationale TEXT NULL · rationale_sha256 TEXT NULL
+prompt_id · prompt_version · judge_prompt_sha256
+remote BOOLEAN NOT NULL · latency_ms · input_tokens · output_tokens
+refused_reason TEXT NULL              -- self_judging | protocol_error | timeout
+created_at
+UNIQUE (criterion_score_id, juror_ordinal, repetition)
+```
 
 ### `settings`
 ```text
 key TEXT PK · value_json · updated_at
 ```
 Runtime-changeable settings only; never security-relevant ones
-([Configuration Standards §7](../../standards/configuration-standards.md)).
+([Configuration Standards §7](../../standards/configuration-standards.md)). Goal-wizard drafts
+used to live here under `wizard.draft.<id>` and now have their own table, because a draft has a lifecycle a key-value store cannot express — and because `db status`
+was counting half-written goals as settings.
+
+### `wizard_drafts`
+```text
+id ULID PK · slug TEXT NULL · body_json · created_at · updated_at · expires_at
+INDEX (expires_at)
+```
+The goal-authoring wizard's state between steps 1 and 4, before any pack has been written. Steps 5–6
+are not here at all: the grading step writes real `calibration_samples` and `calibration_grades`
+rows, which is exactly why grading survives a restart.
+
+`expires_at` is what makes an abandoned draft disappear rather than accumulate, and it is a column
+rather than a scheduled sweep because the read path already has to decide whether a draft is live: a
+draft past its expiry is *gone* whether or not anything has collected it yet. Every save pushes it
+out, so the clock measures neglect rather than age, and a rubric written slowly is never collected
+out from under its author.
 
 ### `api_tokens`
 ```text
@@ -300,6 +504,9 @@ recovery and is resumable, preserving completed tests.
 | Artifacts | Keep with the run | Cascade; files removed with the rows in the same transaction boundary |
 | Models, machines, descriptors | Forever | **Never** removed by a result deletion; `ON DELETE RESTRICT` enforces it |
 | Capability evidence | Recomputed | Recomputation replaces rows for the same policy version; two policy versions coexist, and `measured_at` is carried forward from the contributing runs rather than reset |
+| Goals, criteria, tasks | Forever | **Never** removed by a result deletion; `ON DELETE RESTRICT`. Deleting a goal is its own previewed operation, and it names how many runs it would orphan |
+| Calibration grades | Forever | The user's ground truth: **never** cascaded from anything, never removed by a result, run or goal-version deletion. Deleting them requires deleting the goal itself, with the grade count stated in the preview. Regrading adds a new calibration report; it does not overwrite grades |
+| Criterion scores, judge verdicts | Keep with the sample | Cascade with the sample, like `tool_calls` |
 
 Every destructive operation: preview counts → explicit confirmation → transaction → automatic backup
 above the configured threshold.
@@ -318,3 +525,7 @@ Asserted by tests (`EXPLAIN QUERY PLAN` / `EXPLAIN`):
 * Event replay uses `(run_id, sequence)`.
 * Evidence lookup uses `(capability_id, score DESC)`.
 * Model results use `(model_id, created_at DESC)`.
+* Criterion drill-down uses `(sample_id, goal_criterion_id)`; juror verdicts use
+  `(criterion_score_id, juror_ordinal, repetition)` — no scan of `judge_verdicts` to render one
+  sample's rationale.
+* Calibration grading UI uses `(goal_id, partition)`; the holdout query never touches anchor rows.

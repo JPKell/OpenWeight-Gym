@@ -61,6 +61,7 @@ your installed version (§4).
 | P2 | Benchmark, capability, machine, model payloads | Sonnet + standard | medium | Volume. The field sets are now normative tables (ADR-0022); this is transcription with validation |
 | P3 | Event and error envelopes | Sonnet + standard | medium | Small, and the shapes are fixed by ADR-0025 |
 | P4 | Freeze, JSON Schema generation, goldens | Sonnet + extended | medium | Mechanical, but the goldens are contracts — worth extended thinking on what a "fully populated" and an "`unsupported`-heavy" example should contain |
+| **P3A** | **Capability vocabulary 1.1, `goal_pack` + `calibration_report` payloads** | **Opus + max** | xhigh | Added by ADR-0031/0032, ships inside 0.3.0 alongside P4. Five interlocking coherence rules across two payload types — `uncalibrated` refused outright, a validity discount refused without the calibration it came from, a verdict refused if it contradicts its own `kappa_w` against the threshold — each closing a way a subjective score could acquire authority it has not earned. The reserved-root refusal must also survive the forward-compatibility exception correctly, which is a one-line rule with a large blast radius if inverted |
 | P5 | `setspec.prompts` extraction | Sonnet + extended | high | A move-and-generalize with one hard constraint: FreeWeight's existing pack must hash identically. That constraint is testable, which makes it Sonnet-shaped |
 
 ### 2.3 ModelRack — the fake matters more than the real one
@@ -98,7 +99,12 @@ your installed version (§4).
 | P2 | Envelopes, request IDs, **SSE**, static | **Opus + max** | xhigh | Its own plan calls the replay/live handoff "the subtlest code in the package", and the audit added a threadpool-dispatch requirement on top. Gap-free replay with no duplicate across the handoff, under injected races, with bounded queues — this is the second-hardest thing in the suite |
 | P3 | JS modules, accessibility, publication | Sonnet + standard | medium | Vanilla ES modules against a DOM harness. Bounded by a size budget |
 
-### 2.7 FreeWeight — fourteen phases, five of them hard
+### 2.7 FreeWeight — eighteen phases, six of them hard
+
+Adds P8A, P8B and P10A (ADR-0031, ADR-0032, user-defined goal benchmarks). FreeWeight's own
+development plan carries a step-level breakdown of these three phases and the runtime-juror
+selection question, which is a different question from the one this page answers — see its
+[Appendix A](../apps/freeweight/development-plan.md#appendix-a--model-assignment).
 
 | Phase | Work | Claude | Codex | Why |
 |---|---|---|---|---|
@@ -110,9 +116,12 @@ your installed version (§4).
 | **P6** | **First real measurements, provenance, fingerprint, prompt library** | **Opus + extended** | high | Timing semantics (`perf_counter_ns` vs wall clock, backend vs client, cold vs warm) are exactly the confusions that produce plausible wrong numbers. Plus fingerprint assembly, which is irreversible |
 | P7 | Deterministic quality suites, scorers, mock tools | Sonnet + extended | medium | Volume work with clear pass/fail definitions — **except** the mock-tool containment tests (`../`, absolute paths, symlinks), which want **Opus + extended** for an hour |
 | **P8** | **Judged suites: audit, critique, judge, long context** | **Opus + extended** | high | Judge-bias measurement, transitivity violations, self-preference deltas, correction uplift and regression rate. Subtle statistics *and* subtle experiment design — the "flag everything" adversarial test case is the kind of thing you want the model to think of unprompted |
+| P8A | Goal packs, rule/reference criteria, `goal_hash` | Sonnet + standard | medium | Thirteen small pure rule functions and CRUD — volume, not subtlety. Opus + extended for the `goal_hash` boundary specifically (what it covers vs excludes has years of comparability riding on it) and the rubric lint |
+| **P8B** | **Calibration: `kappa_w`, jury, the anchor/holdout gate** | **Opus + max** | xhigh | The intellectual core of the goal-benchmark feature and arguably the hardest phase in this table. A subtly wrong agreement statistic produces *plausible* numbers and stays wrong for months — no feedback loop catches it, only hand-computed fixtures and synthetic graders with known true agreement do |
 | **P9** | **Memory/KV, energy, reliability, comparison** | **Opus + extended** | high | KV theory vs observed slope, fit quality, OOM-as-a-measurement, and comparability verdicts that must refuse to average across a boundary |
 | P10 | Dashboard, results, exports, data management | Sonnet + extended | medium | Large surface, low subtlety. The anti-lie test (every figure recomputed from raw samples) is what protects it |
-| **P11** | **Capability evidence and the LoadCoach contract** | **Opus + max** | xhigh | The suite's most load-bearing contract, frozen at this phase. Confidence factors, hard separations, `measured_at` semantics, and a bundle another application must consume with no shared code |
+| P10A | Goal wizard, starter packs | Split | — | **Opus + extended** for the wizard flow (Step 2's two questions, the calibration report copy) — the teaching *is* the product, and generic copy wastes the whole feature. Sonnet + standard for templates, forms and the grading UI once the flow is decided |
+| **P11** | **Capability evidence and the LoadCoach contract** | **Opus + max** | xhigh | The suite's most load-bearing contract, frozen at this phase, now including the six-factor confidence formula and the goal-evidence gate's "no row at all" rule — which a careful implementer gets wrong precisely *by* being careful and emitting at the floor |
 | P12 | Adopt WeightsDB, MirrorWall, `setspec.prompts` | Sonnet + standard | medium | Mostly deletion. The acceptance criterion — the existing test suite passes unchanged — is a perfect guardrail for a cheaper model |
 | P13 | External adapters and sandboxing | Split | — | **Opus + extended** for the sandbox tiering and the refusal path (security, and the failure is silent host execution). Sonnet + standard for the nine adapter output parsers, which are fixture work |
 | P14 | Hardening and 1.0 | Split | — | **Opus + extended** for the security pass. Sonnet + extended for performance, docs and upgrade testing |
@@ -198,9 +207,10 @@ values are given, Sonnet is the right call.
 
 ### 3.5 Rough distribution
 
-Of roughly 50 phases: **~14 Opus, ~30 Sonnet, ~6 split**. That ratio is a consequence of the
-documentation quality, not of the work being easy. On an ordinary codebase the same project would
-invert it.
+Of roughly 54 phases (updated 2026-08-26 for the three FreeWeight goal-benchmark phases and
+SetSpec's vocabulary phase, ADR-0031/0032): **~16 Opus, ~31 Sonnet, ~7 split**. That ratio is a
+consequence of the documentation quality, not of the work being easy. On an ordinary codebase the
+same project would invert it.
 
 ---
 

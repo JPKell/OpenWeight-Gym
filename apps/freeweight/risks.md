@@ -16,6 +16,10 @@ mitigation and the signal that tells us it is happening.
 | T4 | **Aggregates diverge from raw data** | Medium | High | The anti-lie test: every dashboard figure is recomputed from raw samples in a test; raw samples always retained | A dashboard number that cannot be reproduced from the case inspector |
 | T5 | **Scoring bugs produce confident wrong numbers** | Medium | High | Every formula unit-tested with known values, boundaries and `UNSUPPORTED` inputs; deterministic scoring preferred; scorers reviewed as domain logic | A metric that is suspiciously stable across very different models |
 | T6 | **LLM-judge instability** makes judged suites unreproducible | High | Medium | Deterministic scoring wherever possible; repeated trials with agreement measurement; order randomization; judge bias measured and displayed with every judged score | Low repetition agreement; high position bias for the configured judge |
+| T6a | **A judged goal score measures the wrong thing** — the jury is consistent, fast and confidently scoring a criterion it understands differently from the user | High | High | Calibration against the user's own grades is mandatory before any judged criterion contributes evidence; `kappa_w` reported with `n_holdout` beside every number; the gate withholds evidence below 0.40; `judge_validity_factor` caps confidence ([ADR-0031](../../adr/0031-user-defined-goal-benchmarks.md), [ADR-0032](../../adr/0032-judge-validity-and-user-capability-namespace.md)) | High inter-juror agreement with low judge-user agreement — the jury agreeing with itself and not with you |
+| T6b | **Calibration statistics are subtly wrong** and produce plausible agreement figures for months | Medium | High | Hand-computed confusion-matrix fixtures; published worked examples; synthetic graders whose true agreement is known by construction (perfect, random, uniformly generous); three statistics that must be able to disagree with each other | `kappa_w` that never approaches 0 or 1 across very different graders |
+| T6c | **Holdout leakage** — calibration samples reach the judge prompt, making agreement self-congratulatory | Low | High | The anchor/holdout partition is seeded and recorded; a test scans rendered judge prompts for holdout content hashes rather than reading the code | Implausibly high `kappa_w` on a first calibration |
+| T6d | **User-authored content as attack surface** — Jinja2 templates, regex, oversized packs | Medium | Medium | `StrictUndefined` sandbox with no filesystem or network in the environment; linted regex dialect under `rule_timeout_ms`; size caps and containment checks before any write on import | A goal run stalling in a rule scorer |
 | T7 | **VRAM slope noise** makes KV-cache measurement unreliable | Medium | Medium | Idle detection; stabilized readings before generation; fit quality reported alongside the slope; `unsupported` when telemetry is unavailable | Poor fit quality; slope varying between repeats |
 | T8 | **Long runs die** (OOM, driver reset, power) and lose hours of work | Medium | High | Per-sample durability; `interrupted` state; resume from the last completed test; events persisted | Frequent `interrupted` runs |
 | T9 | **Database growth** — millions of samples and telemetry rows slow the dashboard | Medium | Medium | Indexes from the first migration; query-plan assertions in tests; configurable telemetry retention; vacuum tooling; PostgreSQL as the escape valve | Dashboard queries exceeding budget at realistic volume |
@@ -84,6 +88,13 @@ mitigation and the signal that tells us it is happening.
 * **Raw samples retained forever by default** — disk used generously so provenance is never lost.
 * **Deterministic scoring preferred** — some qualities (prose quality) are measured less precisely
   rather than measured badly by a judge.
+* **Subjective goals cost the user real work** — roughly twelve graded samples before a rubric
+  produces evidence. The grading *is* the ground truth, so the cost is the feature and not an
+  onboarding defect to be optimized away. Some users will not pay it, and their goals will run and
+  display without ever emitting evidence.
+* **A rubric that cannot be measured is told so** — a failed calibration gate withholds evidence
+  rather than emitting a discounted number. The one place in the suite where a measurement is
+  withheld rather than degraded, and deliberately so.
 * **No universal score** — harder to skim, honest about what was measured.
 * **Sandbox refusal over host execution** — some benchmarks are unavailable rather than risky.
 * **Provenance-heavy records** — more storage and more required fields, in exchange for reproducible

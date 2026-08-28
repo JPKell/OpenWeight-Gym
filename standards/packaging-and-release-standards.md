@@ -108,12 +108,20 @@ error `code`; performance changes; adding an extension point.
 
 ## 4. Dependency policy
 
-* Applications depend on packages by **compatible range**, never a Git URL or branch:
+* Applications depend on packages by **compatible range**, never a Git URL or branch.
+
+**The suite-package ranges below are a snapshot, not a template.** They show the state **as of
+M3**, when SetSpec reaches 0.3. Copying them into a repository before then makes that distribution
+unresolvable — which happened: FreeWeight shipped `setspec>=0.3,<0.4` against a SetSpec at 0.2, and
+the `install-check` job could not build the environment. **Take the range from the package's current
+version in the [master roadmap](../roadmap/master-roadmap.md) §6 trajectory table, never from this
+example.**
 
 ```toml
+# Ranges as of M3. Check the roadmap's version trajectory before copying.
 dependencies = [
     "baseaicore>=0.4,<0.5",
-    "setspec>=0.3,<0.4",
+    "setspec>=0.3,<0.4",       # 0.2 until M3 — an application built before M3 pins >=0.2,<0.3
     "modelrack>=0.5,<0.6",
     "sweatmeter>=0.4,<0.5",
     "weightsdb>=0.2,<0.3",
