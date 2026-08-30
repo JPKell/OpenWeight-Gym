@@ -314,10 +314,10 @@ complete; nine repositories exist and seven of them hold working software.
 | SetSpec | 0.4.0 | Schemas frozen at 0.3; `setspec.prompts` at 0.4; published |
 | ModelRack | 0.5.0 | Complete; published |
 | SweatMeter | 0.4.0 | Complete; published |
-| WeightsDB | 0.2.0 | P1–P3 complete; tagged `v0.2.0`; release run **awaiting approval**, not yet on PyPI |
+| WeightsDB | 0.2.0 | P1–P3 complete; **published** |
 | MirrorWall | 0.2.0 | P1–P2 complete; **published** |
 | FreeWeight | 1.0.0rc1 | P1–P11 plus P12-early complete |
-| LoadCoach | 1.0.0 | P1–P9 complete; release **prepared, not published** |
+| LoadCoach | 1.0.0 | P1–P9 complete; `ci.lock` cut and CI green from it; release **prepared, not tagged** |
 | IdeaPress | — | Scaffold only; tooling verified, no phase started |
 
 M5's own content — LoadCoach P7–P9 — is built: production feedback, reliability and regression
@@ -328,24 +328,21 @@ that names every documented failure mode. The M5 exit condition reads *"Explaina
 secure routing service; published to PyPI"*: the first three adjectives are met with evidence in
 the M5 handoff; the fourth clause is a publish, which is a human decision this run did not take.
 
-**The one thing standing between here and M5 is still a publish.** `weightsdb 0.2.0` is tagged and
-its release workflow is waiting on an environment approval; until it is on PyPI,
-`pip install loadcoach` cannot resolve, `LoadCoach/requirements/ci.lock` cannot be generated, and
-LoadCoach's install-based CI jobs stay red. `mirrorwall 0.2.0` did land during M5.
+**The one thing standing between here and M5 is the `loadcoach` tag.** Both extracted packages
+are on PyPI; `LoadCoach/requirements/ci.lock` is generated and audited; every CI job installs from
+it; the suite passed in a fresh non-root virtualenv installed from the lock; and spec §20 AC1 was
+run against a real Ollama from a clean index-only install (M5-25 in the handoff).
 
 The next actions, in order:
 
-1. **Approve the `weightsdb 0.2.0` release run** (Packaging Standards §6, step 7), then verify it
-   with `pip install weightsdb==0.2.0` in a clean virtualenv.
-2. **Generate `LoadCoach/requirements/ci.lock`**, convert the CI installs to
-   `--require-hashes -r requirements/ci.lock` plus `pip install . --no-deps` (the two-line change
-   and its trap are in that repository's `requirements/README.md`), verify the suite in a fresh
-   non-root virtualenv installed from the lock, and let CI go green on the real runner.
-3. **Run the M5 verification** — `~/ai/suite/m5-verification.prompt.md`, an adversarial pass by
+1. **Let CI go green on the real runner** for the converted workflow (a push of `main` is the
+   trigger; "green locally" is not the evidence).
+2. **Run the M5 verification** — `~/ai/suite/m5-verification.prompt.md`, an adversarial pass by
    Fable 5 that must be able to say *not ready* — and act on its findings.
-4. **Tag and publish `loadcoach 1.0.0`**, then declare M5. IdeaPress may begin its LoadCoach
-   integration phase.
-5. **Begin M6 or M7.** FreeWeight P12–P14 (M6: adoption of the shared packages, external adapters,
+3. **Tag and publish `loadcoach 1.0.0`** (Packaging Standards §6 from step 6), verify
+   `pip install loadcoach==1.0.0` in a clean virtualenv, then declare M5. IdeaPress may begin its
+   LoadCoach integration phase.
+4. **Begin M6 or M7.** FreeWeight P12–P14 (M6: adoption of the shared packages, external adapters,
    hardening) and IdeaPress P1–P6 (M7: a complete project with only Ollama present) are both
    unblocked; §3's work streams say what may overlap. IdeaPress P1 needs nothing from LoadCoach
    until P7.
