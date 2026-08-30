@@ -55,6 +55,13 @@ stateDiagram-v2
     leased --> failed : lease expired (non-idempotent work)
     executing --> queued : lease expired (idempotent work)
     executing --> failed : lease expired (non-idempotent work)
+    admitted --> queued : lease expired (idempotent work)
+    admitted --> failed : lease expired (non-idempotent work)
+    validating --> queued : lease expired (idempotent work)
+    validating --> failed : lease expired (non-idempotent work)
+    retrying --> queued : lease expired (idempotent work)
+    retrying --> failed : lease expired (non-idempotent work)
+    retrying --> cancelling : cancel requested during backoff
     completed --> [*]
     failed --> [*]
     cancelled --> [*]
@@ -66,6 +73,12 @@ added by [ADR-0029](../../adr/0029-queue-mechanics.md) to close gaps a claimed j
 `admitted` as an explicit state between claim and execution, `leased → waiting_resources` (which
 **releases the lease**, so a job waiting on VRAM never holds a worker), and `leased → cancelling` for
 a cancel that arrives after the claim and before the provider call.
+[ADR-0036](../../adr/0036-queue-recovery-transitions.md) added six more: lease expiry and startup
+recovery apply uniformly to **every** lease-holding state, so `admitted`, `validating` and `retrying`
+each return to `queued` (idempotent work) or fail with `worker_lost` (non-idempotent work) exactly as
+`leased` and `executing` do; `retrying → cancelling` lets a cancel take effect during backoff; and
+`leased → failed` also carries `NO_ELIGIBLE_MODEL` when admission's routing pass rejects every
+candidate for a reason no resource change can fix.
 
 Every transition is persisted with a timestamp and a reason, emitted as an event, and logged.
 
