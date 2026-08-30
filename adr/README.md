@@ -58,6 +58,8 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0033](0033-benchmark-interaction-protocol.md) | Benchmark interactions, the two scorer protocols, and enforced capability requirements | Accepted |
 | [0034](0034-run-level-derived-metrics.md) | Run-level derived metrics: the second benchmark seam | Accepted |
 | [0035](0035-application-owned-document-schemas.md) | Application-owned document schemas, and `benchmark.export` | Accepted |
+| [0036](0036-queue-recovery-transitions.md) | Queue state machine: recovery edges for every lease-holding state | Accepted |
+| [0037](0037-production-evidence-never-raises-capability-scores.md) | Production evidence never raises capability scores; upward adaptation is post-1.0 exploration routing | Accepted |
 
 ## Writing a new ADR
 
