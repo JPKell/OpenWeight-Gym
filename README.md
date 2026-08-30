@@ -1,8 +1,11 @@
 # Local AI Suite — Master Documentation
 
-**Status:** Architecture frozen 2026-08-21, audited and corrected the same day. Implementation has
-not started. Read the [final architecture audit](reviews/final_architecture_audit.md) before starting
-a phase: it added ADR-0022 – ADR-0029 and corrected the specifications they touch.
+**Status:** Architecture frozen 2026-08-21, audited and corrected the same day. Implementation is
+under way: seven of the nine components hold working software, and
+[the roadmap's §9](roadmap/master-roadmap.md#9-current-state-and-immediate-next-steps) is the one
+place that records where each of them stands. Read the
+[final architecture audit](reviews/final_architecture_audit.md) before starting a phase: it added
+ADR-0022 – ADR-0029 and corrected the specifications they touch.
 **Purpose:** this documentation set is the **single source of truth** for the suite. An implementation
 agent assigned any application, package or phase should be able to build it from these documents
 without inventing architectural decisions. If a decision is missing, that is a defect here — close it

@@ -180,12 +180,20 @@ performance, memory or energy constraints
 
 ## 12. Configuration
 
+`~/.config/loadcoach/config.toml`, `LOADCOACH_*` environment variables, CLI flags, per
+[Configuration Standards](../../standards/configuration-standards.md) — defaults, then file, then
+environment, then CLI, field by field. Principal sections:
+
 ```toml
 [server]      host = "127.0.0.1"  port = 8766  allow_lan_exposure = false
 [storage]     database_url = "sqlite:///<data>/loadcoach.sqlite3"  auto_migrate = true
+              content_retention_hours = 24   # finished jobs keep text this long; runtime-changeable
+              retain_content = false         # keep text for ever; config-only (§14)
 [provider]    kind = "ollama"  base_url = "http://127.0.0.1:11434"  timeout_seconds = 300
 [providers]   allow_remote = false
 [server]      allowed_hosts = []           # required when host is not loopback (ADR-0026)
+              rate_limit_per_minute = 600  rate_limit_burst = 100  failed_auth_per_minute = 20
+              max_body_bytes = 16777216    # 413 before buffering (Security Standards §14)
 [execution]   max_concurrent_jobs = 1      # raise only on multi-GPU or CPU-only setups
               default_timeout_seconds = 300  max_attempts = 3  attempt_backoff_seconds = 2
 [runtime]     # the default runtime profile every execution resolves against (ADR-0023)
@@ -195,7 +203,7 @@ performance, memory or energy constraints
               kv_cache_precision = ""  flash_attention = false  keep_alive = "5m"
 [runtime.models."ollama/qwen3.5:9b-q8_0@sha256:1f3a9c4e2b70"]   # optional per-model override
               context_size = 32768
-[queue]       max_depth = 1000  lease_seconds = 60  poll_interval_ms = 250
+[queue]       max_depth = 1000  max_active_per_source = 200  lease_seconds = 60  poll_interval_ms = 250
               lease_renewal_interval_seconds = 20   # lease_seconds must exceed 3x this + slack
               ageing_interval_seconds = 30
               max_wait_seconds = 3600  ageing_priority_per_minute = 1
@@ -299,7 +307,9 @@ disabled where the provider cannot report it.
 
 * Structured logs with `request_id`, `job_id`, `attempt`, `task_profile_id`, `model_canonical_id`.
 * Persisted job events with SSE replay.
-* Health components: `database`, `provider`, `evidence`, `queue`, `gpu_telemetry`.
+* Health components: `database`, `provider`, `evidence`, `queue`, `reliability` (degraded when a
+  model's recent validated-success rate has regressed against its own baseline, naming the pair
+  and the numbers — [Routing §11](routing.md)), `gpu_telemetry`.
 * `GET /api/v1/system/status`: queue depth by state and priority, oldest queued age, active
   executions, residency, telemetry snapshot, dispatch latency, starvation counter.
 * Every routing decision persisted in full — 100 % of decisions, not a sample.

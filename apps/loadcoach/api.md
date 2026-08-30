@@ -10,7 +10,7 @@ Everything here is additive within v1, and the committed OpenAPI snapshot is dif
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /health` | Components: `database`, `provider`, `evidence`, `queue`, `gpu_telemetry` |
+| `GET /health` | Components: `database`, `provider`, `evidence`, `queue`, `reliability`, `gpu_telemetry` |
 | `GET /version` | Application version, API versions, accepted SetSpec schema versions. **Never authenticated** — negotiation precedes credentials ([ADR-0026 §5](../../adr/0026-local-http-hardening.md)) |
 | `GET /system/status` | Queue depth by state/class, oldest queued age, dispatch latency, active executions, residency, telemetry snapshot, starvation counter, circuit breakers |
 | `GET /system/telemetry/stream` | SSE telemetry |
@@ -173,8 +173,12 @@ preservation uniform across both endpoints. Where a provider cannot stream
 
 `source` is set by LoadCoach from the authenticated token's name (or `X-Client-Name` on an
 unauthenticated loopback bind) and the body's value is ignored when a token is present, so one caller
-cannot overwrite another's feedback. Idempotent per `(job_id, source)`; a second call from the same
-source updates the existing record. Feeds the
+cannot overwrite another's feedback; with neither a token nor the header, the body's `source` is used,
+and `anonymous` failing that. Idempotent per `(job_id, source)`; a second call from the same
+source updates the existing record. Returns `201` with the stored record on a source's first feedback
+for a job and `200` on an update; every source's record is also listed under `feedback` in
+`GET /jobs/{id}`. Requires `write`. Accepted for any existing job — feedback on a job that has not
+run yet is kept and attributed once it has. Feeds the
 `reliability_factor` and regression detection ([Routing §11](routing.md)). Never mutates benchmark
 evidence — production and benchmark evidence remain separate sources.
 
@@ -183,12 +187,19 @@ evidence — production and benchmark evidence remain separate sources.
 | Endpoint | Notes |
 |---|---|
 | `POST /evidence/import` | Body: a SetSpec `benchmark.evidence_bundle`, or `{"url": "http://127.0.0.1:8765"}` to pull from FreeWeight. Returns counts imported / updated / **unmatched** / rejected with reasons. The URL form obeys the fetch allowlist in [ADR-0026 §3](../../adr/0026-local-http-hardening.md) — scheme, `evidence.allowed_source_hosts` (loopback only by default), literal-IP, redirect and size checks — and returns `EVIDENCE_SOURCE_REFUSED` when a URL fails them |
-| `GET /evidence` | Imported evidence, filterable by capability, model, `match_state`, minimum confidence, staleness. A **collection** envelope (`items`/`page`) whose items are `capability.evidence` SetSpec envelopes ([ADR-0025 §2](../../adr/0025-envelope-boundaries.md)) |
+| `GET /evidence` | Imported evidence, filterable by capability, model, `match_state`, minimum confidence, staleness. A **collection** envelope (`items`/`page`) whose items are `capability.evidence` SetSpec envelopes ([ADR-0025 §2](../../adr/0025-envelope-boundaries.md)), plus a `summary` object — the same store overview `GET /evidence/sources`, the Benchmarks page, `/health`'s `evidence` component and every routing explanation carry, so the four cannot disagree |
 | `GET /evidence/sources` | Configured and observed sources with last import time, schema version and status |
-| `GET /reliability` | Production evidence per (model, task profile) |
+| `GET /reliability` | Production evidence per (model, task profile): the `7d`, `30d` and `all` window statistics, each value with the sample count behind it and a reason when absent; the `reliability_factor` routing applies with its inputs; the regression verdict against the model's own baseline; and the circuit breaker's persisted state. Filter by `task` and `model` |
 
 An unsupported schema major is rejected with `SCHEMA_VERSION_UNSUPPORTED` naming both versions;
-existing evidence is untouched. Import is `admin`-scoped.
+existing evidence is untouched — the version is decided *before* the transaction opens, so a
+rejected bundle cannot have written a source row, let alone a record. Import is `admin`-scoped.
+
+`summary.status` is one of `not_configured`, `none`, `ok`, `unreachable`, `refused` or `failed`,
+and `summary.note` says the same thing in a sentence. `not_configured` (`[evidence]
+freeweight_url` is empty) is a **healthy** state and reads differently from `unreachable`: the
+first means nobody asked for evidence, the second means the last import is retained and marked
+stale while routing continues on it.
 
 Import never fails because a model has not been discovered. Evidence for an unknown model, or
 `name_only` evidence against a locally-digested model, is **retained** with a `match_state` and
@@ -208,6 +219,14 @@ and it never contributes to a routing score until it is
 
 `GET /settings`, `PUT /settings` — runtime-changeable settings only. Security-relevant keys are
 config-only and return 403 `FORBIDDEN` naming the key.
+
+The runtime-changeable set is a registry (`loadcoach.services.settings.RUNTIME_SETTINGS`), shared by
+the API, the Settings page and the scheduler that applies a change within a second: `queue.paused`,
+`queue.draining`, `routing.prefer_resident_bonus`, `routing.min_present_weight`,
+`routing.min_confidence`, `routing.remote_cost_factor`, `storage.content_retention_hours`. `GET`
+returns every key's effective value, its definition and bounds, the configured value it overrides,
+and the list of config-only keys. A key that is neither runtime-changeable nor security-relevant is
+`400 VALIDATION_ERROR` naming it and listing the set. `PUT` is `admin`-scoped.
 
 ## 10. Errors
 
@@ -234,7 +253,22 @@ just submitted.
 
 `GET /version` requires no scope at all.
 
-Per-token rate limits and queue-depth caps prevent one caller from starving others.
+The scope is checked twice, by design (ADR-0014 §5): at the route, from the request's principal, and
+again inside every mutating service, which takes the principal as an argument — so an internal caller
+that reaches a service directly with a read-scoped principal is refused too.
+
+A browser cannot add `Authorization` to a page navigation, so on a tokened bind the same bearer token
+is carried by the `loadcoach_token` cookie (`HttpOnly`, `Secure`, `SameSite=Strict`), set once from the
+401 page by pasting the token and cleared by `POST /token-cookie/clear`. No account, no password: the
+cookie *is* the token, and revoking the token revokes it.
+
+Per-token rate limits and queue-depth caps prevent one caller from starving others. The limit is a
+token bucket keyed by the credential's digest (by address before authentication): `[server]
+rate_limit_burst` (100) requests may arrive at once, then `rate_limit_per_minute` (600) sustained;
+at the boundary the caller gets `429 RATE_LIMITED` with a `Retry-After` header, never a dropped
+request. Only `/api/v1` is limited and `/version` is exempt. Failed authentications are braked per
+address (`failed_auth_per_minute`, 20). The queue cap is `[queue] max_active_per_source` (200):
+a source past it is refused with `QUEUE_FULL` naming the source, its active count and the cap.
 
 ## 12. Client guidance (IdeaPress and others)
 
