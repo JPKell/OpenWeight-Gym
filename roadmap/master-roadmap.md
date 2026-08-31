@@ -305,8 +305,10 @@ declared.
 
 ## 9. Current state and immediate next steps
 
-**Current state (2026-08-30, end of M5's build work).** The architecture is frozen and `docs/` is
-complete; nine repositories exist and seven of them hold working software.
+**Current state (2026-08-30, end of M6's build work).** The architecture is frozen and `docs/` is
+complete; nine repositories exist and seven of them hold working software. FreeWeight's M6 build
+(P12–P14) is done and green on the runner; the `freeweight 1.0.0` tag is the one remaining human
+step, exactly as `loadcoach 1.0.0` is.
 
 | Component | Version | State |
 |---|---|---|
@@ -316,7 +318,7 @@ complete; nine repositories exist and seven of them hold working software.
 | SweatMeter | 0.4.0 | Complete; published |
 | WeightsDB | 0.2.0 | P1–P3 complete; **published** |
 | MirrorWall | 0.2.0 | P1–P2 complete; **published** |
-| FreeWeight | 1.0.0rc1 | P1–P11 plus P12-early complete |
+| FreeWeight | 1.0.0 | **P1–P14 complete (M6 build done)**: on the shared packages (WeightsDB, MirrorWall, setspec.prompts), nine external adapters with tiered sandboxing, CSRF and the §15 budgets and §14 checklist held; `ci.lock` cut on 3.13 and audited; the suite green in a fresh non-root lock venv; **CI green on the real runner**; release **prepared, not tagged** |
 | LoadCoach | 1.0.0 | P1–P9 complete; M5 verification's fourteen findings closed (handoff M5C-1…15); **CI green on the real runner** (run 33334510805, every job); release **prepared, not tagged** |
 | IdeaPress | — | Scaffold only; tooling verified, no phase started |
 
@@ -348,10 +350,19 @@ The next actions, in order:
    `pip install loadcoach==1.0.0` in a clean virtualenv, then declare M5. IdeaPress may begin its
    LoadCoach integration phase. The tag remains the one human step (`TAG_APPROVED` was `no` at
    the closeout).
-4. **Begin M6 or M7.** FreeWeight P12–P14 (M6: adoption of the shared packages, external adapters,
-   hardening) and IdeaPress P1–P6 (M7: a complete project with only Ollama present) are both
-   unblocked; §3's work streams say what may overlap. IdeaPress P1 needs nothing from LoadCoach
-   until P7.
+4. ~~Build M6~~ — **done.** FreeWeight P12–P14 is built: adoption of WeightsDB, MirrorWall and
+   `setspec.prompts` with the pre-existing suite passing unchanged; nine external benchmark adapters
+   run as isolated subprocesses with the tiered code-execution sandbox (container → bwrap → refuse)
+   proven and mutation-checked; the performance pass, the Security Standards §14 checklist (Host
+   validation, CSRF on every form, the binding refusals), the operator documentation and the doctor
+   diagnosing every documented failure mode; `requirements/ci.lock` cut on 3.13 and audited, CI
+   installing from it, the suite green in a fresh non-root lock venv, and the runner green. The M6
+   handoff is `~/ai/suite/M6_HANDOFF.md`.
+5. **Run the M6 verification** (prompt at `~/ai/suite/m6-verification.prompt.md`), act on its
+   findings, then **tag and publish `freeweight 1.0.0`** and verify `pip install freeweight==1.0.0`
+   against a real Ollama (spec §20 AC1). The tag is the one human step (`TAG_APPROVED`).
+6. **Begin M7.** IdeaPress P1–P6 (a complete project with only Ollama present) is unblocked;
+   IdeaPress P1 needs nothing from LoadCoach until P7.
 
 An implementation agent assigned any phase should read, in this order: the master requirements, the
 [Master Architecture](../architecture/master-architecture.md), the relevant component
