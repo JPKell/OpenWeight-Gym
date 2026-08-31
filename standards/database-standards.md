@@ -24,7 +24,7 @@
 |---|---|---|
 | Role | Default; zero-configuration single-user | Optional; larger, multi-user or long-retention deployments |
 | Configured by | Nothing (default path) | `storage.database_url` |
-| Pragmas / settings | `foreign_keys=ON`, `journal_mode=WAL`, `busy_timeout=5000`, `synchronous=NORMAL` | `statement_timeout`, `lock_timeout`, application-owned schema |
+| Pragmas / settings | `foreign_keys=ON`, `journal_mode=WAL`, `busy_timeout=5000`, `synchronous=NORMAL`, `secure_delete=ON` | `statement_timeout`, `lock_timeout`, application-owned schema |
 | Migrations | Auto-applied on startup by default | Applied deliberately (`<app> db upgrade`); auto-migrate defaults to off |
 | Concurrency | Single writer; short transactions mandatory | Normal MVCC |
 

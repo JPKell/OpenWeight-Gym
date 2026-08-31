@@ -40,7 +40,7 @@ mechanics are shared.
 | Responsibility | Detail |
 |---|---|
 | Engine | `create_engine_for(url, …)` applying dialect-correct settings and pooling |
-| SQLite settings | `foreign_keys=ON`, `journal_mode=WAL`, `busy_timeout`, `synchronous=NORMAL`, applied per connection |
+| SQLite settings | `foreign_keys=ON`, `journal_mode=WAL`, `busy_timeout`, `synchronous=NORMAL`, `secure_delete=ON`, applied per connection |
 | PostgreSQL settings | `statement_timeout`, `lock_timeout`, application name, schema selection |
 | Sessions | `session_factory`, `session_scope()` context manager with commit/rollback semantics |
 | Transactions | `transaction(session)` including `BEGIN IMMEDIATE` on SQLite |
