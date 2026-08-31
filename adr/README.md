@@ -95,3 +95,13 @@ own for documents SetSpec does not describe, and amends ADR-0025 §1's "there is
 to admit the case that turned up. Both are ADRs written after the code they describe, for the
 same reason ADR-0033 was: the debt was recorded at the time and is paid here before the next
 phase builds on either seam.
+
+ADR-0038 was added on 2026-08-31, during IdeaPress's M7 build, to close a gap Master Architecture
+§5.2 left open: its inference-concurrency bullet gave a policy for FreeWeight and LoadCoach and
+named IdeaPress nowhere, while IdeaPress's own default configuration binds two models to a card
+that holds one. It states the machine-wide rule — two models contending for one GPU must both fit,
+with room for their context, or the later one waits — names LoadCoach's admission as the compliant
+reference implementation, gives IdeaPress the narrower serialise-and-unload obligation that needs
+no queue, and records the estimator question (duplicate `estimate_vram` or extract it to
+`modelrack`) with a recommendation rather than performing an extraction that touches a published
+package and two 1.0 applications.

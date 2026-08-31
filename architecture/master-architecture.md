@@ -286,7 +286,11 @@ The HTTP edge is asynchronous; everything below it is synchronous. See
 * **Inference concurrency** is governed by policy, not by the web server: FreeWeight allows exactly
   one GPU-bound benchmark workload at a time (concurrency benchmarks are the deliberate exception);
   LoadCoach allows a configured maximum of concurrent executions, defaulting to 1 for a
-  single-GPU machine.
+  single-GPU machine; IdeaPress runs exactly one generation at a time
+  (`execution.max_concurrent_stages = 1`, and a higher value is refused at startup) and unloads the
+  resident model before loading a different one, so it can never hold two. The machine-wide rule
+  behind all three — two models contending for one GPU must both fit, with room for their context,
+  or the later one waits — is [ADR-0038](../adr/0038-one-model-at-a-time-per-gpu.md).
 
 ### 5.3 Storage model
 
