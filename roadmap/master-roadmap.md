@@ -305,7 +305,7 @@ declared.
 
 ## 9. Current state and immediate next steps
 
-**Current state (2026-08-30, end of M6's build work).** The architecture is frozen and `docs/` is
+**Current state (2026-08-31, end of M7's build work).** The architecture is frozen and `docs/` is
 complete; nine repositories exist and seven of them hold working software. FreeWeight's M6 build
 (P12–P14) is done and green on the runner; the `freeweight 1.0.0` tag is the one remaining human
 step, exactly as `loadcoach 1.0.0` is.
@@ -320,7 +320,7 @@ step, exactly as `loadcoach 1.0.0` is.
 | MirrorWall | 0.2.0 | P1–P2 complete; **published** |
 | FreeWeight | 1.0.0 | **P1–P14 complete (M6 build done)**: on the shared packages (WeightsDB, MirrorWall, setspec.prompts), nine external adapters with tiered sandboxing, CSRF and the §15 budgets and §14 checklist held; `ci.lock` cut on 3.13 and audited; the suite green in a fresh non-root lock venv; **CI green on the real runner**; release **prepared, not tagged** |
 | LoadCoach | 1.0.0 | P1–P9 complete; M5 verification's fourteen findings closed (handoff M5C-1…15); **CI green on the real runner** (run 33334510805, every job); release **prepared, not tagged** |
-| IdeaPress | — | Scaffold only; tooling verified, no phase started |
+| IdeaPress | 0.1.0 | **P1–P6 complete (M7 build done)**: standalone against Ollama, three inference adapters behind one port, deterministic gates and exports, one model resident at a time (ADR-0038); **CI green on the real runner**; no tag and no publish — `ideapress 1.0.0` is M8 |
 
 M5's own content — LoadCoach P7–P9 — is built: production feedback, reliability and regression
 detection; the complete operator UI; auth hardening with scopes checked at the route and in the
@@ -361,8 +361,24 @@ The next actions, in order:
 5. **Run the M6 verification** (prompt at `~/ai/suite/m6-verification.prompt.md`), act on its
    findings, then **tag and publish `freeweight 1.0.0`** and verify `pip install freeweight==1.0.0`
    against a real Ollama (spec §20 AC1). The tag is the one human step (`TAG_APPROVED`).
-6. **Begin M7.** IdeaPress P1–P6 (a complete project with only Ollama present) is unblocked;
-   IdeaPress P1 needs nothing from LoadCoach until P7.
+6. ~~Begin M7~~ — **done.** IdeaPress P1–P6 is built: the skeleton and storage on the shared
+   packages, the inference port with Ollama, fake and OpenAI-compatible adapters behind it,
+   requirements compiled with verbatim grounding and a plan gate emptiness cannot pass, the
+   draft/validate/repair/coverage/commit loop with an atomic commit proven against a killed
+   process, audit and bounded revision with the stop reason recorded, and deterministic exports in
+   three formats. [ADR-0038](../adr/0038-one-model-at-a-time-per-gpu.md) closes the gap where
+   §5.2's inference-concurrency policy named IdeaPress nowhere. CI is green on the real runner —
+   the first passing run in that repository's history. The M7 handoff is
+   `~/ai/suite/M7_HANDOFF.md`.
+7. **Run the M7 verification** (prompt at `~/ai/suite/m7-verification.prompt.md`) and act on its
+   findings. F-13.4 is the precedent: the M6 verification prompt was written and never executed, so
+   no verification report exists for FreeWeight.
+8. **Decide ADR-0038's estimator question** — duplicate `estimate_vram` in a second application, or
+   extract it to `modelrack`. The ADR recommends extraction and deliberately does not perform it:
+   it touches a published package and two 1.0 applications. FreeWeight's missing free-VRAM
+   preflight waits on the same decision.
+9. **Begin M8.** IdeaPress P7–P9 — the optional LoadCoach backend, the full UI, and hardening —
+   ending in `ideapress 1.0.0`. P7 needs a released LoadCoach 1.0 to build against, which is step 3.
 
 An implementation agent assigned any phase should read, in this order: the master requirements, the
 [Master Architecture](../architecture/master-architecture.md), the relevant component
