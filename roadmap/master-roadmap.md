@@ -317,7 +317,7 @@ complete; nine repositories exist and seven of them hold working software.
 | WeightsDB | 0.2.0 | P1–P3 complete; **published** |
 | MirrorWall | 0.2.0 | P1–P2 complete; **published** |
 | FreeWeight | 1.0.0rc1 | P1–P11 plus P12-early complete |
-| LoadCoach | 1.0.0 | P1–P9 complete; `ci.lock` cut and CI green from it; release **prepared, not tagged** |
+| LoadCoach | 1.0.0 | P1–P9 complete; M5 verification's fourteen findings closed (handoff M5C-1…15); **CI green on the real runner** (run 33334510805, every job); release **prepared, not tagged** |
 | IdeaPress | — | Scaffold only; tooling verified, no phase started |
 
 M5's own content — LoadCoach P7–P9 — is built: production feedback, reliability and regression
@@ -335,13 +335,19 @@ run against a real Ollama from a clean index-only install (M5-25 in the handoff)
 
 The next actions, in order:
 
-1. **Let CI go green on the real runner** for the converted workflow (a push of `main` is the
-   trigger; "green locally" is not the evidence).
-2. **Run the M5 verification** — `~/ai/suite/m5-verification.prompt.md`, an adversarial pass by
-   Fable 5 that must be able to say *not ready* — and act on its findings.
+1. ~~Let CI go green on the real runner~~ — **done, and it took three findings to get there**:
+   the suite only collected under `python -m pytest` (the closeout's F1), a GPU-dependent test
+   fixture (M5C-14), and a migration that was a PostgreSQL syntax error nothing local could see
+   (M5C-15). Run `33334510805` on `eeef0f4` is green on every job, the first in the
+   repository's history.
+2. ~~Run the M5 verification~~ — **done** (Fable 5, 2026-08-30, verdict *not ready*, fourteen
+   findings) **and acted on** (the closeout run, handoff entries M5C-1…M5C-15, all closed). The
+   re-verification prompt is `~/ai/suite/m5-reverification.prompt.md`; it must still be able to
+   say *not ready*.
 3. **Tag and publish `loadcoach 1.0.0`** (Packaging Standards §6 from step 6), verify
    `pip install loadcoach==1.0.0` in a clean virtualenv, then declare M5. IdeaPress may begin its
-   LoadCoach integration phase.
+   LoadCoach integration phase. The tag remains the one human step (`TAG_APPROVED` was `no` at
+   the closeout).
 4. **Begin M6 or M7.** FreeWeight P12–P14 (M6: adoption of the shared packages, external adapters,
    hardening) and IdeaPress P1–P6 (M7: a complete project with only Ollama present) are both
    unblocked; §3's work streams say what may overlap. IdeaPress P1 needs nothing from LoadCoach
