@@ -320,7 +320,7 @@ step, exactly as `loadcoach 1.0.0` is.
 | MirrorWall | 0.2.0 | P1–P2 complete; **published** |
 | FreeWeight | 1.0.0 | **P1–P14 complete (M6 build done)**: on the shared packages (WeightsDB, MirrorWall, setspec.prompts), nine external adapters with tiered sandboxing, CSRF and the §15 budgets and §14 checklist held; `ci.lock` cut on 3.13 and audited; the suite green in a fresh non-root lock venv; **CI green on the real runner**; release **prepared, not tagged** |
 | LoadCoach | 1.0.0 | P1–P9 complete; M5 verification's fourteen findings closed (handoff M5C-1…15); **CI green on the real runner** (run 33334510805, every job); release **prepared, not tagged** |
-| IdeaPress | 0.1.0 | **P1–P6 complete (M7 build done)**: standalone against Ollama, three inference adapters behind one port, deterministic gates and exports, one model resident at a time (ADR-0038); **CI green on the real runner**; no tag and no publish — `ideapress 1.0.0` is M8 |
+| IdeaPress | 0.1.1 | **P1–P9 complete (M8 build done)**: the optional LoadCoach backend, the project workspace and plan editor, and the hardening pass. `0.1.0` and `0.1.1` are tagged and on PyPI; `0.1.1` re-demonstrated M7's exit condition end to end. `1.0.0` is prepared and awaits the human's `TAG_APPROVED` — the release workflow's `pypi` environment needs a manual approval too |
 
 M5's own content — LoadCoach P7–P9 — is built: production feedback, reliability and regression
 detection; the complete operator UI; auth hardening with scopes checked at the route and in the
@@ -377,8 +377,16 @@ The next actions, in order:
    extract it to `modelrack`. The ADR recommends extraction and deliberately does not perform it:
    it touches a published package and two 1.0 applications. FreeWeight's missing free-VRAM
    preflight waits on the same decision.
-9. **Begin M8.** IdeaPress P7–P9 — the optional LoadCoach backend, the full UI, and hardening —
-   ending in `ideapress 1.0.0`. P7 needs a released LoadCoach 1.0 to build against, which is step 3.
+9. ~~Begin M8~~ — **built.** IdeaPress P7–P9 is done: `LoadCoachBackend` routing every model-using
+   stage by task profile with feedback and explicit degradation; the workspace, plan editor, diff
+   view and export dialog; and the hardening pass — the mechanical sanitization sweep, hardened
+   project archives, ADR-0026 proven on a non-loopback bind, and all seven of spec §15's budgets
+   asserted. Two ADRs were needed before the adapter could be written: **ADR-0040** (a routing
+   backend owns model choice and residency) and **ADR-0041** (a caller's output schema does not
+   travel through a router). `1.0.0` is prepared; the tag is the human's.
+
+10. **Verify M8**, on an independent brief, the way M7 was verified — with the explicit permission
+    to say *not ready*. Then tag `v1.0.0` and approve the `pypi` environment.
 
 An implementation agent assigned any phase should read, in this order: the master requirements, the
 [Master Architecture](../architecture/master-architecture.md), the relevant component
