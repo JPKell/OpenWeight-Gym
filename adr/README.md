@@ -60,6 +60,8 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0035](0035-application-owned-document-schemas.md) | Application-owned document schemas, and `benchmark.export` | Accepted |
 | [0036](0036-queue-recovery-transitions.md) | Queue state machine: recovery edges for every lease-holding state | Accepted |
 | [0037](0037-production-evidence-never-raises-capability-scores.md) | Production evidence never raises capability scores; upward adaptation is post-1.0 exploration routing | Accepted |
+| [0038](0038-one-model-at-a-time-per-gpu.md) | One model at a time per GPU: fit with room for context, or wait | Accepted |
+| [0039](0039-audit-gated-blocking-requirements.md) | A model's silence must not settle a blocking gate | Proposed |
 
 ## Writing a new ADR
 
@@ -95,6 +97,13 @@ own for documents SetSpec does not describe, and amends ADR-0025 §1's "there is
 to admit the case that turned up. Both are ADRs written after the code they describe, for the
 same reason ADR-0033 was: the debt was recorded at the time and is paid here before the next
 phase builds on either seam.
+
+ADR-0039 was proposed on 2026-08-31, out of the M7 verification of IdeaPress (finding M7-20): a
+blocking requirement with no deterministic check is currently satisfied by the audit's *silence*,
+which lets the model's default behaviour settle exactly the qualitative gates nothing mechanical
+backstops. It lays out three options with a recommendation — affirmative, labelled, per-requirement
+attestation — and stays **Proposed** until a human accepts one; the commit gate's behaviour does
+not change on the strength of this record alone.
 
 ADR-0038 was added on 2026-08-31, during IdeaPress's M7 build, to close a gap Master Architecture
 §5.2 left open: its inference-concurrency bullet gave a policy for FreeWeight and LoadCoach and
