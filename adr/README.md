@@ -62,6 +62,8 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0037](0037-production-evidence-never-raises-capability-scores.md) | Production evidence never raises capability scores; upward adaptation is post-1.0 exploration routing | Accepted |
 | [0038](0038-one-model-at-a-time-per-gpu.md) | One model at a time per GPU: fit with room for context, or wait | Accepted |
 | [0039](0039-audit-gated-blocking-requirements.md) | A model's silence must not settle a blocking gate | Accepted |
+| [0040](0040-routing-backend-owns-model-choice.md) | A routing backend owns model choice and residency | Accepted |
+| [0041](0041-caller-schemas-do-not-travel-through-a-router.md) | A caller's output schema does not travel through a router; the caller still owns it | Accepted |
 
 ## Writing a new ADR
 
@@ -115,3 +117,21 @@ reference implementation, gives IdeaPress the narrower serialise-and-unload obli
 no queue, and records the estimator question (duplicate `estimate_vram` or extract it to
 `modelrack`) with a recommendation rather than performing an extraction that touches a published
 package and two 1.0 applications.
+
+ADR-0040 was added on 2026-08-31, during IdeaPress's M8 build, before the LoadCoach adapter was
+written. `InferenceGateway` resolves a `[models.stages]` binding for every request and unloads the
+resident model before a switch — both correct for a backend IdeaPress drives, neither correct for
+one that routes for itself. With the shipped defaults, `inference.mode = "loadcoach"` would have
+pinned every request to the bound model and bypassed LoadCoach's profiles, evidence and admission
+control while every stage still succeeded. It gives the port a `routes_internally` flag, makes
+`[inference.loadcoach] honour_stage_bindings` the explicit opt-in spec §12's "unless overridden"
+had never been given, and records an unhonoured pin as a degradation rather than a failure.
+
+ADR-0041 was added on 2026-08-31, alongside ADR-0040 and for the same reason: the LoadCoach
+adapter could not be written correctly without deciding it. LoadCoach's `response_format` is a bare
+string and the schema applied is the *task profile's*, so a caller asking for `json_schema` gets a
+shape it did not write. For `content.review` that shape forbids `requirements_assessment` and has
+no `cannot_judge` verdict, which would make ADR-0039's attestation structurally impossible through
+LoadCoach while every stage still ran. IdeaPress therefore asks for `json` and enforces its own
+shape above the port, records the difference as a degradation on every affected attempt, and
+reports `structured_output=False` honestly.
