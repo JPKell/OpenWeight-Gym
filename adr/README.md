@@ -64,6 +64,9 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0039](0039-audit-gated-blocking-requirements.md) | A model's silence must not settle a blocking gate | Accepted |
 | [0040](0040-routing-backend-owns-model-choice.md) | A routing backend owns model choice and residency | Accepted |
 | [0041](0041-caller-schemas-do-not-travel-through-a-router.md) | A caller's output schema does not travel through a router; the caller still owns it | Accepted |
+| [0042](0042-a-check-may-not-restate-its-requirement.md) | A deterministic check may not be a restatement of its requirement | Accepted |
+| [0043](0043-grounding-is-verified-not-assumed.md) | Grounding is verified, not assumed | Accepted |
+| [0044](0044-a-state-change-and-its-event-are-one-write.md) | A state change and the event announcing it are one write | Accepted |
 
 ## Writing a new ADR
 
@@ -135,3 +138,19 @@ no `cannot_judge` verdict, which would make ADR-0039's attestation structurally 
 LoadCoach while every stage still ran. IdeaPress therefore asks for `json` and enforces its own
 shape above the port, records the difference as a degradation on every affected attempt, and
 reports `structured_output=False` honestly.
+
+ADRs 0042 and 0043 were added on 2026-09-01, during IdeaPress's M8 build, from reading a real
+run's output rather than from a failing test. ADR-0042 records that a `must_contain_any` check
+built out of its own requirement's words is satisfied by quoting the requirement — the gate then
+behaves exactly as ADR-0039 says it must and commits work its own critique called deficient.
+ADR-0043 records that "grounded in the sources" was a requirement nothing verified: the compiler
+wrote checks for the vocabulary of grounding, not for the grounding. Both narrow ADR-0039 without
+reversing it; the asymmetry it establishes is unchanged, and what changed is which checks are
+allowed to exist.
+
+ADR-0044 was added on 2026-09-01, during the same build, after CI failed a test a fast machine
+could not. It is the second ADR here written after the code rather than before it. The decision it
+records — that a state change and the event announcing it commit together — was already
+implemented in LoadCoach and already explained in that component's own docstrings; what did not
+exist was the rule, stated once, applying to both applications. IdeaPress had written the naive
+order in three places independently, which is the argument for writing it down.
