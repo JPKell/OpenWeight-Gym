@@ -1,7 +1,7 @@
 # ADR-0039 — A model's silence must not settle a blocking gate
 
-**Status:** Proposed (2026-08-31) — awaiting sign-off; commit-gate behaviour is unchanged until
-this is accepted.
+**Status:** Accepted (2026-08-31) — option (b), signed off by the project owner the same day it
+was proposed. The mechanism below is implemented; the options are kept for the record.
 **Extends:** [IdeaPress Workflows §3](../apps/ideapress/workflows.md),
 [IdeaPress Spec §11](../apps/ideapress/spec.md).
 **Relates to:** [ADR-0016](0016-unavailable-is-not-zero.md) (a value the system cannot measure is
@@ -81,7 +81,19 @@ Keep silence-as-satisfaction; make the labelling louder.
 * *Against:* the defect is the mechanism, not the label. A gate the model's default behaviour
   satisfies is not a gate, and M8 would build on it.
 
-## Recommendation
+## Decision
+
+**Option (b) is accepted.** The audit stages attest each check-less requirement explicitly
+(`requirements_assessment` in their response schema, verdicts `met` / `not_met` /
+`cannot_judge`); only an explicit `met` enters the coverage gate's `audit_satisfied` set, the
+deep audit's verdicts overriding the fast one's where both spoke; an invented verdict reads as
+`cannot_judge`; a key the model invents is discarded against the requirement list Python
+rendered; and `workflow.allow_audit_gated_requirements` (default `true`) turns the gate wholly
+mechanical when set `false`, pausing such units with the setting named. The labelling of the
+interim safeguard stays. M8 should measure attestation reliability on the default models before
+building further on the gate; option (a) remains the fallback if it proves unreliable.
+
+## Recommendation (as proposed)
 
 **(b).** It is the only option that keeps faith with both principles in tension: the author's
 material is authoritative (a stated *must* is not quietly demoted), and a model never decides a

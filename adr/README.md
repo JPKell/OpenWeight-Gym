@@ -61,7 +61,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0036](0036-queue-recovery-transitions.md) | Queue state machine: recovery edges for every lease-holding state | Accepted |
 | [0037](0037-production-evidence-never-raises-capability-scores.md) | Production evidence never raises capability scores; upward adaptation is post-1.0 exploration routing | Accepted |
 | [0038](0038-one-model-at-a-time-per-gpu.md) | One model at a time per GPU: fit with room for context, or wait | Accepted |
-| [0039](0039-audit-gated-blocking-requirements.md) | A model's silence must not settle a blocking gate | Proposed |
+| [0039](0039-audit-gated-blocking-requirements.md) | A model's silence must not settle a blocking gate | Accepted |
 
 ## Writing a new ADR
 
@@ -98,12 +98,13 @@ to admit the case that turned up. Both are ADRs written after the code they desc
 same reason ADR-0033 was: the debt was recorded at the time and is paid here before the next
 phase builds on either seam.
 
-ADR-0039 was proposed on 2026-08-31, out of the M7 verification of IdeaPress (finding M7-20): a
-blocking requirement with no deterministic check is currently satisfied by the audit's *silence*,
-which lets the model's default behaviour settle exactly the qualitative gates nothing mechanical
-backstops. It lays out three options with a recommendation — affirmative, labelled, per-requirement
-attestation — and stays **Proposed** until a human accepts one; the commit gate's behaviour does
-not change on the strength of this record alone.
+ADR-0039 was proposed and accepted on 2026-08-31, out of the M7 verification of IdeaPress
+(finding M7-20): a blocking requirement with no deterministic check was satisfied by the audit's
+*silence*, which let the model's default behaviour settle exactly the qualitative gates nothing
+mechanical backstops. The accepted option (b) replaces silence with explicit, labelled,
+per-requirement attestation — only a literal `met` satisfies, everything else (including an
+invented verdict) degrades toward `cannot_judge` and pauses — with
+`workflow.allow_audit_gated_requirements = false` as the wholly-mechanical opt-out.
 
 ADR-0038 was added on 2026-08-31, during IdeaPress's M7 build, to close a gap Master Architecture
 §5.2 left open: its inference-concurrency bullet gave a policy for FreeWeight and LoadCoach and
