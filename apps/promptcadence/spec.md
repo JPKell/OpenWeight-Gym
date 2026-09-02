@@ -87,7 +87,7 @@ and the policy pass over that plan. This distinction is load-bearing and is reco
 | Loop | DAG-aware step scheduling; per-turn LoadCoach calls; tool round trips; finish-reason handling |
 | Tools | Registry composition, per-trajectory allowlists, sandboxed execution via ToolYard |
 | Context | Compaction requests to CutCtx; execution of planned summarizations via LoadCoach |
-| Budget | Ceiling configuration, pre-flight estimates, per-turn debits via LoadLedger, halt on exhaustion |
+| Budget | Ceiling configuration (per-trajectory, per-day, per-project), pre-flight estimates, per-turn debits via LoadLedger; on exhaustion: halt, a ceiling-raise approval, or a wait for the next UTC day, per ceiling |
 | Egress | Per-turn classification-vs-tier evaluation via SpotCheck; durable decisions, approvals and denials alike |
 | Deviation | One pure comparison per turn against its `ExecutionIntent`, category-typed ([Lifecycle §5](lifecycle.md)); recorded-continue / scoped re-approval (a superseding intent revision) / halt per severity and policy |
 | Explainability | Full trajectory record, composable and exportable, retained forever by default; served from materialized revisions for terminal trajectories ([Lifecycle §9.1](lifecycle.md)) |
@@ -131,7 +131,9 @@ GET  /settings                    PUT  /settings
 
 * `POST /trajectories` — `task`, `data_classification` (default `"confidential"` — the safe
   default; unclassified data is treated as most restrictive), optional `budget`
-  (`money` and/or `tokens`), optional `tools` allowlist (must be a subset of the registry),
+  (`money` and/or `tokens`), optional `project` (must name a configured
+  `[budget.projects.<name>]`, else `PROJECT_UNKNOWN`; every debit is tagged `project:<name>` and
+  the project's ceiling binds), optional `tools` allowlist (must be a subset of the registry),
   optional `bypass_planning`, optional `tier` pin (recorded as an override; policy still applies),
   optional `max_steps`/`max_turns` within configured caps.
 * `GET /trajectories/{id}/explanation` — the full reconstructable record (§11 contract 2),
@@ -162,9 +164,9 @@ promptcadence token create|list|revoke
 
 ## 8. Inputs
 
-Trajectory requests (task, classification, budget, tool allowlist, overrides), tier and policy
-configuration, tool registry configuration, approval verdicts from operators, LoadCoach responses
-(results, routing metadata, usage, tool-call requests), configuration.
+Trajectory requests (task, classification, budget, project label, tool allowlist, overrides),
+tier and policy configuration, tool registry configuration, approval verdicts from operators,
+LoadCoach responses (results, routing metadata, usage, tool-call requests), configuration.
 
 ## 9. Outputs
 
@@ -237,6 +239,11 @@ deliberate rejection, like `LoadCoachClient`.
    figure); `[budget] partial_pricing = "strict"` makes such a response exceed the money ceiling
    instead, for budgets that must not be crossed
    ([ADR-0069](../../adr/0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md)).
+   Three ceilings are active on a labelled trajectory: its own (the request's `budget` or the
+   configured default), the per-day ceiling every trajectory shares, and its project's; the most
+   restrictive binds. The per-day ceiling is what lets any amount of work run while only so much
+   is spent: local work is unpriced and never counts against it, and under the `window` policy a
+   trajectory it stops parks until the next UTC day instead of halting.
 6. **Advance contract.** A step completes only on a declared `finish_reason` of `STOP` (or a
    schema-validated structured result); `LENGTH`, `ERROR` and absence are handled explicitly, never
    read as success.
@@ -285,6 +292,16 @@ deliberate rejection, like `LoadCoachClient`.
                                                 # may fire late. strict: treat it as exceeded —
                                                 # never crosses the cap; with today's adapters
                                                 # this halts on the first remote response
+                on_exhausted = "approval"       # approval | halt — per-trajectory and per-project
+                                                # ceilings never reset, so waiting is not offered
+                on_daily_exhausted = "window"   # window | approval | halt — window parks the
+                                                # trajectory until the next UTC day (lifecycle §8)
+                window_wait_max_days = 3        # then halted with the cause; never waits forever
+[budget.projects.research]
+                money_ceiling = { currency = "USD", nanos = 50_000_000_000 }   # $50.00, lifetime:
+                                                # every trajectory labelled project = "research",
+                                                # every day, until raised
+                # token_ceiling = 100_000_000   # optional; a project binding neither is refused
 [tools]         enabled = ["read_file", "list_dir", "write_file", "run_command", "http_fetch"]
                 workspace_root = ""             # default: <data>/workspaces; per-trajectory subdir
                 read_roots = []                 # extra read-only roots (allowlist)
@@ -341,6 +358,7 @@ TIER_UNAVAILABLE            APPROVAL_INVALID_STATE    TOOL_NOT_FOUND
 LOADCOACH_UNAVAILABLE       DEVIATION_HALTED          TOOL_ARGS_INVALID
 LOADCOACH_ERROR             STEP_LIMIT_EXCEEDED       TOOL_REFUSED
 SCHEMA_VERSION_UNSUPPORTED  COMPACTION_FAILED         TOOL_EXECUTION_FAILED
+PROJECT_UNKNOWN
 ```
 
 Every error LoadCoach can return has exactly one mapping here, so no LoadCoach failure reaches a
@@ -366,7 +384,9 @@ Behavioural rules:
   `ToolResult`, never an exception, never a crash — one refused tool call does not end a
   trajectory ([ToolYard §11](../../packages/toolyard/spec.md)).
 * Budget exhaustion mid-trajectory transitions to `awaiting_approval` (a ceiling raise is an
-  approval) or halts, per configuration; it never silently continues.
+  approval) or halts, per `on_exhausted`; exhaustion of the per-day ceiling may instead park the
+  trajectory in `awaiting_window` until the next UTC day (`on_daily_exhausted = "window"`), for at
+  most `window_wait_max_days`, then halts. It never silently continues, and never waits forever.
 * Cancellation is honoured at the next turn boundary and cancels any in-flight LoadCoach job.
 * Every halt names its cause; `promptcadence trajectory show` prints it verbatim.
 
@@ -438,16 +458,18 @@ executing unisolated; all other tools work everywhere.
   `trajectory.created`, `trajectory.claimed`, `plan.drafted`, `plan.approved`, `plan.rejected`,
   `approval.requested`, `approval.granted`, `approval.denied`, `intent.minted`, `step.started`,
   `turn.started`, `turn.completed`, `tool.call.started`, `tool.call.completed`,
-  `context.compacted`, `budget.debited`, `egress.evaluated`, `deviation.detected` (carrying the
-  category), `step.completed`, `trajectory.completed`, `trajectory.halted`, `trajectory.failed`,
-  `trajectory.cancelled`, `trajectory.recovered`. The emitting transition for each is the
+  `context.compacted`, `budget.debited`, `budget.window_wait`, `egress.evaluated`,
+  `deviation.detected` (carrying the category), `step.completed`, `trajectory.completed`,
+  `trajectory.resumed`, `trajectory.halted`, `trajectory.failed`, `trajectory.cancelled`,
+  `trajectory.recovered`. The emitting transition for each is the
   [Lifecycle §8.2](lifecycle.md) table.
 * Health components: `database`, `loadcoach` (reachability + version), `tiers` (each configured
   tier's task profile resolvable), `sandbox` (which isolation tier is available), `ledger`
   (daily ceiling headroom). A missing remote provider degrades the remote tiers' component with a
   reason; it is never a failure to serve.
 * `GET /api/v1/system/status`: active trajectories, pending approvals with ages, today's ledger
-  position against the daily ceiling, per-tier availability, LoadCoach queue passthrough.
+  position against the daily ceiling and against each configured project's ceiling, per-tier
+  availability, LoadCoach queue passthrough.
 * Every governance decision persisted in full — 100 %, not sampled, matching LoadCoach's routing
   explanations.
 
@@ -459,7 +481,7 @@ executing unisolated; all other tools work everywhere.
 | Contract | Plan schema goldens; explanation document goldens (`promptcadence.trajectory_explanation` 1.0); `materialize(rows) == compose_live(rows)` equality goldens, including post-retention-scrub and post-re-costing revisions; API against the OpenAPI snapshot; error codes; SSE shape; `governance.egress_decision` payloads against SetSpec goldens |
 | Integration | Full loop against a **fake LoadCoach HTTP server** (recorded response shapes, scriptable failures); queue lease/recovery after simulated crash; mounted `loadledger.sql`/`spotcheck.sql` tables on both dialects |
 | E2E | Submit → plan → approve → execute (tools + compaction + debits + egress) → explanation, over HTTP and CLI; the same journey with `bypass_planning` diffed for contract 1; manual-approval journey including deny |
-| Failure-path | LoadCoach down mid-turn; plan invalid after retries; egress denied mid-trajectory; budget exhausted mid-step; tool sandbox refusal; deviation → re-approval → deny; approval timeout; kill −9 recovery |
+| Failure-path | LoadCoach down mid-turn; plan invalid after retries; egress denied mid-trajectory; budget exhausted mid-step under each of the halt, approval and window policies; an unknown project refused; tool sandbox refusal; deviation → re-approval → deny; approval timeout; kill −9 recovery |
 | Security | Unlisted tool requested by the model; path escape and symlink escape attempts; fetch to a non-allowlisted host; confidential data with a remote tier pin; scope enforcement (submit ≠ approve); no secret in logs |
 | Performance | Every budget in §15 |
 | Live (marked) | Real LoadCoach + Ollama: a local-tier planned trajectory with one tool call, end to end |

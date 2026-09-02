@@ -160,7 +160,7 @@ Added 2026-09-02 for the [PromptCadence roadmap](promptcadence-roadmap.md). Mode
 the Claude 5 generation (Fable 5 > Opus 5 > Sonnet 5); the second value is the Claude Code
 **effort** level, which replaced thinking budgets. The older sections' "Opus + max/extended"
 rows map to "Opus 5 · xhigh/high". The specification-quality multiplier (§1.1) applies *more*
-strongly here than to the original plans: the state machine is normative tables (T1–T14), the
+strongly here than to the original plans: the state machine is normative tables (T1–T17), the
 deviation taxonomy is closed per intent field, and the budget maths has named traps — much of
 this arc is deliberately Sonnet-shaped.
 

@@ -242,9 +242,20 @@ response that could not be fully priced exceeds the money ceiling, at pre-flight
 is never crossed. Either way the UI renders a floor as "at least", never as a bare figure.
 
 Debits store `TokenUsage` + `pricing_hash`, never a money figure as the primary fact; scopes
-(`per-trajectory`, `per-day` UTC, `per-tier`) may be active simultaneously and the most
-restrictive binds, with every entry recording its balance after against each active ceiling
-([LoadLedger §7](../../packages/loadledger/spec.md)).
+(`per-trajectory`, `per-day` UTC, `per-tag` — the project) may be active simultaneously and the
+most restrictive binds, with every entry recording its balance after against each active ceiling
+([LoadLedger §7](../../packages/loadledger/spec.md)). Every debit is tagged with its tier too,
+for the estimator and the ledger views; no tier ceiling is configured.
+
+Three ceilings are active on a labelled trajectory: its own (the request's `budget` or the
+configured default, `per-trajectory`), the `per-day` ceiling every trajectory shares, and its
+project's (`per-tag` on `project:<name>`, a lifetime cap that never resets — the shape a project
+budget should have). A `project` on the request must name a configured `[budget.projects.<name>]`
+or the request is refused with `PROJECT_UNKNOWN`; every debit then carries the project tag beside
+its tier tag. Exhaustion is handled per ceiling: a per-trajectory or per-project ceiling halts or
+asks for a raise (`on_exhausted`), because waiting would not help; the per-day ceiling may instead
+park the trajectory in `awaiting_window` until the next UTC day (`on_daily_exhausted = "window"`,
+§8), which is what lets any amount of work run while only so much is spent in a day.
 
 **Pre-execution step estimates** (the skeleton's open question, resolved as roadmap §2, D-3) use a
 layered estimator whose source is always recorded, mirroring the suite's served-context labelling:
@@ -291,6 +302,11 @@ stateDiagram-v2
     awaiting_approval --> executing: approved
     awaiting_approval --> halted: denied / timeout
     executing --> awaiting_approval: scoped re-approval or ceiling raise
+    planning --> awaiting_window: per-day ceiling, window policy
+    executing --> awaiting_window: per-day ceiling, window policy
+    awaiting_window --> planning: next UTC day (parked from planning)
+    awaiting_window --> executing: next UTC day (parked from executing)
+    awaiting_window --> halted: window_wait_max_days elapsed
     executing --> completed
     executing --> halted: deviation / egress / budget
     executing --> failed: unrecoverable error
@@ -307,6 +323,7 @@ stateDiagram-v2
 | `queued` | Accepted and persisted; no worker has claimed it | no | no | no |
 | `planning` | A worker holds the lease; drafting, validating and evaluating approval | yes | no | no |
 | `awaiting_approval` | Parked on exactly one pending `approval_request` (plan-level, gated step, scoped re-approval, or ceiling raise); its timeout clock is persisted | no | no | no |
+| `awaiting_window` | Parked on an exhausted per-day ceiling under the `window` policy; the state it parked from, the next UTC-day edge and the days waited are persisted | no | no | no |
 | `executing` | A worker holds the lease; every dispatched step has a live (non-superseded) `ExecutionIntent` | yes | yes | no |
 | `completed` | Every step reached declared success (or the bypass loop declared finish) | no | — | **yes** |
 | `rejected` | The trajectory-level plan verdict was `rejected`; nothing executed | no | — | **yes** |
@@ -336,6 +353,9 @@ that this table does not list; terminal states have no outgoing rows.
 | T12 | `executing` | `halted` | `tier_violation`; re-approval denied; deviation limit; budget exhaustion (halt policy); egress denial with no permitted tier | Cause recorded | `trajectory.halted` |
 | T13 | `executing` | `failed` | Unrecoverable error | Cause recorded | `trajectory.failed` |
 | T14 | any non-terminal | `cancelled` | `POST /cancel` or CLI | From `executing`: honoured at the next turn boundary; any in-flight LoadCoach job cancelled | `trajectory.cancelled` |
+| T15 | `planning` or `executing` | `awaiting_window` | The per-day ceiling would be exceeded by the plan or by the next step, and `on_daily_exhausted = "window"` | Parked-from state and the next UTC-day edge persisted; in-flight turns finish first; lease released | `budget.window_wait` |
+| T16 | `awaiting_window` | the state it parked from | The UTC day rolls | The per-day ceiling now admits the plan or step; `window_wait_max_days` not exceeded; lease re-acquired | `trajectory.resumed` |
+| T17 | `awaiting_window` | `halted` | `window_wait_max_days` elapsed — the ceiling still refused at that many day edges | Cause recorded | `trajectory.halted` |
 
 Turn-loop activity inside `executing` (turns, tool calls, debits, egress verdicts, compactions)
 emits its own events but is not a state transition; `executing` is one state, not many.
@@ -350,8 +370,9 @@ explicit recovery edge, exercised at startup and on lease expiry:
 | `planning` | Re-claim; cancel any in-flight LoadCoach plan job; discard the partial draft and redraft (drafting has no side effects to reconcile). Emits `trajectory.recovered` |
 | `executing` | Re-claim; reconcile the in-flight turn: committed → resume at the next ready step; uncommitted with a known LoadCoach job → cancel the job, re-derive any missing debit from the persisted turn (idempotent by `source_ref`), resume; unreconcilable → `halted` with `recovered_after_crash`. Emits `trajectory.recovered` (or `trajectory.halted`) |
 
-`queued` and `awaiting_approval` hold no lease and need no recovery; their clocks (ageing,
-approval timeout) are persisted values, not process state.
+`queued`, `awaiting_approval` and `awaiting_window` hold no lease and need no recovery; their
+clocks (ageing, approval timeout, the window edge and its day count) are persisted values, not
+process state.
 
 ### 8.4 DAG dispatch
 

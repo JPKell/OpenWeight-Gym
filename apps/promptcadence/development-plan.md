@@ -188,6 +188,13 @@ governance in place).
 * `declare_run` at trajectory creation, before plan approval, so no pre-flight check ever meets
   `UnknownRun`; the debit rebuilds `TokenUsage` from all four classes on LoadCoach's job document
   (ADR-0070, row C6).
+* The `project` request label: refused unless configured (`PROJECT_UNKNOWN`); `project:<name>` on
+  every debit beside `tier:<name>`; a per-tag money/token ceiling per `[budget.projects.<name>]`,
+  resolved with the trajectory's own and the per-day ceiling into the ledger view per operation
+  (LoadLedger plan Phase 2); per-project position on `GET /ledger` and the dashboard.
+* Exhaustion per ceiling: `on_exhausted` (approval | halt) for the per-trajectory and per-project
+  ceilings; `on_daily_exhausted` (window | approval | halt) for the per-day ceiling, with the
+  `awaiting_window` park and resume (lifecycle §8 T15–T17) and `window_wait_max_days`.
 * The historical estimator ([lifecycle §6](lifecycle.md)) over `entries()`, with source labels;
   per-tier configured defaults.
 * `GET /ledger(/entries)`, `promptcadence ledger show`.
@@ -198,6 +205,10 @@ governance in place).
 * A response the provider did not fully price: under `floor` the trajectory continues and the
   balance shows "at least"; under `strict` the next step is refused at pre-flight; a local step
   trips neither.
+* A trajectory parked on the per-day ceiling resumes when the injected clock crosses UTC midnight
+  and the ceiling admits it; stays parked when another trajectory has already spent the new day;
+  halts after `window_wait_max_days`. A project ceiling binds across two trajectories that share
+  the label. An unknown project is refused before anything is persisted.
 * Kill −9 between LoadCoach response and debit: recovery reconciles from the persisted turn —
   spend is never lost or double-debited.
 
