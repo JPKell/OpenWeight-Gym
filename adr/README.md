@@ -67,6 +67,29 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0042](0042-a-check-may-not-restate-its-requirement.md) | A deterministic check may not be a restatement of its requirement | Accepted |
 | [0043](0043-grounding-is-verified-not-assumed.md) | Grounding is verified, not assumed | Accepted |
 | [0044](0044-a-state-change-and-its-event-are-one-write.md) | A state change and the event announcing it are one write | Accepted |
+| [0045](0045-promptcadence-reaches-models-only-through-loadcoach.md) | PromptCadence is a fourth application, and it reaches a model only through LoadCoach | Accepted |
+| [0046](0046-data-classification-is-ordered-and-defaults-closed.md) | Data classification is ordered, caller-declared, and defaults to the most restrictive | Accepted |
+| [0047](0047-a-tier-is-configuration-and-a-model-never-sizes-its-own-budget.md) | A tier is configuration over a task profile, and a model's guess never sizes its own budget | Accepted |
+| [0048](0048-the-bypass-removes-planning-never-governance.md) | The bypass removes planning; it never removes governance | Accepted |
+| [0049](0049-approval-is-a-mode-with-its-own-scope.md) | Approval is a mode with its own scope, and silence never grants it | Accepted |
+| [0050](0050-a-package-may-ship-tables-never-a-migration-history.md) | A shared package may ship tables; it may never own a migration history | Accepted |
+| [0051](0051-plans-stay-internal-and-one-payload-travels.md) | A plan never leaves PromptCadence; the egress decision is the one shape that travels | Accepted |
+| [0052](0052-compaction-is-a-view-and-the-package-plans-it-only.md) | Compaction is a view, and the package that plans a summary never calls a model | Accepted |
+| [0053](0053-a-refused-tool-call-is-a-result-not-an-exception.md) | Tools are registered in code, refused in order, and a refusal is a result | Accepted |
+| [0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md) | SpotCheck renders and records an egress verdict; enforcing it is the caller's | Accepted |
+| [0055](0055-loadcoach-registers-providers-by-name-and-kind.md) | LoadCoach registers providers by name and kind, into one tagged registry | Accepted |
+| [0056](0056-every-turn-executes-under-one-execution-intent.md) | Every turn executes under exactly one immutable ExecutionIntent | Accepted |
+| [0057](0057-the-explanation-is-materialized-and-the-rows-stay-authoritative.md) | The trajectory explanation is materialized; the rows stay the source of truth | Accepted |
+| [0058](0058-the-execution-subject-gains-an-adapter-axis.md) | The execution subject gains an adapter axis, and an absent adapter changes nothing | Accepted |
+| [0059](0059-adapter-evidence-is-measured-never-inherited.md) | Adapter evidence is measured, never inherited from its base | Accepted |
+| [0060](0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md) | Adapter selection lives in the subject; adapter serving mode lives in the runtime profile | Accepted |
+| [0061](0061-the-adapter-registry-is-a-directory-and-a-manifest.md) | The adapter registry is an operator's directory and a reviewed manifest, not a service | Accepted |
+| [0062](0062-llamacpp-serves-adapters-through-a-supervised-process.md) | llama.cpp serves adapters, through a process the suite supervises | Accepted |
+| [0063](0063-one-adapter-at-a-time.md) | One adapter at a time, at a fixed scale | Accepted |
+| [0064](0064-adapters-are-selected-through-the-capability-vocabulary.md) | Adapters are selected through the capability vocabulary; there is no tag channel | Accepted |
+| [0065](0065-an-adapter-is-classified-and-local-only.md) | An adapter is a distillate of its training data, and it does not leave the machine | Accepted |
+| [0066](0066-residency-is-two-level.md) | Residency is two-level: the base is the expensive switch, the adapter is free | Accepted |
+| [0067](0067-reliability-keys-on-the-subject-not-the-base.md) | Reliability and the breaker key on the subject, never on the base | Accepted |
 
 ## Writing a new ADR
 
@@ -147,6 +170,27 @@ ADR-0043 records that "grounded in the sources" was a requirement nothing verifi
 wrote checks for the vocabulary of grounding, not for the grounding. Both narrow ADR-0039 without
 reversing it; the asymmetry it establishes is unchanged, and what changed is which checks are
 allowed to exist.
+
+**ADRs 0045–0067 were written on 2026-09-02**, before any code, as the joint Phase 0 / LA0 of two
+post-1.0 arcs: the [PromptCadence arc](../roadmap/promptcadence-roadmap.md) (a plan-approved,
+tier-routed agent harness over LoadCoach, plus the four shared packages it justifies) and the
+[Adapter arc](../roadmap/adapter-roadmap.md) (hot-swappable LoRA serving on a warm base via
+llama.cpp). They are the suite's rule working as intended rather than a debt being paid: the
+decisions were argued in the roadmaps, and these records exist so that no implementation phase has to
+invent one. 0045–0057 expand the PromptCadence arc's D-1…D-13; 0058–0067 expand the Adapter arc's
+A-1…A-10.
+
+Three of them **amend earlier records additively, reversing nothing**.
+[ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) extends ADR-0008, ADR-0023 and
+ADR-0024 with an optional adapter axis on the execution subject and an optional suffix on the
+canonical string — a subject with no adapter is byte-for-byte what it is today.
+[ADR-0051](0051-plans-stay-internal-and-one-payload-travels.md) adds `promptcadence.*` as a fourth
+application namespace and `governance.*` as a SetSpec-owned root to ADR-0035's table.
+[ADR-0050](0050-a-package-may-ship-tables-never-a-migration-history.md) opens a narrow door in the
+storage model — a package may ship mountable table definitions, and may still never own an engine, a
+session, a migration history or the data. Together they amend
+[Master Architecture](../architecture/master-architecture.md) §§1.1, 1.3, 1.5, 2, 3, 8, 10, 11 and
+12 through the [ADR-0038](0038-one-model-at-a-time-per-gpu.md) mechanism.
 
 ADR-0044 was added on 2026-09-01, during the same build, after CI failed a test a fast machine
 could not. It is the second ADR here written after the code rather than before it. The decision it

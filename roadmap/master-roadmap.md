@@ -32,6 +32,23 @@ updated accordingly; no milestone number, package range or cross-application dep
 | **M8** | IdeaPress 1.0                            | IdeaPress P7–P9                                                                    | Optional LoadCoach backend; hardened; published to PyPI                                                            |
 | **M9** | Suite 1.0                                | Integration verification, cross-repository CI, documentation set, public release   | Every gold standard met; all install paths verified; release notes published                                       |
 
+**M10–M13 are post-1.0 and are planned elsewhere.** The
+[PromptCadence arc](promptcadence-roadmap.md) owns them — the harness application, its four shared
+packages, LoadCoach's multi-provider registration and IdeaPress's adoption phases — with the
+[Adapter arc](adapter-roadmap.md) (LA0–LA3) running as a parallel stream that shares M10's contract
+phase and converges at M12. Their decisions are ADRs
+[0045–0067](../adr/README.md), accepted 2026-09-02 before any of their code.
+[Outstanding Work](outstanding-work.md) is the execution schedule for both, one row per session.
+
+| # | Milestone | Owned by | Ships |
+|---|---|---|---|
+| **M10** | Harness foundations | [PromptCadence arc §3](promptcadence-roadmap.md) | `baseaicore 0.4.1`, `setspec 0.5.0`, CutCtx/ToolYard/LoadLedger/SpotCheck at `0.1.0` |
+| **M11** | PromptCadence beta | [PromptCadence arc §3](promptcadence-roadmap.md) | `promptcadence 0.9.0b0` |
+| **M12** | PromptCadence 1.0 | [PromptCadence arc §3](promptcadence-roadmap.md) | `promptcadence 1.0.0`, LoadCoach `1.1.0` (LC-E1) |
+| **M13** | Adoption — extraction complete | [PromptCadence arc §6](promptcadence-roadmap.md) | IdeaPress `1.1.0` on LoadLedger, SpotCheck and CutCtx |
+
+This roadmap stays authoritative for M1–M9 and for the sequencing principle both arcs inherit.
+
 ---
 
 ## 2. Dependency graph
@@ -305,88 +322,50 @@ declared.
 
 ## 9. Current state and immediate next steps
 
-**Current state (2026-08-31, end of M7's build work).** The architecture is frozen and `docs/` is
-complete; nine repositories exist and seven of them hold working software. FreeWeight's M6 build
-(P12–P14) is done and green on the runner; the `freeweight 1.0.0` tag is the one remaining human
-step, exactly as `loadcoach 1.0.0` is.
+**Current state (2026-09-02).** The architecture is frozen, `docs/` is complete, and **all nine
+components of Suite 1.0 are built, tagged and published to PyPI.** The three applications reached
+1.0.0 in milestone order — LoadCoach (M5), FreeWeight (M6), IdeaPress (M8, after its M7
+verification's findings were closed and ADR-0039 was accepted and implemented).
 
 | Component | Version | State |
 |---|---|---|
-| BaseAiCore | 0.4.0 | Complete through its plan; published |
+| BaseAiCore | 0.4.0 | Complete through its plan; published. `0.4.1` is the PromptCadence arc's first code row |
 | SetSpec | 0.4.0 | Schemas frozen at 0.3; `setspec.prompts` at 0.4; published |
-| ModelRack | 0.5.0 | Complete; published |
+| ModelRack | 0.6.0 | Complete; published |
 | SweatMeter | 0.4.0 | Complete; published |
-| WeightsDB | 0.2.0 | P1–P3 complete; **published** |
-| MirrorWall | 0.2.0 | P1–P2 complete; **published** |
-| FreeWeight | 1.0.0 | **P1–P14 complete (M6 build done)**: on the shared packages (WeightsDB, MirrorWall, setspec.prompts), nine external adapters with tiered sandboxing, CSRF and the §15 budgets and §14 checklist held; `ci.lock` cut on 3.13 and audited; the suite green in a fresh non-root lock venv; **CI green on the real runner**; release **prepared, not tagged** |
-| LoadCoach | 1.0.0 | P1–P9 complete; M5 verification's fourteen findings closed (handoff M5C-1…15); **CI green on the real runner** (run 33334510805, every job); release **prepared, not tagged** |
-| IdeaPress | 0.1.1 | **P1–P9 complete (M8 build done)**: the optional LoadCoach backend, the project workspace and plan editor, and the hardening pass. `0.1.0` and `0.1.1` are tagged and on PyPI; `0.1.1` re-demonstrated M7's exit condition end to end. `1.0.0` is prepared and awaits the human's `TAG_APPROVED` — the release workflow's `pypi` environment needs a manual approval too |
+| WeightsDB | 0.2.1 | P1–P3 complete; published |
+| MirrorWall | 0.2.1 | P1–P2 complete; published |
+| FreeWeight | 1.0.0 | P1–P14 complete; **tagged and published**; installs from the index and runs against a real Ollama |
+| LoadCoach | 1.0.0 | P1–P9 complete; M5 verification's fourteen findings closed; **tagged and published**. One later fix (`2c7d740`) is committed and unreleased — it ships with LoadCoach 1.1 (LC-E1) |
+| IdeaPress | 1.0.0 | P1–P9 complete (M8); ADRs 0039–0044 came out of its build and verification; **tagged and published** |
 
-M5's own content — LoadCoach P7–P9 — is built: production feedback, reliability and regression
-detection; the complete operator UI; auth hardening with scopes checked at the route and in the
-service, rate limits, queue caps, CSRF, body limits and content retention; every spec §15 budget
-measured; Security Standards §14 held item by item; the seven operator documents; and a `doctor`
-that names every documented failure mode. The M5 exit condition reads *"Explainable, durable,
-secure routing service; published to PyPI"*: the first three adjectives are met with evidence in
-the M5 handoff; the fourth clause is a publish, which is a human decision this run did not take.
+**What remains, in two independent tracks.**
 
-**The one thing standing between here and M5 is the `loadcoach` tag.** Both extracted packages
-are on PyPI; `LoadCoach/requirements/ci.lock` is generated and audited; every CI job installs from
-it; the suite passed in a fresh non-root virtualenv installed from the lock; and spec §20 AC1 was
-run against a real Ollama from a clean index-only install (M5-25 in the handoff).
+1. **M9 — the professional delivery checklist** (§7 below), over the nine components as they stand.
+   It predates both arcs and appears in neither; it neither gates nor is gated by any arc row, so it
+   can run at any time. Many of its boxes are likely already true and merely unticked — the
+   suggested treatment is one audit session that walks §7 against the repositories and emits a gap
+   list, then ordinary sessions per gap. The declaration itself is a human step. Its checklist in §7
+   is unchanged and still outstanding.
+2. **The two post-1.0 arcs — M10–M13 and LA0–LA3.** Planned in the
+   [PromptCadence](promptcadence-roadmap.md) and [Adapter](adapter-roadmap.md) roadmaps, with their
+   contracts already accepted as ADRs [0045–0067](../adr/README.md). **The execution schedule is
+   [Outstanding Work](outstanding-work.md)** — every remaining row in dependency order, one per
+   session, with its model and effort; the arcs stay authoritative for rationale.
 
-The next actions, in order:
+The immediate next row is **A2: `baseaicore 0.4.1`** — `DataClassification`
+([ADR-0046](../adr/0046-data-classification-is-ordered-and-defaults-closed.md)) and
+`AdapterIdentity` with the canonical adapter suffix
+([ADR-0058](../adr/0058-the-execution-subject-gains-an-adapter-axis.md)), additive inside every
+existing `>=0.4,<0.5` pin.
 
-1. ~~Let CI go green on the real runner~~ — **done, and it took three findings to get there**:
-   the suite only collected under `python -m pytest` (the closeout's F1), a GPU-dependent test
-   fixture (M5C-14), and a migration that was a PostgreSQL syntax error nothing local could see
-   (M5C-15). Run `33334510805` on `eeef0f4` is green on every job, the first in the
-   repository's history.
-2. ~~Run the M5 verification~~ — **done** (Fable 5, 2026-08-30, verdict *not ready*, fourteen
-   findings) **and acted on** (the closeout run, handoff entries M5C-1…M5C-15, all closed). The
-   re-verification prompt is `~/ai/suite/m5-reverification.prompt.md`; it must still be able to
-   say *not ready*.
-3. **Tag and publish `loadcoach 1.0.0`** (Packaging Standards §6 from step 6), verify
-   `pip install loadcoach==1.0.0` in a clean virtualenv, then declare M5. IdeaPress may begin its
-   LoadCoach integration phase. The tag remains the one human step (`TAG_APPROVED` was `no` at
-   the closeout).
-4. ~~Build M6~~ — **done.** FreeWeight P12–P14 is built: adoption of WeightsDB, MirrorWall and
-   `setspec.prompts` with the pre-existing suite passing unchanged; nine external benchmark adapters
-   run as isolated subprocesses with the tiered code-execution sandbox (container → bwrap → refuse)
-   proven and mutation-checked; the performance pass, the Security Standards §14 checklist (Host
-   validation, CSRF on every form, the binding refusals), the operator documentation and the doctor
-   diagnosing every documented failure mode; `requirements/ci.lock` cut on 3.13 and audited, CI
-   installing from it, the suite green in a fresh non-root lock venv, and the runner green. The M6
-   handoff is `~/ai/suite/M6_HANDOFF.md`.
-5. **Run the M6 verification** (prompt at `~/ai/suite/m6-verification.prompt.md`), act on its
-   findings, then **tag and publish `freeweight 1.0.0`** and verify `pip install freeweight==1.0.0`
-   against a real Ollama (spec §20 AC1). The tag is the one human step (`TAG_APPROVED`).
-6. ~~Begin M7~~ — **done.** IdeaPress P1–P6 is built: the skeleton and storage on the shared
-   packages, the inference port with Ollama, fake and OpenAI-compatible adapters behind it,
-   requirements compiled with verbatim grounding and a plan gate emptiness cannot pass, the
-   draft/validate/repair/coverage/commit loop with an atomic commit proven against a killed
-   process, audit and bounded revision with the stop reason recorded, and deterministic exports in
-   three formats. [ADR-0038](../adr/0038-one-model-at-a-time-per-gpu.md) closes the gap where
-   §5.2's inference-concurrency policy named IdeaPress nowhere. CI is green on the real runner —
-   the first passing run in that repository's history. The M7 handoff is
-   `~/ai/suite/M7_HANDOFF.md`.
-7. **Run the M7 verification** (prompt at `~/ai/suite/m7-verification.prompt.md`) and act on its
-   findings. F-13.4 is the precedent: the M6 verification prompt was written and never executed, so
-   no verification report exists for FreeWeight.
-8. **Decide ADR-0038's estimator question** — duplicate `estimate_vram` in a second application, or
-   extract it to `modelrack`. The ADR recommends extraction and deliberately does not perform it:
-   it touches a published package and two 1.0 applications. FreeWeight's missing free-VRAM
-   preflight waits on the same decision.
-9. ~~Begin M8~~ — **built.** IdeaPress P7–P9 is done: `LoadCoachBackend` routing every model-using
-   stage by task profile with feedback and explicit degradation; the workspace, plan editor, diff
-   view and export dialog; and the hardening pass — the mechanical sanitization sweep, hardened
-   project archives, ADR-0026 proven on a non-loopback bind, and all seven of spec §15's budgets
-   asserted. Two ADRs were needed before the adapter could be written: **ADR-0040** (a routing
-   backend owns model choice and residency) and **ADR-0041** (a caller's output schema does not
-   travel through a router). `1.0.0` is prepared; the tag is the human's.
+**The record of how each milestone was verified** stays in the handoff and verification documents:
+`~/ai/suite/M4_HANDOFF.md`, `M6_HANDOFF.md` and `M7_HANDOFF.md` are where the decisions the
+documents left open were made, and `m5-reverification.prompt.md`, `m6-verification.prompt.md` and
+`m7-verification.prompt.md` are how each milestone was checked before it was declared. The M7
+verification is the precedent worth keeping in view: it returned *not ready*, with findings that
+took a further build round to close.
 
-10. **Verify M8**, on an independent brief, the way M7 was verified — with the explicit permission
-    to say *not ready*. Then tag `v1.0.0` and approve the `pypi` environment.
 
 An implementation agent assigned any phase should read, in this order: the master requirements, the
 [Master Architecture](../architecture/master-architecture.md), the relevant component

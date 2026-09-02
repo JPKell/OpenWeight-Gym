@@ -22,6 +22,8 @@ the design (not an intention) and an early signal that tells us it is materializ
 | A6 | **Over-engineering creep** — a broker, a cache layer, a plugin system arriving without a need | Medium | High | "No infrastructure without an ADR" rule; ADR-0010's reasoning as precedent; per-component "premature optimizations to avoid" lists | A design discussion that starts from a technology rather than a problem |
 | A7 | **Under-engineering in the queue or event store** — the two genuinely subtle components | Medium | High | Scheduling simulator (with the clock advancing while the process is *up*, which is what exercises ageing); kill-point recovery tests; gap-free sequence tests; the mechanisms in [ADR-0029](../adr/0029-queue-mechanics.md) | Flaky tests around ordering or recovery |
 | A8 | **A documented invariant with no mechanism behind it** — the class the final audit found repeatedly: ageing with no sweep, a lease with no keeper, a fingerprint input with no producer | Medium | High | Every invariant in the gold standards names the mechanism that provides it and the test that proves it; "the specification says so" is not an implementation | An acceptance criterion nobody can point at code for |
+| A9 | **Package sprawl** — four new repositories in one arc, each needing CI, releases and a maintainer's attention | Medium | Medium | Each package is deliberately small with a **named second consumer** before it is built ([ADR-0011](../adr/0011-shared-package-boundaries.md) rule 4); ThreadRack was folded into PromptCadence precisely to hold this line ([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)); M13 is the phase that proves the second consumer in fact | A fifth package proposed inside the arc, or an M13 adoption phase quietly dropped |
+| A10 | **The mountable-models pattern fights a host's Alembic setup** — autogenerate producing a wrong diff, or two hosts needing incompatible column types | Medium | Medium | The miniature-host test in each mounting package, on both dialects; PromptCadence is the first real host before any 1.0 promise; the pattern is confined to two tiny packages and a third triggers a review ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)) | A host migration that drops or duplicates a mounted table |
 
 ## 2. Delivery risks
 
@@ -50,6 +52,12 @@ the design (not an intention) and an early signal that tells us it is materializ
 | T10 | **Advertised context mistaken for served context**, producing silent truncation | Medium | High | Served context resolved, recorded with its source, and used by every constraint and estimate; `assumed_context` flagged | A model chosen for long context returning short, truncated answers |
 | T11 | **Multi-GPU assumptions** — summed VRAM admitting work that fits nowhere; a slope measured against the wrong device | Low (today) | High | Per-device admission and attribution; memory metrics skipped when placement is unknown ([ADR-0027](../adr/0027-multi-gpu-semantics.md)) | An OOM after an admission check said it fits |
 
+| T12 | **Governance overhead makes the harness slower than a raw loop by more than its worth**, creating pressure to bypass governance rather than planning | Medium | Medium | Spec §15 bounds PromptCadence's own overhead at ≤ 25 ms/turn beside multi-second model calls, measured in P9 and regression-gated; the expensive part — planning — is exactly what the bypass removes, by design ([ADR-0048](../adr/0048-the-bypass-removes-planning-never-governance.md)) | A request to "skip the ledger write for speed"; the per-turn budget missed |
+| T13 | **Local models draft unusable plans**, making the planned path feel worse than the bypass | High | High | Corrective-retry budget; `tools.plan` constraints; a simpler linear plan shape as fallback; measured honestly in the M11 beta; a `native.plan` benchmark category as the long-term fix ([ADR-0047](../adr/0047-a-tier-is-configuration-and-a-model-never-sizes-its-own-budget.md)'s revisit trigger) | Plans routinely failing validation after the corrective budget |
+| T14 | **Evidence fragmentation across adapter subjects** — per-subject 20-sample minimums never reached, so reliability and capability evidence stay unusable | Medium | Medium | Honest `low_evidence` flags rather than borrowed numbers; panels kept small and targeted ([ADR-0059](../adr/0059-adapter-evidence-is-measured-never-inherited.md)); the pooling question reopened explicitly rather than by default ([ADR-0067](../adr/0067-reliability-keys-on-the-subject-not-the-base.md)) | Most adapter subjects flagged `low_evidence` after months of use |
+| T15 | **Adapter serving robustness** — orphaned `llama-server` processes, port collisions, a crashed server that nothing notices | High | High | Kill-tree on timeout, pid files, a configured port range, stderr captured into the typed startup error; 20-cycle leak tests asserting no orphan and flat memory; `doctor` names every process it expects and finds ([ADR-0062](../adr/0062-llamacpp-serves-adapters-through-a-supervised-process.md)) | An orphaned process after a test run; a port already in use on restart |
+| T16 | **Prompt-cache reuse across adapters** — a prefix computed under adapter A reused for B, producing quietly wrong output | Medium | High | The cache-correctness conformance test (I17): the prefix-under-A-never-reused-for-B assertion plus a semantic canary — same prompt, two adapters, distinct outputs after a shared prefix ([ADR-0062](../adr/0062-llamacpp-serves-adapters-through-a-supervised-process.md)) | Two adapters returning suspiciously similar output after a shared prefix |
+
 ## 4. Security risks (cross-component)
 
 | # | Risk | L | I | Mitigation | Early signal |
@@ -64,6 +72,9 @@ the design (not an intention) and an early signal that tells us it is materializ
 | S8 | **DNS rebinding against an unauthenticated loopback service** — a visited web page reaching the local API | Medium | High | `Host` allowlist enforced before routing and before auth, in all three applications ([ADR-0026](../adr/0026-local-http-hardening.md)) | A request arriving with an unexpected `Host` |
 | S9 | **Server-side request forgery** through `POST /evidence/import {"url": …}` | Low | Medium | Scheme, host-allowlist (loopback only by default), literal-IP, redirect and size checks before any parsing; `EVIDENCE_SOURCE_REFUSED` | An import naming a host the user never configured |
 | S10 | **CSRF against HTML form routes** on an unauthenticated loopback bind | Medium | Medium | Double-submit token on form posts; the JSON API's exemption stated with its withdrawal condition rather than assumed | A state-changing form route without the token |
+| S11 | **Prompt injection through tool results steers the agent loop** — the harness's defining threat | High | High | Every control is model-independent: registry allowlisting, per-intent tool subsets, schema validation, resolution-then-check containment, tiered isolation ending in refusal, and egress evaluated from the *trajectory's* declared classification rather than from model text ([ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md)); the P9 injection corpus is a release gate | A tool call whose arguments echo text that arrived in a tool result |
+| S12 | **An adapter applied to the wrong base**, producing plausible and wrong output | Low | High | Digest-verified base compatibility, fail closed; a name-only declaration carries visibly reduced identity confidence and is flagged everywhere it surfaces ([ADR-0058](../adr/0058-the-execution-subject-gains-an-adapter-axis.md)) | A manifest whose base digest is absent and whose evidence looks unlike its base's |
+| S13 | **A classified adapter's artifact leaving the machine** — an adapter is a distillate of its training data | Low | High | Adapters are local-only in v1; remote + adapter is excluded by a named hard constraint; a would-be adapter egress is a recorded SpotCheck denial; effective classification is `max(caller, adapter)` and is recorded on every turn ([ADR-0065](../adr/0065-an-adapter-is-classified-and-local-only.md)) | A provider registration offering adapter upload; a remote candidate surviving the constraint filter |
 
 ## 5. Dependency and ecosystem risks
 
@@ -104,8 +115,11 @@ the design (not an intention) and an early signal that tells us it is materializ
 
 ## 8. Non-goals restated (suite level)
 
-Not a hosted service. Not a cluster scheduler. Not a training or fine-tuning tool. Not a public
-leaderboard. Not a general agent framework. Not multi-tenant. Not dependent on Kubernetes, Redis,
+Not a hosted service. Not a cluster scheduler. Not a training or fine-tuning tool — adapters arrive
+by directory drop, and in-suite training remains a future arc. Not a public leaderboard. Not a
+general agent framework: PromptCadence is a *governed* harness over LoadCoach, not an embeddable
+loop, and it ships no plugin path for tools or providers
+([ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md)). Not multi-tenant. Not dependent on Kubernetes, Redis,
 Celery, RabbitMQ or Kafka. Each has been considered and rejected with a recorded reason; adding any
 of them requires an ADR that demonstrates a concrete, present need.
 
@@ -124,3 +138,10 @@ would turn it into work:
 | Multi-machine execution | A second GPU host in the deployment picture |
 | A client-rendered island in IdeaPress | An editing experience the server-rendered approach cannot deliver |
 | Prometheus/OpenTelemetry export | An operator running the suite alongside existing monitoring |
+| `ThreadRack` package (thread and turn state) | A second consumer of thread state outside PromptCadence ([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)) |
+| A shared mounting test kit | A third package shipping mountable models ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)) |
+| Multi-adapter composition | A concrete consumer need, **with the identity-of-a-weighted-set problem solved first** ([ADR-0063](../adr/0063-one-adapter-at-a-time.md)) |
+| vLLM as an adapter-serving provider | A concurrency profile that would actually collect vLLM's advantages ([ADR-0062](../adr/0062-llamacpp-serves-adapters-through-a-supervised-process.md)) |
+| Hierarchical (pooled) adapter reliability | Per-subject samples proving useless in practice, with rows to fit a shrinkage rule against ([ADR-0067](../adr/0067-reliability-keys-on-the-subject-not-the-base.md)) |
+| An adapter manifest *service* | A third reader class, on a machine that does not hold the files ([ADR-0061](../adr/0061-the-adapter-registry-is-a-directory-and-a-manifest.md)) |
+| Approval routing to people | Multi-operator workflows needing assignment, delegation or escalation ([ADR-0049](../adr/0049-approval-is-a-mode-with-its-own-scope.md)) |

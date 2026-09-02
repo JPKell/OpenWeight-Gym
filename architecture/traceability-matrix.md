@@ -22,6 +22,8 @@ resolved.
 | Measurement subject and comparability | **BaseAiCore** | FreeWeight, LoadCoach | Python API | [Canonical Model Identity §5](canonical-model-identity.md) |
 | Machine identity and fingerprint | **BaseAiCore** (type + hash) / **SweatMeter** (collection) | All | Python API + SetSpec `machine.profile` | [Machine Identity](machine-identity-and-reproducibility.md) |
 | "Unavailable is not zero" | **BaseAiCore** | All | Python API (`Unsupported`) | [ADR-0016](../adr/0016-unavailable-is-not-zero.md) |
+| Data classification and its ordering | **BaseAiCore** | PromptCadence, SpotCheck, adapter manifests, IdeaPress (M13) | Python API (`DataClassification`) | [ADR-0046](../adr/0046-data-classification-is-ordered-and-defaults-closed.md) |
+| Adapter identity and the adapter axis | **BaseAiCore** | ModelRack, LoadCoach, FreeWeight | Python API (`AdapterIdentity`) + SetSpec `model.adapter_manifest` | [ADR-0058](../adr/0058-the-execution-subject-gains-an-adapter-axis.md) · [Adapter Identity and Serving §2](adapter-identity-and-serving.md) |
 | Money, token usage and model cost | **BaseAiCore** (types + arithmetic) / **ModelRack** and the applications (price acquisition) | FreeWeight, LoadCoach, IdeaPress | Python API | [ADR-0030](../adr/0030-model-cost-and-pricing.md) · [BaseAiCore §7](../packages/baseaicore/spec.md) |
 | Capability identifier type | **BaseAiCore** | All | Python API | [BaseAiCore §7](../packages/baseaicore/spec.md) |
 | Capability **vocabulary** and its version | **SetSpec** | FreeWeight, LoadCoach, IdeaPress | SetSpec | [Master Architecture §1.4](master-architecture.md) |
@@ -35,6 +37,12 @@ resolved.
 | Provider abstraction | **ModelRack** | FreeWeight, LoadCoach, IdeaPress | Python API | [ADR-0007](../adr/0007-provider-abstraction.md) |
 | Ollama inference | **ModelRack** | FreeWeight, LoadCoach, IdeaPress | Python API | [ModelRack §7](../packages/modelrack/spec.md) |
 | OpenAI-compatible inference | **ModelRack** | IdeaPress, LoadCoach | Python API | [ModelRack §7](../packages/modelrack/spec.md) |
+| Adapter serving (llama.cpp process supervision, registration, per-request selection) | **ModelRack** | LoadCoach, FreeWeight | Python API (`LlamaCppProvider`, `adapter_hot_swap`) | [ADR-0062](../adr/0062-llamacpp-serves-adapters-through-a-supervised-process.md) |
+| Transcript compaction | **CutCtx** | PromptCadence, IdeaPress (M13) | Python API | [ADR-0052](../adr/0052-compaction-is-a-view-and-the-package-plans-it-only.md) · [CutCtx §7](../packages/cutctx/spec.md) |
+| Tool execution discipline (validation, containment, isolation, refusal, record) | **ToolYard** | PromptCadence, IdeaPress `research` (future) | Python API | [ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md) · [ToolYard §7](../packages/toolyard/spec.md) |
+| Budget accumulation and ceilings | **LoadLedger** | PromptCadence, IdeaPress (M13) | Python API + mounted tables | [ADR-0030](../adr/0030-model-cost-and-pricing.md) · [LoadLedger §7](../packages/loadledger/spec.md) |
+| Egress evaluation and the decision ledger | **SpotCheck** | PromptCadence, IdeaPress (M13) | Python API + SetSpec `governance.egress_decision` | [ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md) |
+| Mountable persistence models | **LoadLedger, SpotCheck** (shapes) / the host application (engine, history, data) | PromptCadence, IdeaPress (M13) | Python API (`mount_*_tables`) | [ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md) |
 | Deterministic fake provider | **ModelRack** (`modelrack.testing`) | All test suites | Python API | [ModelRack Phase 2](../packages/modelrack/development-plan.md) |
 | Provider capability declaration | **ModelRack** | FreeWeight, LoadCoach, IdeaPress | Python API | [ModelRack §7](../packages/modelrack/spec.md) |
 | Streaming and cancellation | **ModelRack** (provider) / **MirrorWall** (transport) | All | Python API + SSE | [ADR-0004](../adr/0004-sse-vs-websockets.md) |
@@ -61,6 +69,9 @@ resolved.
 | `Host` validation, CSRF, outbound-fetch allowlist | **MirrorWall** (middleware) / **Standards** (policy) | All three applications | HTTP | [ADR-0026](../adr/0026-local-http-hardening.md) |
 | Evidence bundle | **SetSpec** (shape) / **FreeWeight** (content) | LoadCoach | SetSpec `benchmark.evidence_bundle` | [FreeWeight API §6](../apps/freeweight/api.md) |
 | Event envelope | **SetSpec** | All | SetSpec `event.envelope` | [Observability §4.1](../standards/observability-standards.md) |
+| Egress decision payload | **SetSpec** (shape) / **SpotCheck** (content) | PromptCadence, IdeaPress (M13) | SetSpec `governance.egress_decision` | [ADR-0051](../adr/0051-plans-stay-internal-and-one-payload-travels.md) · [ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md) |
+| Adapter manifest | **SetSpec** (shape) / the operator (content) | FreeWeight, LoadCoach, ModelRack | SetSpec `model.adapter_manifest` | [ADR-0061](../adr/0061-the-adapter-registry-is-a-directory-and-a-manifest.md) |
+| Trajectory explanation document | **PromptCadence** | User, external tools | `promptcadence.trajectory_explanation` (ADR-0035 namespace) | [ADR-0051](../adr/0051-plans-stay-internal-and-one-payload-travels.md) · [ADR-0057](../adr/0057-the-explanation-is-materialized-and-the-rows-stay-authoritative.md) |
 | Error envelope | **SetSpec** | All | SetSpec `error.envelope` | [API Standards §4](../standards/api-and-contract-standards.md) |
 | JSON Schema and golden payloads | **SetSpec** | Producer and consumer test suites | Package data | [SetSpec Phase 4](../packages/setspec/development-plan.md) |
 
@@ -87,6 +98,15 @@ resolved.
 | Deterministic content validation | **IdeaPress** | User | Internal | [Workflows §4](../apps/ideapress/workflows.md) |
 | Inference backend abstraction | **IdeaPress** | Internal | Python protocol (internal) | [Workflows §6](../apps/ideapress/workflows.md) |
 | Content export | **IdeaPress** | User | Files | [IdeaPress §7](../apps/ideapress/spec.md) |
+| Trajectories, the agent loop and its state machine | **PromptCadence** | User | Internal + HTTP v1 | [PromptCadence Lifecycle §8](../apps/promptcadence/lifecycle.md) |
+| Tier configuration and resolution | **PromptCadence** | User | Config + HTTP v1 | [ADR-0047](../adr/0047-a-tier-is-configuration-and-a-model-never-sizes-its-own-budget.md) |
+| Planning, approval and intent minting | **PromptCadence** | User, operators | Internal + HTTP v1 | [ADR-0049](../adr/0049-approval-is-a-mode-with-its-own-scope.md) · [ADR-0056](../adr/0056-every-turn-executes-under-one-execution-intent.md) |
+| Governance invariance across the bypass | **PromptCadence** | User | Contract test | [ADR-0048](../adr/0048-the-bypass-removes-planning-never-governance.md) |
+| Step cost estimation and its recorded source | **PromptCadence** (using LoadLedger history) | User | Internal | [ADR-0047](../adr/0047-a-tier-is-configuration-and-a-model-never-sizes-its-own-budget.md) |
+| Multi-provider registration | **LoadCoach** | PromptCadence, adapter arc | Config + HTTP v1 | [ADR-0055](../adr/0055-loadcoach-registers-providers-by-name-and-kind.md) |
+| Adapter selection, the evidence gate and pins | **LoadCoach** | IdeaPress, PromptCadence | HTTP v1 | [ADR-0064](../adr/0064-adapters-are-selected-through-the-capability-vocabulary.md) |
+| Two-level residency and the base-switch penalty | **LoadCoach** | Internal | Internal | [ADR-0066](../adr/0066-residency-is-two-level.md) |
+| Adapter panels and the serving-mode A/B | **FreeWeight** | LoadCoach (as evidence) | SetSpec `capability.evidence` v1.1 | [ADR-0059](../adr/0059-adapter-evidence-is-measured-never-inherited.md) · [ADR-0060](../adr/0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md) |
 
 ## 5. Cross-cutting requirements
 
@@ -127,6 +147,11 @@ resolved.
 | Which timestamp does evidence **freshness** decay from? | `measured_at`, the latest contributing run's `completed_at`. Previously the producer stored only `computed_at` and the consumer only `measured_at`, with no mapping — so re-aggregation would have reset apparent age ([ADR-0022](../adr/0022-capability-evidence-record-contract.md)) |
 | Does an HTTP request body crossing an application boundary need a SetSpec envelope? | No. Transferable documents carry the envelope; an API's own bodies are versioned by their path and contracted through OpenAPI ([ADR-0025](../adr/0025-envelope-boundaries.md)) |
 | Who owns the **comparability rules**? | BaseAiCore defines the rules as data; FreeWeight applies them in comparison and evidence separation |
+| Who owns **data classification** — an application, or a shared package? | BaseAiCore owns the type and its ordering; SpotCheck compares; the applications declare. A per-application enum with boundary mappings was rejected because the mapping that quietly widens is invisible to both sides ([ADR-0046](../adr/0046-data-classification-is-ordered-and-defaults-closed.md)) |
+| Who owns the **rows** a shared package's behavioural contract is about? | The package ships the mountable shape; the **application** owns the metadata, the Alembic history, the engine and the data. Previously unowned, which forced a choice between duplicated schemas and a package-owned database ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)) |
+| Who **executes** a summarization a compaction policy plans? | The application, through its own governed inference path. CutCtx plans and never calls a model, so no path to a provider exists below the application layer ([ADR-0052](../adr/0052-compaction-is-a-view-and-the-package-plans-it-only.md)) |
+| Who decides **which adapter** a request runs under? | LoadCoach, by ordinary scoring over measured evidence, or the caller by an explicit pin with hard constraints still applied. Never a tag match, and never the model ([ADR-0064](../adr/0064-adapters-are-selected-through-the-capability-vocabulary.md)) |
+| Does an adapter subject **inherit** its base's evidence? | No — not wholly, not partly, not at a discount. Absent evidence is absent, and `require_adapter_evidence` filters it arithmetically ([ADR-0059](../adr/0059-adapter-evidence-is-measured-never-inherited.md)) |
 
 ### 6.2 Duplicated responsibility checked
 

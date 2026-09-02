@@ -15,7 +15,8 @@ with an ADR before writing the code.
 
 ## 1. What this suite is
 
-Three applications and six shared Python packages for operating local open-weight AI models:
+Applications and shared Python packages for operating local open-weight AI models. The nine
+components of Suite 1.0:
 
 ```text
 Measure AI   →   Manage AI   →   Apply AI
@@ -25,6 +26,21 @@ FreeWeight       LoadCoach       IdeaPress
 Each application works alone. Each gains from the others without requiring them. Start with the
 [Executive Summary](architecture/executive-summary.md).
 
+**Specified, not yet built** — the two post-1.0 arcs planned on 2026-09-01/02, whose contracts were
+accepted as ADRs 0045–0067 before any code:
+
+```text
+Harness AI
+PromptCadence    + CutCtx · ToolYard · LoadLedger · SpotCheck
+```
+
+PromptCadence is a fourth application — a plan-approved, tier-routed agent loop over LoadCoach — and
+the four packages are the capabilities it justifies extracting. In parallel, the
+[Adapter arc](roadmap/adapter-roadmap.md) adds hot-swappable LoRA serving to the existing
+components. Both are scheduled in [Outstanding Work](roadmap/outstanding-work.md); neither has a
+repository yet, so a reference to `promptcadence`, `cutctx`, `toolyard`, `loadledger` or `spotcheck`
+in these documents names a **specification**, not an importable package.
+
 ---
 
 ## 2. Start here
@@ -33,6 +49,7 @@ Each application works alone. Each gains from the others without requiring them.
 |---|---|
 | **New to the suite** | [Executive Summary](architecture/executive-summary.md) → [Master Architecture](architecture/master-architecture.md) → [Master Roadmap](roadmap/master-roadmap.md) |
 | **Implementing a phase** | The master requirements → [Master Architecture](architecture/master-architecture.md) → the component's `spec.md` → that phase in its `development-plan.md` → the standards it touches |
+| **Working on either post-1.0 arc** | [Outstanding Work](roadmap/outstanding-work.md) (the schedule) → the arc's roadmap ([PromptCadence](roadmap/promptcadence-roadmap.md) · [Adapter](roadmap/adapter-roadmap.md)) → the decisions it rests on (ADRs [0045–0067](adr/README.md)) → the component's `spec.md` → that phase in its `development-plan.md` |
 | **Deciding something architectural** | [ADR index](adr/README.md) → [Dependency and Boundary Rules](architecture/dependency-and-boundary-rules.md) → [Traceability Matrix](architecture/traceability-matrix.md) |
 | **Reviewing a change** | [Coding Standards](standards/coding-standards.md) → [Testing Standards](standards/testing-standards.md) → [Gold Standards](standards/gold-standards.md) |
 | **Wondering why something is the way it is** | [Legacy Material Inventory](inventory/legacy-material-inventory.md) → the relevant [ADR](adr/README.md) |
@@ -47,6 +64,7 @@ Each application works alone. Each gains from the others without requiring them.
 | [Executive Summary](architecture/executive-summary.md) | Purpose, vision, components, dependency model, independent deployment, benefits, development order |
 | [Master Architecture](architecture/master-architecture.md) | Canonical vocabulary, layering, ownership boundaries, runtime and concurrency model, communication contracts, deployment shapes, data flows, extension points, what the architecture forbids |
 | [Canonical Model Identity](architecture/canonical-model-identity.md) | `ModelIdentity`, descriptor, runtime profile, measurement subject, comparability rules, persistence |
+| [Adapter Identity and Serving](architecture/adapter-identity-and-serving.md) | The adapter axis on the execution subject, selection versus serving mode, the directory-and-manifest registry, measured-never-inherited evidence, two-level residency, adapter governance |
 | [Machine Identity and Reproducibility](architecture/machine-identity-and-reproducibility.md) | `MachineProfile`, machine fingerprint, reproducibility fingerprint, environment drift, required provenance |
 | [Dependency and Boundary Rules](architecture/dependency-and-boundary-rules.md) | Allowed and forbidden imports, cross-application communication, enforcement, circular-dependency analysis |
 | [Graceful Degradation](architecture/graceful-degradation.md) | The four outcomes, the full degradation matrix, health reporting, startup validation |
@@ -104,6 +122,15 @@ Full index with statuses: [adr/README.md](adr/README.md).
 | [0020](adr/0020-ui-rendering-strategy.md) | Server-rendered HTML with progressive enhancement |
 | [0021](adr/0021-telemetry-collection-strategy.md) | `/proc` + `/sys` and `nvidia-smi`, all readers injectable |
 
+ADRs 0022–0044 were added during implementation (the post-freeze audit, then the FreeWeight,
+LoadCoach and IdeaPress builds). **ADRs 0045–0067** are the two post-1.0 arcs' contracts, written
+2026-09-02 before any of their code:
+
+| ADR | Decision |
+|---|---|
+| [0045](adr/0045-promptcadence-reaches-models-only-through-loadcoach.md) – [0057](adr/0057-the-explanation-is-materialized-and-the-rows-stay-authoritative.md) | The PromptCadence arc: a fourth application that reaches models only through LoadCoach; ordered data classification; tiers as configuration; the bypass that removes planning and never governance; approval as a mode with its own scope; mountable package tables; the one payload that travels; compaction as a view; tool discipline; SpotCheck's scope; multi-provider registration; the `ExecutionIntent`; the materialized explanation |
+| [0058](adr/0058-the-execution-subject-gains-an-adapter-axis.md) – [0067](adr/0067-reliability-keys-on-the-subject-not-the-base.md) | The Adapter arc: the adapter axis on the execution subject; evidence measured never inherited; selection versus serving mode; the directory-and-manifest registry; llama.cpp through a supervised process; one adapter at a time; selection through the capability vocabulary; adapters classified and local-only; two-level residency; reliability keyed on the subject |
+
 ---
 
 ## 6. Applications
@@ -143,6 +170,14 @@ Full index with statuses: [adr/README.md](adr/README.md).
 | [Development Plan](apps/ideapress/development-plan.md) | 9 phases, standalone first, LoadCoach last |
 | [Risks](apps/ideapress/risks.md) | Risks, trade-offs, traps |
 
+### [PromptCadence](apps/promptcadence/spec.md) — harness *(specified, not implemented)*
+
+| Document | Contents |
+|---|---|
+| [Specification](apps/promptcadence/spec.md) | Purpose, scope, non-goals, responsibilities, contracts, configuration, errors, security, performance, tests, acceptance criteria |
+| [Lifecycle](apps/promptcadence/lifecycle.md) | The two paths, classification, tiers, the plan and the `ExecutionIntent`, deviation handling, budgets, compaction, the state machine and its recovery edges, the explanation |
+| [Development Plan](apps/promptcadence/development-plan.md) | 9 phases, bypass loop first, planning last |
+
 ---
 
 ## 7. Packages
@@ -155,6 +190,14 @@ Full index with statuses: [adr/README.md](adr/README.md).
 | **SweatMeter** | 3 — capability | [spec](packages/sweatmeter/spec.md) | [plan](packages/sweatmeter/development-plan.md) | Fourth (parallel with ModelRack) |
 | **WeightsDB** | 3 — capability | [spec](packages/weightsdb/spec.md) | [plan](packages/weightsdb/development-plan.md) | Extracted at LoadCoach P1 |
 | **MirrorWall** | 3 — capability | [spec](packages/mirrorwall/spec.md) | [plan](packages/mirrorwall/development-plan.md) | Extracted at LoadCoach P4 |
+| **CutCtx** | 3 — capability | [spec](packages/cutctx/spec.md) | [plan](packages/cutctx/development-plan.md) | *Specified;* M10, two named consumers |
+| **ToolYard** | 3 — capability | [spec](packages/toolyard/spec.md) | [plan](packages/toolyard/development-plan.md) | *Specified;* M10, before any PromptCadence tool executes |
+| **LoadLedger** | 3 — capability | [spec](packages/loadledger/spec.md) | [plan](packages/loadledger/development-plan.md) | *Specified;* M10 |
+| **SpotCheck** | 3 — capability | [spec](packages/spotcheck/spec.md) | [plan](packages/spotcheck/development-plan.md) | *Specified;* M10, after SetSpec 0.5 publishes its payload |
+
+The last four have no repository yet — see §1. They are built at M10 of the
+[PromptCadence arc](roadmap/promptcadence-roadmap.md), each with two named consumers, per
+[ADR-0011](adr/0011-shared-package-boundaries.md)'s extraction rule.
 
 ---
 
@@ -163,6 +206,9 @@ Full index with statuses: [adr/README.md](adr/README.md).
 | Document | Contents |
 |---|---|
 | [Master Roadmap](roadmap/master-roadmap.md) | Milestones M1–M9, dependency graph, work streams, parallelism rules, integration milestones, stabilization phases, version trajectory, the professional-delivery checklist, immediate next steps |
+| [Outstanding Work](roadmap/outstanding-work.md) | The one schedule: every remaining row of both arcs in execution order, one row per model session, with its model and effort |
+| [PromptCadence Arc](roadmap/promptcadence-roadmap.md) | M10–M13: the harness and its four packages — decisions D-1…D-13 (now ADRs 0045–0057), milestones, work streams, integration verifications, risks |
+| [Adapter Arc](roadmap/adapter-roadmap.md) | LA0–LA3: hot-swappable LoRA serving — decisions A-1…A-10 (now ADRs 0058–0067), checkpoints, per-component work, sequencing against the harness arc |
 | [Model Assignment Guide](roadmap/model-assignment.md) | Advisory: which model and reasoning effort to point at each phase, what makes a phase hard for a model, the first-instance rule, and where never to economize |
 | [Legacy Material Inventory](inventory/legacy-material-inventory.md) | Everything inspected in `planning/` and `.old_projects/`: what was adopted, what was rejected and why, conflicts and their resolutions, technical debt not inherited, the observed environment |
 | [Final Architecture Audit](reviews/final_architecture_audit.md) | The post-freeze audit: 41 findings by severity, the corrections made, ADRs 0022–0029 and the seven amended, deployment combinations re-verified, deliberately deferred concerns, and the clean-room verification |

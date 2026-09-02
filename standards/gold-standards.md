@@ -44,6 +44,10 @@ it meets its gold standards.
 | SweatMeter | *(none)* | 0 |
 | WeightsDB | `sqlalchemy`, `alembic` | 2 |
 | MirrorWall | `jinja2`, `starlette` | 2 |
+| CutCtx | *(none)* | 0 |
+| ToolYard | `jsonschema`, `httpx` | 2 |
+| LoadLedger | *(none; `sqlalchemy` under the `sql` extra)* | 0 |
+| SpotCheck | *(none; `sqlalchemy` under the `sql` extra)* | 0 |
 | Each application | `fastapi`, `uvicorn`, `typer`, `pydantic-settings`, plus suite packages | ≤ 6 direct non-suite |
 
 Exceeding a budget requires an ADR.
@@ -152,6 +156,78 @@ Exceeding a budget requires an ADR.
 * A project survives an interrupted stage: committed units intact, the failed stage resumable.
 * Every generated artifact records the model, prompt version and validation results that produced it.
 
+### PromptCadence
+* **Governance is invariant across the bypass.** A planned and a bypassed run of the same scripted
+  task produce records identical in shape minus the plan and plan-approval rows — proven by the
+  contract-1 diff test, not by review ([ADR-0048](../adr/0048-the-bypass-removes-planning-never-governance.md)).
+* **No turn executes without an `ExecutionIntent`**, in either path, and every turn records the
+  `(intent_id, revision)` it ran under. Intents are never edited; a re-approval supersedes
+  ([ADR-0056](../adr/0056-every-turn-executes-under-one-execution-intent.md)).
+* **A confidential trajectory can never reach a remote tier**, and the refusal is a queryable
+  `EgressDecision` — asserted before any HTTP request leaves the process.
+* **Every LoadCoach response is verified against the tier that requested it.** A local-tier turn
+  answered by a remote provider halts the trajectory and records a `VIOLATION`; the tier constraint
+  is checked, never assumed.
+* **Unpriced egress is refused, not free.** A remote tier with no pricing record refuses with
+  `UNPRICED_EGRESS_REFUSED` before any call ([ADR-0030](../adr/0030-model-cost-and-pricing.md)).
+* **No provider access of any kind.** `modelrack` is not a dependency, at module level, in a
+  `TYPE_CHECKING` block or in a test helper — asserted by import-linter.
+* A model never decides control flow: a step completes only on a declared `finish_reason` or a
+  schema-validated result, and a refused tool call never ends a trajectory.
+* Every halt names its cause, verbatim, in `promptcadence trajectory show`.
+* The full test suite passes with no LoadCoach, no GPU and no network.
+
+### CutCtx
+* **Purity is proven, not claimed**: an import-graph test asserts no HTTP client, no provider, no
+  database and no filesystem access ([ADR-0052](../adr/0052-compaction-is-a-view-and-the-package-plans-it-only.md)).
+* **Byte-identical plans** for the same transcript, budget and policy configuration, across the CI
+  matrix — because plans appear in audit records.
+* The system turn, pinned turns and the protected tail are untouchable under every policy, and a
+  tool call is never separated from its result — property-based tests over random transcripts.
+* An unsatisfiable budget raises with **both numbers**; an exhausted chain returns a plan flagged
+  `budget_unmet`. Never a silent truncation.
+* An estimate is never presented as a count; the estimator ratio rides on the plan.
+* Standalone: a script with only `cutctx` + `baseaicore` plans and applies a compaction.
+
+### ToolYard
+* **Model input never raises.** Every refusal path is driven through `execute()` and asserted to
+  produce a `ToolResult`, never an exception
+  ([ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md)).
+* **The refusal order is fixed and recorded** — registry → allowlist → schema → egress →
+  containment — and the reason names the first failed check.
+* **Isolation never degrades silently**: with neither container nor bwrap, `run_command` refuses.
+  No `shell=True` exists in the package, asserted by a grep test; the child environment is an
+  explicit allowlist.
+* `http_fetch` passes the same ADR-0026 §3 vectors LoadCoach's evidence-import fetch passes,
+  including a redirect to a forbidden host and a size cap tripped mid-stream.
+* Containment is resolution-then-check, tested against symlink escapes, `..` traversal and
+  prefix-collision roots (`/data` versus `/database`).
+* Every call is recorded — refused and failed included — with `redact_args` honoured.
+
+### LoadLedger
+* **Store usage, derive cost**: re-costing history under a corrected price list reproduces totals
+  with no stored row changing ([ADR-0030](../adr/0030-model-cost-and-pricing.md)).
+* **Unpriced is never zero.** An unpriced debit leaves every money balance untouched and surfaces
+  the unpriced count, so "under budget" is never claimed over an incomplete sum.
+* **A debit and its verdicts commit together** — proven by a kill-mid-debit test on both dialects
+  ([ADR-0044](../adr/0044-a-state-change-and-its-event-are-one-write.md) applied to money).
+* Integer-exact arithmetic; a mixed-currency debit raises rather than converting.
+* `PER_DAY` windows are UTC calendar days, tested across a midnight boundary.
+* **Mounting works in a real host**: autogenerate picks the tables up inside a miniature
+  application's own Alembic history, on both dialects, with the prefix respected
+  ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)).
+
+### SpotCheck
+* **Fail closed**: a remote target with no declared ceiling is denied, never assumed public
+  ([ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md)).
+* **A denial is as durable as an approval** — the ledger holds both symmetrically, asserted by test.
+* **No parallel vocabulary**: the classification type is `baseaicore.DataClassification`, with no
+  levels and no aliases of its own ([ADR-0046](../adr/0046-data-classification-is-ordered-and-defaults-closed.md)).
+* **Append-only**: no public mutation path, asserted by an API-surface test.
+* A `setspec`-only script reads an exported decision and prints its verdict, with SpotCheck not
+  installed — the payload is the contract.
+* Round-trip preserves every field; an unknown minor is read without loss.
+
 ---
 
 ## 3. Documentation gold standards
@@ -170,6 +246,10 @@ Exceeding a budget requires an ADR.
 
 - [ ] All three applications install from PyPI into a clean venv and start with zero configuration.
 - [ ] All six packages install standalone and pass their own test suites.
+
+*(Suite 1.0 is declared over the nine components above. PromptCadence and the four packages of the
+[PromptCadence arc](../roadmap/promptcadence-roadmap.md) are post-1.0 and reach their own collective
+1.0 pass at the suite's next one, per that roadmap's §8.)*
 - [ ] Compatibility matrix green across the declared version ranges.
 - [ ] Every gate in §1 is enforced in CI in every repository.
 - [ ] Every component meets its §2 standards.
