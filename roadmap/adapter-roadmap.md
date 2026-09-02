@@ -131,7 +131,7 @@ graph TD
 | May run concurrently | Because |
 |---|---|
 | LA1 and PromptCadence P1–P7 | Different repositories; the harness beta runs on Ollama tiers |
-| LA1 and the PromptCadence package stream (ContextPress/ToolYard/LoadLedger/SpotCheck) | No shared surface |
+| LA1 and the PromptCadence package stream (CutCtx/ToolYard/LoadLedger/SpotCheck) | No shared surface |
 | LA3's FreeWeight work and PromptCadence P8 | Different repositories |
 
 | May **not** overlap | Because |

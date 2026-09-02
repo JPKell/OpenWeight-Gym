@@ -254,12 +254,12 @@ in the approval record.
 ## 7. Context compaction
 
 Before each turn the `TierRouter` estimates the transcript against the tier's
-`context_budget_tokens`. Above `compaction.threshold` (default 0.8) it asks ContextPress for a
+`context_budget_tokens`. Above `compaction.threshold` (default 0.8) it asks CutCtx for a
 `CompactionPlan` over the configured policy chain — observation masking first, then summarization,
 then drop-oldest — with the system turn and the `protected_recent_turns` never touched, and a
-tool call never separated from its result ([ContextPress §11](../../packages/contextpress/spec.md)).
+tool call never separated from its result ([CutCtx §11](../../packages/cutctx/spec.md)).
 
-ContextPress is pure: when the plan contains a `SummarizationRequest`, **PromptCadence** executes it via
+CutCtx is pure: when the plan contains a `SummarizationRequest`, **PromptCadence** executes it via
 LoadCoach (`general.summarize`, on the trajectory's cheapest admissible *local* tier — a summary
 of confidential turns must not itself become egress) and hands the summary back to the executor.
 Compaction is a view, never a deletion: the store keeps every original turn; what changes is the

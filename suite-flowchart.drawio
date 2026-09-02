@@ -273,7 +273,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="cp" value="ContextPress (new) — context compression" style="swimlane;fontSize=11;fontStyle=1;startSize=26;rounded=1;arcSize=6;fillColor=#ffe6cc;strokeColor=#d79b00;swimlaneFillColor=#ffffff;html=1;" vertex="1" parent="1">
+        <mxCell id="cp" value="CutCtx (new) — context compression" style="swimlane;fontSize=11;fontStyle=1;startSize=26;rounded=1;arcSize=6;fillColor=#ffe6cc;strokeColor=#d79b00;swimlaneFillColor=#ffffff;html=1;" vertex="1" parent="1">
           <mxGeometry x="1080" y="800" width="250" height="170" as="geometry" />
         </mxCell>
         <mxCell id="cp_pol" value="Policies (pure, deterministic)&lt;br&gt;mask → summarize → drop" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#ffffff;strokeColor=#d79b00;" vertex="1" parent="cp">

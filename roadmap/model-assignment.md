@@ -154,9 +154,64 @@ selection question, which is a different question from the one this page answers
 | P8 | UI and editing experience | Sonnet + standard | medium | Volume |
 | P9 | Hardening | **Opus + extended** | high | This is the application that renders the most model output and imports user archives. Sanitizer gaps that exist in one export format and not another, and archive extraction, are adversarial-reasoning work |
 
----
+### 2.10 PromptCadence arc — the new packages and the harness
 
-## 3. Cross-cutting rules
+Added 2026-09-02 for the [PromptCadence roadmap](promptcadence-roadmap.md). Model names here are
+the Claude 5 generation (Fable 5 > Opus 5 > Sonnet 5); the second value is the Claude Code
+**effort** level, which replaced thinking budgets. The older sections' "Opus + max/extended"
+rows map to "Opus 5 · xhigh/high". The specification-quality multiplier (§1.1) applies *more*
+strongly here than to the original plans: the state machine is normative tables (T1–T14), the
+deviation taxonomy is closed per intent field, and the budget maths has named traps — much of
+this arc is deliberately Sonnet-shaped.
+
+| Phase | Work | Claude | Codex | Why |
+|---|---|---|---|---|
+| **Phase 0 / LA0** | **ADRs D-1…D-13 + A-1…A-10, doc amendments** | **Opus 5 · xhigh** | xhigh | Permanent contracts, but the decisions are already made and argued in the roadmaps — expansion, not invention. Fable would be paying 2× to transcribe settled judgment |
+| BaseAiCore additive (DataClassification, adapter types) | Small, frozen vocabulary + canonical forms | **Opus 5 · high** | high | §3.3's BaseAiCore rule: wrong here is a data-compatibility break across every repo. Tiny phase, so the premium costs little |
+| SetSpec Phase 6 (governance payload, evidence v1.1, adapter manifest) | Payload models + goldens | Sonnet 5 · high | medium | The SetSpec-P2 precedent: normative field tables → transcription with validation. Goldens get an Opus review pass |
+| CutCtx P1 | Invariants, plan, executor, DropOldest | **Opus 5 · xhigh** | high | The `_invariants` module is the one gate every future policy routes through (first-instance rule), enforced by property tests whose *choice of properties* is the judgment |
+| CutCtx P2 | Masking, summarizing, chain — 0.1.0 | Sonnet 5 · high | medium | Policies against locked invariants. The one risky spot: SummarizingPolicy's contiguous-group assembly (dict-ordering nondeterminism) — named in the plan, golden-tested |
+| ToolYard P1 | Refusal machinery, registry, records | **Opus 5 · xhigh** | high | "Model input never raises" under fuzzing, and the fixed refusal order every later tool inherits. The FakeProvider lesson: the discipline layer must be stricter than its first consumer needs |
+| **ToolYard P2** | **Sandbox: containment + isolation tiers** | **Fable 5 · xhigh** | xhigh | Adversarial reasoning with a silent-failure class (an escape that works is quiet); TOCTOU and prefix-collision cases don't appear in a test loop until someone thinks of them. Needs the reference machine for marked tests — a daytime phase, not overnight |
+| ToolYard P3 | Built-in tools, ADR-0026 fetch vectors | Sonnet 5 · high | medium | Fixture/vector work; the vectors are byte-shared with LoadCoach's existing suite. Opus reviews the fetch handler diff |
+| LoadLedger P1 | Ceilings, debits, verdicts, windows | Sonnet 5 · high | medium | §3.4 exactly: integer arithmetic with hand-specifiable expected values, and the UTC-midnight trap is named three times in the docs |
+| LoadLedger P2 | `loadledger.sql`, atomicity, miniature host | **Opus 5 · high** | high | First mounting implementation (first-instance rule) plus kill-mid-debit atomicity on both dialects — money rows with the §3.3 failure shape |
+| SpotCheck P1 | Policy matrix, payload round-trip | Sonnet 5 · high | medium | Enum-parametrized matrix, exhaustive by construction; fail-closed row is spec'd |
+| SpotCheck P2 | Ledgers + mounting — 0.1.0 | Sonnet 5 · standard | medium | Copies LoadLedger P2's proven mounting pattern — the "rest of the repeated thing" |
+| PromptCadence P1 | Skeleton, config, db, health | Sonnet 5 · high | medium | Identical in shape to LoadCoach P1; boilerplate against a precise spec |
+| PromptCadence P2 | Domain: threads, tiers, plans, intents, state machine | **Opus 5 · xhigh** | xhigh | Mostly normative-table transcription — but `ExecutionIntent` is the design's load-bearing wall and this phase freezes its shape |
+| **PromptCadence P3** | **LoadCoach client, bypass loop, lease/recovery, the fake LoadCoach** | **Fable 5 · xhigh** | xhigh | The LoadCoach-P5-shaped phase: kill −9 reconciliation, one-write transitions, cancellation — no feedback loop for the interesting failures — *plus* the fake every later phase trusts (the P2-FakeProvider argument, doubled) |
+| PromptCadence P4 | ToolYard integration, workspaces | Sonnet 5 · high | high | ToolYard did the hard part; the hostile-model journey tests are specified. Opus reviews the workspace-lifecycle diff |
+| PromptCadence P5 | Budget wiring, estimator | Split | high | **Opus 5 · high** for crash-reconciliation of debits (idempotent by `source_ref`); Sonnet 5 for ceilings/config/CLI |
+| PromptCadence P6 | Egress, verification, deviations | **Opus 5 · high** | high | Fail-closed verification semantics and the violation path — adversarial-adjacent, and the deviations feed re-approval |
+| **PromptCadence P7** | **Planner, approval modes, DAG dispatch, the contract-1 diff** | **Fable 5 · xhigh** | xhigh | Design-dense with a live-model interaction (plan-schema resilience against real local models) and the arc's central proof (governance invariance). A failed pass here invalidates the design claim, not just the code |
+| PromptCadence P8 | Compaction, explanation, UI | Split | medium | **Opus 5 · high** for materialization/invalidation (cache-consistency reasoning); Sonnet 5 · standard for the MirrorWall UI volume |
+| PromptCadence P9 | Hardening — 1.0 | Split | high | **Opus 5 · xhigh** for the security pass (consider Fable 5 for the prompt-injection corpus — pure adversarial); Sonnet 5 for performance measurement and docs |
+| M13 IP-A1 (IdeaPress + LoadLedger) | Mount, debit, cost UI | Sonnet 5 · high | medium | Third mounting implementation by then; adopt-delete-prove against fixtures |
+| M13 IP-A2 (IdeaPress + SpotCheck) | S4 badge on rows | Sonnet 5 · standard | medium | Reading recorded decisions into an existing badge |
+| M13 IP-A3 (IdeaPress + CutCtx) | `project_review` policy chain | Sonnet 5 · high | medium | Golden-parity refactor that deletes working code — `high` is the floor for deletions |
+
+### 2.11 Adapter arc
+
+| Phase | Work | Claude | Codex | Why |
+|---|---|---|---|---|
+| **ModelRack P6** | **`LlamaCppProvider` process supervision** | **Fable 5 · xhigh** | xhigh | Spawn/health/terminate with orphan and leak guarantees — concurrency with no useful feedback loop, in a published package three applications call. The §3.3 class |
+| ModelRack P7 | Adapter registration/selection, cache correctness | **Opus 5 · xhigh** | high | The prefix-under-A-never-reused-for-B property is exactly the intermittent-defect shape; the conformance test design is the judgment |
+| ModelRack P8 | Hardening, publication | Split | medium | Opus 5 for cancellation-under-supervision and leak tests; Sonnet 5 for docs and publish |
+| LoadCoach 1.1 | Generalized LC-E1, adapter registry, gate, two-level residency | **Opus 5 · xhigh** | xhigh | Routing semantics frozen into persisted explanations — the LoadCoach-P3 precedent, extended |
+| FreeWeight 1.1 | Adapter enumeration, panels, serving-mode A/B | Sonnet 5 · high | medium | Measurement plumbing on an existing engine; panel composition is spec'd |
+| IdeaPress pins | Per-stage adapter pins, provenance columns | Sonnet 5 · standard | medium | Config + override passthrough against a settled contract |
+
+### 2.12 Overnight, single-session runs (no agentic loops)
+
+The allocations above assume §5.3's caveat — "every Sonnet row assumes you read the diff". For
+unattended overnight runs that assumption is void until morning, so two adjustments: run Sonnet
+rows at effort **high** (not standard) since nobody will nudge a stuck session, and never
+schedule a Fable/security row overnight — those phases are won by review, and their failures are
+silent. The suite's own design is what makes overnight work at all: every default test suite
+passes with no GPU, no Ollama and no network, so a session can drive itself to a green gate.
+Sequencing is the other constraint: Phase 0 (the ADRs) must land before any code session starts,
+per the standing rule.
 
 These matter more than any individual row.
 
@@ -210,7 +265,10 @@ values are given, Sonnet is the right call.
 Of roughly 54 phases (updated 2026-08-26 for the three FreeWeight goal-benchmark phases and
 SetSpec's vocabulary phase, ADR-0031/0032): **~16 Opus, ~31 Sonnet, ~7 split**. That ratio is a
 consequence of the documentation quality, not of the work being easy. On an ordinary codebase the
-same project would invert it.
+same project would invert it. The 2026-09-02 additions (§2.10–2.11, ~26 phases across the
+PromptCadence and adapter arcs) hold the ratio — roughly 9 Opus 5, 11 Sonnet 5, 4 Fable 5, 4
+split — with Fable 5 confined to the four phases where reasoning-before-writing dominates and a
+silent failure survives a green test suite.
 
 ---
 

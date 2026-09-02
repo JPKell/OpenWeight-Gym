@@ -287,7 +287,7 @@ benchmark, not something to paper over.
 
 **Goal:** long trajectories fit their tiers; every trajectory is readable by a human.
 
-**Prerequisites:** Phase 7; `contextpress 0.1.0`.
+**Prerequisites:** Phase 7; `cutctx 0.1.0`.
 
 **Work**
 * `TierRouter` compaction trigger ([lifecycle §7](lifecycle.md)); summarization execution on the
@@ -337,7 +337,7 @@ document and pagination in the UI.
   caps, scope enforcement (submit ≠ approve), binding refusals; the prompt-injection test corpus
   (spec §18 security row) run against the full stack; content retention sweep incl. workspaces.
 * Performance: every spec §15 budget measured on the reference machine and asserted.
-* Package hardening feedback: `contextpress`/`toolyard` 0.2.0 from real-transcript and
+* Package hardening feedback: `cutctx`/`toolyard` 0.2.0 from real-transcript and
   security-pass findings.
 * Remote tier end to end behind explicit opt-in, against LC-E1 (recorded transport in CI; one
   marked live run with a real OpenAI-compatible endpoint).

@@ -7,7 +7,7 @@ every open question in that skeleton's §9 is resolved here or in the
 before code is written.
 **Related:** [Lifecycle](lifecycle.md) · [Development Plan](development-plan.md) ·
 [PromptCadence roadmap](../../roadmap/promptcadence-roadmap.md) ·
-[ContextPress](../../packages/contextpress/spec.md) · [ToolYard](../../packages/toolyard/spec.md) ·
+[CutCtx](../../packages/cutctx/spec.md) · [ToolYard](../../packages/toolyard/spec.md) ·
 [LoadLedger](../../packages/loadledger/spec.md) · [SpotCheck](../../packages/spotcheck/spec.md)
 
 ---
@@ -37,7 +37,7 @@ and the policy pass over that plan. This distinction is load-bearing and is reco
   LoadCoach task profile, an egress class and a data-classification ceiling. Configuration over
   LoadCoach, never routing math of PromptCadence's own.
 * The agent loop: turn execution through LoadCoach `/generate`, tool execution through ToolYard,
-  transcript ownership, context compaction through ContextPress, advance on declared
+  transcript ownership, context compaction through CutCtx, advance on declared
   `finish_reason` only.
 * Governance: per-turn egress evaluation (SpotCheck), budget accumulation and ceilings (LoadLedger),
   immutable per-step `ExecutionIntent`s minted by approval, category-typed deviation detection
@@ -86,7 +86,7 @@ and the policy pass over that plan. This distinction is load-bearing and is reco
 | Tiers | Tier configuration and validation; tier → task-profile resolution; per-tier context budgets |
 | Loop | DAG-aware step scheduling; per-turn LoadCoach calls; tool round trips; finish-reason handling |
 | Tools | Registry composition, per-trajectory allowlists, sandboxed execution via ToolYard |
-| Context | Compaction requests to ContextPress; execution of planned summarizations via LoadCoach |
+| Context | Compaction requests to CutCtx; execution of planned summarizations via LoadCoach |
 | Budget | Ceiling configuration, pre-flight estimates, per-turn debits via LoadLedger, halt on exhaustion |
 | Egress | Per-turn classification-vs-tier evaluation via SpotCheck; durable decisions, approvals and denials alike |
 | Deviation | One pure comparison per turn against its `ExecutionIntent`, category-typed ([Lifecycle §5](lifecycle.md)); recorded-continue / scoped re-approval (a superseding intent revision) / halt per severity and policy |
@@ -96,7 +96,7 @@ and the policy pass over that plan. This distinction is load-bearing and is reco
 ## 5. Dependencies
 
 **Suite:** `baseaicore` (≥ 0.4.1 — `DataClassification`), `setspec` (≥ 0.5 —
-`governance.egress_decision`), `weightsdb`, `mirrorwall`, `contextpress`, `toolyard`, `loadledger`,
+`governance.egress_decision`), `weightsdb`, `mirrorwall`, `cutctx`, `toolyard`, `loadledger`,
 `spotcheck`.
 **Deliberately absent:** `modelrack` (no provider access — §3) and `sweatmeter` (telemetry is
 displayed from LoadCoach's `/system/status`, the same way IdeaPress treats it).

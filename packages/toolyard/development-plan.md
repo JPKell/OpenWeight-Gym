@@ -2,7 +2,7 @@
 
 **Sequence position:** PromptCadence arc, stream P ([roadmap §4](../../roadmap/promptcadence-roadmap.md)).
 Depends on `baseaicore>=0.4.1`. Independent of the other new packages; may run in parallel with
-ContextPress.
+CutCtx.
 **Target:** `toolyard 0.1.0` at the end of Phase 3; `0.2.0` (hardened, macOS/Windows refusal
 behaviour verified) before PromptCadence 1.0.
 

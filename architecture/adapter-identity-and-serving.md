@@ -237,7 +237,7 @@ shows.
 | BaseAiCore | `AdapterIdentity` + subject/canonical-form extension | Additive (0.4.x pre-M9-1.0, else 1.1.0) |
 | SetSpec | `model.adapter_manifest` 1.0; `CapabilityEvidence` optional adapter fields (v1.1) | Additive minor |
 | ModelRack | `LlamaCppProvider` (process supervision, adapter registration/selection), `adapter_hot_swap` flag, `AdapterNotFound`, conformance additions | Additive minor |
-| SweatMeter · WeightsDB · MirrorWall · ContextPress · ToolYard · LoadLedger · SpotCheck | Nothing | — |
+| SweatMeter · WeightsDB · MirrorWall · CutCtx · ToolYard · LoadLedger · SpotCheck | Nothing | — |
 | LoadCoach | Generalized LC-E1; adapter registry rows + scan CLI; subject expansion, gate, pins; two-level residency; per-subject reliability | LoadCoach 1.1 |
 | FreeWeight | Adapter subject enumeration; panels + regression panel; serving-mode A/B; evidence fields | FreeWeight 1.1 |
 | IdeaPress | Per-stage adapter pins via the LoadCoach backend (direct/Ollama mode stays adapter-free); provenance columns | Minor |

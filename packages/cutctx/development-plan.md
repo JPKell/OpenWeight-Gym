@@ -1,9 +1,9 @@
-# ContextPress — Development Plan
+# CutCtx — Development Plan
 
 **Sequence position:** PromptCadence arc, stream P ([roadmap §4](../../roadmap/promptcadence-roadmap.md)).
 Depends on `baseaicore>=0.4.1` (for nothing beyond the error base and clock helpers — the
 `DataClassification` addition is not used here, but the arc pins one baseline).
-**Target:** `contextpress 0.1.0` at the end of Phase 2; `0.2.0` (hardened) before PromptCadence 1.0.
+**Target:** `cutctx 0.1.0` at the end of Phase 2; `0.2.0` (hardened) before PromptCadence 1.0.
 
 The ordering principle is the suite's usual one: the deterministic core and its invariants first,
 so PromptCadence's loop can be built against a compaction library whose behaviour is already
@@ -34,8 +34,8 @@ applications execute it — [roadmap §2](../../roadmap/promptcadence-roadmap.md
 
 **Files/subsystems**
 ```text
-src/contextpress/{__init__,__about__,types,estimator,executor,errors,_invariants}.py
-src/contextpress/policies/{__init__,drop_oldest}.py
+src/cutctx/{__init__,__about__,types,estimator,executor,errors,_invariants}.py
+src/cutctx/policies/{__init__,drop_oldest}.py
 tests/unit/{test_types,test_estimator,test_executor,test_drop_oldest,test_invariants}.py
 tests/property/test_invariants_property.py     # hypothesis
 ```
@@ -75,7 +75,7 @@ missing multi-call turns.
   `SummarizationRequest`; `target_ratio`, `min_span_turns`.
 * `policies/chain.py`: run in order, stop when the budget fits; `budget_unmet` flag when
   exhausted.
-* README, quickstart with a hand-supplied-summary example; publish `contextpress 0.1.0`.
+* README, quickstart with a hand-supplied-summary example; publish `cutctx 0.1.0`.
 
 **Tests**
 * Masking keeps reasoning turns byte-identical; only TOOL bodies stubbed; N respected.
@@ -86,7 +86,7 @@ missing multi-call turns.
 * Cross-matrix determinism goldens for all policies and the default chain.
 
 **Acceptance criteria**
-1. Spec §20 criteria 2–4 met; `contextpress 0.1.0` published and installable standalone.
+1. Spec §20 criteria 2–4 met; `cutctx 0.1.0` published and installable standalone.
 2. The default chain compacts the Phase-1 golden transcripts to every budget in the golden set
    with byte-identical plans.
 

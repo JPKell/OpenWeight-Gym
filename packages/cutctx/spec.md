@@ -1,6 +1,6 @@
-# ContextPress — Specification
+# CutCtx — Specification
 
-**Type:** Python package · **Import/distribution name:** `contextpress` · **Layer:** 3 (capability package)
+**Type:** Python package · **Import/distribution name:** `cutctx` · **Layer:** 3 (capability package)
 **Status:** Specified, not implemented. Part of the PromptCadence arc
 ([roadmap](../../roadmap/promptcadence-roadmap.md)); decision record D-8 (compaction is a view; packages
 plan summarization, applications execute it).
@@ -37,7 +37,7 @@ adjacent unit…") — exactly a compaction policy, currently expressed as prose
   budget, which prompt record — as a `SummarizationRequest` inside the plan; the application
   executes it (PromptCadence via LoadCoach, IdeaPress via its inference port) and hands the text back.
   A package below the applications must not contain a second, ungoverned path to a model; ModelRack
-  is the suite's only model client and ContextPress does not import it.
+  is the suite's only model client and CutCtx does not import it.
 * **No persistence, no database, no I/O of any kind.** Pure functions over values.
 * **No deletion semantics.** A plan describes a *view*; whether originals are retained is the
   caller's data-ownership decision (PromptCadence retains everything).
@@ -160,7 +160,7 @@ A `CompactionPlan`, a `CompactedTranscript` with its `CompactionReport`, typed e
 
 ## 10. Data ownership
 
-None. ContextPress never persists anything; the caller stores plans and reports (PromptCadence's
+None. CutCtx never persists anything; the caller stores plans and reports (PromptCadence's
 `compactions` table, IdeaPress's stage records).
 
 ## 11. Public contracts
@@ -185,7 +185,7 @@ None. ContextPress never persists anything; the caller stores plans and reports 
 
 ## 12. Configuration
 
-Constructor arguments only. ContextPress reads no environment and no files.
+Constructor arguments only. CutCtx reads no environment and no files.
 
 ## 13. Error behaviour
 
@@ -242,7 +242,7 @@ behaviour bumps its version, and golden plans for old versions are kept for the 
 1. PromptCadence compacts a 100-turn transcript to a 16 384-token budget through the default chain, with
    the summary produced by its own LoadCoach call, and the report reconstructs exactly what
    happened.
-2. A standalone script using only `contextpress` + `baseaicore` plans and applies a compaction
+2. A standalone script using only `cutctx` + `baseaicore` plans and applies a compaction
    with a hand-supplied summary — no suite application installed.
 3. Determinism goldens pass across the CI matrix.
 4. `mypy --strict`, `ruff`, `lint-imports` clean; coverage ≥ 95 %.
