@@ -64,10 +64,11 @@ Four phases, LA0–LA3. LA0 is joint with PromptCadence Phase 0; LA1–LA3 run a
 * **P6 — process supervision + basic serving.** `LlamaCppProvider`: spawn/health-wait/terminate
   llama-server; GGUF discovery and hashing from a configured model directory (identity confidence
   *bound*, better than tag-based); profile flags (`n_gpu_layers`, cache types, flash attention,
-  template override); generation + streaming over the native API; error translation; recorded
-  fixtures, version-annotated. Risks: orphaned processes (kill-tree on timeout, pid files),
-  port management (configured range), startup failure diagnosis (stderr captured into the typed
-  error).
+  template override); generation + streaming over the native API; usage read to ADR-0070's
+  per-response rule from the start (a class the native API cannot bill is `0`, never
+  `UNSUPPORTED`); error translation; recorded fixtures, version-annotated. Risks: orphaned
+  processes (kill-tree on timeout, pid files), port management (configured range), startup
+  failure diagnosis (stderr captured into the typed error).
 * **P7 — adapters.** Launch-time registration from supplied manifests; per-request selection;
   `adapter_hot_swap` flag; `AdapterNotFound`; digest-verified compatibility (fail closed);
   `pending_restart` semantics surfaced to the caller; **the cache-correctness conformance test**

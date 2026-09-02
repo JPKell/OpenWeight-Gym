@@ -92,6 +92,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0067](0067-reliability-keys-on-the-subject-not-the-base.md) | Reliability and the breaker key on the subject, never on the base | Accepted |
 | [0068](0068-a-post-freeze-minor-is-a-sibling-class.md) | A post-freeze minor is a sibling class, and a bare name keeps its version | Accepted |
 | [0069](0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md) | A partial price accumulates as a floor, and a money ceiling chooses whether an unknown counts against it | Accepted |
+| [0070](0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md) | An absent token class is zero only where the protocol cannot bill it | Accepted |
 
 ## Writing a new ADR
 
@@ -186,7 +187,10 @@ A-1…A-10.
 contract 2 as first written and the review of that build found the contract made money ceilings
 unable to bind on any real adapter's output. It reverses that one line, before Phase 2 persists a
 row under it, and records the operator's choice between a floor that may fire late and a strict
-ceiling that never crosses.
+ceiling that never crosses. [ADR-0070](0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md) followed the same day and closes the question
+0069 left open — which layer decides what an absent token class means. It is the adapter, per
+response: zero where the protocol cannot bill the class, unavailable where it could and the
+response did not say.
 
 Three of them **amend earlier records additively, reversing nothing**.
 [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) extends ADR-0008, ADR-0023 and

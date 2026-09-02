@@ -185,6 +185,9 @@ governance in place).
   turn; exhaustion → halt or `awaiting_approval` per config; `budget.debited` events.
 * `[budget] partial_pricing` (per-request override like the ceilings) onto every money ceiling; a
   floor renders as "at least" in API and CLI; a strict ceiling's pre-flight refusal (ADR-0069).
+* `declare_run` at trajectory creation, before plan approval, so no pre-flight check ever meets
+  `UnknownRun`; the debit rebuilds `TokenUsage` from all four classes on LoadCoach's job document
+  (ADR-0070, row C6).
 * The historical estimator ([lifecycle §6](lifecycle.md)) over `entries()`, with source labels;
   per-tier configured defaults.
 * `GET /ledger(/entries)`, `promptcadence ledger show`.
