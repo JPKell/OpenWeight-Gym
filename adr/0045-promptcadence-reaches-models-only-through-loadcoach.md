@@ -6,7 +6,7 @@
 **Relates to:** [ADR-0001](0001-application-and-package-separation.md) (what an application is),
 [ADR-0011](0011-shared-package-boundaries.md) (extraction at the second consumer — the ThreadRack
 rejection below), [ADR-0040](0040-routing-backend-owns-model-choice.md) (a routing backend owns
-model choice), [ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md) (the egress
+model choice), [ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md) (the egress
 record this design exists to make possible).
 **Source:** [PromptCadence roadmap §2, D-1](../roadmap/promptcadence-roadmap.md).
 

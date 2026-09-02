@@ -42,7 +42,7 @@ behind it.
   `policy.default_tier`.
 * **Data classification.** The trajectory's declaration binds every turn.
 * **Budget.** Pre-flight `would_exceed`, per-turn debits, and ceiling evaluation.
-* **Egress.** A `SpotCheck` evaluation per turn, recorded whether it approves or denies.
+* **Egress.** A `Commissioner` evaluation per turn, recorded whether it approves or denies.
 * **Approval gates.** Hybrid gates fire in bypass mode too — at the minting of the default
   intent, and at every re-mint a turn's drift triggers
   ([ADR-0049](0049-approval-is-a-mode-with-its-own-scope.md) rule 3,

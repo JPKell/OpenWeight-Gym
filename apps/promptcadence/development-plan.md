@@ -226,10 +226,10 @@ truth; recovery re-derives the debit from it (idempotent by `source_ref`).
 
 **Goal:** the classification lattice governs every turn; drift is detected and handled.
 
-**Prerequisites:** Phase 5; `spotcheck 0.1.0` (which needs `setspec 0.5.0`).
+**Prerequisites:** Phase 5; `commissioner 0.1.0` (which needs `setspec 0.5.0`).
 
 **Work**
-* Mount `spotcheck.sql`; evaluate before every turn (tier target) and every `NETWORK` tool call;
+* Mount `commissioner.sql`; evaluate before every turn (tier target) and every `NETWORK` tool call;
   record every verdict; denial ends the turn with a structured refusal per spec §13.
 * Post-turn verification: response execution subject vs tier promise; mismatch → `VIOLATION`
   decision + halt (spec contract 4).

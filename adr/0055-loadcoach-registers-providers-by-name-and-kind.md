@@ -113,7 +113,7 @@ adding a kind is a ModelRack release.
   machinery. That is a genuine new footgun: the flag is a declaration and nothing verifies it from
   the URL. The compensating control is PromptCadence's verification contract — the executing
   provider on every response is checked against the tier that requested it, and a mismatch is a
-  recorded `VIOLATION` and a halt ([ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md)).
+  recorded `VIOLATION` and a halt ([ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md)).
 * This is the arc's only change to a released 1.0 application, and it is scheduled where a mixed
   pool can be verified once (LA2), rather than twice from two arcs.
 

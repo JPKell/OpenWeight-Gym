@@ -5,14 +5,14 @@
 [BaseAiCore Spec §7](../packages/baseaicore/spec.md).
 **Relates to:** [ADR-0016](0016-unavailable-is-not-zero.md) (an absent value is never a convenient
 number), [ADR-0026](0026-local-http-hardening.md) (fail closed at a boundary),
-[ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md) (the consumer of this ordering),
+[ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md) (the consumer of this ordering),
 [ADR-0065](0065-an-adapter-is-classified-and-local-only.md) (an adapter carries one).
 **Source:** [PromptCadence roadmap §2, D-2](../roadmap/promptcadence-roadmap.md).
 
 ## Context
 
 Three of the arc's components must answer one question before any request leaves the machine: *may
-data this sensitive go to that target?* PromptCadence asks it per turn; SpotCheck evaluates and
+data this sensitive go to that target?* PromptCadence asks it per turn; Commissioner evaluates and
 records the verdict; an adapter manifest declares the sensitivity of the material a LoRA was
 trained on. IdeaPress will ask it too, when its S4 egress badge stops being an ad-hoc backend flag
 and starts reading rows.
@@ -55,7 +55,7 @@ the life of the suite.**
    an omission costs a user a remote tier rather than costing them their data. Every surface that
    accepts a classification says so: PromptCadence's `POST /trajectories` defaults to
    `"confidential"`, and a remote tier that declares no ceiling is denied outright rather than
-   assumed public ([ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md) rule 3).
+   assumed public ([ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md) rule 3).
 4. **Adding a level is a new ADR, not a minor release.** The ordering is what consumers compute
    against, so a fourth level has to be given a position between existing ones, and every stored
    row, every tier ceiling and every adapter manifest written before it acquires a new meaning
@@ -63,7 +63,7 @@ the life of the suite.**
 5. **It ships in BaseAiCore, additively, as `0.4.1`** — inside every existing `>=0.4,<0.5` pin, so
    no consumer needs a coordinated release to gain it. BaseAiCore is where it belongs by the
    ownership rule: it is a value type crossing every boundary, it needs no dependency, and the
-   components that compare it (SpotCheck, PromptCadence, an adapter manifest's reader) already
+   components that compare it (Commissioner, PromptCadence, an adapter manifest's reader) already
    import it.
 
 ## Alternatives considered
@@ -90,9 +90,9 @@ map onto decisions this suite actually makes. The revisit trigger below is the h
 
 **Define it in SetSpec instead.** SetSpec owns the capability vocabulary, so a governance
 vocabulary looks like a sibling. Rejected on two counts: the classification is compared in memory
-long before anything is serialized (SpotCheck's policy is a pure function over values), and
+long before anything is serialized (Commissioner's policy is a pure function over values), and
 putting it in SetSpec would make every consumer of a three-member enum depend on pydantic —
-including `spotcheck.sql`'s rows and BaseAiCore-only scripts. SetSpec still *carries* it in
+including `commissioner.sql`'s rows and BaseAiCore-only scripts. SetSpec still *carries* it in
 `governance.egress_decision`; carrying a value is not owning its type.
 
 **Per-application enums with a mapping at each boundary.** Rejected: N mappings, each one a place
@@ -116,8 +116,8 @@ is not a level; it is a reason to assume the worst.
   carry the fix ("declare `--classification public` if this task's data may leave the machine").
 * Ordering comparisons become a golden-tested contract in BaseAiCore, which means the pairwise
   table is fixed the way the canonical-ID format is fixed. `max()` over the type is the documented
-  lattice join, used identically by PromptCadence, SpotCheck and the adapter path.
-* Two independent components can now be *shown* to agree: SpotCheck's policy matrix and
+  lattice join, used identically by PromptCadence, Commissioner and the adapter path.
+* Two independent components can now be *shown* to agree: Commissioner's policy matrix and
   PromptCadence's tier admission are the same comparison over the same type, so the egress
   invariant is checkable rather than asserted in two places.
 * The type is a rank, not a taxonomy. A deployment whose real question is "which regulation covers

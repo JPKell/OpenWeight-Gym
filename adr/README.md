@@ -76,7 +76,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0051](0051-plans-stay-internal-and-one-payload-travels.md) | A plan never leaves PromptCadence; the egress decision is the one shape that travels | Accepted |
 | [0052](0052-compaction-is-a-view-and-the-package-plans-it-only.md) | Compaction is a view, and the package that plans a summary never calls a model | Accepted |
 | [0053](0053-a-refused-tool-call-is-a-result-not-an-exception.md) | Tools are registered in code, refused in order, and a refusal is a result | Accepted |
-| [0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md) | SpotCheck renders and records an egress verdict; enforcing it is the caller's | Accepted |
+| [0054](0054-commissioner-records-egress-it-does-not-enforce-it.md) | Commissioner renders and records an egress verdict; enforcing it is the caller's | Accepted |
 | [0055](0055-loadcoach-registers-providers-by-name-and-kind.md) | LoadCoach registers providers by name and kind, into one tagged registry | Accepted |
 | [0056](0056-every-turn-executes-under-one-execution-intent.md) | Every turn executes under exactly one immutable ExecutionIntent | Accepted |
 | [0057](0057-the-explanation-is-materialized-and-the-rows-stay-authoritative.md) | The trajectory explanation is materialized; the rows stay the source of truth | Accepted |

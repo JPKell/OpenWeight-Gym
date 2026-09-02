@@ -8,7 +8,7 @@ root. Reverses nothing.
 [ADR-0009](0009-setspec-schema-strategy.md) (per-payload versioning),
 [PromptCadence Spec §9](../apps/promptcadence/spec.md).
 **Relates to:** [ADR-0011](0011-shared-package-boundaries.md) (nothing shared with fewer than two
-real consumers — applied here to a schema), [ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md)
+real consumers — applied here to a schema), [ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md)
 (the package that produces the payload).
 **Source:** [PromptCadence roadmap §2, D-7](../roadmap/promptcadence-roadmap.md).
 
@@ -64,7 +64,7 @@ is the one every other application already emits.
 
 It enters SetSpec because it has a **named second reader**: IdeaPress's S4 egress badge reads
 recorded decisions at M13, and a `setspec`-only script must be able to validate and read a decision
-PromptCadence exported, with SpotCheck not installed. That is
+PromptCadence exported, with Commissioner not installed. That is
 [ADR-0011](0011-shared-package-boundaries.md)'s two-consumer rule applied to a schema rather than to
 a package, and it is the only shape in this arc that meets it. It arrives under a new SetSpec-owned
 root, `governance.*`, added to ADR-0035's table by this record; the capability vocabulary and every
@@ -94,10 +94,10 @@ mint a shape *without* anyone else being obliged to it. And the fact itself is n
 fact — "data of this classification went to that target under this policy" is true of IdeaPress's
 stages and of any future component that sends anything anywhere.
 
-**Let SpotCheck own the decision as a bare Python type with no payload**, the skeleton's other
+**Let Commissioner own the decision as a bare Python type with no payload**, the skeleton's other
 option. Rejected as a split done incorrectly: the *shape* is the cross-application contract and the
 *evaluation plus ledger* is the small shared implementation, and they belong in different places —
-which is what [ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md) records. A type
+which is what [ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md) records. A type
 with no published schema cannot be read by a `setspec`-only consumer, which is the acceptance
 criterion.
 

@@ -47,7 +47,7 @@ it meets its gold standards.
 | CutCtx | *(none)* | 0 |
 | ToolYard | `jsonschema`, `httpx` | 2 |
 | LoadLedger | *(none; `sqlalchemy` under the `sql` extra)* | 0 |
-| SpotCheck | *(none; `sqlalchemy` under the `sql` extra)* | 0 |
+| Commissioner | *(none; `sqlalchemy` under the `sql` extra)* | 0 |
 | Each application | `fastapi`, `uvicorn`, `typer`, `pydantic-settings`, plus suite packages | ≤ 6 direct non-suite |
 
 Exceeding a budget requires an ADR.
@@ -220,14 +220,14 @@ Exceeding a budget requires an ADR.
   application's own Alembic history, on both dialects, with the prefix respected
   ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)).
 
-### SpotCheck
+### Commissioner
 * **Fail closed**: a remote target with no declared ceiling is denied, never assumed public
-  ([ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md)).
+  ([ADR-0054](../adr/0054-commissioner-records-egress-it-does-not-enforce-it.md)).
 * **A denial is as durable as an approval** — the ledger holds both symmetrically, asserted by test.
 * **No parallel vocabulary**: the classification type is `baseaicore.DataClassification`, with no
   levels and no aliases of its own ([ADR-0046](../adr/0046-data-classification-is-ordered-and-defaults-closed.md)).
 * **Append-only**: no public mutation path, asserted by an API-surface test.
-* A `setspec`-only script reads an exported decision and prints its verdict, with SpotCheck not
+* A `setspec`-only script reads an exported decision and prints its verdict, with Commissioner not
   installed — the payload is the contract.
 * Round-trip preserves every field; an unknown minor is read without loss.
 

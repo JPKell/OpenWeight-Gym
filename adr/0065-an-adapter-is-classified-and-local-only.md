@@ -4,7 +4,7 @@
 **Extends:** [Adapter Identity and Serving §9](../architecture/adapter-identity-and-serving.md),
 [Security Standards](../standards/security-standards.md) (egress), risk S5.
 **Relates to:** [ADR-0046](0046-data-classification-is-ordered-and-defaults-closed.md) (the ordered
-vocabulary and the `max()` join), [ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md)
+vocabulary and the `max()` join), [ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md)
 (where the denial is recorded), [ADR-0043](0043-grounding-is-verified-not-assumed.md) (an invariant
 is checked, not assumed), [ADR-0061](0061-the-adapter-registry-is-a-directory-and-a-manifest.md)
 (the manifest field).
@@ -29,7 +29,7 @@ public would be true of the input and false of everything else.
 
 The suite has just built the vocabulary for both
 ([ADR-0046](0046-data-classification-is-ordered-and-defaults-closed.md)) and the ledger that records
-verdicts over it ([ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md)). What remains
+verdicts over it ([ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md)). What remains
 is to say where an adapter sits in it.
 
 ## Decision
@@ -50,7 +50,7 @@ effective classification of work is the join of the caller's and the adapter's.*
    the lattice join the ordered vocabulary exists to make expressible, and it is a built-in `max()`
    with no helper.
 3. **Adapters are local-only.** No adapter artifact is ever uploaded to a remote endpoint. A
-   would-be adapter egress is a **recorded SpotCheck denial**, not a silent omission; LoadCoach
+   would-be adapter egress is a **recorded Commissioner denial**, not a silent omission; LoadCoach
    additionally excludes remote + adapter candidates with a named rejection
    (`excluded_by_policy`).
 4. **The invariant is recorded, not merely relied upon.** Because adapters exist only behind local

@@ -204,7 +204,7 @@ scoring reflects the real cost surface:
 * Every manifest carries a `data_classification`. An adapter trained on confidential material is
   itself confidential.
 * **Adapters are local-only artifacts in v1** — never uploaded to a remote endpoint; a would-be
-  adapter egress is a recorded SpotCheck denial. Since adapters exist only behind local
+  adapter egress is a recorded Commissioner denial. Since adapters exist only behind local
   providers, the classification lattice is satisfied by construction at serving time, and the
   adapter's classification is still recorded on every turn/attempt that used it — for audit, and
   so the invariant is checkable rather than assumed.
@@ -238,7 +238,7 @@ shows.
 | BaseAiCore | `AdapterIdentity` + subject/canonical-form extension | Additive (0.4.x pre-M9-1.0, else 1.1.0) |
 | SetSpec | `model.adapter_manifest` 1.0; `CapabilityEvidence` optional adapter fields (v1.1) | Additive minor |
 | ModelRack | `LlamaCppProvider` (process supervision, adapter registration/selection), `adapter_hot_swap` flag, `AdapterNotFound`, conformance additions | Additive minor |
-| SweatMeter · WeightsDB · MirrorWall · CutCtx · ToolYard · LoadLedger · SpotCheck | Nothing | — |
+| SweatMeter · WeightsDB · MirrorWall · CutCtx · ToolYard · LoadLedger · Commissioner | Nothing | — |
 | LoadCoach | Generalized LC-E1; adapter registry rows + scan CLI; subject expansion, gate, pins; two-level residency; per-subject reliability | LoadCoach 1.1 |
 | FreeWeight | Adapter subject enumeration; panels + regression panel; serving-mode A/B; evidence fields | FreeWeight 1.1 |
 | IdeaPress | Per-stage adapter pins via the LoadCoach backend (direct/Ollama mode stays adapter-free); provenance columns | Minor |

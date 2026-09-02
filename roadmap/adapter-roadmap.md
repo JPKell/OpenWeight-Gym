@@ -42,7 +42,7 @@ stable references for this plan.
 | **A-5** | **`LlamaCppProvider`**: one base per llama-server process, spawned/terminated through the existing `Provider.load/unload` seam; every compatible manifest adapter pre-registered at launch (`--lora`, `--lora-init-without-apply`); per-request `lora` selection; new adapter files fold in at next idle (`pending_restart`), never mid-work. `ProviderCapabilities.adapter_hot_swap` is load-bearing; Ollama declares `False`. | llama.cpp gains runtime adapter registration (drop the restart machinery); the server API breaks (fixtures are version-annotated, as Ollama's are) |
 | **A-6** | **One adapter at a time, at a fixed scale.** No composition, no scale-mixing, no per-request scale — the single `lora` entry is sent at `1.0`. | A concrete consumer need, with the identity-of-a-weighted-set problem solved first |
 | **A-7** | **Selection rides the capability vocabulary.** Adapters declare and are measured on namespaced specializations and `user.*` goals; task profiles weight them; routed selection is ordinary scoring; pinned selection is `model`-override semantics; `require_adapter_evidence` (default on) filters unmeasured adapter subjects with a named rejection. No free-form tag channel exists. | A selection need the vocabulary's specialization rule cannot express |
-| **A-8** | **Adapters are local-only, classified artifacts.** Every manifest carries `data_classification`; effective classification is `max(caller, adapter)`; a would-be adapter egress is a recorded SpotCheck denial. | A remote provider offers adapter upload under terms an operator accepts — a new ADR, not a flag |
+| **A-8** | **Adapters are local-only, classified artifacts.** Every manifest carries `data_classification`; effective classification is `max(caller, adapter)`; a would-be adapter egress is a recorded Commissioner denial. | A remote provider offers adapter upload under terms an operator accepts — a new ADR, not a flag |
 | **A-9** | **Two-level residency**: (resident base process, registered adapters). Adapter switch is free and counts as resident; base switch carries a configurable `base_switch_penalty`; a per-request `ignore_residency` override zeroes both terms, recorded in the explanation. | Multi-GPU residency (two bases warm) changes the cost surface |
 | **A-10** | **Reliability and the breaker key on the subject.** A failing adapter never breaks its base or siblings; cross-adapter attribution is a human's read of per-subject rows in v1. | Fragmented samples make per-subject reliability useless in practice — revisit pooling rules explicitly |
 
@@ -139,7 +139,7 @@ graph TD
 | May run concurrently | Because |
 |---|---|
 | LA1 and PromptCadence P1–P7 | Different repositories; the harness beta runs on Ollama tiers |
-| LA1 and the PromptCadence package stream (CutCtx/ToolYard/LoadLedger/SpotCheck) | No shared surface |
+| LA1 and the PromptCadence package stream (CutCtx/ToolYard/LoadLedger/Commissioner) | No shared surface |
 | LA3's FreeWeight work and PromptCadence P8 | Different repositories |
 
 | May **not** overlap | Because |

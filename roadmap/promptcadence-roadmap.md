@@ -3,7 +3,7 @@
 **From:** the accepted design skeleton (`harness.md`, 2026-09-01) — a plan-approved, tier-routed
 agent harness over LoadCoach, plus the shared capability packages it justifies.
 **To:** one new application (`promptcadence 1.0.0`), four new published packages (`cutctx`,
-`toolyard`, `loadledger`, `spotcheck`), two additive releases of existing packages
+`toolyard`, `loadledger`, `commissioner`), two additive releases of existing packages
 (`baseaicore 0.4.1`, `setspec 0.5.0`), one additive LoadCoach enhancement (LC-E1), and adoption of
 three of the new packages by IdeaPress.
 **Sequencing principle:** unchanged from the [master roadmap](master-roadmap.md) — dependency
@@ -18,7 +18,7 @@ arc is the suite's first post-1.0 expansion, and treating it as such keeps M9's 
 **Specifications:** [PromptCadence](../apps/promptcadence/spec.md) ([lifecycle](../apps/promptcadence/lifecycle.md),
 [plan](../apps/promptcadence/development-plan.md)) ·
 [CutCtx](../packages/cutctx/spec.md) · [ToolYard](../packages/toolyard/spec.md) ·
-[LoadLedger](../packages/loadledger/spec.md) · [SpotCheck](../packages/spotcheck/spec.md)
+[LoadLedger](../packages/loadledger/spec.md) · [Commissioner](../packages/commissioner/spec.md)
 
 ---
 
@@ -35,7 +35,7 @@ pass". Each is resolved:
 | Human-in-the-loop approval | A mode (`auto`/`hybrid`/`manual`) with a dedicated `approve` scope; gates fire in bypass mode too | [Lifecycle §4](../apps/promptcadence/lifecycle.md), D-5 |
 | ThreadRack's second consumer | None exists ⇒ **not a package** (ADR-0011 rule 4); built PromptCadence-internal, package-shaped, extraction trigger recorded | [Spec §10](../apps/promptcadence/spec.md), D-1 |
 | `Plan` schema versioning | Application-owned documents (ADR-0035): plan internal, explanation exported as `promptcadence.trajectory_explanation` 1.0; SetSpec only if another app ever reads a plan | [Spec §9](../apps/promptcadence/spec.md), D-7 |
-| SpotCheck: package vs bare event type | Both, split correctly: the *shape* is SetSpec (`governance.egress_decision` 1.0), the comparison + ledger are a deliberately tiny package, application policy stays out | [SpotCheck spec](../packages/spotcheck/spec.md), D-10 |
+| Commissioner: package vs bare event type | Both, split correctly: the *shape* is SetSpec (`governance.egress_decision` 1.0), the comparison + ledger are a deliberately tiny package, application policy stays out | [Commissioner spec](../packages/commissioner/spec.md), D-10 |
 
 Two further findings the expansion made that the skeleton did not contain:
 
@@ -80,7 +80,7 @@ plan.
 | **D-7** | Plans are PromptCadence-internal; the trajectory explanation is an application-owned document (`promptcadence.trajectory_explanation` 1.0, ADR-0035 namespace); PromptCadence's events ride the existing SetSpec `EventEnvelope`. The one new SetSpec payload is `governance.egress_decision` 1.0, because IdeaPress's badge is a named second reader. | Another application needs to read a PromptCadence plan directly |
 | **D-8** | Compaction is a view, never a deletion, and CutCtx is pure: policies *plan* summarization (`SummarizationRequest`); applications execute it through their own governed inference path. Summaries of confidential turns run on local tiers only. | An embeddings-based policy needs model access — it still arrives as a planned request |
 | **D-9** | Tool execution discipline: registry-allowlisted handlers registered in code at startup; model-influenced failures are structured `ToolResult`s, never exceptions; command isolation reuses the ADR-0018 tier ladder (container → bwrap → **refuse**); `http_fetch` implements ADR-0026 §3 itself. | A platform sandbox tier is added; a consumer needs dynamic tool loading (expect **no** — that is the alternative this ADR rejects) |
-| **D-10** | SpotCheck's scope is exactly: the payload, the ordered comparison (fail closed on an undeclared ceiling), and an append-only ledger. Enforcement and deployment policy are the caller's. | The package accretes an application concept — ADR-0011's boundary-violation rule applies |
+| **D-10** | Commissioner's scope is exactly: the payload, the ordered comparison (fail closed on an undeclared ceiling), and an append-only ledger. Enforcement and deployment policy are the caller's. | The package accretes an application concept — ADR-0011's boundary-violation rule applies |
 | **D-11** | **LC-E1 (generalized)**: LoadCoach gains additive multi-provider registration — `[providers.<name>]` blocks, each naming a provider kind (`ollama`, `llamacpp`, `openai_compatible`) and a `remote` flag — with every provider's models entering the one registry tagged by provider and egress class; routing, `allow_remote` and the cost factor unchanged in meaning. Generalized 2026-09-01 from remote-only: the LoRA arc needs a second **local** runtime (llama.cpp, hot-swappable adapters) beside Ollama, so registration is provider-kind-agnostic rather than remote-specific. Owned by the LoadCoach repository as LoadCoach 1.1. | A provider appears that the ModelRack `Provider` protocol cannot express |
 | **D-12** | Every turn executes under exactly one immutable, revisioned **`ExecutionIntent`** — the approved envelope (tier + fallbacks, tools, classification ceiling, step budget, max turns). Approval, in every mode, and the bypass default alike, is the act of minting one; scoped re-approval supersedes with a new revision, never an edit; deviations are category-typed per intent field, one category per field, closed by construction ([Lifecycle §4.3, §5](../apps/promptcadence/lifecycle.md)). | An intent needs a field no plan or policy supplies — that is a new governance dimension, not a schema tweak |
 | **D-13** | The trajectory explanation is **materialized** as revisioned snapshots at terminal transitions; the rows remain the sole source of truth, every row-changing operation (retention scrub, re-costing, schema bump) bumps the revision, and `materialize(rows) == compose_live(rows)` is a tested equality ([Lifecycle §9.1](../apps/promptcadence/lifecycle.md)). Without it, "explain trajectory X" is a seven-table reconstruction re-paid on every read, growing with trajectory complexity — on a retain-forever deployment, the dominant query. | Materialization cost at terminal transitions becomes user-visible latency (move to incremental per-turn segments) |
@@ -89,10 +89,10 @@ plan.
 
 | # | Milestone | Content | Exit condition |
 |---|---|---|---|
-| **M10** | Harness foundations | Phase 0 (ADRs + doc updates) · `baseaicore 0.4.1` · `setspec 0.5.0` (Phase 6: `governance.egress_decision`, goldens) · CutCtx P1–P2 · ToolYard P1–P3 · LoadLedger P1–P2 · SpotCheck P1–P2 — all four at 0.1.0 on PyPI | Each package's standalone acceptance script runs in a clean venv with no suite application installed; a `setspec`-only reader validates an egress-decision golden |
+| **M10** | Harness foundations | Phase 0 (ADRs + doc updates) · `baseaicore 0.4.1` · `setspec 0.5.0` (Phase 6: `governance.egress_decision`, goldens) · CutCtx P1–P2 · ToolYard P1–P3 · LoadLedger P1–P2 · Commissioner P1–P2 — all four at 0.1.0 on PyPI | Each package's standalone acceptance script runs in a clean venv with no suite application installed; a `setspec`-only reader validates an egress-decision golden |
 | **M11** | PromptCadence beta | PromptCadence P1–P7 | On real LoadCoach + Ollama: one planned and one bypassed trajectory, tools + budget + egress active in both, records identical in shape minus plan rows; a confidential trajectory provably cannot reach a remote tier; `0.9.0b0` tagged at the demonstration |
 | **M12** | PromptCadence 1.0 | PromptCadence P8–P9 · LC-E1 (LoadCoach 1.1) · CutCtx/ToolYard 0.2.0 | Every PromptCadence spec §20 criterion; one live remote-tier trajectory (public data, priced, budgeted, badged) or the explicit release-scope decision to ship with remote tiers refusing honestly; independent verification with permission to say *not ready*; `promptcadence 1.0.0` published |
-| **M13** | Adoption — extraction complete | IdeaPress 1.1: LoadLedger (per-unit/project cost), SpotCheck (the S4 badge on real records), CutCtx (`project_review` context assembly) | IdeaPress shows what a unit cost and where its data went, from the shared packages; every new package has two real consumers — the ADR-0011 bar met in fact, not by intent |
+| **M13** | Adoption — extraction complete | IdeaPress 1.1: LoadLedger (per-unit/project cost), Commissioner (the S4 badge on real records), CutCtx (`project_review` context assembly) | IdeaPress shows what a unit cost and where its data went, from the shared packages; every new package has two real consumers — the ADR-0011 bar met in fact, not by intent |
 
 ## 4. Work streams, dependencies and parallelism
 
@@ -106,7 +106,7 @@ graph TD
     BC --> CP["CutCtx P1–P2 → 0.1.0"]
     BC --> TY["ToolYard P1–P3 → 0.1.0"]
     BC --> LL["LoadLedger P1–P2 → 0.1.0"]
-    SS --> SC["SpotCheck P1–P2 → 0.1.0"]
+    SS --> SC["Commissioner P1–P2 → 0.1.0"]
     BC --> SC
     BC --> S12["PromptCadence P1–P2"]
     S12 --> S3["P3 bypass loop"]
@@ -132,12 +132,12 @@ graph TD
 |---|---|
 | CutCtx, ToolYard, LoadLedger P1 | Only `baseaicore` in common; no shared surface |
 | PromptCadence P1–P2 and all package phases | P1–P2 need only the foundation packages |
-| SetSpec Phase 6 and every package but SpotCheck | Only SpotCheck consumes the payload |
+| SetSpec Phase 6 and every package but Commissioner | Only Commissioner consumes the payload |
 | LC-E1 and PromptCadence P1–P8 | Different repositories; PromptCadence needs it only for P9's live remote run |
 
 | May **not** overlap | Because |
 |---|---|
-| SpotCheck P1 and SetSpec Phase 6 | The payload must be published before its consumer pins it — the FreeWeight P11 / SetSpec freeze lesson |
+| Commissioner P1 and SetSpec Phase 6 | The payload must be published before its consumer pins it — the FreeWeight P11 / SetSpec freeze lesson |
 | PromptCadence P4 and ToolYard P2–P3 | No tool executes in PromptCadence before the discipline it depends on is published — a security ordering, not a convenience |
 | M13 and PromptCadence P9 | Adoption targets a released 1.0 surface; adopting a moving target repeats the extraction anti-pattern ADR-0011 §rules exist to prevent |
 
@@ -167,7 +167,7 @@ equivalent, prove behaviour unchanged plus the new capability.
    per-project cost in the workspace UI (`—` for unpriced local runs, with the reason). Exit: a
    project page answers "what did this cost?" honestly, and ADR-0030's context sentence is
    finally shipped behaviour.
-2. **IP-A2 — SpotCheck.** The S4 egress badge reads recorded decisions (backend = target);
+2. **IP-A2 — Commissioner.** The S4 egress badge reads recorded decisions (backend = target);
    denials visible in the project history. Exit: the badge is backed by rows, not by an ad-hoc
    flag.
 3. **IP-A3 — CutCtx.** `project_review` and stage-context assembly express the documented
@@ -184,7 +184,7 @@ equivalent, prove behaviour unchanged plus the new capability.
   not retrofitted.
 * Master architecture: amend via the ADRs (the document is frozen; amendments follow the
   ADR-0038 precedent) — §1.1 component table (+ PromptCadence, port 8768; + four packages), §1.5 task
-  profiles note, §2 dependency graph and rules (new packages under rule 3; the SpotCheck→SetSpec
+  profiles note, §2 dependency graph and rules (new packages under rule 3; the Commissioner→SetSpec
   edge), §3 ownership rows, §8 deployment note for PromptCadence, §11 forbidden list (+ "a package
   owning an application's migration history", + "direct provider access from PromptCadence").
 * [docs/README](../README.md) index: the new component rows and reading order.
@@ -208,7 +208,7 @@ equivalent, prove behaviour unchanged plus the new capability.
 | CutCtx | **0.1.0** | 0.1.0 | **0.2.0** | 0.2.x |
 | ToolYard | **0.1.0** | 0.1.0 | **0.2.0** | 0.2.x |
 | LoadLedger | **0.1.0** | 0.1.0 | 0.1.x | 0.1.x |
-| SpotCheck | **0.1.0** | 0.1.0 | 0.1.x | 0.1.x |
+| Commissioner | **0.1.0** | 0.1.0 | 0.1.x | 0.1.x |
 | LoadCoach | 1.0.x | 1.0.x | **1.1.0** (LC-E1) | 1.1.x |
 | PromptCadence | — | **0.9.0b0** | **1.0.0** | 1.0.x |
 | IdeaPress | 1.0.x | 1.0.x | 1.0.x | **1.1.0** |

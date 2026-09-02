@@ -39,14 +39,14 @@ Fixed for the life of the suite. Use these exact spellings everywhere — code, 
 | CutCtx | Package | `cutctx` | `cutctx` | — | — | — |
 | ToolYard | Package | `toolyard` | `toolyard` | — | — | — |
 | LoadLedger | Package | `loadledger` | `loadledger` | — | — | — |
-| SpotCheck | Package | `spotcheck` | `spotcheck` | — | — | — |
+| Commissioner | Package | `commissioner` | `commissioner` | — | — | — |
 
 PromptCadence and the last four packages are added by
 [ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md),
 [ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md),
 [ADR-0052](../adr/0052-compaction-is-a-view-and-the-package-plans-it-only.md),
 [ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md) and
-[ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md).
+[ADR-0054](../adr/0054-commissioner-records-egress-it-does-not-enforce-it.md).
 
 Product names are CamelCase in prose and UI. Import and distribution names are lowercase and
 identical to each other. Distribution-name availability on PyPI is verified before first publish;
@@ -93,7 +93,7 @@ path the user explicitly supplied.
 | **Data classification** | An ordered three-level rank — `PUBLIC < INTERNAL < CONFIDENTIAL` — declared by the caller, defaulting to the most restrictive ([ADR-0046](../adr/0046-data-classification-is-ordered-and-defaults-closed.md)). | BaseAiCore |
 | **Tier** | PromptCadence's unit of governance: one LoadCoach task profile plus an egress class, a classification ceiling, a context budget and (when remote) a pricing source. Configuration, never routing math ([ADR-0047](../adr/0047-a-tier-is-configuration-and-a-model-never-sizes-its-own-budget.md)). | PromptCadence |
 | **Execution intent** | The immutable, revisioned envelope every PromptCadence turn executes under and is checked against ([ADR-0056](../adr/0056-every-turn-executes-under-one-execution-intent.md)). | PromptCadence |
-| **Egress decision** | One recorded verdict on "may data of this classification go to this target", approved or denied alike ([ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md)). | SpotCheck (shape in SetSpec) |
+| **Egress decision** | One recorded verdict on "may data of this classification go to this target", approved or denied alike ([ADR-0054](../adr/0054-commissioner-records-egress-it-does-not-enforce-it.md)). | Commissioner (shape in SetSpec) |
 | **Trajectory / step / turn** | PromptCadence's unit of agent work, its planned steps, and the individual model round trips within them. | PromptCadence |
 
 ### 1.4 Capability vocabulary (SetSpec `capability_vocabulary` v1)
@@ -167,7 +167,7 @@ graph TD
         CC[CutCtx]
         TY[ToolYard]
         LL[LoadLedger]
-        SC[SpotCheck]
+        SC[Commissioner]
     end
     subgraph L2["Layer 2 — Contract package"]
         SS[SetSpec]
@@ -195,7 +195,7 @@ graph TD
 **PromptCadence deliberately does not depend on `modelrack` or `sweatmeter`.** The absence is a
 contract, not an oversight: a harness with direct provider access would own a second, ungoverned
 egress path ([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)).
-`spotcheck` is the second capability package permitted to import `setspec`, and for the same reason
+`commissioner` is the second capability package permitted to import `setspec`, and for the same reason
 MirrorWall is — it owns the Python form of a cross-application payload
 ([ADR-0051](../adr/0051-plans-stay-internal-and-one-payload-travels.md)).
 
@@ -204,7 +204,7 @@ MirrorWall is — it owns the Python form of a cross-application payload
 1. `baseaicore` imports nothing from the suite.
 2. `setspec` imports only `baseaicore`.
 3. `modelrack`, `sweatmeter`, `weightsdb`, `mirrorwall`, `cutctx`, `toolyard`, `loadledger` and
-   `spotcheck` import only `baseaicore` and (where they exchange cross-application payloads)
+   `commissioner` import only `baseaicore` and (where they exchange cross-application payloads)
    `setspec`. They import no sibling capability package and no application. A package may ship
    **mountable** persistence models, and may never own an engine, a session, a migration history or
    the data ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)).
@@ -239,7 +239,7 @@ Each row states what a component owns and — as importantly — what it must ne
 | **CutCtx** | Transcript representation, compaction policies and plans, the executor, compaction reports | Model calls, persistence, I/O of any kind, prompt text, deletion semantics |
 | **ToolYard** | Tool declarations, the registry, argument validation, path containment, tiered isolation, egress-checked fetching, structured refusals, the call record shape | An agent loop, model access, persistence, dynamic loading of tool code, retry policy |
 | **LoadLedger** | Ceilings, debits, running balances, per-ceiling verdicts, entry history, the mountable table shapes | Pricing acquisition, currency conversion, halt/pause policy, forecasting, engine or migration ownership |
-| **SpotCheck** | The egress request/decision values, the ordered classification policy, the append-only decision ledger, the payload's Python form | Enforcement, network inspection, application policy, any classification vocabulary of its own |
+| **Commissioner** | The egress request/decision values, the ordered classification policy, the append-only decision ledger, the payload's Python form | Enforcement, network inspection, application policy, any classification vocabulary of its own |
 
 ---
 
@@ -435,7 +435,7 @@ sequenceDiagram
 | CutCtx | PC; IP at M13 | Pure compaction planning over transcripts. The application executes any planned summarization through its own governed inference path; the package never calls a model ([ADR-0052](../adr/0052-compaction-is-a-view-and-the-package-plans-it-only.md)). |
 | ToolYard | PC; IP's `research` stage when it is built | Tool registry and executor. Handlers are registered in code at startup; a refusal is a result, never an exception ([ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md)). |
 | LoadLedger | PC; IP at M13 | Ceilings, debits and verdicts. Its tables are mounted into the host's own metadata and Alembic history; the host owns the engine, the sessions and the data ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)). |
-| SpotCheck | PC; IP at M13 | Egress verdicts and the append-only decision ledger, mounted the same way; the Python form of `governance.egress_decision` ([ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md)). |
+| Commissioner | PC; IP at M13 | Egress verdicts and the append-only decision ledger, mounted the same way; the Python form of `governance.egress_decision` ([ADR-0054](../adr/0054-commissioner-records-egress-it-does-not-enforce-it.md)). |
 
 **Version pinning policy:** applications depend on compatible ranges (`baseaicore>=0.4,<0.5`
 pre-1.0; `>=1.2,<2` post-1.0), never on a Git branch. See
@@ -636,7 +636,7 @@ second-implementation path.
 | Export format | `ideapress.domain.Exporter` | Markdown, HTML, JSON | PDF, EPUB, DOCX |
 | Compaction policy | `cutctx.CompactionPolicy` | observation masking, summarizing, drop-oldest | embedding relevance, once ModelRack has embeddings |
 | Tool | `toolyard.ToolHandler` (registered in code, never loaded dynamically) | `read_file`, `write_file`, `list_dir`, `run_command`, `http_fetch` | further built-ins, at their own review |
-| Egress policy | `spotcheck.EgressPolicy` | `OrderedClassificationPolicy` | per-provider ceilings, time-boxed approvals |
+| Egress policy | `commissioner.EgressPolicy` | `OrderedClassificationPolicy` | per-provider ceilings, time-boxed approvals |
 
 **Rule:** an extension point ships with at least one real implementation plus the fake/test double.
 Interfaces with zero implementations are speculation and are not written.

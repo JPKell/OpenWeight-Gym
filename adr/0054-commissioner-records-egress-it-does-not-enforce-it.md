@@ -1,7 +1,7 @@
-# ADR-0054 — SpotCheck renders and records an egress verdict; enforcing it is the caller's
+# ADR-0054 — Commissioner renders and records an egress verdict; enforcing it is the caller's
 
 **Status:** Accepted (2026-09-02)
-**Extends:** [SpotCheck Spec §3 and §11](../packages/spotcheck/spec.md).
+**Extends:** [Commissioner Spec §3 and §11](../packages/commissioner/spec.md).
 **Relates to:** [ADR-0011](0011-shared-package-boundaries.md) (package boundaries and the
 boundary-violation rule this invokes), [ADR-0046](0046-data-classification-is-ordered-and-defaults-closed.md)
 (the ordered vocabulary it compares), [ADR-0051](0051-plans-stay-internal-and-one-payload-travels.md)
@@ -21,7 +21,7 @@ The design skeleton left the shape of the answer open, as an either/or: is this 
 a bare SetSpec event type? The question is a trap in both directions. A payload alone gives every
 consumer a shape and no implementation, so each writes its own comparison and the fail-closed case
 is where they will differ. A package alone gives an implementation with no interchange, so
-IdeaPress's badge would have to import SpotCheck to read a decision PromptCadence wrote — coupling
+IdeaPress's badge would have to import Commissioner to read a decision PromptCadence wrote — coupling
 two applications through a package's in-process types.
 
 There is a third pull, and it is the one that would do the most damage: a package that *enforces*.
@@ -32,12 +32,12 @@ and risk A2 are written against.
 
 ## Decision
 
-**SpotCheck's scope is exactly three things: the payload, the ordered comparison, and an
+**Commissioner's scope is exactly three things: the payload, the ordered comparison, and an
 append-only ledger. Enforcement and deployment policy stay with the caller.**
 
 1. **The shape is SetSpec; the implementation is the package.** The either/or was a false one, and
    the split runs between interchange and behaviour: `governance.egress_decision` 1.0 lives in
-   SetSpec so a `setspec`-only reader can validate and read a decision with SpotCheck absent
+   SetSpec so a `setspec`-only reader can validate and read a decision with Commissioner absent
    ([ADR-0051](0051-plans-stay-internal-and-one-payload-travels.md)); the evaluation and the ledger
    live in a deliberately tiny package with two named consumers.
 2. **The comparison, and nothing more.** `OrderedClassificationPolicy` is the whole shipped policy:
@@ -56,7 +56,7 @@ append-only ledger. Enforcement and deployment policy stay with the caller.**
 4. **A denial is as durable as an approval.** `evaluate` never raises for a deny — a deny is data.
    Both verdicts are recorded through the same `record()`, and a test asserts the ledger holds them
    symmetrically. An egress log that only contains what was allowed answers the wrong question.
-5. **No enforcement.** SpotCheck refuses no call, halts no trajectory and paints no badge; it makes
+5. **No enforcement.** Commissioner refuses no call, halts no trajectory and paints no badge; it makes
    no HTTP request, so it could not intercept one. Acting on a verdict — PromptCadence ending the
    turn with a structured refusal, IdeaPress showing the badge — is the application's.
 6. **No application policy.** What counts as `internal` in a deployment, which tiers exist, when a
@@ -76,17 +76,17 @@ ceiling is exactly the case a hurried implementation treats as "no restriction s
 allowed". A shared shape with unshared semantics is the worst of both.
 
 **A package alone, with the decision as an in-process type.** Rejected: IdeaPress's badge would
-have to install SpotCheck to read what PromptCadence recorded, which couples two applications
+have to install Commissioner to read what PromptCadence recorded, which couples two applications
 through a package's private types and violates the rule that applications interoperate only over
 versioned payloads. It would also fail the acceptance criterion outright — a `setspec`-only script
 must be able to read an exported decision.
 
-**Let SpotCheck enforce** — hand it the HTTP client, let it refuse the call and raise. Superficially
+**Let Commissioner enforce** — hand it the HTTP client, let it refuse the call and raise. Superficially
 the safest design ("the guard cannot be forgotten"), and it is what a firewall-shaped mental model
 suggests. Rejected: it puts application control flow inside a capability package, makes a deny an
 exception rather than a record (the same defect
 [ADR-0053](0053-a-refused-tool-call-is-a-result-not-an-exception.md) rejects for tools), and it is
-a lie about what the package can see — SpotCheck evaluates *declared* facts, so a caller that lies
+a lie about what the package can see — Commissioner evaluates *declared* facts, so a caller that lies
 about its classification is not stopped by any amount of enforcement inside the package. The real
 protection is that PromptCadence has exactly one egress path
 ([ADR-0045](0045-promptcadence-reaches-models-only-through-loadcoach.md)) and evaluates before it,
@@ -106,7 +106,7 @@ possible without sharing a database.
 
 ## Consequences
 
-* SpotCheck is a very small package on purpose: two protocols, one policy, two ledger
+* Commissioner is a very small package on purpose: two protocols, one policy, two ledger
   implementations, one mount function. Smallness is the design, and growth is the signal in the
   revisit trigger below.
 * It is the one capability package besides MirrorWall permitted to import SetSpec, and for the same

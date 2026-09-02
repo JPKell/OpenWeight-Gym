@@ -176,8 +176,8 @@ this arc is deliberately Sonnet-shaped.
 | ToolYard P3 | Built-in tools, ADR-0026 fetch vectors | Sonnet 5 · high | medium | Fixture/vector work; the vectors are byte-shared with LoadCoach's existing suite. Opus reviews the fetch handler diff |
 | LoadLedger P1 | Ceilings, debits, verdicts, windows | Sonnet 5 · high | medium | §3.4 exactly: integer arithmetic with hand-specifiable expected values, and the UTC-midnight trap is named three times in the docs |
 | LoadLedger P2 | `loadledger.sql`, atomicity, miniature host | **Opus 5 · high** | high | First mounting implementation (first-instance rule) plus kill-mid-debit atomicity on both dialects — money rows with the §3.3 failure shape |
-| SpotCheck P1 | Policy matrix, payload round-trip | Sonnet 5 · high | medium | Enum-parametrized matrix, exhaustive by construction; fail-closed row is spec'd |
-| SpotCheck P2 | Ledgers + mounting — 0.1.0 | Sonnet 5 · standard | medium | Copies LoadLedger P2's proven mounting pattern — the "rest of the repeated thing" |
+| Commissioner P1 | Policy matrix, payload round-trip | Sonnet 5 · high | medium | Enum-parametrized matrix, exhaustive by construction; fail-closed row is spec'd |
+| Commissioner P2 | Ledgers + mounting — 0.1.0 | Sonnet 5 · standard | medium | Copies LoadLedger P2's proven mounting pattern — the "rest of the repeated thing" |
 | PromptCadence P1 | Skeleton, config, db, health | Sonnet 5 · high | medium | Identical in shape to LoadCoach P1; boilerplate against a precise spec |
 | PromptCadence P2 | Domain: threads, tiers, plans, intents, state machine | **Opus 5 · xhigh** | xhigh | Mostly normative-table transcription — but `ExecutionIntent` is the design's load-bearing wall and this phase freezes its shape |
 | **PromptCadence P3** | **LoadCoach client, bypass loop, lease/recovery, the fake LoadCoach** | **Fable 5 · xhigh** | xhigh | The LoadCoach-P5-shaped phase: kill −9 reconciliation, one-write transitions, cancellation — no feedback loop for the interesting failures — *plus* the fake every later phase trusts (the P2-FakeProvider argument, doubled) |
@@ -188,7 +188,7 @@ this arc is deliberately Sonnet-shaped.
 | PromptCadence P8 | Compaction, explanation, UI | Split | medium | **Opus 5 · high** for materialization/invalidation (cache-consistency reasoning); Sonnet 5 · standard for the MirrorWall UI volume |
 | PromptCadence P9 | Hardening — 1.0 | Split | high | **Opus 5 · xhigh** for the security pass (consider Fable 5 for the prompt-injection corpus — pure adversarial); Sonnet 5 for performance measurement and docs |
 | M13 IP-A1 (IdeaPress + LoadLedger) | Mount, debit, cost UI | Sonnet 5 · high | medium | Third mounting implementation by then; adopt-delete-prove against fixtures |
-| M13 IP-A2 (IdeaPress + SpotCheck) | S4 badge on rows | Sonnet 5 · standard | medium | Reading recorded decisions into an existing badge |
+| M13 IP-A2 (IdeaPress + Commissioner) | S4 badge on rows | Sonnet 5 · standard | medium | Reading recorded decisions into an existing badge |
 | M13 IP-A3 (IdeaPress + CutCtx) | `project_review` policy chain | Sonnet 5 · high | medium | Golden-parity refactor that deletes working code — `high` is the floor for deletions |
 
 ### 2.11 Adapter arc

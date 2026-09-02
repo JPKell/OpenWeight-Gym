@@ -8,7 +8,7 @@ before code is written.
 **Related:** [Lifecycle](lifecycle.md) · [Development Plan](development-plan.md) ·
 [PromptCadence roadmap](../../roadmap/promptcadence-roadmap.md) ·
 [CutCtx](../../packages/cutctx/spec.md) · [ToolYard](../../packages/toolyard/spec.md) ·
-[LoadLedger](../../packages/loadledger/spec.md) · [SpotCheck](../../packages/spotcheck/spec.md)
+[LoadLedger](../../packages/loadledger/spec.md) · [Commissioner](../../packages/commissioner/spec.md)
 
 ---
 
@@ -39,7 +39,7 @@ and the policy pass over that plan. This distinction is load-bearing and is reco
 * The agent loop: turn execution through LoadCoach `/generate`, tool execution through ToolYard,
   transcript ownership, context compaction through CutCtx, advance on declared
   `finish_reason` only.
-* Governance: per-turn egress evaluation (SpotCheck), budget accumulation and ceilings (LoadLedger),
+* Governance: per-turn egress evaluation (Commissioner), budget accumulation and ceilings (LoadLedger),
   immutable per-step `ExecutionIntent`s minted by approval, category-typed deviation detection
   against the turn's intent, scoped re-approval as intent supersession, human-in-the-loop approval
   as a configurable mode.
@@ -88,7 +88,7 @@ and the policy pass over that plan. This distinction is load-bearing and is reco
 | Tools | Registry composition, per-trajectory allowlists, sandboxed execution via ToolYard |
 | Context | Compaction requests to CutCtx; execution of planned summarizations via LoadCoach |
 | Budget | Ceiling configuration (per-trajectory, per-day, per-project), pre-flight estimates, per-turn debits via LoadLedger; on exhaustion: halt, a ceiling-raise approval, or a wait for the next UTC day, per ceiling |
-| Egress | Per-turn classification-vs-tier evaluation via SpotCheck; durable decisions, approvals and denials alike |
+| Egress | Per-turn classification-vs-tier evaluation via Commissioner; durable decisions, approvals and denials alike |
 | Deviation | One pure comparison per turn against its `ExecutionIntent`, category-typed ([Lifecycle §5](lifecycle.md)); recorded-continue / scoped re-approval (a superseding intent revision) / halt per severity and policy |
 | Explainability | Full trajectory record, composable and exportable, retained forever by default; served from materialized revisions for terminal trajectories ([Lifecycle §9.1](lifecycle.md)) |
 | Interfaces | Web UI, CLI, public API `/api/v1`, SSE streams with replay |
@@ -97,7 +97,7 @@ and the policy pass over that plan. This distinction is load-bearing and is reco
 
 **Suite:** `baseaicore` (≥ 0.4.1 — `DataClassification`), `setspec` (≥ 0.5 —
 `governance.egress_decision`), `weightsdb`, `mirrorwall`, `cutctx`, `toolyard`, `loadledger`,
-`spotcheck`.
+`commissioner`.
 **Deliberately absent:** `modelrack` (no provider access — §3) and `sweatmeter` (telemetry is
 displayed from LoadCoach's `/system/status`, the same way IdeaPress treats it).
 **Third party:** `fastapi`, `uvicorn[standard]`, `typer`, `pydantic`, `pydantic-settings`,
@@ -193,7 +193,7 @@ the turn that used it with its `prompt_id`, `version` and `sha256`.
 Owns `promptcadence.sqlite3` exclusively: `trajectories`, `plans`, `plan_steps`, `plan_approvals`,
 `approval_requests`, `execution_intents` (immutable, revisioned — [Lifecycle §4.3](lifecycle.md)),
 `threads`, `turns`, `tool_call_records`, `ledger_entries` (mounted from `loadledger.sql`),
-`egress_decisions` (mounted from `spotcheck.sql`), `compactions`, `explanation_revisions`
+`egress_decisions` (mounted from `commissioner.sql`), `compactions`, `explanation_revisions`
 (derived cache — [Lifecycle §9.1](lifecycle.md)), `events`, `api_tokens`, `settings`. One Alembic history, owned by PromptCadence, including the mounted package
 tables ([roadmap §2, D-6](../../roadmap/promptcadence-roadmap.md)). No access to any other application's
 database, ever.
@@ -479,7 +479,7 @@ executing unisolated; all other tools work everywhere.
 |---|---|
 | Unit | Tier resolution; classification lattice; plan validation; approval policy (auto/hybrid/manual); intent minting (plan, redline, bypass default, superseding revision — immutability asserted); the deviation comparison over the full category × severity × scope matrix; estimator source selection; every Lifecycle §8.2 transition and every §8.1 illegal one refused; compaction triggering |
 | Contract | Plan schema goldens; explanation document goldens (`promptcadence.trajectory_explanation` 1.0); `materialize(rows) == compose_live(rows)` equality goldens, including post-retention-scrub and post-re-costing revisions; API against the OpenAPI snapshot; error codes; SSE shape; `governance.egress_decision` payloads against SetSpec goldens |
-| Integration | Full loop against a **fake LoadCoach HTTP server** (recorded response shapes, scriptable failures); queue lease/recovery after simulated crash; mounted `loadledger.sql`/`spotcheck.sql` tables on both dialects |
+| Integration | Full loop against a **fake LoadCoach HTTP server** (recorded response shapes, scriptable failures); queue lease/recovery after simulated crash; mounted `loadledger.sql`/`commissioner.sql` tables on both dialects |
 | E2E | Submit → plan → approve → execute (tools + compaction + debits + egress) → explanation, over HTTP and CLI; the same journey with `bypass_planning` diffed for contract 1; manual-approval journey including deny |
 | Failure-path | LoadCoach down mid-turn; plan invalid after retries; egress denied mid-trajectory; budget exhausted mid-step under each of the halt, approval and window policies; an unknown project refused; tool sandbox refusal; deviation → re-approval → deny; approval timeout; kill −9 recovery |
 | Security | Unlisted tool requested by the model; path escape and symlink escape attempts; fetch to a non-allowlisted host; confidential data with a remote tier pin; scope enforcement (submit ≠ approve); no secret in logs |

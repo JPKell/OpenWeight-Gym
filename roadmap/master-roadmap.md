@@ -42,10 +42,10 @@ phase and converges at M12. Their decisions are ADRs
 
 | # | Milestone | Owned by | Ships |
 |---|---|---|---|
-| **M10** | Harness foundations | [PromptCadence arc §3](promptcadence-roadmap.md) | `baseaicore 0.4.1`, `setspec 0.5.0`, CutCtx/ToolYard/LoadLedger/SpotCheck at `0.1.0` |
+| **M10** | Harness foundations | [PromptCadence arc §3](promptcadence-roadmap.md) | `baseaicore 0.4.1`, `setspec 0.5.0`, CutCtx/ToolYard/LoadLedger/Commissioner at `0.1.0` |
 | **M11** | PromptCadence beta | [PromptCadence arc §3](promptcadence-roadmap.md) | `promptcadence 0.9.0b0` |
 | **M12** | PromptCadence 1.0 | [PromptCadence arc §3](promptcadence-roadmap.md) | `promptcadence 1.0.0`, LoadCoach `1.1.0` (LC-E1) |
-| **M13** | Adoption — extraction complete | [PromptCadence arc §6](promptcadence-roadmap.md) | IdeaPress `1.1.0` on LoadLedger, SpotCheck and CutCtx |
+| **M13** | Adoption — extraction complete | [PromptCadence arc §6](promptcadence-roadmap.md) | IdeaPress `1.1.0` on LoadLedger, Commissioner and CutCtx |
 
 This roadmap stays authoritative for M1–M9 and for the sequencing principle both arcs inherit.
 

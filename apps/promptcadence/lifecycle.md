@@ -17,7 +17,7 @@ graph TD
     BG -- "yes (default)" --> PL["Planner drafts Plan via LoadCoach<br/>(tools.plan, response json, PromptCadence validates)"]
     PL --> TP["TierPolicy resolves candidate tiers per step"]
     TP --> PA{"PlanApprover:<br/>tiers × budget × egress policy"}
-    PA -- rejected --> RF["Refuse with per-step verdicts;<br/>SpotCheck records the refusal"]
+    PA -- rejected --> RF["Refuse with per-step verdicts;<br/>Commissioner records the refusal"]
     PA -- "gated (hybrid/manual)" --> HW["awaiting_approval<br/>operator approve/deny"]
     HW -- approved --> MI
     HW -- denied --> RF
@@ -31,7 +31,7 @@ graph TD
     TC -- yes --> TY["ToolYard: validate, sandbox, execute<br/>refusal = structured ToolResult"]
     TY --> TR
     TC -- no --> DH["DeviationHandler: turn facts vs<br/>ExecutionIntent, category-typed (§5)"]
-    DH --> GA["LoadLedger debits · SpotCheck records egress<br/>· turn appended · events emitted"]
+    DH --> GA["LoadLedger debits · Commissioner records egress<br/>· turn appended · events emitted"]
     GA --> MORE{"steps remaining,<br/>budget remaining?"}
     MORE -- yes --> LC
     MORE -- no --> EX["ExplanationBuilder composes the record"]

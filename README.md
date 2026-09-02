@@ -31,14 +31,14 @@ accepted as ADRs 0045–0067 before any code:
 
 ```text
 Harness AI
-PromptCadence    + CutCtx · ToolYard · LoadLedger · SpotCheck
+PromptCadence    + CutCtx · ToolYard · LoadLedger · Commissioner
 ```
 
 PromptCadence is a fourth application — a plan-approved, tier-routed agent loop over LoadCoach — and
 the four packages are the capabilities it justifies extracting. In parallel, the
 [Adapter arc](roadmap/adapter-roadmap.md) adds hot-swappable LoRA serving to the existing
 components. Both are scheduled in [Outstanding Work](roadmap/outstanding-work.md); neither has a
-repository yet, so a reference to `promptcadence`, `cutctx`, `toolyard`, `loadledger` or `spotcheck`
+repository yet, so a reference to `promptcadence`, `cutctx`, `toolyard`, `loadledger` or `commissioner`
 in these documents names a **specification**, not an importable package.
 
 ---
@@ -128,7 +128,7 @@ LoadCoach and IdeaPress builds). **ADRs 0045–0067** are the two post-1.0 arcs'
 
 | ADR | Decision |
 |---|---|
-| [0045](adr/0045-promptcadence-reaches-models-only-through-loadcoach.md) – [0057](adr/0057-the-explanation-is-materialized-and-the-rows-stay-authoritative.md) | The PromptCadence arc: a fourth application that reaches models only through LoadCoach; ordered data classification; tiers as configuration; the bypass that removes planning and never governance; approval as a mode with its own scope; mountable package tables; the one payload that travels; compaction as a view; tool discipline; SpotCheck's scope; multi-provider registration; the `ExecutionIntent`; the materialized explanation |
+| [0045](adr/0045-promptcadence-reaches-models-only-through-loadcoach.md) – [0057](adr/0057-the-explanation-is-materialized-and-the-rows-stay-authoritative.md) | The PromptCadence arc: a fourth application that reaches models only through LoadCoach; ordered data classification; tiers as configuration; the bypass that removes planning and never governance; approval as a mode with its own scope; mountable package tables; the one payload that travels; compaction as a view; tool discipline; Commissioner's scope; multi-provider registration; the `ExecutionIntent`; the materialized explanation |
 | [0058](adr/0058-the-execution-subject-gains-an-adapter-axis.md) – [0067](adr/0067-reliability-keys-on-the-subject-not-the-base.md) | The Adapter arc: the adapter axis on the execution subject; evidence measured never inherited; selection versus serving mode; the directory-and-manifest registry; llama.cpp through a supervised process; one adapter at a time; selection through the capability vocabulary; adapters classified and local-only; two-level residency; reliability keyed on the subject |
 
 ---
@@ -193,7 +193,7 @@ LoadCoach and IdeaPress builds). **ADRs 0045–0067** are the two post-1.0 arcs'
 | **CutCtx** | 3 — capability | [spec](packages/cutctx/spec.md) | [plan](packages/cutctx/development-plan.md) | *Specified;* M10, two named consumers |
 | **ToolYard** | 3 — capability | [spec](packages/toolyard/spec.md) | [plan](packages/toolyard/development-plan.md) | *Specified;* M10, before any PromptCadence tool executes |
 | **LoadLedger** | 3 — capability | [spec](packages/loadledger/spec.md) | [plan](packages/loadledger/development-plan.md) | *Specified;* M10 |
-| **SpotCheck** | 3 — capability | [spec](packages/spotcheck/spec.md) | [plan](packages/spotcheck/development-plan.md) | *Specified;* M10, after SetSpec 0.5 publishes its payload |
+| **Commissioner** | 3 — capability | [spec](packages/commissioner/spec.md) | [plan](packages/commissioner/development-plan.md) | *Specified;* M10, after SetSpec 0.5 publishes its payload |
 
 The last four have no repository yet — see §1. They are built at M10 of the
 [PromptCadence arc](roadmap/promptcadence-roadmap.md), each with two named consumers, per

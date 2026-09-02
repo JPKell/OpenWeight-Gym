@@ -6,14 +6,14 @@ boundaries) and [§5.3](../architecture/master-architecture.md) (storage model),
 [Database Standards §1](../standards/database-standards.md).
 **Relates to:** [ADR-0005](0005-database-strategy.md) (SQLAlchemy 2.0 + Alembic),
 [ADR-0006](0006-sqlite-and-postgresql-roles.md) (two dialects), [ADR-0011](0011-shared-package-boundaries.md)
-(extraction at the second consumer), [ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md)
+(extraction at the second consumer), [ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md)
 and [LoadLedger §7](../packages/loadledger/spec.md) (the two packages that use this).
 **Source:** [PromptCadence roadmap §2, D-6](../roadmap/promptcadence-roadmap.md).
 
 ## Context
 
 Two of the arc's packages exist to keep durable rows: LoadLedger accumulates debits and balances,
-SpotCheck records every egress verdict. Both have two named consumers (PromptCadence now,
+Commissioner records every egress verdict. Both have two named consumers (PromptCadence now,
 IdeaPress at M13), and both have contracts that are statements *about the rows*: a debit and the
 verdicts it reports commit together; an egress ledger is append-only; history is re-costable
 because every entry stores `TokenUsage` and a `pricing_hash` rather than a money figure.
@@ -50,10 +50,10 @@ migration history, or the data.**
    opaque strings, because the package must not know what a trajectory or a unit is.
 3. **Sessions arrive by injection.** `SqlLedger(session_factory, …)` takes a callable returning a
    SQLAlchemy 2.0 session. The package opens no connection, reads no URL, and holds no engine.
-4. **No sibling import.** LoadLedger and SpotCheck do not import WeightsDB — master architecture
+4. **No sibling import.** LoadLedger and Commissioner do not import WeightsDB — master architecture
    §2 rule 3 forbids it, and substantively it would force every consumer of a budget accumulator to
    take a migration runner and a backup implementation with it. `sqlalchemy` is an optional extra
-   (`loadledger[sql]`, `spotcheck[sql]`) so the pure-value core stays installable with nothing.
+   (`loadledger[sql]`, `commissioner[sql]`) so the pure-value core stays installable with nothing.
 5. **The host owns every migration.** A column change in a mounted table ships as an upgrade note
    and a migration *recipe* — documentation plus, at most, a helper the host calls from its own
    revision. A package never runs a migration, and auto-migration on import is forbidden outright.
@@ -100,7 +100,7 @@ install all of them to get one.
 
 ## Consequences
 
-* LoadLedger and SpotCheck each ship a `sql` extra containing a mount function, a SQLAlchemy-backed
+* LoadLedger and Commissioner each ship a `sql` extra containing a mount function, a SQLAlchemy-backed
   implementation of their protocol, and no engine. Their pure cores (`InMemoryLedger`,
   `InMemoryEgressLedger`) remain first-class and are what the deterministic tests use.
 * PromptCadence's single Alembic history includes `ledger_entries` and `egress_decisions` alongside
