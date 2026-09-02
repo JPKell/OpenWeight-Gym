@@ -6,7 +6,7 @@
 **Relates to:** [ADR-0048](0048-the-bypass-removes-planning-never-governance.md) (the invariance
 this makes structural), [ADR-0049](0049-approval-is-a-mode-with-its-own-scope.md) (who mints),
 [ADR-0044](0044-a-state-change-and-its-event-are-one-write.md) (minting commits with its event),
-[ADR-0057](0057-the-explanation-is-materialized-rows-stay-authoritative.md) (every revision is in
+[ADR-0057](0057-the-explanation-is-materialized-and-the-rows-stay-authoritative.md) (every revision is in
 the record).
 **Source:** [PromptCadence roadmap §2, D-12](../roadmap/promptcadence-roadmap.md).
 

@@ -31,7 +31,7 @@ The second question is what compaction *does* to the record. The cheap implement
 from the store, which frees space and is irreversible. But PromptCadence's explanation contract
 requires every turn to remain reconstructable, and a materialized explanation whose rows have been
 edited by a compaction cannot satisfy `materialize(rows) == compose_live(rows)`
-([ADR-0057](0057-the-explanation-is-materialized-rows-stay-authoritative.md)).
+([ADR-0057](0057-the-explanation-is-materialized-and-the-rows-stay-authoritative.md)).
 
 ## Decision
 

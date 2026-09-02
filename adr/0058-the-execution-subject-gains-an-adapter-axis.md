@@ -8,7 +8,7 @@ canonical string format and model references in URLs).
 **Extends:** [Adapter Identity and Serving §2](../architecture/adapter-identity-and-serving.md),
 [Canonical Model Identity §5](../architecture/canonical-model-identity.md) (comparability).
 **Relates to:** [ADR-0059](0059-adapter-evidence-is-measured-never-inherited.md) (what the axis
-makes necessary), [ADR-0060](0060-selection-in-the-subject-serving-mode-in-the-profile.md) (what
+makes necessary), [ADR-0060](0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md) (what
 the axis is *not*).
 **Source:** [Adapter roadmap §2, A-1](../roadmap/adapter-roadmap.md).
 
@@ -32,7 +32,7 @@ the separating. That is precisely why a new axis is needed rather than a reuse o
 
 **It cannot be the runtime profile hash.** The profile hash separates serving configurations, and
 it will indeed carry *whether the server was launched with adapters registered*
-([ADR-0060](0060-selection-in-the-subject-serving-mode-in-the-profile.md)). But it is an opaque
+([ADR-0060](0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md)). But it is an opaque
 hash. Nobody can ask a hash "how good is the fact-check adapter?", pin one by name, or show a user
 which of three adapters a turn ran under. Separation without attribution is only half of what
 evidence needs.
@@ -129,7 +129,7 @@ nothing to compute against. It also makes identity a thing the provider cannot c
 ADR-0008's rule that identity names what the provider serves.
 
 **Put the adapter in the runtime profile hash.** Defensible, and half-right — the *serving mode*
-does go there ([ADR-0060](0060-selection-in-the-subject-serving-mode-in-the-profile.md)) — so this
+does go there ([ADR-0060](0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md)) — so this
 is the alternative that requires the least new surface of all. Rejected because a hash separates
 without naming. Three adapters on one base would produce three profile hashes that no UI could
 label, no task profile could weight and no caller could pin; "no benchmark, no use"
