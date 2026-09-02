@@ -2,6 +2,7 @@
 
 **Status:** Accepted (2026-08-21)
 **Amends:** [ADR-0008](0008-canonical-model-identity.md) §"Canonical string".
+**Amended by:** [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) — the subject's canonical string gains an optional `+name@sha256:…` adapter suffix; where it is a query-parameter value the `+` is `%2B`; §3 (never a path segment) and §4 (never parsed) are unchanged.
 
 ## Context
 

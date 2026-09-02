@@ -45,9 +45,13 @@ its output is the minting of an `ExecutionIntent`.**
 2. **`approve` is its own scope**, distinct from `write`. The identity that submits work cannot
    approve its own egress. Startup refuses `mode = "manual"` with no `approve`-scoped token
    defined — a mode that nobody can satisfy is a configuration error, not a runtime surprise.
-3. **Hybrid gates fire per turn in bypass mode.** Bypass removes planning, not approval of gated
-   egress ([ADR-0048](0048-the-bypass-removes-planning-never-governance.md)); the gates are
-   properties of what a turn is about to do, not of how the work was planned.
+3. **Hybrid gates fire in bypass mode too.** Bypass removes planning, not approval of gated
+   egress ([ADR-0048](0048-the-bypass-removes-planning-never-governance.md)). A gate is evaluated
+   when an intent is minted ([ADR-0056](0056-every-turn-executes-under-one-execution-intent.md)
+   rule 4), so on the bypass path it fires at the minting of the default intent before the first
+   turn, and again at every re-mint a turn's drift triggers — never once per turn, which would be
+   the per-turn intent ADR-0056 rejects. The gates are properties of what the intent permits, not
+   of how the work was planned.
 4. **A pending approval expires and halts.** After `approval.request_timeout_hours` (default 24)
    the trajectory halts with the timeout recorded as its cause. A timeout is never a grant, and
    never an indefinite wait.

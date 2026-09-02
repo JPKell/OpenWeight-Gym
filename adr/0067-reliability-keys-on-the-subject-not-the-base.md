@@ -34,10 +34,12 @@ nine-gigabyte model out of routing.
 1. **A failing `(base, adapterA)` is deprioritized and eventually broken *as that subject*.** It
    never breaks the bare base, and it never breaks a sibling adapter.
 2. **Process- and transport-level failures are availability, not reliability.** A `llama-server`
-   that will not start, a dead port, a connection refused — these are provider availability facts,
-   reported and scored as such, and they already affect every subject on that provider without
-   anything being attributed to a subject's quality. Keeping the two separate is what stops a crashed
-   process from looking like four failing adapters.
+   that will not start, a dead port, a connection refused — these are provider health facts, and
+   they take every subject on that provider out of the candidate pool through the existing
+   `model_unavailable` hard constraint ([LoadCoach Routing §4](../apps/loadcoach/routing.md)): a
+   statement about reachability, never about a subject's quality, and distinct from the
+   load-driven `availability_factor` of Routing §6, which they do not touch. Keeping the two
+   separate is what stops a crashed process from looking like four failing adapters.
 3. **Cross-adapter attribution is not inferred in v1.** "Is the base failing?" is deliberately left
    to a human, reading the per-subject rows the explanation already shows. The suite does not guess
    at it, and it does not pretend to.

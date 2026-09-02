@@ -2,6 +2,7 @@
 
 **Status:** Accepted (2026-08-21)
 **Amends:** [ADR-0008](0008-canonical-model-identity.md) (measurement subject in execution), [ADR-0017](0017-benchmark-confidence-and-freshness.md) (runtime-profile hard separation, made operable).
+**Amended by:** [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) — the execution subject gains an optional adapter axis; evidence applies only when the profile hash **and** the adapter axis match.
 
 ## Context
 

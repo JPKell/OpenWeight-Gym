@@ -42,8 +42,9 @@ after    (model identity, adapter | none,    runtime_profile_hash, machine_finge
   is the identity).
 * **Canonical string form** (amends ADR-0024, additively): the existing canonical id gains an
   optional suffix — `llamacpp/qwen3.5-9b-q8@sha256:1f3a9c4e2b70+factcheck@sha256:9e2b41d07c55`.
-  Absent suffix = bare subject, unchanged from today. The `+` is percent-encoded where it appears
-  in a URL path segment.
+  Absent suffix = bare subject, unchanged from today. A canonical string is never a URL path
+  segment (ADR-0024 §3); where it appears as a query-parameter value the `+` is percent-encoded as
+  `%2B`, because a bare `+` decodes to a space under form encoding.
 * **Comparability rule, restated:** evidence measured on `(base, adapterA)` applies to
   `(base, adapterA)` and to nothing else — not to the bare base, not to `(base, adapterB)`.
 * **Base compatibility is verified by digest, fail closed.** A PEFT `adapter_config.json` names
@@ -84,7 +85,7 @@ model.adapter_manifest v1.0
   declared_capabilities[]  # namespaced specializations from the SetSpec vocabulary
                            #   (coding.python, content.fact_check, user.house_voice, …);
                            #   validated; a bare reserved root is refused
-  data_classification      # public | internal | confidential (§9)
+  data_classification      # public | internal | confidential — required, no default (§9)
   format = "gguf"          # v1 accepts only what llama.cpp serves
   created_at · notes
 ```
@@ -223,7 +224,7 @@ shows.
 
 * **Multi-adapter composition** (several LoRAs with scales on one request) — the identity becomes
   a weighted set and the evidence space squares; no current consumer needs it. One adapter at a
-  time (A-6).
+  time, at a fixed scale of 1.0 (A-6).
 * **Remote adapter serving** — see §9.
 * **In-suite training** — adapters arrive by directory drop; a training component is a future arc.
 * **Automatic base-failure attribution across adapters** — see §10.

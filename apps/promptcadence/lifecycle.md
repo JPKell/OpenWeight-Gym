@@ -138,8 +138,9 @@ the egress policy; its output is deterministic given those inputs, and versioned
 every plan in `awaiting_approval` for an `approve`-scoped operator. `hybrid` auto-approves except
 steps matching the configured gates (egress at/above `gate_egress_at`, estimated step cost above
 `gate_step_cost`) — those pause the trajectory at the point the gated step becomes ready, so
-ungated early steps may run first. In bypass mode the same gates fire per turn: bypass removes
-planning, never approval of gated egress. A pending request expires after
+ungated early steps may run first. In bypass mode the same gates fire too — at the minting of the
+default intent (§4.3) and at every re-mint a drift triggers, since a gate is evaluated at minting:
+bypass removes planning, never approval of gated egress. A pending request expires after
 `approval.request_timeout_hours` and halts the trajectory with the timeout recorded.
 
 ### 4.3 The ExecutionIntent — the approved envelope every turn checks against

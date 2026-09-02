@@ -40,7 +40,8 @@ plus one reviewed manifest per adapter, and the manifest is a SetSpec payload.**
    `name`, `artifact_file` (a relative path), `artifact_sha256` (the identity), optional
    `source_sha256` (lineage), `base` (provider model name plus artifact digest, the digest optionally
    absent → `name_only` confidence, flagged everywhere it surfaces), `declared_capabilities[]`
-   (namespaced vocabulary terms, validated; a bare reserved root refused), `data_classification`,
+   (namespaced vocabulary terms, validated; a bare reserved root refused), `data_classification`
+   (required, no default — [ADR-0065](0065-an-adapter-is-classified-and-local-only.md)),
    `format = "gguf"`, `created_at`, `notes`.
 2. **Opt-in, per application.** Each consumer names the directory in its own configuration
    (`[adapters] directory = ""`), and **empty means the feature is off**. A deployment that has never

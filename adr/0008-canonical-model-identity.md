@@ -1,7 +1,7 @@
 # ADR-0008 — Canonical model identity
 
 **Status:** Accepted (2026-08-21)
-**Amended by:** [ADR-0024](0024-canonical-id-and-model-references.md) — fixes the canonical string format and removes it from URL paths.
+**Amended by:** [ADR-0024](0024-canonical-id-and-model-references.md) — fixes the canonical string format and removes it from URL paths; [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) — the measurement subject gains an optional adapter axis, and an absent adapter is byte-for-byte today's subject; `ModelIdentity` itself is unchanged.
 
 ## Context
 

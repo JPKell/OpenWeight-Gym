@@ -5,7 +5,9 @@
 [ADR-0017](0017-benchmark-confidence-and-freshness.md) (confidence and freshness),
 [ADR-0022](0022-capability-evidence-record-contract.md) (the evidence record),
 [ADR-0037](0037-production-evidence-never-raises-capability-scores.md) (the other shortcut, already
-closed), [Adapter Identity and Serving §6](../architecture/adapter-identity-and-serving.md).
+closed), [ADR-0043](0043-grounding-is-verified-not-assumed.md) (a property nothing measured is not
+one the record may assert — here, that a subject's evidence is its own),
+[Adapter Identity and Serving §6](../architecture/adapter-identity-and-serving.md).
 **Relates to:** [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) (the subject this
 attaches to), [ADR-0064](0064-adapters-are-selected-through-the-capability-vocabulary.md) (the gate
 that enforces it arithmetically), [ADR-0067](0067-reliability-keys-on-the-subject-not-the-base.md).
@@ -105,10 +107,11 @@ wrong subject.
 
 ## Consequences
 
-* An adapter is unusable through routed selection until it is benchmarked. That is the intended
-  friction; the pinned path and the gate's recorded off switch
-  ([ADR-0064](0064-adapters-are-selected-through-the-capability-vocabulary.md)) are the two visible
-  ways around it, and neither is silent.
+* An adapter is unusable until it is benchmarked — through routed selection and through a pin
+  alike, since the gate is a hard constraint and a pin bypasses only scoring. That is the intended
+  friction; the gate's recorded off switch
+  ([ADR-0064](0064-adapters-are-selected-through-the-capability-vocabulary.md) rule 3) is the one
+  way around it, and it is not silent.
 * FreeWeight 1.1 gains adapter subject enumeration and the A-2 panel policy; the benchmarking cost
   per adapter is three suite groups rather than a full catalogue, which is what makes the rule
   affordable enough to keep.

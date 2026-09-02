@@ -82,7 +82,10 @@ An intent may carry fallback tiers. Approval gates — the hybrid egress gate, t
 gate — are evaluated **at minting, against the most permissive tier the intent permits**, not
 against its first choice. Without this rule a pre-approved fallback is a smuggling route: a step
 approved for `local_fast` with `remote_frontier` in its fallbacks would pass an egress gate that
-only looked at the primary, and then escalate past it silently.
+only looked at the primary, and then escalate past it silently. Minting is also the only moment a
+gate fires on the bypass path — at the default intent, and at every drift-triggered re-mint
+([ADR-0049](0049-approval-is-a-mode-with-its-own-scope.md) rule 3); there is no per-turn gate
+evaluation, because there is no per-turn intent (see *Alternatives*).
 
 ### 5. The taxonomy is closed by construction
 

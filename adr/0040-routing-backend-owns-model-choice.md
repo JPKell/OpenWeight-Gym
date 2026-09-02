@@ -4,7 +4,7 @@
 **Extends:** [IdeaPress Spec §12](../apps/ideapress/spec.md),
 [IdeaPress Workflows §6](../apps/ideapress/workflows.md).
 **Relates to:** [ADR-0038](0038-one-model-at-a-time-per-gpu.md) (one model at a time per GPU),
-[ADR-0027](0027-admission-control.md) (LoadCoach admission), risk I2 (coupling through
+[ADR-0029](0029-queue-mechanics.md) (LoadCoach admission), risk I2 (coupling through
 convenience).
 
 ## Context

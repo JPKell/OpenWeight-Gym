@@ -43,8 +43,11 @@ behind it.
 * **Data classification.** The trajectory's declaration binds every turn.
 * **Budget.** Pre-flight `would_exceed`, per-turn debits, and ceiling evaluation.
 * **Egress.** A `SpotCheck` evaluation per turn, recorded whether it approves or denies.
-* **Approval gates.** Hybrid gates fire **per turn** in bypass mode — bypass removes planning,
-  never approval of gated egress ([ADR-0049](0049-approval-is-a-mode-with-its-own-scope.md)).
+* **Approval gates.** Hybrid gates fire in bypass mode too — at the minting of the default
+  intent, and at every re-mint a turn's drift triggers
+  ([ADR-0049](0049-approval-is-a-mode-with-its-own-scope.md) rule 3,
+  [ADR-0056](0056-every-turn-executes-under-one-execution-intent.md) rule 4). Bypass removes
+  planning, never approval of gated egress.
 * **The deviation comparison**, against the turn's `ExecutionIntent`.
 * **The audit trail** — turns, tool calls, ledger entries, egress decisions, events, the
   explanation.

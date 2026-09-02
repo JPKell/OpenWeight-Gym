@@ -75,8 +75,8 @@ execution. Genuinely the strongest alternative: LoadCoach already owns a lease-b
 recovery edges, admission control, auth with scopes, an explanation store and an operator UI, and a
 harness is a loop above exactly those. It would ship sooner and share the machinery outright.
 Rejected because it would put tool execution and transcript state inside the component that
-deliberately executes no tools and holds no conversation — LoadCoach's ownership row forbids it
-content workflows for the same reason IdeaPress may not route. The router would acquire the suite's
+deliberately executes no tools and holds no conversation. LoadCoach's ownership row denies it
+content workflows, exactly as IdeaPress's denies it routing. The router would acquire the suite's
 riskiest behaviour, and every LoadCoach release would then carry an agent loop's blast radius. A
 component that must stay a router stays a router.
 

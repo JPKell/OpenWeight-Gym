@@ -2,6 +2,7 @@
 
 **Status:** Accepted (2026-08-28)
 **Amends:** [ADR-0025 §1](0025-envelope-boundaries.md) (what may carry an envelope), [FreeWeight spec §7.3](../apps/freeweight/spec.md), [FreeWeight API §5](../apps/freeweight/api.md).
+**Amended by:** [ADR-0051](0051-plans-stay-internal-and-one-payload-travels.md) — §1's table gains `promptcadence.*` as a fourth application namespace and `governance.*` as a SetSpec-owned root.
 **Related:** [ADR-0009](0009-setspec-schema-strategy.md) (SetSpec versioning), [ADR-0022](0022-capability-evidence-record-contract.md) (the cross-application contract), [API and Contract Standards §7](../standards/api-and-contract-standards.md).
 
 ## Context

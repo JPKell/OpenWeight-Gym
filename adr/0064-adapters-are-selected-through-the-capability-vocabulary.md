@@ -82,8 +82,9 @@ be a parallel code path inside the router that bypasses scoring entirely. That l
 the decisive one. Two selection paths means the explanation has two shapes, `require_adapter_evidence`
 can only gate one of them, and the honest answer to "why this adapter?" becomes "because someone
 typed that word on both ends" — in the component whose entire product claim is that it can explain
-its choice. The friction the refusal creates is answered in the open, by rule 3's off switch and by
-rule 4's pins, rather than by a channel that routes around the measurement.
+its choice. The friction the refusal creates is answered in the open, by rule 3's recorded off
+switch, rather than by a channel that routes around the measurement — and not by pins, which
+bypass scoring and never the gate (rule 4).
 
 **A separate adapter-selection surface in LoadCoach** — adapter profiles keyed on adapter metadata,
 sitting beside task profiles. Rejected for the same reason at one remove: it is the second router
@@ -116,9 +117,12 @@ default is on; the switch is visible; the reason it was thrown is on every decis
   (`adapter_incompatible`, `adapter_unmeasured`, `excluded_by_policy` for remote + adapter). It
   gains **no** new selection algorithm — the scoring code is untouched, which is what makes this
   affordable inside a 1.0 application.
-* An adapter is unusable through routed selection until it is benchmarked. That is the intended
-  cost, and it is what makes the routed path trustworthy; the pinned path and the gate's off switch
-  are the two honest ways around it, both recorded per decision.
+* An adapter is unusable until it is benchmarked — through routed selection and through a pin
+  alike, because the gate is a hard constraint and a pin bypasses only scoring (rule 4). That is
+  the intended cost, and it is what makes both paths trustworthy; the gate's off switch is the one
+  honest way around it, recorded on every decision made under it. Stated plainly: after LA3, trying
+  an adapter nobody has benchmarked means turning the gate off for the whole deployment, and the
+  record shows that it was.
 * Declaring a capability specialization on a manifest is now a claim under test rather than a
   label: FreeWeight benchmarks exactly the declared capabilities plus the regression panel
   ([ADR-0059](0059-adapter-evidence-is-measured-never-inherited.md)), so a manifest that

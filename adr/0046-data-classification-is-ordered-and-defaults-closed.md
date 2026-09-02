@@ -55,7 +55,7 @@ the life of the suite.**
    an omission costs a user a remote tier rather than costing them their data. Every surface that
    accepts a classification says so: PromptCadence's `POST /trajectories` defaults to
    `"confidential"`, and a remote tier that declares no ceiling is denied outright rather than
-   assumed public ([ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md) rule 2).
+   assumed public ([ADR-0054](0054-spotcheck-records-egress-it-does-not-enforce-it.md) rule 3).
 4. **Adding a level is a new ADR, not a minor release.** The ordering is what consumers compute
    against, so a fourth level has to be given a position between existing ones, and every stored
    row, every tier ceiling and every adapter manifest written before it acquires a new meaning

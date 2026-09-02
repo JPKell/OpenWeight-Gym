@@ -357,6 +357,9 @@ The HTTP edge is asynchronous; everything below it is synchronous. See
   multi-user deployments — see [ADR-0006](../adr/0006-sqlite-and-postgresql-roles.md).
 * SQLAlchemy 2.0 ORM + Alembic migrations, provided through WeightsDB
   ([ADR-0005](../adr/0005-database-strategy.md)).
+* A shared package may ship **mountable** table definitions that the application mounts into its own
+  metadata and Alembic history; the package never owns an engine, a session, a migration history or
+  the data ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)).
 * Large or opaque payloads (raw model responses, exported archives, generated documents) live in
   the artifact directory with a hash and a row referencing them, not inline in a column.
 
@@ -429,6 +432,10 @@ sequenceDiagram
 | SweatMeter | FW, LC, IP (optional display) | Snapshot + sampler. FreeWeight persists samples during runs; LoadCoach reads them for admission control; IdeaPress only displays. |
 | WeightsDB | FW, LC, IP | Engine/session/migration plumbing. Each app declares its own models and its own Alembic history. |
 | MirrorWall | FW, LC, IP | Templates, tokens, macros, SSE and envelope helpers. Each app keeps its own pages and navigation. |
+| CutCtx | PC; IP at M13 | Pure compaction planning over transcripts. The application executes any planned summarization through its own governed inference path; the package never calls a model ([ADR-0052](../adr/0052-compaction-is-a-view-and-the-package-plans-it-only.md)). |
+| ToolYard | PC; IP's `research` stage when it is built | Tool registry and executor. Handlers are registered in code at startup; a refusal is a result, never an exception ([ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md)). |
+| LoadLedger | PC; IP at M13 | Ceilings, debits and verdicts. Its tables are mounted into the host's own metadata and Alembic history; the host owns the engine, the sessions and the data ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)). |
+| SpotCheck | PC; IP at M13 | Egress verdicts and the append-only decision ledger, mounted the same way; the Python form of `governance.egress_decision` ([ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md)). |
 
 **Version pinning policy:** applications depend on compatible ranges (`baseaicore>=0.4,<0.5`
 pre-1.0; `>=1.2,<2` post-1.0), never on a Git branch. See

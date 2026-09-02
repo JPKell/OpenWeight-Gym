@@ -4,9 +4,9 @@
 **Extends:** [Master Architecture §5.2](../architecture/master-architecture.md),
 [IdeaPress Spec §12](../apps/ideapress/spec.md),
 [IdeaPress Workflows §6.2](../apps/ideapress/workflows.md).
-**Relates to:** [ADR-0023](0023-served-context-not-advertised-maximum.md) (served context, not the
-advertised maximum), [ADR-0027](0027-admission-control.md) (LoadCoach admission),
-[ADR-0010](0010-database-backed-queue.md) (no broker).
+**Relates to:** [ADR-0023](0023-runtime-profile-resolution.md) (served context, not the
+advertised maximum), [ADR-0029](0029-queue-mechanics.md) (LoadCoach admission),
+[ADR-0010](0010-queue-implementation.md) (no broker).
 
 ## Context
 
@@ -28,7 +28,7 @@ LoadCoach already implements the arithmetic this needs.
 `domain/routing/constraints.py::estimate_vram` computes
 `size_bytes × loading_overhead_factor + kv_bytes_per_token × served_context +
 activation_overhead` — weights **plus room for the context actually served**, never the
-descriptor's advertised maximum ([ADR-0023 §4](0023-served-context-not-advertised-maximum.md)).
+descriptor's advertised maximum ([ADR-0023 §4](0023-runtime-profile-resolution.md)).
 `device_fits` compares that against live free VRAM per device with a 512 MB `vram_headroom_bytes`
 reserve; a resource-shaped rejection sends the job to `waiting_resources`, which releases the
 lease; ageing raises effective priority so nothing starves; an idle resident is unloaded LRU to
@@ -65,7 +65,7 @@ This is a machine-wide policy, not a per-application preference. Concretely:
 3. **A standalone application participates decentrally, without a broker.** Each application checks
    live free VRAM before it loads and waits — *with the numbers* — rather than loading optimistically.
    No coordinator, no lock service, no shared state: this satisfies
-   [ADR-0010](0010-database-backed-queue.md)'s no-broker constraint, and it is the only design that
+   [ADR-0010](0010-queue-implementation.md)'s no-broker constraint, and it is the only design that
    works when the applications are genuinely independent and any one of them may not be installed.
    For IdeaPress the preflight is **optional**, because `sweatmeter` is an optional extra
    ([Spec §5, §16](../apps/ideapress/spec.md)): with `ideapress[telemetry]` installed the preflight

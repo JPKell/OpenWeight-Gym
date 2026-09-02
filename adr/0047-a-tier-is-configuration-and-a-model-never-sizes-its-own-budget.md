@@ -71,11 +71,12 @@ verify that each configured tier's task profile exists in the running LoadCoach.
 
 * **Token ceilings bind every turn on every tier** — the universal brake, and the only one that
   governs local execution.
-* **Money ceilings bind priced usage.** A remote tier must name a pricing source (`ModelPricing`
-  records with provenance); a remote tier without one is refused at approval time with
-  `UNPRICED_EGRESS_REFUSED`. **Unpriced egress is refused, not free** — a ceiling cannot bind what
-  cannot be priced, and treating it as free is exactly the fabricated zero
-  [ADR-0016](0016-unavailable-is-not-zero.md) forbids.
+* **Money ceilings bind priced usage.** A remote tier must name a pricing source — `ModelPricing`
+  records with provenance — and a configuration that omits one is refused at startup (§2 above). A
+  remote step whose selected model has no pricing record in that source is refused at approval
+  time with `UNPRICED_EGRESS_REFUSED`, before any call. **Unpriced egress is refused, not free** —
+  a ceiling cannot bind what cannot be priced, and treating it as free is exactly the fabricated
+  zero [ADR-0016](0016-unavailable-is-not-zero.md) forbids.
 
 ### 4. Estimates are layered, and their source is recorded
 
@@ -110,6 +111,19 @@ allow. The revisit trigger below is the honest reopening.
 **Define a tier as a set of models rather than a task profile.** Rejected for the same reason as
 the first alternative, plus one more: a task profile carries hard constraints and capability
 weights that evidence updates, and a model set carries nothing that improves.
+
+**A single money ceiling.** The ceiling every user expects — "stop at $5" — and the only one a
+hosted harness needs. Rejected because in this suite it does not bind:
+[ADR-0030](0030-model-cost-and-pricing.md) makes a local model's cost `UNSUPPORTED`, never `$0.00`,
+so a trajectory on a local tier under a $5 cap runs until the disk fills and never approaches it. A
+money-only ceiling is a ceiling on the expensive tiers and no ceiling at all on the default one.
+
+**A single token ceiling.** Universal, provider-independent, and it binds local execution. Rejected
+because tokens do not bound spend: the same ten thousand tokens cost nothing on `local_fast` and
+real money on `remote_frontier`, so a token ceiling tight enough to cap remote spend strands local
+work, and one loose enough for local work leaves remote spend uncapped. Two ceilings with two scopes
+is the smallest rule that binds everywhere, and ADR-0030's derivation makes the money figure
+available whenever a price is.
 
 **Ask the planner for a cost estimate per step.** Cheap, obvious, and the plan is right there.
 Rejected: a number the model invented would size the budget that constrains the model. This is

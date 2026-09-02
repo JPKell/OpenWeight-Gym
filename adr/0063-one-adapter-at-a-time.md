@@ -35,15 +35,17 @@ time with an excuse.
 
 ## Decision
 
-**A request selects at most one adapter, applied at a fixed scale. There is no composition and no
-scale mixing.**
+**A request selects at most one adapter, applied at a fixed scale of `1.0`. There is no composition
+and no scale mixing.**
 
 1. **One adapter per request.** The provider sends at most one `lora` entry. Two adapters on one
    request is a typed refusal, not a merge.
-2. **Scale is fixed, and is not a request parameter.** The adapter is applied as it was trained and
-   benchmarked. A per-request scale would vary behaviour without varying identity — the same defect
+2. **Scale is fixed at `1.0`, and is not a request parameter.** The provider sends the single `lora`
+   entry with `scale: 1.0` — the adapter as it was trained and benchmarked, neither attenuated nor
+   amplified. A per-request scale would vary behaviour without varying identity — the same defect
    as composition, in miniature — so the identity design forecloses it: there is nowhere in
-   `AdapterIdentity` for a scale to live, and that is deliberate rather than an omission.
+   `AdapterIdentity` or in the manifest for a scale to live, and that is deliberate rather than an
+   omission.
 3. **The refusal is explicit.** A caller asking for two adapters gets a named error, never a silent
    selection of the first one.
 

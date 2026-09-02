@@ -37,10 +37,14 @@ is to say where an adapter sits in it.
 **Every adapter carries a data classification, adapters are local-only artifacts in v1, and the
 effective classification of work is the join of the caller's and the adapter's.**
 
-1. **The manifest carries `data_classification`**, and it is required — not defaulted to public.
-   An adapter trained on confidential material is confidential, and the fail-closed default of
-   [ADR-0046](0046-data-classification-is-ordered-and-defaults-closed.md) applies to an omitted or
-   unreviewed value.
+1. **The manifest carries `data_classification`, and the field is required.** The
+   `model.adapter_manifest` schema marks it `required` with no default: a manifest that omits it
+   is invalid, and its adapter is unavailable — named by `doctor` — until a person supplies the
+   value. `loadcoach adapters scan` writes `confidential` into every draft, so a reviewed value can
+   only ever be relaxed on purpose. That keeps the fail-closed direction of
+   [ADR-0046](0046-data-classification-is-ordered-and-defaults-closed.md) without a schema default
+   a validator would fill in silently — ADR-0046's default governs callers, not manifests. An
+   adapter trained on confidential material is confidential.
 2. **Effective classification is `max(caller's declaration, adapter's classification)`**, recorded
    wherever classification is recorded — on the turn, on the attempt, in the egress request. This is
    the lattice join the ordered vocabulary exists to make expressible, and it is a built-in `max()`
