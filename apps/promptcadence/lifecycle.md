@@ -232,6 +232,15 @@ both:
   with `UNPRICED_EGRESS_REFUSED`. Unpriced egress is refused, not free — a ceiling cannot bind
   what cannot be priced, and "free" is exactly the fabricated zero ADR-0016 forbids.
 
+A priced response the provider did not fully report — the ordinary case for an adapter that
+leaves the cache classes unreported — accumulates the components that were priced as a **floor**,
+and every verdict over that window carries the counts that make it one
+([ADR-0069](../../adr/0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md)).
+On a floor, "exceeded" is certain and "under budget" is not, so the brake can fire late by the
+unreported portion. `[budget] partial_pricing = "strict"` reverses that for a hard budget: a
+response that could not be fully priced exceeds the money ceiling, at pre-flight too, and the cap
+is never crossed. Either way the UI renders a floor as "at least", never as a bare figure.
+
 Debits store `TokenUsage` + `pricing_hash`, never a money figure as the primary fact; scopes
 (`per-trajectory`, `per-day` UTC, `per-tier`) may be active simultaneously and the most
 restrictive binds, with every entry recording its balance after against each active ceiling

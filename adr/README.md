@@ -91,6 +91,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0066](0066-residency-is-two-level.md) | Residency is two-level: the base is the expensive switch, the adapter is free | Accepted |
 | [0067](0067-reliability-keys-on-the-subject-not-the-base.md) | Reliability and the breaker key on the subject, never on the base | Accepted |
 | [0068](0068-a-post-freeze-minor-is-a-sibling-class.md) | A post-freeze minor is a sibling class, and a bare name keeps its version | Accepted |
+| [0069](0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md) | A partial price accumulates as a floor, and a money ceiling chooses whether an unknown counts against it | Accepted |
 
 ## Writing a new ADR
 
@@ -180,6 +181,12 @@ llama.cpp). They are the suite's rule working as intended rather than a debt bei
 decisions were argued in the roadmaps, and these records exist so that no implementation phase has to
 invent one. 0045–0057 expand the PromptCadence arc's D-1…D-13; 0058–0067 expand the Adapter arc's
 A-1…A-10.
+
+**ADR-0069 was added on 2026-09-02**, after LoadLedger Phase 1 had been built to its spec's
+contract 2 as first written and the review of that build found the contract made money ceilings
+unable to bind on any real adapter's output. It reverses that one line, before Phase 2 persists a
+row under it, and records the operator's choice between a floor that may fire late and a strict
+ceiling that never crosses.
 
 Three of them **amend earlier records additively, reversing nothing**.
 [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) extends ADR-0008, ADR-0023 and

@@ -183,6 +183,8 @@ governance in place).
   `[budget]` and per-request overrides.
 * Debit per turn (LoadCoach usage) and per summarization-to-come; `would_exceed` pre-flight per
   turn; exhaustion → halt or `awaiting_approval` per config; `budget.debited` events.
+* `[budget] partial_pricing` (per-request override like the ceilings) onto every money ceiling; a
+  floor renders as "at least" in API and CLI; a strict ceiling's pre-flight refusal (ADR-0069).
 * The historical estimator ([lifecycle §6](lifecycle.md)) over `entries()`, with source labels;
   per-tier configured defaults.
 * `GET /ledger(/entries)`, `promptcadence ledger show`.
@@ -190,6 +192,9 @@ governance in place).
 **Tests**
 * Crossing each ceiling mid-trajectory; token ceiling binding a local tier where money cannot
   (the ADR-0030 case); daily UTC window; estimator source selection at the sample threshold.
+* A response the provider did not fully price: under `floor` the trajectory continues and the
+  balance shows "at least"; under `strict` the next step is refused at pre-flight; a local step
+  trips neither.
 * Kill −9 between LoadCoach response and debit: recovery reconciles from the persisted turn —
   spend is never lost or double-debited.
 

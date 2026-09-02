@@ -207,8 +207,11 @@ Exceeding a budget requires an ADR.
 ### LoadLedger
 * **Store usage, derive cost**: re-costing history under a corrected price list reproduces totals
   with no stored row changing ([ADR-0030](../adr/0030-model-cost-and-pricing.md)).
-* **Unpriced is never zero.** An unpriced debit leaves every money balance untouched and surfaces
-  the unpriced count, so "under budget" is never claimed over an incomplete sum.
+* **Unpriced is never zero, and a partial price is a floor.** A debit with no estimate leaves every
+  money balance untouched; an estimate that did not total adds only what it priced. Every money
+  verdict carries the counts that make its figure a floor, and a strict ceiling treats an
+  untotalled estimate as exceeded, so "under budget" is never claimed over an incomplete sum
+  ([ADR-0069](../adr/0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md)).
 * **A debit and its verdicts commit together** — proven by a kill-mid-debit test on both dialects
   ([ADR-0044](../adr/0044-a-state-change-and-its-event-are-one-write.md) applied to money).
 * Integer-exact arithmetic; a mixed-currency debit raises rather than converting.

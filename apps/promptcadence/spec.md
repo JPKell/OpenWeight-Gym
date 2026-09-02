@@ -232,7 +232,11 @@ deliberate rejection, like `LoadCoachClient`.
    local model's cost is `UNSUPPORTED`, never `$0.00`
    ([ADR-0030](../../adr/0030-model-cost-and-pricing.md)); a remote tier with no configured
    `ModelPricing` record is refused with `UNPRICED_EGRESS_REFUSED` — unpriced egress is refused,
-   not free, because a ceiling cannot bind what cannot be priced.
+   not free, because a ceiling cannot bind what cannot be priced. A priced response the provider
+   did not fully report accumulates as a floor and is rendered as one ("at least", never a bare
+   figure); `[budget] partial_pricing = "strict"` makes such a response exceed the money ceiling
+   instead, for budgets that must not be crossed
+   ([ADR-0069](../../adr/0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md)).
 6. **Advance contract.** A step completes only on a declared `finish_reason` of `STOP` (or a
    schema-validated structured result); `LENGTH`, `ERROR` and absence are handled explicitly, never
    read as success.
@@ -275,6 +279,12 @@ deliberate rejection, like `LoadCoachClient`.
                 default_token_ceiling = 2_000_000
                 daily_money_ceiling  = { currency = "USD", nanos = 20_000_000_000 }   # $20.00
                 estimate_min_samples = 20       # historical estimator threshold (lifecycle §6)
+                partial_pricing = "floor"       # floor | strict (ADR-0069). How a money ceiling
+                                                # treats a priced response the provider did not
+                                                # fully report. floor: bind on what was priced,
+                                                # may fire late. strict: treat it as exceeded —
+                                                # never crosses the cap; with today's adapters
+                                                # this halts on the first remote response
 [tools]         enabled = ["read_file", "list_dir", "write_file", "run_command", "http_fetch"]
                 workspace_root = ""             # default: <data>/workspaces; per-trajectory subdir
                 read_roots = []                 # extra read-only roots (allowlist)
