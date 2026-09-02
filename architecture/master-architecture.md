@@ -2,6 +2,13 @@
 
 **Status:** Authoritative. Frozen 2026-08-21; corrected 2026-08-21 by the
 [final architecture audit](../reviews/final_architecture_audit.md) (ADR-0022 – ADR-0029).
+**Amended 2026-09-02** by ADR-0045 – ADR-0067, the joint Phase 0 / LA0 contracts of the
+[PromptCadence arc](../roadmap/promptcadence-roadmap.md) and the
+[Adapter arc](../roadmap/adapter-roadmap.md) — a fourth application, four further packages, and an
+optional adapter axis on the execution subject. The amendments follow the
+[ADR-0038](../adr/0038-one-model-at-a-time-per-gpu.md) precedent: the document is frozen and is
+changed only through records that declare what they extend. Every change below is **additive**; no
+earlier decision is reversed.
 **Audience:** every implementation agent working on any part of the suite.
 
 This document defines the suite's structure, boundaries, dependency direction, runtime model,
@@ -22,12 +29,24 @@ Fixed for the life of the suite. Use these exact spellings everywhere — code, 
 | FreeWeight | Application | `freeweight` | `freeweight` | `freeweight` | 8765 | `FREEWEIGHT_` |
 | LoadCoach | Application | `loadcoach` | `loadcoach` | `loadcoach` | 8766 | `LOADCOACH_` |
 | IdeaPress | Application | `ideapress` | `ideapress` | `ideapress` | 8767 | `IDEAPRESS_` |
+| PromptCadence | Application | `promptcadence` | `promptcadence` | `promptcadence` | 8768 | `PROMPTCADENCE_` |
 | BaseAiCore | Package | `baseaicore` | `baseaicore` | — | — | — |
 | SetSpec | Package | `setspec` | `setspec` | — | — | — |
 | ModelRack | Package | `modelrack` | `modelrack` | — | — | — |
 | SweatMeter | Package | `sweatmeter` | `sweatmeter` | — | — | — |
 | WeightsDB | Package | `weightsdb` | `weightsdb` | — | — | — |
 | MirrorWall | Package | `mirrorwall` | `mirrorwall` | — | — | — |
+| CutCtx | Package | `cutctx` | `cutctx` | — | — | — |
+| ToolYard | Package | `toolyard` | `toolyard` | — | — | — |
+| LoadLedger | Package | `loadledger` | `loadledger` | — | — | — |
+| SpotCheck | Package | `spotcheck` | `spotcheck` | — | — | — |
+
+PromptCadence and the last four packages are added by
+[ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md),
+[ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md),
+[ADR-0052](../adr/0052-compaction-is-a-view-and-the-package-plans-it-only.md),
+[ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md) and
+[ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md).
 
 Product names are CamelCase in prose and UI. Import and distribution names are lowercase and
 identical to each other. Distribution-name availability on PyPI is verified before first publish;
@@ -55,8 +74,10 @@ path the user explicitly supplied.
 | **Model identity** | The immutable triple (provider kind, provider model name, artifact digest) that names a set of weights. Never contains measurements. | BaseAiCore |
 | **Model descriptor** | Mutable descriptive metadata: family, parameters, quantization, architecture, context, capabilities. | BaseAiCore |
 | **Runtime profile** | The settings a provider runs a model *under*: context size, KV precision, offload, flash attention, thread counts, provider-specific options. Hashed into `runtime_profile_hash`. | BaseAiCore |
-| **Measurement subject** | `(model identity, runtime profile hash, machine fingerprint)`. Results are comparable only within one subject. | BaseAiCore |
-| **Execution subject** | The `(model identity, resolved runtime profile)` pair a consumer is about to run. Evidence applies to an execution only when its measurement subject's runtime profile hash matches ([ADR-0023](../adr/0023-runtime-profile-resolution.md)). | LoadCoach |
+| **Measurement subject** | `(model identity, adapter identity or none, runtime profile hash, machine fingerprint)`. Results are comparable only within one subject. The adapter axis is optional and additive ([ADR-0058](../adr/0058-the-execution-subject-gains-an-adapter-axis.md)); a subject without one is byte-for-byte what it was. | BaseAiCore |
+| **Execution subject** | The `(model identity, adapter identity or none, resolved runtime profile)` triple a consumer is about to run. Evidence applies to an execution only when its measurement subject's runtime profile hash matches ([ADR-0023](../adr/0023-runtime-profile-resolution.md)) **and** its adapter axis matches ([ADR-0059](../adr/0059-adapter-evidence-is-measured-never-inherited.md)). | LoadCoach |
+| **Adapter identity** | `(name, artifact digest, optional source digest)` — a LoRA named by the sha256 of the **served artifact**, so a rename is safe and a content change is a new subject. Never inherits the base's evidence ([ADR-0058](../adr/0058-the-execution-subject-gains-an-adapter-axis.md), [ADR-0059](../adr/0059-adapter-evidence-is-measured-never-inherited.md)). | BaseAiCore |
+| **Adapter manifest** | The operator-reviewed record describing one adapter: artifact and base digests, declared capabilities, data classification. The registry is a directory of these, not a service ([ADR-0061](../adr/0061-the-adapter-registry-is-a-directory-and-a-manifest.md)). | SetSpec (schema) / operator (content) |
 | **Served context** | The context window a provider will actually serve for this execution — configured, provider-reported, or assumed from the descriptor. Never the advertised `max_context` without a label. | LoadCoach / FreeWeight |
 | **Machine profile** | Static hardware/OS identity plus a stable `machine_fingerprint`. Never contains live utilization. | BaseAiCore / SweatMeter |
 | **Telemetry sample** | One timestamped reading of live utilization. Never persisted outside a measured run. | SweatMeter |
@@ -69,6 +90,11 @@ path the user explicitly supplied.
 | **Production evidence** | Observed success/failure/latency of real jobs, fed back into routing. | LoadCoach |
 | **Workflow / stage / unit** | IdeaPress's content pipeline, its steps, and the individually generated pieces of a project. | IdeaPress |
 | **Unsupported** | A measurement the environment genuinely cannot provide. Not zero, not null-by-accident. | BaseAiCore |
+| **Data classification** | An ordered three-level rank — `PUBLIC < INTERNAL < CONFIDENTIAL` — declared by the caller, defaulting to the most restrictive ([ADR-0046](../adr/0046-data-classification-is-ordered-and-defaults-closed.md)). | BaseAiCore |
+| **Tier** | PromptCadence's unit of governance: one LoadCoach task profile plus an egress class, a classification ceiling, a context budget and (when remote) a pricing source. Configuration, never routing math ([ADR-0047](../adr/0047-a-tier-is-configuration-and-a-model-never-sizes-its-own-budget.md)). | PromptCadence |
+| **Execution intent** | The immutable, revisioned envelope every PromptCadence turn executes under and is checked against ([ADR-0056](../adr/0056-every-turn-executes-under-one-execution-intent.md)). | PromptCadence |
+| **Egress decision** | One recorded verdict on "may data of this classification go to this target", approved or denied alike ([ADR-0054](../adr/0054-spotcheck-records-egress-it-does-not-enforce-it.md)). | SpotCheck (shape in SetSpec) |
+| **Trajectory / step / turn** | PromptCadence's unit of agent work, its planned steps, and the individual model round trips within them. | PromptCadence |
 
 ### 1.4 Capability vocabulary (SetSpec `capability_vocabulary` v1)
 
@@ -107,6 +133,13 @@ general.summarize     code.debug        content.article_draft
                                         content.fact_check
 ```
 
+The PromptCadence arc adds five namespaced specializations of `tools.agent` — `tools.plan`,
+`tools.agent.local_fast`, `tools.agent.local_large`, `tools.agent.remote_cheap` and
+`tools.agent.remote_frontier` — which are **LoadCoach configuration, not code**: a tier names one of
+them, and which model within it is LoadCoach's ordinary filter → score → rank
+([ADR-0047](../adr/0047-a-tier-is-configuration-and-a-model-never-sizes-its-own-budget.md)). The
+list above is therefore the shipped set of profile IDs, not the closed one.
+
 `content.review` reviews prose against a requirement set and returns structured findings. It exists
 because the audit found IdeaPress's audit stages mapped to `code.review`, which would have filtered
 candidates by *code-review* capability evidence and imposed a code-review JSON schema on prose
@@ -124,12 +157,17 @@ graph TD
         FW[FreeWeight]
         LC[LoadCoach]
         IP[IdeaPress]
+        PC[PromptCadence]
     end
     subgraph L3["Layer 3 — Capability packages"]
         MR[ModelRack]
         SM[SweatMeter]
         WD[WeightsDB]
         MW[MirrorWall]
+        CC[CutCtx]
+        TY[ToolYard]
+        LL[LoadLedger]
+        SC[SpotCheck]
     end
     subgraph L2["Layer 2 — Contract package"]
         SS[SetSpec]
@@ -141,22 +179,37 @@ graph TD
     FW --> MR & SM & WD & MW & SS
     LC --> MR & SM & WD & MW & SS
     IP --> MR & WD & MW & SS
+    PC --> WD & MW & SS & CC & TY & LL & SC
     MR --> BC
     SM --> BC
     WD --> BC
     MW --> BC
+    CC --> BC
+    TY --> BC
+    LL --> BC
+    SC --> BC
+    SC --> SS
     SS --> BC
 ```
+
+**PromptCadence deliberately does not depend on `modelrack` or `sweatmeter`.** The absence is a
+contract, not an oversight: a harness with direct provider access would own a second, ungoverned
+egress path ([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)).
+`spotcheck` is the second capability package permitted to import `setspec`, and for the same reason
+MirrorWall is — it owns the Python form of a cross-application payload
+([ADR-0051](../adr/0051-plans-stay-internal-and-one-payload-travels.md)).
 
 **Rules, enforced by an `import-linter` contract in every repository's CI:**
 
 1. `baseaicore` imports nothing from the suite.
 2. `setspec` imports only `baseaicore`.
-3. `modelrack`, `sweatmeter`, `weightsdb`, `mirrorwall` import only `baseaicore` and (where they
-   exchange cross-application payloads) `setspec`. They import no sibling capability package and
-   no application.
-4. No package imports `freeweight`, `loadcoach` or `ideapress` — at module level, inside functions,
-   in `TYPE_CHECKING` blocks, or in test helpers shipped inside the package.
+3. `modelrack`, `sweatmeter`, `weightsdb`, `mirrorwall`, `cutctx`, `toolyard`, `loadledger` and
+   `spotcheck` import only `baseaicore` and (where they exchange cross-application payloads)
+   `setspec`. They import no sibling capability package and no application. A package may ship
+   **mountable** persistence models, and may never own an engine, a session, a migration history or
+   the data ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)).
+4. No package imports `freeweight`, `loadcoach`, `ideapress` or `promptcadence` — at module level,
+   inside functions, in `TYPE_CHECKING` blocks, or in test helpers shipped inside the package.
 5. No application imports another application.
 6. Within an application: `web` and `cli` may import `services`; `services` may import `domain`
    and `infrastructure`; `domain` imports neither `web` nor `infrastructure` concretions. Web and
@@ -182,6 +235,11 @@ Each row states what a component owns and — as importantly — what it must ne
 | **FreeWeight** | Benchmark definitions, fixtures, execution, scoring, run scheduling, result storage, comparison, provenance, evidence export | Routing decisions, production orchestration, content workflows |
 | **LoadCoach** | Task profiles, capability aggregation, routing, queue, execution, validation, retry/fallback, job history, production feedback, routing explanations | Benchmark execution or scoring, content workflows, another app's DB |
 | **IdeaPress** | Workflow/stage definitions, projects, units, requirements, gates, drafts, exports, its inference abstraction | Benchmarking, routing algorithms, provider-specific request shapes in workflow code |
+| **PromptCadence** | Trajectories and their state machine, plans, approvals and `ExecutionIntent`s, tier configuration, the agent loop, transcripts, deviation detection, the composed explanation | Routing math, provider access, benchmark execution, content-workflow decisions, another app's DB |
+| **CutCtx** | Transcript representation, compaction policies and plans, the executor, compaction reports | Model calls, persistence, I/O of any kind, prompt text, deletion semantics |
+| **ToolYard** | Tool declarations, the registry, argument validation, path containment, tiered isolation, egress-checked fetching, structured refusals, the call record shape | An agent loop, model access, persistence, dynamic loading of tool code, retry policy |
+| **LoadLedger** | Ceilings, debits, running balances, per-ceiling verdicts, entry history, the mountable table shapes | Pricing acquisition, currency conversion, halt/pause policy, forecasting, engine or migration ownership |
+| **SpotCheck** | The egress request/decision values, the ordered classification policy, the append-only decision ledger, the payload's Python form | Enforcement, network inspection, application policy, any classification vocabulary of its own |
 
 ---
 
@@ -430,6 +488,18 @@ but a benchmark measured while another workload holds the GPU is contaminated. F
 check (§9.1) is what makes this explicit rather than silent, and `loadcoach queue pause` is the
 documented way to clear the machine for a measurement session.
 
+### 8.2.1 PromptCadence in either shape
+
+PromptCadence (:8768) sits beside IdeaPress as a LoadCoach consumer: loopback by default on the
+single-machine shape, or on a laptop talking to a LAN-exposed LoadCoach over HTTPS with a bearer
+token on the GPU-host shape. It requires LoadCoach for **execution, not for startup** — with no
+LoadCoach reachable it starts, serves, reports degraded health and parks submitted trajectories with
+a recorded reason, and it never executes around the outage
+([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)). Its remote tiers
+additionally need LoadCoach's multi-provider registration
+([ADR-0055](../adr/0055-loadcoach-registers-providers-by-name-and-kind.md)); until that lands they
+refuse with `loadcoach_has_no_remote_provider`, which is specified behaviour rather than a defect.
+
 ### 8.3 Headless / CI benchmarking
 
 FreeWeight driven entirely by CLI with `--json` output; results exported as files and imported by a
@@ -546,7 +616,8 @@ second-implementation path.
 
 | Extension point | Interface | Shipped implementations | Future |
 |---|---|---|---|
-| Inference provider | `modelrack.Provider` | Ollama, OpenAI-compatible, `FakeProvider` | llama.cpp server, vLLM |
+| Inference provider | `modelrack.Provider` | Ollama, OpenAI-compatible, `FakeProvider` | vLLM |
+| Adapter-serving provider | `modelrack.Provider` + `ProviderCapabilities.adapter_hot_swap` | `LlamaCppProvider` — one supervised `llama-server` per base, adapters registered at launch, selected per request ([ADR-0062](../adr/0062-llamacpp-serves-adapters-through-a-supervised-process.md)) | vLLM multi-LoRA, if a concurrency profile ever justifies it |
 | GPU vendor | `sweatmeter.GpuReader` | NVIDIA (`nvidia-smi`) | AMD (`rocm-smi`), Intel, Apple |
 | Host platform | `sweatmeter.HostReader` | Linux (`/proc`, `/sys`) | Windows, macOS |
 | Database dialect | WeightsDB engine factory | SQLite, PostgreSQL | — (deliberately closed) |
@@ -556,6 +627,9 @@ second-implementation path.
 | Workflow stage | `ideapress.domain.Stage` | research…export | user-defined |
 | Content type | `ideapress.domain.ContentType` | article, report | novel, narrative pack |
 | Export format | `ideapress.domain.Exporter` | Markdown, HTML, JSON | PDF, EPUB, DOCX |
+| Compaction policy | `cutctx.CompactionPolicy` | observation masking, summarizing, drop-oldest | embedding relevance, once ModelRack has embeddings |
+| Tool | `toolyard.ToolHandler` (registered in code, never loaded dynamically) | `read_file`, `write_file`, `list_dir`, `run_command`, `http_fetch` | further built-ins, at their own review |
+| Egress policy | `spotcheck.EgressPolicy` | `OrderedClassificationPolicy` | per-provider ceilings, time-boxed approvals |
 
 **Rule:** an extension point ships with at least one real implementation plus the fake/test double.
 Interfaces with zero implementations are speculation and are not written.
@@ -583,6 +657,18 @@ A quick-reference list. Each has a corresponding automated or review check.
 15. A blocking database call inside an `async def` handler, including inside an SSE stream. *(review + event-loop lag monitor)*
 16. Serving a request whose `Host` header is not in the allowlist. *(middleware + test; [ADR-0026](../adr/0026-local-http-hardening.md))*
 17. Fetching a URL supplied in a request body without the scheme, host-allowlist and redirect checks. *(test)*
+18. A package owning an application's migration history. A package may ship **mountable** table
+    definitions; the application owns the metadata, the Alembic history, the engine and the data.
+    *(review + each mounting package's miniature-host test; [ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md))*
+19. Direct provider access from PromptCadence. Every generation goes through LoadCoach's HTTP API;
+    `modelrack` is not a dependency, at module level or any other.
+    *(import-linter; [ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md))*
+20. An adapter applied without digest-verified base compatibility. A declared base digest that does
+    not match the served base is a refusal, never an attempt; a name-only match carries visibly
+    reduced identity confidence. *(test; [ADR-0058](../adr/0058-the-execution-subject-gains-an-adapter-axis.md))*
+21. Adapter evidence inherited from a base — in whole, in part, or at a discount. An unmeasured
+    adapter subject has **no** evidence, and `require_adapter_evidence` filters it with a named
+    rejection. *(test; [ADR-0059](../adr/0059-adapter-evidence-is-measured-never-inherited.md), [ADR-0064](../adr/0064-adapters-are-selected-through-the-capability-vocabulary.md))*
 
 ---
 
@@ -591,6 +677,8 @@ A quick-reference list. Each has a corresponding automated or review check.
 * [Executive Summary](executive-summary.md) — audience-facing overview
 * [Dependency and Boundary Rules](dependency-and-boundary-rules.md) — the enforcement detail
 * [Canonical Model Identity](canonical-model-identity.md) — §1.3 in full
+* [Adapter Identity and Serving](adapter-identity-and-serving.md) — the adapter axis, the
+  selection/serving-mode split, the registry, evidence, residency and governance
 * [Machine Identity and Reproducibility](machine-identity-and-reproducibility.md)
 * [Graceful Degradation](graceful-degradation.md) · [Performance Targets](performance-targets.md)
 * [Traceability Matrix](traceability-matrix.md) · [Risk Register](risk-register.md)
