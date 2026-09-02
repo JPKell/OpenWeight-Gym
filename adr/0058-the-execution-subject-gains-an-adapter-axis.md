@@ -7,6 +7,10 @@ subject and its profile hash), [ADR-0024](0024-canonical-id-and-model-references
 canonical string format and model references in URLs).
 **Extends:** [Adapter Identity and Serving §2](../architecture/adapter-identity-and-serving.md),
 [Canonical Model Identity §5](../architecture/canonical-model-identity.md) (comparability).
+**Amended by:** [ADR-0068](0068-a-post-freeze-minor-is-a-sibling-class.md) — the
+`capability.evidence` `1.1` addition below arrives as a sibling class, not by the ADR-0032
+edit-in-place precedent this record names; the fields, the version and the byte-identity guarantee
+are unchanged.
 **Relates to:** [ADR-0059](0059-adapter-evidence-is-measured-never-inherited.md) (what the axis
 makes necessary), [ADR-0060](0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md) (what
 the axis is *not*).
@@ -167,8 +171,11 @@ direction that flatters. The suffix makes that mistake unrepresentable in the st
 * BaseAiCore ships `0.4.1` with one value object and one optional field. Every existing golden
   passes untouched; a new golden pins the adapter-free canonical form byte-for-byte.
 * SetSpec's `CapabilityEvidence` gains optional adapter fields at v1.1 and
-  `model.adapter_manifest` 1.0 arrives beside them (the ADR-0032 additive precedent). A record
-  written without adapter fields is exactly today's record — asserted by the LA0 exit condition.
+  `model.adapter_manifest` 1.0 arrives beside them (the ADR-0032 additive precedent — amended by
+  [ADR-0068](0068-a-post-freeze-minor-is-a-sibling-class.md), which found that precedent unsafe
+  for an already-frozen payload and replaced it with a sibling class; the record's shape is
+  unaffected). A record written without adapter fields is exactly today's record — asserted by the
+  LA0 exit condition.
 * FreeWeight, LoadCoach and PromptCadence all gain a subject that may carry an adapter without any
   of them being obliged to. A deployment with no adapters directory sees no change anywhere.
 * The refusal in rule 5 is real work for LA1: `LlamaCppProvider` must hash the base it actually

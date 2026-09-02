@@ -90,6 +90,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0065](0065-an-adapter-is-classified-and-local-only.md) | An adapter is a distillate of its training data, and it does not leave the machine | Accepted |
 | [0066](0066-residency-is-two-level.md) | Residency is two-level: the base is the expensive switch, the adapter is free | Accepted |
 | [0067](0067-reliability-keys-on-the-subject-not-the-base.md) | Reliability and the breaker key on the subject, never on the base | Accepted |
+| [0068](0068-a-post-freeze-minor-is-a-sibling-class.md) | A post-freeze minor is a sibling class, and a bare name keeps its version | Accepted |
 
 ## Writing a new ADR
 

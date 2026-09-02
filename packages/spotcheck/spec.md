@@ -78,7 +78,7 @@ class EgressRequest:
     source_ref: str                    # turn id, step id, stage id
     data_classification: DataClassification
     target: EgressTarget
-    requested_at: datetime | None = None    # default: injected clock
+    requested_at: datetime | None = None    # default: injected clock; travels on the payload
 
 class Verdict(Enum): APPROVED = "approved"; DENIED = "denied"; VIOLATION = "violation"
 # VIOLATION: recorded after the fact when verification finds egress that policy never approved
@@ -146,7 +146,11 @@ None of its own; mountable models, application-owned tables, exactly as
 3. **Determinism**: same request + same policy version ⇒ identical decision (ids and timestamps
    injected), golden-tested.
 4. **Round-trip**: `from_payload(to_payload(d))` preserves every field; the payload validates
-   against SetSpec's committed schema and goldens.
+   against SetSpec's committed schema and goldens. *Every* field is literal: `requested_at` is on
+   `governance.egress_decision` `1.0` for no other reason than this contract, since a value-object
+   field with nowhere to land makes the round trip silently lossy. It is nullable there exactly as
+   it is here, and it is never confused with `decided_at`, which is the record's own timestamp and
+   is required.
 5. **No parallel vocabulary**: the classification type is `baseaicore.DataClassification`;
    SpotCheck adds no levels and no aliases.
 6. The `VIOLATION` verdict is only ever written by a caller's verification step — the shipped

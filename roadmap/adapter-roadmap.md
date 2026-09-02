@@ -95,6 +95,13 @@ within `/api/v1`.
 `freeweight run start --model … --adapter <name>`; the A-2 panel policy (declared capabilities +
 fixed regression panel + performance) with the serving-mode A/B measured once per base+profile;
 evidence export carrying the v1.1 adapter fields; comparison UI grouping subjects by base.
+Carrying those fields is an **import change**: `capability.evidence` `1.1` lives on
+`CapabilityEvidenceV1_1Out`/`In`, while the bare `CapabilityEvidenceOut`/`In` that
+`freeweight.services.evidence` uses today keep meaning `1.0`
+([ADR-0068](../adr/0068-a-post-freeze-minor-is-a-sibling-class.md) rule 3). Evidence exported as a
+**bundle** needs more than a rename: `benchmark.evidence_bundle` nests the `1.0` shape by
+reference and gains the adapter axis only through its own minor, which is a SetSpec release this
+phase depends on rather than something the rename picks up (rule 5).
 `user.*` goal benchmarks work against adapter subjects unchanged — a house-voice LoRA scored by a
 calibrated house-voice goal is the intended pairing.
 

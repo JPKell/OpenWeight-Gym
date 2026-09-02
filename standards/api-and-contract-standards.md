@@ -220,6 +220,17 @@ Rules:
 8. `SUPPORTED_SCHEMAS` declares supported **majors**, not an exhaustive list of versions — a newer
    minor within a supported major is accepted by rule 2, so exact-version matching would contradict
    the reader policy.
+9. A minor added to a payload whose JSON Schema and goldens are **already committed** is built as a
+   **sibling class**, never as an edit to the published one
+   ([ADR-0068](../adr/0068-a-post-freeze-minor-is-a-sibling-class.md)). The frozen class keeps
+   generating the frozen version; the new minor subclasses it, adds only optional fields, and
+   registers beside it. Editing in place moves the artifact of every *other* payload that nests
+   that class by reference — a docstring edit is enough, since pydantic embeds `__doc__` as the
+   schema's `description` — and versions a payload nobody decided to version.
+10. **A bare exported name keeps the version it was frozen at.** `CapabilityEvidenceOut` means
+   `1.0` after `1.1` ships; a producer adopting a minor imports the version-qualified name
+   (`CapabilityEvidenceV1_1Out`) deliberately. A consumer never starts emitting a newer minor
+   because a dependency upgraded — rule 2 protects readers, not writers.
 
 ---
 
