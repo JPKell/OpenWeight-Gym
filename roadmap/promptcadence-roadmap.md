@@ -152,7 +152,7 @@ small) → PromptCadence P1–P7 straight through → LC-E1 while beta soaks →
 | **BaseAiCore** | `DataClassification` (D-2) | Additive, `0.4.1`; lands inside every existing pin |
 | **SetSpec** | Phase 6: `setspec.governance.v1`, `governance.egress_decision` 1.0, JSON Schema + ≥ 3 goldens; capability vocabulary untouched; frozen v1 payloads untouched | Additive, `0.5.0` |
 | **LoadCoach** | **LC-E1** (D-11, generalized): `[providers.<name>]` registration, local or remote; discovery tags each model with its provider and egress class; everything downstream (constraints, `allow_remote`, cost factor, explanations) already speaks "remote" | Additive config + registry code, LoadCoach `1.1.0` — the only code change to a shipped application in this arc |
-| **LoadCoach** | Five task profiles (`tools.plan`, `tools.agent.local_fast/local_large/remote_cheap/remote_frontier`) | Configuration shipped as documentation; no code |
+| **LoadCoach** | Five task profiles (`tools.plan`, `tools.agent.local_fast/local_large/remote_cheap/remote_frontier`) | Configuration in LoadCoach's shipped `task_profiles.toml`; no code. Not shipped as of LoadCoach `846348b`; decided and scheduled at **E4** in [`outstanding-work.md`](outstanding-work.md) §1 (2026-09-03) |
 | **FreeWeight** | Nothing required. `native.tool_use`/`native.agent` evidence already reaches tier profiles through the normal evidence pipeline. A `native.plan` category is a recorded future extension, not a dependency | None |
 | **IdeaPress** | Nothing until M13 | Adoption only, `1.1.0` |
 | **ModelRack, SweatMeter, WeightsDB, MirrorWall** | Nothing | Pure reuse |
