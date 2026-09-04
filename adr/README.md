@@ -95,6 +95,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0070](0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md) | An absent token class is zero only where the protocol cannot bill it | Accepted |
 | [0071](0071-modelrack-persists-artifact-digests-in-a-json-file-the-application-names.md) | ModelRack persists artifact digests in a JSON file the application names | Accepted |
 | [0072](0072-the-model-pricing-record-file.md) | The ModelPricing record file | Accepted |
+| [0073](0073-egress-is-decided-on-configuration-before-availability.md) | Egress is decided on a tier's configuration, before its availability | Accepted |
 
 ## Writing a new ADR
 
@@ -210,6 +211,18 @@ the reason it is an ADR rather than a line in one application's spec is
 stored usage and the price it was costed under if every application hashes the same object, and two
 components that each invented a file would differ on exactly one question — whether an absent rate
 means "not stated" or "free" — and produce the same hash for two different prices.
+
+**ADR-0073 was added on 2026-09-04**, after PromptCadence Phase 6 found that spec §20 criterion 4
+was unreachable as the code stood. Every remote tier reports `loadcoach_has_no_remote_provider`
+until LC-E1 registers one, so a `confidential` trajectory aimed at one halted on the availability
+check before any egress evaluation ran — no request left, but the refusal was not the queryable
+`EgressDecision` the criterion demands, and the reason given was about the deployment rather than
+about the data. It is the fifth record here written after the code rather than before it. The
+reason it is an ADR and not a line in one application's spec is that it records an **ordering**:
+criteria 4 and 5 are statements about *when* a refusal happens, a build that reordered the checks
+would still pass every unit test of the policy itself, and the observable failure — a recorded
+reason that silently changes the day infrastructure changes — appears only in a deployment nobody
+has yet.
 
 Three of them **amend earlier records additively, reversing nothing**.
 [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) extends ADR-0008, ADR-0023 and
