@@ -94,6 +94,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0069](0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md) | A partial price accumulates as a floor, and a money ceiling chooses whether an unknown counts against it | Accepted |
 | [0070](0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md) | An absent token class is zero only where the protocol cannot bill it | Accepted |
 | [0071](0071-modelrack-persists-artifact-digests-in-a-json-file-the-application-names.md) | ModelRack persists artifact digests in a JSON file the application names | Accepted |
+| [0072](0072-the-model-pricing-record-file.md) | The ModelPricing record file | Accepted |
 
 ## Writing a new ADR
 
@@ -200,6 +201,15 @@ forty-five seconds on every process start. It narrows spec §3 by one named exce
 versioned, clearable `digests.json` beside the pid files ADR-0062 already placed in the
 application's `state_dir` — and is the third record here written after the code rather than
 before it.
+
+**ADR-0072 was added on 2026-09-04**, after PromptCadence Phase 5 became the suite's first
+consumer of `baseaicore.ModelPricing` and discovered that nothing anywhere said what a price list
+looks like on disk. It is the fourth record here written after the code rather than before it, and
+the reason it is an ADR rather than a line in one application's spec is
+[ADR-0030](0030-model-cost-and-pricing.md)'s `pricing_hash`: that hash is only a join between a
+stored usage and the price it was costed under if every application hashes the same object, and two
+components that each invented a file would differ on exactly one question — whether an absent rate
+means "not stated" or "free" — and produce the same hash for two different prices.
 
 Three of them **amend earlier records additively, reversing nothing**.
 [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) extends ADR-0008, ADR-0023 and

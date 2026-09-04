@@ -120,11 +120,11 @@ selection question, which is a different question from the one this page answers
 | **P8B** | **Calibration: `kappa_w`, jury, the anchor/holdout gate** | **Opus + max** | xhigh | The intellectual core of the goal-benchmark feature and arguably the hardest phase in this table. A subtly wrong agreement statistic produces *plausible* numbers and stays wrong for months — no feedback loop catches it, only hand-computed fixtures and synthetic graders with known true agreement do |
 | **P9** | **Memory/KV, energy, reliability, comparison** | **Opus + extended** | high | KV theory vs observed slope, fit quality, OOM-as-a-measurement, and comparability verdicts that must refuse to average across a boundary |
 | P10 | Dashboard, results, exports, data management | Sonnet + extended | medium | Large surface, low subtlety. The anti-lie test (every figure recomputed from raw samples) is what protects it |
-| P10A | Goal wizard, starter packs | Split | — | **Opus + extended** for the wizard flow (Step 2's two questions, the calibration report copy) — the teaching *is* the product, and generic copy wastes the whole feature. Sonnet + standard for templates, forms and the grading UI once the flow is decided |
+| P10A | Goal wizard, starter packs | **Opus + extended** | — | **Opus + extended** for the wizard flow (Step 2's two questions, the calibration report copy) — the teaching *is* the product, and generic copy wastes the whole feature. Sonnet + standard for templates, forms and the grading UI once the flow is decided |
 | **P11** | **Capability evidence and the LoadCoach contract** | **Opus + max** | xhigh | The suite's most load-bearing contract, frozen at this phase, now including the six-factor confidence formula and the goal-evidence gate's "no row at all" rule — which a careful implementer gets wrong precisely *by* being careful and emitting at the floor |
 | P12 | Adopt WeightsDB, MirrorWall, `setspec.prompts` | Sonnet + standard | medium | Mostly deletion. The acceptance criterion — the existing test suite passes unchanged — is a perfect guardrail for a cheaper model |
-| P13 | External adapters and sandboxing | Split | — | **Opus + extended** for the sandbox tiering and the refusal path (security, and the failure is silent host execution). Sonnet + standard for the nine adapter output parsers, which are fixture work |
-| P14 | Hardening and 1.0 | Split | — | **Opus + extended** for the security pass. Sonnet + extended for performance, docs and upgrade testing |
+| P13 | External adapters and sandboxing | **Opus + extended** | — | **Opus + extended** for the sandbox tiering and the refusal path (security, and the failure is silent host execution). Sonnet + standard for the nine adapter output parsers, which are fixture work |
+| P14 | Hardening and 1.0 | **Opus + extended** | — | **Opus + extended** for the security pass. Sonnet + extended for performance, docs and upgrade testing |
 
 ### 2.8 LoadCoach — the highest concentration of hard phases
 
@@ -182,11 +182,11 @@ this arc is deliberately Sonnet-shaped.
 | PromptCadence P2 | Domain: threads, tiers, plans, intents, state machine | **Opus 5 · xhigh** | xhigh | Mostly normative-table transcription — but `ExecutionIntent` is the design's load-bearing wall and this phase freezes its shape |
 | **PromptCadence P3** | **LoadCoach client, bypass loop, lease/recovery, the fake LoadCoach** | **Fable 5 · xhigh** | xhigh | The LoadCoach-P5-shaped phase: kill −9 reconciliation, one-write transitions, cancellation — no feedback loop for the interesting failures — *plus* the fake every later phase trusts (the P2-FakeProvider argument, doubled) |
 | PromptCadence P4 | ToolYard integration, workspaces | Sonnet 5 · high | high | ToolYard did the hard part; the hostile-model journey tests are specified. Opus reviews the workspace-lifecycle diff |
-| PromptCadence P5 | Budget wiring, estimator | Split | high | **Opus 5 · high** for crash-reconciliation of debits (idempotent by `source_ref`); Sonnet 5 for ceilings/config/CLI |
+| PromptCadence P5 | Budget wiring, estimator | **Opus 5 · high** | high | **Opus 5 · high** for crash-reconciliation of debits (idempotent by `source_ref`); Sonnet 5 for ceilings/config/CLI |
 | PromptCadence P6 | Egress, verification, deviations | **Opus 5 · high** | high | Fail-closed verification semantics and the violation path — adversarial-adjacent, and the deviations feed re-approval |
 | **PromptCadence P7** | **Planner, approval modes, DAG dispatch, the contract-1 diff** | **Fable 5 · xhigh** | xhigh | Design-dense with a live-model interaction (plan-schema resilience against real local models) and the arc's central proof (governance invariance). A failed pass here invalidates the design claim, not just the code |
-| PromptCadence P8 | Compaction, explanation, UI | Split | medium | **Opus 5 · high** for materialization/invalidation (cache-consistency reasoning); Sonnet 5 · standard for the MirrorWall UI volume |
-| PromptCadence P9 | Hardening — 1.0 | Split | high | **Opus 5 · xhigh** for the security pass (consider Fable 5 for the prompt-injection corpus — pure adversarial); Sonnet 5 for performance measurement and docs |
+| PromptCadence P8 | Compaction, explanation, UI | **Opus 5 · high** | medium | **Opus 5 · high** for materialization/invalidation (cache-consistency reasoning); Sonnet 5 · standard for the MirrorWall UI volume |
+| PromptCadence P9 | Hardening — 1.0 | **Opus 5 · xhigh** | high | **Opus 5 · xhigh** for the security pass (consider Fable 5 for the prompt-injection corpus — pure adversarial); Sonnet 5 for performance measurement and docs |
 | M13 IP-A1 (IdeaPress + LoadLedger) | Mount, debit, cost UI | Sonnet 5 · high | medium | Third mounting implementation by then; adopt-delete-prove against fixtures |
 | M13 IP-A2 (IdeaPress + Commissioner) | S4 badge on rows | Sonnet 5 · standard | medium | Reading recorded decisions into an existing badge |
 | M13 IP-A3 (IdeaPress + CutCtx) | `project_review` policy chain | Sonnet 5 · high | medium | Golden-parity refactor that deletes working code — `high` is the floor for deletions |
@@ -197,7 +197,7 @@ this arc is deliberately Sonnet-shaped.
 |---|---|---|---|---|
 | **ModelRack P6** | **`LlamaCppProvider` process supervision** | **Fable 5 · xhigh** | xhigh | Spawn/health/terminate with orphan and leak guarantees — concurrency with no useful feedback loop, in a published package three applications call. The §3.3 class |
 | ModelRack P7 | Adapter registration/selection, cache correctness | **Opus 5 · xhigh** | high | The prefix-under-A-never-reused-for-B property is exactly the intermittent-defect shape; the conformance test design is the judgment |
-| ModelRack P8 | Hardening, publication | Split | medium | Opus 5 for cancellation-under-supervision and leak tests; Sonnet 5 for docs and publish |
+| ModelRack P8 | Hardening, publication | **Opus 5 · high** | medium | Opus 5 for cancellation-under-supervision and leak tests; Sonnet 5 for docs and publish |
 | LoadCoach 1.1 | Generalized LC-E1, adapter registry, gate, two-level residency | **Opus 5 · xhigh** | xhigh | Routing semantics frozen into persisted explanations — the LoadCoach-P3 precedent, extended |
 | FreeWeight 1.1 | Adapter enumeration, panels, serving-mode A/B | Sonnet 5 · high | medium | Measurement plumbing on an existing engine; panel composition is spec'd |
 | IdeaPress pins | Per-stage adapter pins, provenance columns | Sonnet 5 · standard | medium | Config + override passthrough against a settled contract |
@@ -260,15 +260,56 @@ single biggest cost saver in this table: it converts a class of work that would 
 frontier model into fixture-matching. Read the phase's test list before deciding — if the expected
 values are given, Sonnet is the right call.
 
-### 3.5 Rough distribution
+### 3.5 A phase gets one model, and it is the stronger one
+
+**Decided 2026-09-04, after row F1.** There is no *split* column any more. Where this table used to
+name two models for one phase, it now names the stronger of the two, and the prose beside it is
+kept because it still says where the hard part is — which is what an effort setting should be
+chosen from.
+
+The rule is not a capability judgement about the weaker model. It is about **where a split's seam
+actually falls**, and F1 is the evidence. That row was scheduled as Opus for the crash-reconciliation
+core and Sonnet for "the edges: the estimator, config plumbing, the surfaces, the project label —
+transcription against a working example". It ran whole on Opus, and the handoff
+(`F1_HANDOFF.md` §11) records why three of the four edges could not have been transcribed:
+
+* The **estimator** could not be written until it was settled that a ledger entry carries no money,
+  that the historical estimate is therefore a *usage* estimate priced through the tier, and that an
+  estimate with no model identity is costed at the tier's worst case. All three are core decisions,
+  and none existed when the row was scheduled.
+* The **surfaces** could not be written until a package limitation was found — a balance can be read
+  only through a ceiling and for a named run — which reshaped two of the three of them.
+* `partial_pricing` was accurately described as config plumbing, but its *pre-flight* half is not
+  plumbing, and the two are one field.
+
+The one edge that was genuinely transcription had been built two rows earlier and needed one line
+wiring to it.
+
+That is the general shape, not an accident of this row: a split drawn at a **component** boundary
+inside one phase assumes the edges follow the core, and in a phase worth splitting they interleave.
+A split drawn at a **test** boundary — one model commits the behaviour, another writes the surfaces
+against it afterwards — does not have that problem, but it is then two rows and should be written as
+two rows, not as one row with two models. The cost of the simple rule is some Sonnet-shaped work
+running on Opus; the cost of the seam being wrong is a session re-deriving decisions it was handed
+as settled.
+
+**What this does not change:** review passes, which are a different session with a different job
+(§3.2), and the Claude/Codex division in §4, which is a division of *tools* and not of one phase's
+reasoning.
+
+### 3.6 Rough distribution
 
 Of roughly 54 phases (updated 2026-08-26 for the three FreeWeight goal-benchmark phases and
-SetSpec's vocabulary phase, ADR-0031/0032): **~16 Opus, ~31 Sonnet, ~7 split**. That ratio is a
-consequence of the documentation quality, not of the work being easy. On an ordinary codebase the
-same project would invert it. The 2026-09-02 additions (§2.10–2.11, ~26 phases across the
-PromptCadence and adapter arcs) hold the ratio — roughly 9 Opus 5, 11 Sonnet 5, 4 Fable 5, 4
-split — with Fable 5 confined to the four phases where reasoning-before-writing dominates and a
-silent failure survives a green test suite.
+SetSpec's vocabulary phase, ADR-0031/0032): **~23 Opus, ~31 Sonnet**. That ratio is a consequence of
+the documentation quality, not of the work being easy. On an ordinary codebase the same project
+would invert it. The 2026-09-02 additions (§2.10–2.11, ~26 phases across the PromptCadence and
+adapter arcs) hold it — roughly 13 Opus 5, 11 Sonnet 5, 4 Fable 5 — with Fable 5 confined to the
+four phases where reasoning-before-writing dominates and a silent failure survives a green test
+suite.
+
+Both counts are restated from 2026-09-04's §3.5: the phases that used to be *split* are now counted
+under the stronger model they name, which is where the Opus share moved from ~16 to ~23 and from 9
+to 13. No phase's work changed.
 
 ---
 
@@ -303,8 +344,13 @@ document will be updated. Verify what your installed Codex offers before relying
 **Practical split if you are using both**
 
 Codex for the volume and the loop-friendly work; Claude Opus for the design-dense phases and for
-review passes. The phases marked *split* in §2.7 are the natural handoff points — the security
-portion to Opus, the parsing portion to Codex.
+review passes. This is a division of *tools* and survives §3.5's rule, which is about one phase's
+reasoning: the natural handoff points are the phases whose work genuinely has two halves with a
+seam between them — FreeWeight P13 and P14, where the security pass and the nine adapter output
+parsers share almost nothing. Hand the security portion to Opus and the parsing portion to Codex,
+and let the parsing portion start only once the security decisions are committed. If the two halves
+turn out to interleave, that is §3.5's finding and the answer is the same: one tool, the stronger
+one.
 
 ---
 
