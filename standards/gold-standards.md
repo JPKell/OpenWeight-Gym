@@ -73,8 +73,8 @@ Exceeding a budget requires an ADR.
 
 ### ModelRack
 * One provider client for the whole suite; no application contains provider HTTP code.
-* Provider conformance suite passes for Ollama (recorded), OpenAI-compatible (recorded) and
-  `FakeProvider`.
+* Provider conformance suite passes for Ollama (recorded), OpenAI-compatible (recorded), llama.cpp
+  (recorded transport plus a fake process launcher) and `FakeProvider`.
 * Every error path translated to a typed error: unreachable, timeout, model-not-found, protocol
   error, capability-unsupported, context-exceeded.
 * Timing: backend-reported and client-observed values stored separately, never merged.
