@@ -37,7 +37,7 @@ stable references for this plan.
 |---|---|---|
 | **A-1** | The execution/measurement subject gains an optional, content-addressed **adapter axis** — `AdapterIdentity(name, artifact_digest, source_digest?)`, hashed from the served GGUF; canonical form gains a `+name@sha256:…` suffix. Amends ADR-0008/0023/0024 additively; an absent adapter is byte-for-byte today's subject. Base compatibility is verified by digest, fail closed; name-only matches carry reduced identity confidence. | A provider serves adapters by reference rather than artifact, breaking content-addressing |
 | **A-2** | **Adapter evidence is measured, never inherited.** A new adapter subject has no evidence; its panel is its declared capabilities + a fixed regression panel + performance. Extends the ADR-0016/0037/0043 family. | Never for inheritance; the panel composition may evolve with measured forgetting data |
-| **A-3** | **Selection lives in the subject; serving mode lives in the runtime profile.** Adapter-enabled serving is the config default for llama.cpp tiers; the clean-vs-registered overhead is a FreeWeight A/B, not an assumption. | The measured serving-mode overhead is material on reference hardware — flip the default |
+| **A-3** | **Selection lives in the subject; serving mode lives in the runtime profile.** Adapter-enabled serving is the config default for llama.cpp tiers; the clean-vs-registered overhead is a FreeWeight A/B, not an assumption. *The mechanism was left open here and closed by [ADR-0074](../adr/0074-adapter-enabled-serving-is-a-runtime-profile-field.md) at P7: a real `RuntimeProfile` field, not a `provider_options` convention.* | The measured serving-mode overhead is material on reference hardware — flip the default |
 | **A-4** | **The registry is a directory + `model.adapter_manifest` (SetSpec 1.0).** Operator-owned, opt-in per app (`[adapters] directory`, empty = off); FreeWeight and LoadCoach read it independently; ModelRack validates and mounts; `loadcoach adapters scan` drafts manifests, humans keep them. Identity is the hash, the path is a locator — renames are safe, content changes are new subjects. | A third reader class appears (a manifest *service* is still not the answer until then) |
 | **A-5** | **`LlamaCppProvider`**: one base per llama-server process, spawned/terminated through the existing `Provider.load/unload` seam; every compatible manifest adapter pre-registered at launch (`--lora`, `--lora-init-without-apply`); per-request `lora` selection; new adapter files fold in at next idle (`pending_restart`), never mid-work. `ProviderCapabilities.adapter_hot_swap` is load-bearing; Ollama declares `False`. | llama.cpp gains runtime adapter registration (drop the restart machinery); the server API breaks (fixtures are version-annotated, as Ollama's are) |
 | **A-6** | **One adapter at a time, at a fixed scale.** No composition, no scale-mixing, no per-request scale — the single `lora` entry is sent at `1.0`. | A concrete consumer need, with the identity-of-a-weighted-set problem solved first |
@@ -82,8 +82,10 @@ Four phases, LA0–LA3. LA0 is joint with PromptCadence Phase 0; LA1–LA3 run a
   profile-change restart until nothing is streaming from that server.
 * **P8 — hardening + publication.** Cancellation under process supervision; leak tests (20
   load/unload cycles, no orphan, flat memory); conformance suite green for all four adapters
-  (fake, Ollama, OpenAI-compatible, llama.cpp) with capability-gated skips explicit; docs;
-  publish.
+  (fake, Ollama, OpenAI-compatible, llama.cpp) with capability-gated skips explicit;
+  **[ADR-0074](../adr/0074-adapter-enabled-serving-is-a-runtime-profile-field.md)'s mechanism —
+  `RuntimeProfile.adapters_registered` in BaseAiCore and the provider's refusal of a profile that
+  misdescribes the server — which A-3 assumed and P7 found missing**; docs; publish.
 
 ### 4.2 LoadCoach 1.1
 
@@ -163,7 +165,7 @@ payoff moment) → LA3 → PromptCadence P8–P9.
 
 | Component | LA0 | LA1 | LA2 | LA3 |
 |---|---|---|---|---|
-| BaseAiCore | **+adapter types** (0.4.x / 1.1.0) | — | — | — |
+| BaseAiCore | **+adapter types** (0.4.1) | **+`RuntimeProfile.adapters_registered`** (0.4.x, ADR-0074) | — | — |
 | SetSpec | **+manifest 1.0, evidence v1.1** (next minor) | — | — | — |
 | ModelRack | — | **+LlamaCppProvider** (next minor) | — | — |
 | LoadCoach | — | — | **1.1.0** | 1.1.x |

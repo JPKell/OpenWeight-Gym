@@ -96,6 +96,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0071](0071-modelrack-persists-artifact-digests-in-a-json-file-the-application-names.md) | ModelRack persists artifact digests in a JSON file the application names | Accepted |
 | [0072](0072-the-model-pricing-record-file.md) | The ModelPricing record file | Accepted |
 | [0073](0073-egress-is-decided-on-configuration-before-availability.md) | Egress is decided on a tier's configuration, before its availability | Accepted |
+| [0074](0074-adapter-enabled-serving-is-a-runtime-profile-field.md) | Adapter-enabled serving is a `RuntimeProfile` field, not a `provider_options` convention | Accepted |
 
 ## Writing a new ADR
 
@@ -242,3 +243,16 @@ records — that a state change and the event announcing it commit together — 
 implemented in LoadCoach and already explained in that component's own docstrings; what did not
 exist was the rule, stated once, applying to both applications. IdeaPress had written the naive
 order in three places independently, which is the argument for writing it down.
+
+**ADR-0074 was added on 2026-09-04**, after ModelRack Phase 7 built adapter serving and found that
+[ADR-0060](0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md)'s "serving mode lives
+in the runtime profile" had no mechanism behind it: `--lora` flags come from the provider's
+registration set, `RuntimeProfile` is a separate object the caller passes, and nothing joined them.
+So a base on an adapter-registered server and the same base on a clean one hash to the same profile
+and would merge. It is the sixth record here written after the code rather than before it, and the
+reason it is an ADR rather than a convention is what the alternatives section argues: the cheapest
+correct fix — a `provider_options` key — is unvalidated and unspellable-wrong-safely, so a
+misspelling would not fail but would mint a second hash meaning nothing, which is the same silent
+merge from the other direction. The window in which this is cheap closes the first time a base is
+benchmarked on a machine with an adapters directory configured, because evidence recorded without
+the field is not separable afterwards.
