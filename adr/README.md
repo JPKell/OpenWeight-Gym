@@ -93,6 +93,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0068](0068-a-post-freeze-minor-is-a-sibling-class.md) | A post-freeze minor is a sibling class, and a bare name keeps its version | Accepted |
 | [0069](0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md) | A partial price accumulates as a floor, and a money ceiling chooses whether an unknown counts against it | Accepted |
 | [0070](0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md) | An absent token class is zero only where the protocol cannot bill it | Accepted |
+| [0071](0071-modelrack-persists-artifact-digests-in-a-json-file-the-application-names.md) | ModelRack persists artifact digests in a JSON file the application names | Accepted |
 
 ## Writing a new ADR
 
@@ -191,6 +192,14 @@ ceiling that never crosses. [ADR-0070](0070-an-absent-token-class-is-zero-only-w
 0069 left open — which layer decides what an absent token class means. It is the adapter, per
 response: zero where the protocol cannot bill the class, unavailable where it could and the
 response did not say.
+
+**ADR-0071 was added on 2026-09-03**, after ModelRack Phase 6 had been built with its artifact
+digests held in memory to the letter of the spec's "no persistence" line, and the operator's
+review of that build asked why a content hash that only content can invalidate should cost
+forty-five seconds on every process start. It narrows spec §3 by one named exception — a
+versioned, clearable `digests.json` beside the pid files ADR-0062 already placed in the
+application's `state_dir` — and is the third record here written after the code rather than
+before it.
 
 Three of them **amend earlier records additively, reversing nothing**.
 [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) extends ADR-0008, ADR-0023 and
