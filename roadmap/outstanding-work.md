@@ -127,13 +127,14 @@ GPU sessions never share the machine with FreeWeight benchmark runs.
   LoadCoach on **Ollama** with the shipped defaults and no `PROMPTCADENCE_TIERS__*` overrides —
   the fake provider declares `stop` for every answer, so `length` and `content_filter` on a real
   model are unexercised until this run.
-* After D3 (done 2026-09-03, unpushed; `D3_HANDOFF.md` at the workspace root): push ModelRack
-  `main` — it carries C5's three commits too — and docs `main`; confirm CI green. **Before the LA1
-  exit demonstration (H1):** install llama.cpp on the reference machine and run
-  `MODELRACK_LLAMACPP_MODELS=~/ai/models/llm pytest -m live tests/live/test_llamacpp_live.py -rs`
-  — the live journey (load, generate, stream, unload, no process left behind) has never run
-  against a real `llama-server`, and every llama.cpp fixture is representative, verified against
-  the server source at `b10792`, not captured. ModelRack stays at `0.6.0` until H1.
+* After D3 (done 2026-09-03, pushed, CI green; `D3_HANDOFF.md` at the workspace root): review
+  the diff same-day (handoff §11 and §13). llama.cpp `b10792` is **installed** on the reference
+  machine (`~/ai/tools/llama.cpp`, CUDA 13.1, `~/.local/bin/llama-server`; a user-local CUDA
+  include overlay works around the CUDA-13.1/glibc-2.43 `rsqrt` clash, llama.cpp #19100) and the
+  live journey has **run and passed** — load, generate, stream with a shared prefix reported as
+  `cache_read`, native completion, unload with no process left. Re-run it after any llama.cpp
+  upgrade: `MODELRACK_LLAMACPP_MODELS=~/ai/models/llm MODELRACK_REQUIRE_LLAMACPP=1 pytest -m live
+  tests/live/test_llamacpp_live.py -rs -s`. ModelRack stays at `0.6.0` until H1.
 * Optional: extend `suite-flowchart.drawio` with PromptCadence's final shape and the adapter arc.
 
 ## 5. Milestone map
