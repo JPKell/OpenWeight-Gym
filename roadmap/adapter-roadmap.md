@@ -69,10 +69,17 @@ Four phases, LA0–LA3. LA0 is joint with PromptCadence Phase 0; LA1–LA3 run a
   `UNSUPPORTED`); error translation; recorded fixtures, version-annotated. Risks: orphaned
   processes (kill-tree on timeout, pid files), port management (configured range), startup
   failure diagnosis (stderr captured into the typed error).
-* **P7 — adapters.** Launch-time registration from supplied manifests; per-request selection;
-  `adapter_hot_swap` flag; `AdapterNotFound`; digest-verified compatibility (fail closed);
-  `pending_restart` semantics surfaced to the caller; **the cache-correctness conformance test**
-  (a prefix computed under adapter A never reused for B) and the no-cross-adapter-batching note.
+* **P7 — adapters.** *(Built 2026-09-04 — `F3_HANDOFF.md`.)* Launch-time registration from
+  supplied manifests; per-request selection; `adapter_hot_swap` flag; `AdapterNotFound`;
+  digest-verified compatibility (fail closed); `pending_restart` semantics surfaced to the caller;
+  **the cache-correctness conformance test** (a prefix computed under adapter A never reused for B)
+  and the no-cross-adapter-batching note. Three things the build added to this description, each
+  because the code could not be honest without them: `Provider` gained `list_adapters()` and
+  `register_adapters()` (so LoadCoach need not downcast); every request to an adapter-registered
+  server carries the **complete** `lora` configuration, because llama-server restores the
+  launch-time set — at scale `1.0` — when a request carries none, and does so without clearing the
+  slot's prompt cache; and an in-flight guard now defers **both** the adapter fold-in and the
+  profile-change restart until nothing is streaming from that server.
 * **P8 — hardening + publication.** Cancellation under process supervision; leak tests (20
   load/unload cycles, no orphan, flat memory); conformance suite green for all four adapters
   (fake, Ollama, OpenAI-compatible, llama.cpp) with capability-gated skips explicit; docs;
@@ -170,7 +177,7 @@ payoff moment) → LA3 → PromptCadence P8–P9.
 |---|---|---|---|
 | **I15** | Manifest round-trip | LA0 | A `setspec`-only reader validates manifest and adapter-evidence goldens; today's evidence records unchanged byte-for-byte |
 | **I16** | Warm-base guarantee | LA1, re-run LA2 | 20 alternating-adapter generations, zero base loads, asserted from process table + timing; then the IdeaPress three-stage project with exactly one base load |
-| **I17** | Cache correctness | LA1 | The prefix-under-A-never-reused-for-B test, plus a semantic canary (same prompt, two adapters, distinct outputs after a shared prefix) |
+| **I17** | Cache correctness | LA1 | The prefix-under-A-never-reused-for-B test, plus a semantic canary (same prompt, two adapters, distinct outputs after a shared prefix). **Structural half done at P7** and proved by making it fail against three injected defects; the **canary is blocked on artefacts** — no LLM adapter GGUF exists on the reference machine, and it skips visibly naming what it needs (`F3_HANDOFF.md`). Producing two adapters for one base is an **H1 prerequisite**, alongside I16's twenty-generation run |
 | **I18** | Evidence changes routing | LA3 | A FreeWeight bundle import flips a profile's selected subject to (or from) an adapter, visibly in the explanation, with no shared code or database |
 | **I19** | Classification invariant | LA2 | A confidential-classified adapter with a remote-tier request produces a recorded denial; the turn/attempt records the adapter's classification |
 
