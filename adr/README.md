@@ -97,6 +97,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0072](0072-the-model-pricing-record-file.md) | The ModelPricing record file | Accepted |
 | [0073](0073-egress-is-decided-on-configuration-before-availability.md) | Egress is decided on a tier's configuration, before its availability | Accepted |
 | [0074](0074-adapter-enabled-serving-is-a-runtime-profile-field.md) | Adapter-enabled serving is a `RuntimeProfile` field, not a `provider_options` convention | Accepted |
+| [0075](0075-a-request-carrying-tools-requires-tool-use-of-every-candidate.md) | A request carrying tools requires `tool_use` of every candidate | Accepted |
 
 ## Writing a new ADR
 
@@ -256,3 +257,11 @@ misspelling would not fail but would mint a second hash meaning nothing, which i
 merge from the other direction. The window in which this is cheap closes the first time a base is
 benchmarked on a machine with an adapters directory configured, because evidence recorded without
 the field is not separable afterwards.
+
+**ADR-0075 was added on 2026-09-04**, when LoadCoach's `/generate` gained `tools` on its request
+body (row G2). G1 had shown the cost of the gap from the model's side: told about no tools, a
+model invents names out of its own vocabulary and every call is refused. The record exists because
+closing that gap raised a question the wire alone does not answer — what a request carrying tools
+does to *routing* when the task profile requires nothing — and the two easy answers, letting the
+tools reach a provider that cannot use them and dropping them silently, are both failures a caller
+cannot see until after a model was chosen.
