@@ -98,6 +98,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0073](0073-egress-is-decided-on-configuration-before-availability.md) | Egress is decided on a tier's configuration, before its availability | Accepted |
 | [0074](0074-adapter-enabled-serving-is-a-runtime-profile-field.md) | Adapter-enabled serving is a `RuntimeProfile` field, not a `provider_options` convention | Accepted |
 | [0075](0075-a-request-carrying-tools-requires-tool-use-of-every-candidate.md) | A request carrying tools requires `tool_use` of every candidate | Accepted |
+| [0076](0076-a-step-retry-is-a-repeat-under-the-same-intent.md) | A step retry is a repeat under the same intent | Accepted |
 
 ## Writing a new ADR
 
@@ -265,3 +266,11 @@ closing that gap raised a question the wire alone does not answer — what a req
 does to *routing* when the task profile requires nothing — and the two easy answers, letting the
 tools reach a provider that cannot use them and dropping them silently, are both failures a caller
 cannot see until after a model was chosen.
+
+**ADR-0076 was added on 2026-09-05** (row G3), when PromptCadence's loop gained a per-step retry.
+Until it, a step that could not complete ended the trajectory and the loop's only second chance was
+the tier escalation — an ask for a *wider* envelope. The record exists because a repeat and an
+escalation claim different things about what happened, and because every attempt becomes a row an
+explanation reads back: the order of the two, the line between an accident and a decision, and
+whether the attempt history lives in a counter, in the events or in a table are all decisions the
+explanation inherits rather than choices an implementation can take quietly.
