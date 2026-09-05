@@ -179,10 +179,12 @@ So the capability is declared and unreachable — the shape ADR-0007 rule 2 exis
 the request side rather than the response side. A `tools.plan` profile field for a control that
 cannot be sent would be configuration that lies, so none was added.
 
-**Recommended follow-up (ModelRack, one phase):** a `SamplingParameters.think: bool | None`, sent
-as the top-level `think` key by the Ollama adapter, refused with `CapabilityUnsupported` by
-adapters that declare `thinking_control = False` (llama.cpp and openai-compatible both do). It is
-the lever that would actually move the number in §4, and it is worth a row.
+**Scheduled by the operator at the interview (2026-09-05): into H1**, ModelRack P8. A
+`SamplingParameters.think: bool | None = None` — tri-state, so an unset request is byte-identical
+to today's — sent as the top-level `think` key by the Ollama adapter and refused with
+`CapabilityUnsupported` by adapters declaring `thinking_control = False` (llama.cpp and
+openai-compatible both do). Whether a task profile may then *ask* for it is a later row: a profile
+field for a control that cannot be sent would be configuration that lies.
 
 ## 6. What the live stack showed
 
@@ -469,4 +471,13 @@ text, which is exactly the property the corpus should assert rather than assume.
    the operator's and is unaffected by this row.
 3. **Three pre-existing working-tree items were left untouched** (§11.1): the two `.gitignore`
    edits and `PromptCadence/skills-lock.json`.
-4. **The ModelRack finding in §5** deserves a row.
+4. **The ModelRack finding in §5 is scheduled into H1** (interview, 2026-09-05).
+
+## 13. The interview (2026-09-05) — four decisions
+
+| # | Decision put | Answer | Where it landed |
+|---|---|---|---|
+| 1 | LoadCoach's venv: keep `modelrack 0.5.0` from PyPI, or restore the editable cross-repo install | **Keep 0.5.0** | §1; the venv now matches the declared pin and CI, and the gate is green because of it |
+| 2 | The unreachable `thinking_control`: a ModelRack row, a finding only, or drop the declaration | **Schedule a row** | Added to the **H1** row (ModelRack P8): `SamplingParameters.think`, the Ollama top-level key, `CapabilityUnsupported` elsewhere; a task-profile field is explicitly a later row |
+| 3 | The response/request tool-call asymmetry | **H2 decides, documented as open** | §8; api.md §4 states the asymmetry and the grouping rule, and nothing in a shipped `1.0` field moved here |
+| 4 | The moved uncapped-arguments hazard | **Leave to I2/P9** | §10; written up as a moved hazard, with the property the corpus should assert rather than assume |
