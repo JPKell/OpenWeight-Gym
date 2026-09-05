@@ -288,3 +288,76 @@ dependencies; every public symbol documented, including what it refuses.
 problem solved first); the adapter manifest's own schema, which is SetSpec's
 ([ADR-0061](../../adr/0061-the-adapter-registry-is-a-directory-and-a-manifest.md)); any classification
 default, which is the caller's.
+
+---
+
+## Phase 6 — Adapter-enabled serving is a profile field (0.4.2)
+
+**Goal:** [ADR-0074](../../adr/0074-adapter-enabled-serving-is-a-runtime-profile-field.md)'s one
+field, added so additively that every stored `profile_hash` in all three databases is unchanged.
+ModelRack Phase 8 cannot ship `0.7.0` without it, because `0.7.0` publishing without it ships a
+known silent-merge gap: a base measured on an adapter-registered server hashes identically to the
+same base on a clean one, and evidence recorded before the field exists cannot be separated
+afterwards.
+
+**Prerequisites:** Phases 1–5, and the accepted
+[ADR-0074](../../adr/0074-adapter-enabled-serving-is-a-runtime-profile-field.md) (which implements
+[ADR-0060](../../adr/0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md), A-3).
+This phase implements that record and nothing beyond it.
+
+**Work**
+* `runtime.py`: `RuntimeProfile` gains `adapters_registered: bool | None = None`, beside
+  `flash_attention` and shaped like it, and the field joins the canonical JSON `profile_hash`
+  hashes over. The docstring states all three meanings — not stated / stated-clean /
+  stated-registered — and why the field is tri-state rather than a `bool` defaulting to `False`.
+* No other module changes: the field is not on the subject and not on `AdapterIdentity`
+  (ADR-0074 §4), and `RuntimeProfile` is already exported.
+* No new dependency, and none is possible: `baseaicore` imports the standard library only.
+
+**Files/subsystems**
+```text
+src/baseaicore/runtime.py             # + one field, one docstring, one hashed key
+tests/unit/test_runtime.py            # the stored goldens, and the field's own behaviour
+```
+
+**Tests**
+* **The stored goldens, and they are the point:** a profile that does not set the field hashes to
+  the literal value it hashed before the field existed — asserted against stored strings captured
+  from `0.4.1`, not against a recomputation, and including `e06e92b4d4803b3b`, which is the default
+  profile's hash as frozen into SetSpec's `capability.evidence/1.0/unsupported.json` golden.
+  `adapters_registered=None` stated explicitly hashes the same as never mentioning it.
+* The field separates when stated: `True`, `False` and unset are three different hashes, and
+  `False` is not the unset hash — the property that a `bool = False` default would have destroyed.
+* Ordering and construction: the field is set by keyword, `provider_options` still comes last, and
+  the frozen/slotted/pickle-stable properties are unchanged.
+
+**Acceptance criteria — what to run, and what a person should see**
+1. `.venv/bin/python -m pytest -q` — **every pre-existing test passes unchanged**, and the total
+   grows only by the new ones. No golden is edited to match new behaviour.
+2. `.venv/bin/python -m pytest tests/unit/test_runtime.py -k golden -q` — the additive proof in
+   isolation: four stored hashes reproduced exactly, the default profile's among them.
+3. In a REPL, the three states are three states:
+   ```pycon
+   >>> from baseaicore import RuntimeProfile
+   >>> RuntimeProfile().profile_hash == RuntimeProfile(adapters_registered=None).profile_hash
+   True
+   >>> RuntimeProfile(adapters_registered=False).profile_hash == RuntimeProfile().profile_hash
+   False
+   ```
+4. The full gate is green: `ruff format --check . && ruff check . && mypy src tests &&
+   lint-imports && pytest -m "not live and not performance"`, with coverage ≥ 95 %.
+5. `pip install baseaicore==0.4.2` in a clean virtualenv imports and type-checks the field from a
+   downstream project (the post-publish check).
+
+**Known risks:** the hash break — the whole value of the field is that it does not move a stored
+hash, so a `False` default, or hashing `None` as `null`, would silently invalidate every recorded
+`runtime_profile_hash` in FreeWeight, LoadCoach and IdeaPress. Mitigated by the tri-state and by
+goldens asserted over stored strings rather than recomputations.
+**Likely failure modes:** asserting the additive claim by comparing two freshly computed hashes
+(which would agree even if both had moved); a provider stamping the field itself rather than
+refusing a mismatch, which ADR-0074 rejects because it would make `profile_hash` uncomputable in
+advance by the caller.
+**Gold standards:** additive only, no signature changes, no behaviour change for any caller that
+does not set the field; 100 % coverage on the changed module; zero dependencies.
+**Deferred:** any provider-side comparison, which is ModelRack's (Phase 8); anything that decides
+*who* sets the field, which is the constructing application's (LoadCoach 1.1).

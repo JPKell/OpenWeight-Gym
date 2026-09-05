@@ -86,7 +86,14 @@ normalize_digest(value: str | None) -> str | None
     .with_digest(digest) -> ModelIdentity
 ModelCapabilityFlag(StrEnum)             # TOOLS, VISION, THINKING, STRUCTURED_OUTPUT, EMBEDDING
 ModelDescriptor(identity, observed_at, …)
-RuntimeProfile(context_size=None, kv_cache_precision=None, …)
+RuntimeProfile(context_size=None, kv_cache_precision=None, …,
+               adapters_registered=None)                            # Phase 6 (ADR-0074)
+    # `adapters_registered` is tri-state and the tri-state is load-bearing: None means "not
+    # stated" (every profile built before the field existed), False means "stated: no adapters
+    # registered on this server", True means "stated: adapters registered". A `bool = False`
+    # default would be hashed and would move every stored profile hash in the suite; None is
+    # dropped from the canonical JSON, so the field is additive. The constructing application
+    # sets it, and a provider refuses a profile that misdescribes the server it would use.
     .profile_hash -> str
 AdapterIdentity(name, artifact_digest, source_digest=None)          # Phase 5 (ADR-0058)
     # A LoRA named by the sha256 of the SERVED artifact, so a rename is safe and a content change
@@ -260,7 +267,11 @@ normative column names for identity storage are in
    three databases, so its golden test is the one that must never be "updated to match".
 2. `compute_machine_fingerprint` excludes driver/toolkit versions and storage, and is stable across a
    driver upgrade.
-3. `RuntimeProfile.profile_hash` is stable and ignores `None` fields.
+3. `RuntimeProfile.profile_hash` is stable and ignores `None` fields. This is what makes an
+   added optional field additive: `adapters_registered` (Phase 6,
+   [ADR-0074](../../adr/0074-adapter-enabled-serving-is-a-runtime-profile-field.md)) left
+   unset hashes to exactly what the same profile hashed before the field existed, asserted
+   over stored golden values including SetSpec's frozen `capability.evidence/1.0` payload.
 4. `UNSUPPORTED` raises on `bool`, `int`, `float`, arithmetic and ordering; it is a singleton and
    survives pickling and copying as the same object.
 5. `canonical_json` output is byte-identical for equal inputs.
