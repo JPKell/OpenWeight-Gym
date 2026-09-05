@@ -99,6 +99,10 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0074](0074-adapter-enabled-serving-is-a-runtime-profile-field.md) | Adapter-enabled serving is a `RuntimeProfile` field, not a `provider_options` convention | Accepted |
 | [0075](0075-a-request-carrying-tools-requires-tool-use-of-every-candidate.md) | A request carrying tools requires `tool_use` of every candidate | Accepted |
 | [0076](0076-a-step-retry-is-a-repeat-under-the-same-intent.md) | A step retry is a repeat under the same intent | Accepted |
+| [0077](0077-a-named-provider-block-and-the-singular-block-are-one-registry.md) | A named provider block and the singular block are one registry | Accepted |
+| [0078](0078-a-shipped-response-field-is-superseded-beside-its-replacement.md) | A shipped response field is superseded beside its replacement | Accepted |
+| [0079](0079-an-adapter-classification-refusal-is-a-routing-rejection.md) | An adapter's classification refusal is a routing rejection | Accepted |
+| [0080](0080-a-persisted-decision-names-the-subject-by-reference-and-by-string.md) | A persisted decision names the subject by reference and by string | Accepted |
 
 ## Writing a new ADR
 
@@ -274,3 +278,15 @@ escalation claim different things about what happened, and because every attempt
 explanation reads back: the order of the two, the line between an accident and a decision, and
 whether the attempt history lives in a counter, in the events or in a table are all decisions the
 explanation inherits rather than choices an implementation can take quietly.
+
+**ADR-0077, ADR-0078, ADR-0079 and ADR-0080 were added on 2026-09-05** (row H2), when LoadCoach
+grew named provider registration and the adapter registry. Each closes a question the accepted
+adapter decisions raised but did not answer, and each outlives the row that found it. **0077**: a
+released configuration file gains a second, richer shape, and the half-migrated file — both shapes
+present — is the case that a precedence rule would answer silently. **0078**: `output.tool_calls`
+ships in a `1.0` response in a shape the first caller to consume it got wrong, and a minor is not
+allowed to reshape it under the callers that read it correctly. **0079**: I19 asks for a "recorded
+denial" from a component that holds no decision ledger, so what is recorded, and where, had to be
+settled before the constraint was written. **0080**: an explanation is kept for ever and an adapter
+directory is not, so a decision record has to name its subject in a form that later configuration
+cannot revise.
