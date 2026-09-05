@@ -271,7 +271,7 @@ The rule is not a capability judgement about the weaker model. It is about **whe
 actually falls**, and F1 is the evidence. That row was scheduled as Opus for the crash-reconciliation
 core and Sonnet for "the edges: the estimator, config plumbing, the surfaces, the project label —
 transcription against a working example". It ran whole on Opus, and the handoff
-(`F1_HANDOFF.md` §11) records why three of the four edges could not have been transcribed:
+(`docs/history/F1_HANDOFF.md` §11) records why three of the four edges could not have been transcribed:
 
 * The **estimator** could not be written until it was settled that a ledger entry carries no money,
   that the historical estimate is therefore a *usage* estimate priced through the tier, and that an

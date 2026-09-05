@@ -1,0 +1,28 @@
+# ---- Agent / editor tooling (local state, never a build input) ----
+.agents/
+.obsidian/
+.codex/
+.claude/settings.local.json
+.vscode/
+.idea/
+
+# ---- Tool caches ----
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.import_linter_cache/
+__pycache__/
+*.py[cod]
+
+# ---- Editors / OS ----
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ---- Secrets ----
+# Per Security Standards §8: secrets are never committed.
+.env
+.env.*
+*.key
+*.pem

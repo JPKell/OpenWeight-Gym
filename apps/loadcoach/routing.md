@@ -150,7 +150,7 @@ never a constraint input; a model that advertises 131 072 tokens and will be ser
 by `context_too_small`, not admitted and silently truncated.
 
 `kind = "fake"` declares a small model by default so a fake-provider journey never trips
-`insufficient_vram` on its own (E6, `E6_HANDOFF.md`); `[provider.fake]`'s `size_bytes`, `layers`,
+`insufficient_vram` on its own (E6, `docs/history/E6_HANDOFF.md`); `[provider.fake]`'s `size_bytes`, `layers`,
 `kv_heads` and `head_dim` — set all four together, never a subset, since the KV term dominates
 `size_bytes` at any interesting context length — let an operator provoke this rejection on purpose
 and inspect the full `estimate` block it produces.

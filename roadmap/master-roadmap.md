@@ -360,9 +360,9 @@ The immediate next row is **A2: `baseaicore 0.4.1`** — `DataClassification`
 existing `>=0.4,<0.5` pin.
 
 **The record of how each milestone was verified** stays in the handoff and verification documents:
-`~/ai/suite/M4_HANDOFF.md`, `M6_HANDOFF.md` and `M7_HANDOFF.md` are where the decisions the
-documents left open were made, and `m5-reverification.prompt.md`, `m6-verification.prompt.md` and
-`m7-verification.prompt.md` are how each milestone was checked before it was declared. The M7
+`docs/history/M4_HANDOFF.md`, `docs/history/M6_HANDOFF.md` and `docs/history/M7_HANDOFF.md` are where the decisions the
+documents left open were made, and `docs/history/m5-reverification.prompt.md`, `docs/history/m6-verification.prompt.md` and
+`docs/history/m7-verification.prompt.md` are how each milestone was checked before it was declared. The M7
 verification is the precedent worth keeping in view: it returned *not ready*, with findings that
 took a further build round to close.
 
@@ -374,5 +374,5 @@ touches. It should not need to invent an architectural decision; if it does, tha
 this documentation set and should be closed with an ADR before the code is written. The
 [final architecture audit](../reviews/final_architecture_audit.md) is still worth reading before a
 first phase: it added ADR-0022 – ADR-0029 and corrected the specifications they touch. The M4 and
-M5 handoff sections in `~/ai/suite/M4_HANDOFF.md` are where the decisions the documents left open
+M5 handoff sections in `docs/history/M4_HANDOFF.md` are where the decisions the documents left open
 were made, and the verification prompts are how each milestone is checked before it is declared.

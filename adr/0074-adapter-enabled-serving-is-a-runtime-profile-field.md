@@ -8,7 +8,7 @@ runtime profile, and left the mechanism to the implementation.
 [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) (the axis this is *not*),
 [ADR-0062](0062-llamacpp-serves-adapters-through-a-supervised-process.md) (registration is
 launch-time, which is what makes serving mode a profile fact at all).
-**Source:** ModelRack Phase 7 (`F3_HANDOFF.md` §7.8), which built the serving and found the gap.
+**Source:** ModelRack Phase 7 (`docs/history/F3_HANDOFF.md` §7.8), which built the serving and found the gap.
 
 ## Context
 
