@@ -179,12 +179,20 @@ GPU sessions never share the machine with FreeWeight benchmark runs.
   model are unexercised until this run. **Done at G1, 2026-09-04**, with the shipped defaults:
   bypassed and tool-free planned trajectories completed; `length` and `content_filter` are
   **still** unexercised — the model exercised `tool_calls` with invented names instead (G2).
-* **After G1 (done 2026-09-04, unpushed; `G1_HANDOFF.md` §12):** push PromptCadence `main`
-  (eight gate commits + the release commit) and docs `main`; tag `v0.9.0b0`; approve the `pypi`
-  environment **exactly once** (the mirrorwall lesson above — one tag push fires two Release
-  runs); `pip install promptcadence==0.9.0b0` in a clean venv, then `promptcadence doctor`.
-  `promptcadence` is unclaimed on PyPI; the first publish claims it. The podman item below is
-  still open and is not carried by this release.
+* **After G1 (done 2026-09-04; `G1_HANDOFF.md` §12), in this order — it is this package's
+  first release, so §6 of the packaging standard applies in full:** (1) push PromptCadence
+  `main` (the gate commits, the release commit and `952af18`, the release plumbing that gave
+  `release.yml` the `pypi` environment, the TestPyPI dry run and the hashed build chain) and
+  docs `main`; (2) on PyPI **and** TestPyPI add a *pending* trusted publisher for
+  `promptcadence` — owner `JPKell`, repository `PromptCadence`, workflow `release.yml`,
+  environment `pypi` on PyPI and blank on TestPyPI — and create the `pypi` environment in the
+  GitHub repository with yourself as required reviewer; (3) Actions → Release → *Run workflow*
+  for the TestPyPI dry run and confirm `promptcadence 0.9.0b0` on test.pypi.org; (4) tag
+  `v0.9.0b0` (annotated, `PromptCadence 0.9.0b0 — the M11 beta`) and push the tag; approve the
+  `pypi` environment **exactly once** (the mirrorwall lesson above — one tag push fires two
+  Release runs); (5) `pip install promptcadence==0.9.0b0` in a clean venv, then
+  `promptcadence doctor`. The first publish claims the unreserved PyPI name. The podman item
+  below is still open and is not carried by this release.
 * After D3 (done 2026-09-03, pushed, CI green; `D3_HANDOFF.md` at the workspace root): review
   the diff same-day (handoff §11 and §13). llama.cpp `b10792` is **installed** on the reference
   machine (`~/ai/tools/llama.cpp`, CUDA 13.1, `~/.local/bin/llama-server`; a user-local CUDA
