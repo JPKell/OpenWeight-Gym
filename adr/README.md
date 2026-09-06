@@ -107,6 +107,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0082](0082-a-migration-run-suspends-sqlite-foreign-key-enforcement.md) | A migration run suspends SQLite foreign-key enforcement | Accepted |
 | [0083](0083-an-adapter-pin-is-configured-on-by-being-configured.md) | An adapter pin is configured on by being configured | Accepted |
 | [0084](0084-a-producer-chooses-a-payload-version-by-content.md) | A producer chooses a payload version by content, not by build | Accepted |
+| [0085](0085-the-evidence-uniqueness-key-carries-the-adapter.md) | The evidence uniqueness key carries the adapter, on both sides | Accepted |
 
 ## Writing a new ADR
 
@@ -322,3 +323,11 @@ golden rather than argued. Always writing the newest would have made every consu
 move for a field almost none of them will ever see — the exact cost the sibling-class mechanism was
 built to avoid — and would have destroyed the byte-identity assertion that is this release's
 strongest regression test.
+
+**ADR-0085 was added on 2026-09-06** (row H4, found by running integration verification I18 rather
+than by planning it). [ADR-0022](0022-capability-evidence-record-contract.md) §3's uniqueness keys
+predate the adapter axis, so a base and every adapter subject on it collapse to one key: a real
+FreeWeight `1.1` bundle carrying three subjects' records imported **one** and had two rejected as
+duplicates. The importer was right — refusing to merge two measurements is the rule — and the key
+was stale. It is the blocker for I18, and it sits one step *before* the registry gap row H2's
+handoff predicted: these records never reach binding at all.

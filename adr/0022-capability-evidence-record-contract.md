@@ -72,6 +72,14 @@ confidence. Recomputing evidence does not make it fresher, and a test asserts ex
 row-wise upsert rather than a collision. Routing uses the highest `policy_version` present for a
 subject and names it in the explanation.
 
+> **Amended by [ADR-0085](0085-the-evidence-uniqueness-key-carries-the-adapter.md) (2026-09-06).**
+> Both keys gain the adapter — `adapter_id` on the producer, `adapter_artifact_digest` on the
+> consumer — nullable, with `NULL` meaning the bare base. Written before the measurement subject had
+> an adapter axis ([ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md)), these keys
+> collapse a base and every adapter subject on it into one row, and the consumer's duplicate
+> detector correctly rejects the extras. Measured at row H4's I18: a bundle of three subjects'
+> records imported one and discarded two.
+
 ### 4. Evidence for an unknown model is retained, not rejected
 
 `capability_evidence.model_id` is **nullable**. Every evidence row additionally stores the identity
