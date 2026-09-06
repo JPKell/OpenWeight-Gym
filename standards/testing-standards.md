@@ -189,3 +189,31 @@ slowest tests move to a marked job — the fast suite's job is to be run constan
 Required CI gates before merge: format, lint, type check, import-linter, unit + contract +
 integration + e2e, coverage floor, `diff-cover`, `pip-audit`, `gitleaks`, package build, and a
 clean-venv install-and-import check.
+
+### 10.1 A migration is not proved on SQLite
+
+Any change that adds or edits a migration must be run against a **real PostgreSQL** before it is
+pushed. The local gate runs on SQLite, which accepts several things PostgreSQL refuses, so the
+first evidence of a broken migration is otherwise a red CI job on `main`:
+
+```bash
+docker run -d --rm --name pg -e POSTGRES_USER=weightsdb -e POSTGRES_PASSWORD=weightsdb \
+  -e POSTGRES_DB=weightsdb_test -p 5432:5432 postgres:16
+WEIGHTSDB_REQUIRE_POSTGRES=1 pytest tests/integration
+```
+
+`WEIGHTSDB_REQUIRE_POSTGRES=1` matters: without it `temporary_postgres` **skips**, and a skipped
+dialect is an untested dialect. The three traps found this way in LoadCoach's 1.1 migrations on
+2026-09-06, each invisible on SQLite and each hiding the next:
+
+* a boolean column given an integer server default (`sa.text("0")`) — use `sa.false()`, which each
+  dialect renders in its own terms;
+* a constraint name generated from the naming convention that exceeds PostgreSQL's **63-character**
+  identifier limit — name it explicitly, in the migration **and** in the model, or `check_parity`
+  will disagree;
+* `sa.JSON()` or `sa.DateTime(timezone=True)` in a migration where the model uses
+  `weightsdb.PortableJSON` or `weightsdb.UtcDateTime` — identical on SQLite, `JSON` versus `JSONB`
+  on PostgreSQL, so only the PostgreSQL parity check fails.
+
+Fix the migration itself while the release carrying it is unpublished; once published, the schema
+it produced is somebody's database and the correction is a new migration.
