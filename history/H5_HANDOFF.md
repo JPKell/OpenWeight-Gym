@@ -288,6 +288,11 @@ deliberately damaged adapter, and this machine has none.
 2. **Tag and publish `loadcoach 1.1.0`, then `freeweight 1.1.0`** — in that order, because
    FreeWeight's release notes point at a LoadCoach behaviour. Both are release-committed, gated and
    wheel-verified; approve the `pypi` environment exactly once per repository.
+   **Tag LoadCoach at `main`'s tip, not at the `chore(release)` commit.** Two of the interview's
+   decisions (§10) landed after it — `adapters.measured` and `loadcoach adapters sync` — and both
+   are named in the `1.1.0` changelog section. `__about__.py` is unchanged at `1.1.0`, the full
+   gate is green at the tip (1005 passed, coverage 90.43 %), and the wheel was rebuilt and
+   re-verified from it.
 3. **Verify both published wheels** in clean venvs, as at E1/E2.
 4. **LoadCoach's `main` was red on PostgreSQL before this row and is green now** — the whole
    integration suite, including both new migrations, runs against `postgres:16`. Keep running
@@ -317,13 +322,40 @@ deliberately damaged adapter, and this machine has none.
   inherits LoadCoach's answer — but the same class of mismatch is what to look for first if a tier
   mysteriously ignores evidence that exists.
 
-## 10. Left undone, deliberately
+## 10. The interview, and what it decided
+
+Four decisions were put to the operator on 2026-09-06 after the row closed. Two were implemented in
+the same session, on top of the release commits; two are scheduled as **row H6**.
+
+1. **`require_adapter_evidence` is to be tightened — scheduled (H6).** The gate reads
+   `subject.signals`, so a signal scoring then excludes still satisfies it. §9 describes the shape;
+   the consequence, traced through `scoring.py` and observed live, is that two adapters whose
+   manifests merely *declared* `reliability` scored `0.500 declared` and outranked the bare base,
+   whose real measurement was excluded as `evidence_profile_mismatch` and scored **absent**. A claim
+   beat a measurement, under the one constraint whose purpose is to prevent exactly that. Needs an
+   ADR, so it was not taken here.
+2. **An LA3 task profile ships in LoadCoach — done.** `adapters.measured`, weighting the A-2
+   regression panel's two fixed suites (the only capabilities FreeWeight measures on *every* adapter
+   subject) and setting **no** `min_context_tokens`, because a minimum makes LoadCoach configure a
+   served context, which enters `runtime_profile_hash`, which excludes evidence measured without
+   one. Documented in `apps/loadcoach/routing.md` §2 with that reasoning, because it is the trap
+   §4.1 is the general case of.
+3. **A deliberately damaged adapter — scheduled (H6).** The only thing that settles whether the
+   panel separates a damaged LoRA from an undamaged one (§6).
+4. **`loadcoach adapters sync` — done.** One command for the sequence an operator actually
+   performs: import a bundle, review a manifest, expect the evidence to attach. It reports what it
+   registered *and* the resulting evidence counts, so the attaching is visible rather than inferred:
+
+   ```
+   3 adapter(s) registered from the reviewed manifests.
+   evidence: 3 bound, 0 unmatched, 0 ambiguous, of 3 row(s).
+   ```
+
+## 11. Left undone, deliberately
 
 * **`FreeWeight/requirements/ci.lock`'s `weightsdb` pin** — §8.5.
 * **A deliberately damaged adapter** — the only thing that would settle T11's second trigger (§6).
 * **Paging for the comparison grouping.** Capped at 12 with an honest "and N more"; the row asked
   for a bound, not paging.
-* **`loadcoach adapters sync`.** Adapter rows are written by `route` and by the server's bootstrap;
-  there is no explicit sync command, so an operator who imports evidence and then reviews a
-  manifest has to run *something* before the binding happens. Not a defect — the next route does
-  it — but a one-line command would make the sequence obvious.
+* **The `require_adapter_evidence` tightening and the damaged adapter** — both decided and both
+  scheduled as row H6, §10.
