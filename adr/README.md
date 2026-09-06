@@ -103,6 +103,8 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0078](0078-a-shipped-response-field-is-superseded-beside-its-replacement.md) | A shipped response field is superseded beside its replacement | Accepted |
 | [0079](0079-an-adapter-classification-refusal-is-a-routing-rejection.md) | An adapter's classification refusal is a routing rejection | Accepted |
 | [0080](0080-a-persisted-decision-names-the-subject-by-reference-and-by-string.md) | A persisted decision names the subject by reference and by string | Accepted |
+| [0081](0081-an-adapter-subject-inherits-no-evidence-from-its-base.md) | An adapter subject inherits no evidence from its base | Accepted |
+| [0082](0082-a-migration-run-suspends-sqlite-foreign-key-enforcement.md) | A migration run suspends SQLite foreign-key enforcement | Accepted |
 
 ## Writing a new ADR
 
@@ -290,3 +292,14 @@ denial" from a component that holds no decision ledger, so what is recorded, and
 settled before the constraint was written. **0080**: an explanation is kept for ever and an adapter
 directory is not, so a decision record has to name its subject in a form that later configuration
 cannot revise.
+
+**ADR-0081 and ADR-0082 were added on 2026-09-05** (row H2's second sitting), and both were found
+by building rather than by planning. **0081**: expanding a candidate to an adapter subject inherits
+the base's `ModelFacts`, so the base's benchmark evidence arrives with it unless it is removed —
+and leaving it would let an unmeasured adapter score as measured weights, invisibly, with
+`benchmark` named as the source. It is ADR-0058 §4's rule applied in the other direction, and it
+decides what "no benchmark, no use" actually gates. **0082**: adding a foreign key to a table on
+SQLite is a rebuild whose parent drop **cascades**, so LoadCoach's first 1.1 migration deleted
+every stored routing candidate — the explainability promise itself — and reported success. The
+pragma that prevents it is a documented no-op inside a transaction, which is why the exception
+needs a record rather than a comment.
