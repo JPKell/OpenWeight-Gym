@@ -112,6 +112,11 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0087](0087-the-evidence-gate-admits-only-a-signal-that-scores.md) | The adapter evidence gate admits only a signal that scores | Accepted |
 | [0088](0088-an-excluded-measurement-falls-back-to-the-prior-it-displaced.md) | An excluded measurement falls back to the prior it displaced | Accepted |
 | [0089](0089-the-fixed-regression-rows-bound-their-own-output.md) | The fixed regression rows bound their own output | Accepted |
+| [0090](0090-a-compaction-summary-runs-under-a-superseding-revision.md) | A compaction summary runs under a superseding revision of the step's own intent | Accepted |
+| [0091](0091-a-compaction-turn-is-debited-and-does-not-spend-the-steps-advance.md) | A compaction turn is debited, and does not spend the step's advance | Accepted |
+| [0092](0092-the-invalidation-entry-point-ships-before-the-sweep-that-calls-it.md) | The invalidation entry point ships before the sweep that calls it | Accepted |
+| [0093](0093-materialization-follows-the-terminal-transition.md) | Materialization follows the terminal transition, and a missing revision is not a missing explanation | Accepted |
+| [0094](0094-the-console-authenticates-as-the-api-does.md) | The console authenticates as the API does, and every form is CSRF-protected | Accepted |
 
 ## Writing a new ADR
 
@@ -373,3 +378,23 @@ Nothing else in the panel is capped: a number chosen for a three-word-answer sui
 long-context benchmark and record the truncation as a capability loss. A sample that ends at the cap
 is scored as the non-compliant answer it is, which sharpens rather than distorts what
 `native.instruction_following` already measured.
+
+**ADR-0090 to ADR-0094 were added on 2026-09-06** (row I1, PromptCadence Phase 8). They are the
+five decisions the phase had to take before it could write the code they govern, and each one
+closes a place where a built fact pulled against a specified sentence. **0090**: lifecycle §7 asks
+for the compaction summary to run on "the cheapest admissible local tier", but a tier is
+configuration over one task profile and no configured tier names `general.summarize`, so the
+summary now runs under a *superseding revision* of the step's own intent — narrowed to that tier,
+no fallbacks, no tools, the step's classification ceiling carried — with a second supersession
+restoring the step's envelope. **0091**: the same turn is debited against every ceiling and does
+**not** count against `max_turns`, which is the step's advance budget; the separation is
+structural, because the summary lives in its own thread and would otherwise be replayed into the
+transcript it replaced. **0092**: Phase 8 ships the invalidation entry point and its revision bump,
+and does not ship the retention sweep that Phase 9 specifies — the entry point is tested by
+scrubbing the fixture's rows directly. **0093**: materialization runs immediately *after* the
+terminal transition rather than inside its transaction, because two seconds of composition inside
+a write is two seconds of lock, and a missing revision is not a missing explanation — the live
+composition path serves it and `rebuild-explanations` fills it in, which is what makes the
+revision a genuine cache. **0094**: the console authenticates exactly as the API does, adds no
+session cookie, and wires MirrorWall's double-submit CSRF in the same commit that renders the
+first form, retiring `web/app.py`'s "there is no HTML UI yet" deferral.
