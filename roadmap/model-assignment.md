@@ -200,7 +200,7 @@ this arc is deliberately Sonnet-shaped.
 | ModelRack P8 | Hardening, publication | **Opus 5 · high** | medium | Opus 5 for cancellation-under-supervision and leak tests; Sonnet 5 for docs and publish |
 | LoadCoach 1.1 | Generalized LC-E1, adapter registry, gate, two-level residency | **Opus 5 · xhigh** | xhigh | Routing semantics frozen into persisted explanations — the LoadCoach-P3 precedent, extended |
 | FreeWeight 1.1 | Adapter enumeration, panels, serving-mode A/B | Sonnet 5 · high | medium | Measurement plumbing on an existing engine; panel composition is spec'd |
-| IdeaPress pins | Per-stage adapter pins, provenance columns | Sonnet 5 · standard | medium | Config + override passthrough against a settled contract |
+| IdeaPress pins | Per-stage adapter pins, provenance columns, the caller classification join | **Opus 5 · high** (deviation, 2026-09-05) | medium | Scheduled as one repository of configuration passthrough; by the time it ran it spanned two repositories, a routing-semantics change, a migration and a live three-stage demonstration, and the classification join is a security-shaped invariant whose failure mode is quiet. The deviation was the operator's, taken at the kickoff interview, and it was the right call: the row's three most valuable findings were all cross-repository defects nothing in its plan predicted |
 
 ### 2.12 Overnight, single-session runs (no agentic loops)
 
