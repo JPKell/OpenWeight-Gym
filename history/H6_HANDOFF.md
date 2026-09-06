@@ -278,6 +278,100 @@ an adapter *measured* now build a `FakeScript` that declares it, and a new test 
 against the default fake. That refusal is the behaviour a user gets, and it had never been
 exercised.
 
+## 7a. The interview that closed the row, and what it added
+
+Four decisions were put to the operator after the row's work was committed. All four took the
+recommendation, and three of them added work that is in this handoff below.
+
+1. **Re-run I18 whole** — §7b.
+2. **Decide the panel's output cap in an ADR** — [ADR-0089](../adr/0089-the-fixed-regression-rows-bound-their-own-output.md), built.
+3. **Keep the damaged adapter as a live canary** — built, §7c.
+4. **Fold both into the unpublished `1.1.0`s** — done; no new version anywhere.
+
+One correction the interview surfaced, and it lowers the stakes of §5 considerably: **adapter
+support is new in the unpublished `1.1.0` of both applications**, so no released version has ever
+written an adapter-bearing evidence record. The bad records exist only on this machine.
+
+## 7b. I18, re-run whole, twice
+
+**Literally, first.** The existing pair, unchanged, with the adapter now actually applied:
+
+```bash
+cd FreeWeight && .venv/bin/python -m pytest -m live tests/live/test_la3_adapters.py -q -s
+# 2 passed in 16.94s — bundle: 1.1, 2 adapter-bearing + 1 bare record(s)
+cd LoadCoach  && .venv/bin/python -m pytest -m live tests/live/test_la3_evidence.py -q -s
+# 1 passed — imported 3, rejected 0; +verbose selected on a `benchmark` signal
+```
+
+Both pass. The damaged adapter now appears in LoadCoach's pool too and is refused
+`adapter_unmeasured` beside `pirate`, which is the gate doing its job on a subject this bundle
+does not measure.
+
+**Then on merit, which the echo suite cannot show.** `native.echo` scores every subject `1.0`, so
+the LA3 journey proves that records bind and that a measured subject beats an unmeasured one — it
+cannot show evidence changing a decision *because of what the numbers say*. So the same crossing was
+run again over the A-2 fixed rows, on the bare base, `+verbose` and `+damaged`, and routed with the
+**shipped** `adapters.measured` profile — not one written for the demonstration:
+
+```text
+imported: 6 record(s), 0 rejected        # one bundle, one file, nothing else crossed
+adapters registered: 4
+
+task profile: adapters.measured (shipped)
+
+ranked:
+  …+verbose@sha256:4af980ac1fb2   task_fit=0.342   instruction_following=0.909 (benchmark)
+                                                   structured_output=1.000 (benchmark)
+  …(bare base)                    task_fit=0.268   instruction_following=0.727 (benchmark)
+                                                   structured_output=1.000 (benchmark)
+  …+damaged@sha256:cce6a9276ce3   task_fit=0.028   instruction_following=0.182 (benchmark)
+                                                   structured_output=0.000 (benchmark)
+
+selected: …+verbose@sha256:4af980ac1fb2
+rejected: …+pirate…: adapter_unmeasured
+          …+terse…:  adapter_unmeasured
+```
+
+**This is a stronger claim than H5's I18 made.** There, the sibling was refused because nobody had
+measured it — a gate decision. Here the damaged adapter is **admitted**, scored, and ranked last on
+its own numbers, while a healthy adapter beats the base it was trained from. Evidence measured in
+one application changed which subject another application selected, on merit, with every score
+labelled `benchmark` in the explanation.
+
+Reproducible without the throwaway scripts, through the shipped CLIs:
+
+```bash
+freeweight run start <base> --adapter verbose --suite native.instruction_following
+freeweight run start <base> --adapter verbose --suite native.structured_output   # and for damaged, and bare
+freeweight evidence export > bundle.json
+
+loadcoach evidence import --file bundle.json
+loadcoach adapters sync
+loadcoach route explain --task adapters.measured
+```
+
+## 7c. The damaged-adapter canary
+
+`test_the_panel_still_separates_a_known_damaged_adapter`, in FreeWeight's live suite, gated on
+`FWTEST_A2_DAMAGED_ADAPTER`. It measures the two fixed rows on the base and on the damaged adapter
+and asserts the worst drop is at least `0.30`.
+
+It exists because the unit test added in §4.3 proves only that the adapter reaches the *request*.
+Whether the provider then applies it is a different claim, and the gap between the two is where this
+row's defect lived — no fake can catch it, because the fake is the thing being bypassed. One
+deliberately broken artefact can.
+
+```text
+damaged-adapter canary, Qwen2.5-1.5B-Instruct.Q8_0 vs +damaged:
+  instruction_following    base 0.727   damaged 0.182   delta -0.545
+  structured_output        base 1.000   damaged 0.000   delta -1.000
+2 passed in 80.74s
+```
+
+That 80 s is with **no** environment override: [ADR-0089](../adr/0089-the-fixed-regression-rows-bound-their-own-output.md)'s
+cap is now the product's, so the canary is cheap enough to run whenever something adapter-shaped
+changes.
+
 ## 8. For the operator
 
 1. **Push three repositories** — `docs`, `LoadCoach` (`93063bd` on top of H5's six),
@@ -285,7 +379,9 @@ exercised.
 2. **The two 1.1.0 releases still wait for you**, and both now carry this row's fixes in their
    existing `1.1.0` changelog sections. Tag LoadCoach at `main`'s tip, as H5 §8.2 already said, and
    FreeWeight likewise — this row's commits sit above its `chore(release)`.
-3. **Re-export the LA3 evidence bundle** before anyone reads its adapter numbers. §5.
+3. **The LA3 bundle has been re-exported and re-proved** (§7b), so nothing is outstanding
+   there. The stale records are local only — no released version ever wrote one — so a
+   `rm` of any working database that holds H4/H5 adapter evidence is the whole cleanup.
 4. **`FreeWeight/requirements/ci.lock` still pins `weightsdb==0.2.0`** — H5 §8.5, unchanged.
 5. The damaged adapter is at `~/ai/models/adapters/llm/qwen2.5-1.5b-instruct-damaged.gguf`
    (`sha256:cce6a9276ce3…`), and its trainer at `~/ai/tools/lora-train/train_damaged.py`. Keep both:
@@ -293,11 +389,12 @@ exercised.
 
 ## 9. Left undone, deliberately
 
-* **Re-exporting and re-importing the LA3 bundle.** It is the operator's call whether LA3's exit is
-  re-demonstrated with real adapter numbers or left as the plumbing proof it is; the row asked for
-  neither, and both applications' releases are already prepared.
-* **Capping a regression panel's output in the product.** §4.4's second finding. It is a change to
-  what the panel *is*, so it belongs in the catalogue behind a decision, not in a row about a gate.
+* ~~Re-exporting and re-importing the LA3 bundle~~ — **done at the interview's request**, §7b.
+* ~~Capping a regression panel's output in the product~~ — **done**, [ADR-0089](../adr/0089-the-fixed-regression-rows-bound-their-own-output.md), §7a.
+* **Row 3 of the panel under the cap.** ADR-0089 caps the two *fixed* rows only, and row 3 resolves
+  per base to a real capability suite whose output needs are its own. A damaged adapter will still
+  run away on row 3 — the cost argument applies there too, and the correctness argument forbids the
+  same answer. Nobody has hit it yet, and the ADR's revisit trigger is where it belongs.
 * **Row 3 of the panel against the damaged adapter.** The live test runs rows 1 and 2, which are the
   fixed ones; row 3 resolves per base from its own evidence and is not comparable across subjects.
 * **The `low_evidence` floor.** Untouched, and worth knowing that ADR-0088 does not move it: a

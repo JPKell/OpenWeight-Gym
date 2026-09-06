@@ -111,6 +111,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0086](0086-the-consumers-adapter-key-column-is-not-nullable.md) | The consumer's adapter key column is not nullable | Accepted |
 | [0087](0087-the-evidence-gate-admits-only-a-signal-that-scores.md) | The adapter evidence gate admits only a signal that scores | Accepted |
 | [0088](0088-an-excluded-measurement-falls-back-to-the-prior-it-displaced.md) | An excluded measurement falls back to the prior it displaced | Accepted |
+| [0089](0089-the-fixed-regression-rows-bound-their-own-output.md) | The fixed regression rows bound their own output | Accepted |
 
 ## Writing a new ADR
 
@@ -360,3 +361,15 @@ somebody had benchmarked scored strictly worse than one nobody had ever measured
 prior it displaced and keeps its own name, note and remedy, so the explanation is unchanged and the
 penalty is gone. Neither record weakens ADR-0017's or ADR-0023 §3's hard separations, and both
 landed inside the unpublished `loadcoach 1.1.0`.
+
+**ADR-0089 was added on 2026-09-06** (row H6, from the operator interview that closed it), and it
+is the one decision in that row taken from a measurement rather than from a defect. A deliberately
+damaged LoRA loses the instruction *to stop* along with every other instruction, so the A-2
+regression panel — built to catch exactly that adapter — generates to the served context on every
+case and takes forty minutes instead of one. The two fixed rows now carry a per-turn cap of 512
+tokens, part of the panel's definition and versioned with the catalogue rather than configurable,
+because a subject measured at 512 and one measured at 4 096 have not been measured the same way.
+Nothing else in the panel is capped: a number chosen for a three-word-answer suite would truncate a
+long-context benchmark and record the truncation as a capability loss. A sample that ends at the cap
+is scored as the non-compliant answer it is, which sharpens rather than distorts what
+`native.instruction_following` already measured.
