@@ -105,6 +105,8 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0080](0080-a-persisted-decision-names-the-subject-by-reference-and-by-string.md) | A persisted decision names the subject by reference and by string | Accepted |
 | [0081](0081-an-adapter-subject-inherits-no-evidence-from-its-base.md) | An adapter subject inherits no evidence from its base | Accepted |
 | [0082](0082-a-migration-run-suspends-sqlite-foreign-key-enforcement.md) | A migration run suspends SQLite foreign-key enforcement | Accepted |
+| [0083](0083-an-adapter-pin-is-configured-on-by-being-configured.md) | An adapter pin is configured on by being configured | Accepted |
+| [0084](0084-a-producer-chooses-a-payload-version-by-content.md) | A producer chooses a payload version by content, not by build | Accepted |
 
 ## Writing a new ADR
 
@@ -310,3 +312,13 @@ hanging it off `[models.stages]` and `honour_stage_bindings` — makes the confi
 flag's documented meaning is "give up routing", and an adapter pin does not surrender routing; a
 new default-off boolean would instead make a configured pin a silent no-op, which is the failure the
 `job_stages` validator already exists to prevent.
+
+**ADR-0084 was added on 2026-09-05** (row H4, from its kickoff §0.3 decision 3). FreeWeight 1.1 is
+the first producer in the suite able to write two versions of one payload, and
+[ADR-0068](0068-a-post-freeze-minor-is-a-sibling-class.md) had deliberately not said which it should
+choose. It writes the **lowest version that can express the document**: a bundle with no
+adapter-bearing evidence is `1.0` and byte-identical to what `freeweight 1.0.0` wrote, asserted by a
+golden rather than argued. Always writing the newest would have made every consumer in the suite
+move for a field almost none of them will ever see — the exact cost the sibling-class mechanism was
+built to avoid — and would have destroyed the byte-identity assertion that is this release's
+strongest regression test.
