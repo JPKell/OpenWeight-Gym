@@ -240,12 +240,97 @@ Each of §0.3's seven, and whether it survived contact with the code.
    registration discovery reached last. The journey's two halves are therefore two servers over two
    databases. Worth a decision if a deployment ever wants one endpoint reachable two ways.
 
+## 7a. The closing interview — four decisions, all taken and all built
+
+Taken by the operator on 2026-09-05, after the gate. Each expanded the row's scope deliberately.
+
+1. **`head_dim` moves to ModelRack, now.** The LoadCoach reconstruction (`8e72a8a`) is **reverted**;
+   `modelrack` reconstructs the field in both the llama.cpp and the Ollama descriptor, which read
+   the same GGUF key names, and an inexact division stays `UNSUPPORTED` rather than becoming a
+   rounded guess. Folded into the **unpublished `0.7.0`** rather than cut as `0.7.1`, on the same
+   reasoning §0.3(7) applied to LoadCoach. Verified against the real file: the descriptor now
+   reports `head_dim=128` for `Qwen2.5-1.5B-Instruct.Q8_0`, and the live journey passes with
+   LoadCoach carrying no reconstruction of its own.
+2. **The leaked `llama-server` is fixed, in this session.** The cause was not the supervisor:
+   **LoadCoach never called `close()` on any provider.** The lifespan released the publisher, the
+   sampler, the queue runtime and the database, and dropped every provider handle —
+   `LlamaCppProvider` ends its servers in `close()` and otherwise only in a finalizer, which does
+   not run when the process is signalled. `_close_providers` now runs in the lifespan's `finally`,
+   closing every registration and continuing past one that raises. **Measured:** a server was
+   started, a generation run, and `SIGTERM` sent — `0` `llama-server` processes remained, where
+   before each run left one.
+3. **`[routing] task_profiles_path` is added.** A deployment can name its own `task_profiles.toml`,
+   which `serve`, `tasks`, `job`, `route` and `generate` all resolve the same way; a path that is
+   not a file is refused at startup rather than falling back, because routing under profiles you
+   did not write is not something you could tell from the outside. The live journey now supplies
+   I19's remote-permitting profile through this key, and the SQL fixture in §7(1) is **gone**.
+4. **A full workflow on a larger base — attempted, and it found something better.** See §7b.
+
+## 7b. The full-workflow probe: a larger base is not the fix
+
+The row's §0.5 demonstration drives three stages directly. Asked to run a *full* workflow instead —
+`start_plan` (which runs `requirements` and `outline`) then `draft` — on a base large enough to pass
+those stages' validation, the answer is that **no base passes, because the blocker is not the
+model.**
+
+Three bases were tried through a real `loadcoach serve`:
+
+| Base | Outcome |
+|---|---|
+| `Qwen2.5-1.5B-Instruct.Q8_0` | `requirements` failed: "the answer has no `requirements` array" |
+| `Qwen3.5-9B-…-HERETIC.Q4_K_M` | Every request `500`s: its chat template raises `System message must be at the beginning`, and IdeaPress always sends a system turn. Nothing to do with quality |
+| `Qwen3-14B-heretic.Q4_K_M` | Same failure as the 1.5 B — and the transcript shows why |
+
+**What the 14 B actually produced, from `jobs.response_text`:**
+
+```json
+{ "confidence": "medium",
+  "data": { "requirements": [ { "text": "The article must state that inference runs entirely on
+            the reader's own machine.", "blocking": true, "source_document": "brief", … } ] } }
+```
+
+That is a **correct** requirements extraction, wrapped in LoadCoach's `structured.extract`
+envelope. IdeaPress looks for a top-level `requirements` array, finds `data`, and fails the stage.
+
+**The mechanism, from `job_attempts` and `validations` on that job:**
+
+* **Attempt 1** emitted IdeaPress's own shape — `{"requirements": [...]}` — preceded by a `<think>`
+  block, so LoadCoach's `json` check failed on the prefix.
+* **Attempt 2**, after LoadCoach's corrective retry, emitted the **profile's** shape, and
+  `json_schema` and `required_fields` both passed.
+
+`structured.extract`'s validation block is `require_schema=True, required_fields=('data',)`. So
+even though IdeaPress deliberately asks for `response_format: "json"` rather than `"json_schema"` —
+which is exactly ADR-0041's degradation, and which does keep the profile's schema off the
+*request* — **the profile's schema still governs the response**, and the corrective retry coerces
+the model into it. ADR-0041 removed the caller's schema from the request; it did not remove the
+profile's validation from the answer, and for a stage whose output shape is the caller's own that
+is not a degradation but a hard failure.
+
+**Consequences worth stating plainly:**
+
+* **IdeaPress's `requirements` stage has never completed against a real LoadCoach**, on any model.
+  `tests/live/test_loadcoach_live.py` exercises `critique`, a text stage, so nothing caught it.
+* **Training LoRAs for a larger base would not have helped**, which is why none were trained. The
+  14 B's content was already right.
+* This is **not** an H3 defect: it predates the row, involves no adapter, and is a contract question
+  between IdeaPress's stage schemas and LoadCoach's task profiles. It wants its own row, and it has
+  at least three candidate answers — IdeaPress unwrapping a `data` envelope it did not ask for;
+  LoadCoach not applying a profile's `required_fields` when the caller asked for bare `json`; or
+  IdeaPress's structured stages routing to a profile whose schema is theirs.
+* The **`-m live` LA2 journey is unaffected** and still passes: it drives text stages, where no
+  schema is in play.
+
 ## 8. Commits
 
-**docs** (2): `80f2100` gate A and ADR-0083, plus the roadmap and model-assignment update.
-**LoadCoach** (3): `5f0f254` the docs mirror, `cbe1ef9` gate B, `8e72a8a` the `head_dim` fix.
-**IdeaPress** (6): `e1bfd2b` the docs mirror, `2ad19d6` gate C, `8efc11e` gate D, `bdd350c` gate E,
-`eb2063b` the live journey, `30ba52f` the release commit.
+**docs** (2): `80f2100` gate A and ADR-0083, `4dc13d8` the roadmap and model-assignment update.
+**LoadCoach** (4): `5f0f254` the docs mirror, `cbe1ef9` gate B, `8e72a8a` the `head_dim` fix
+(**reverted** by the next commit, per the interview), `25ce551` the shutdown fix and
+`task_profiles_path`.
+**ModelRack** (1): `5323a12` `head_dim` reconstructed in the descriptor.
+**IdeaPress** (7): `e1bfd2b` the docs mirror, `2ad19d6` gate C, `8efc11e` gate D, `bdd350c` gate E,
+`eb2063b` the live journey, `30ba52f` the release commit, `1ef7663` the journey's profiles through
+configuration.
 
 Every path staged by name. No `git add -A`. No push, no push dry-run, no tag, no publish.
 
@@ -266,7 +351,7 @@ statement lives applies, and the answer may well be different there.
 
 ## 10. For the operator
 
-1. **Push three repositories** — `docs`, `LoadCoach`, `IdeaPress`.
+1. **Push four repositories** — `docs`, `LoadCoach`, `IdeaPress` and **`py/ModelRack`**.
 2. **Tag and publish `ideapress 1.1.0`.** The wheel was built into the session scratchpad and
    verified in a throwaway venv: `ideapress --version` reports `1.1.0 (API v1, schema 1)`, the
    dependencies resolve from PyPI (`baseaicore 0.4.2`, `setspec 0.6.0`, `modelrack 0.5.0`,
@@ -275,6 +360,10 @@ statement lives applies, and the answer may well be different there.
 3. **`loadcoach 1.1.0` still waits for H4** (H2's interview, decision 4). Its changelog now carries
    this row's three entries under the same unreleased `1.1.0` section; no version was bumped.
 4. **Verify the published wheels** once both are out.
-5. **Two decisions worth taking**, both from §5: whether `head_dim` should move to ModelRack's
-   descriptor (and the LoadCoach reconstruction become a fallback), and whether the leaked
-   `llama-server` on `loadcoach serve` shutdown is a row of its own.
+5. **`modelrack 0.7.0` is still unpublished and now carries the `head_dim` fix.** LoadCoach's venv
+   holds it as a local install for the live journey; the published `0.7.0` must be the one with
+   this commit in it, or every GGUF-served candidate is ineligible again.
+6. **One row worth scheduling**, from §7b: IdeaPress's structured stages cannot complete through
+   LoadCoach, because a task profile's `required_fields` and corrective retry coerce the answer into
+   the profile's envelope even when the caller asked for bare `json`. It blocks any full-workflow
+   demonstration through LoadCoach and it is not an adapter problem.
