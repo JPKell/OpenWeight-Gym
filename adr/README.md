@@ -303,3 +303,10 @@ SQLite is a rebuild whose parent drop **cascades**, so LoadCoach's first 1.1 mig
 every stored routing candidate — the explainability promise itself — and reported success. The
 pragma that prevents it is a documented no-op inside a transaction, which is why the exception
 needs a record rather than a comment.
+
+**ADR-0083 was added on 2026-09-05** (row H3, from its kickoff interview). IdeaPress's per-stage
+adapter pin gets its own configuration table and no gating boolean, because the obvious economy —
+hanging it off `[models.stages]` and `honour_stage_bindings` — makes the configuration lie. That
+flag's documented meaning is "give up routing", and an adapter pin does not surrender routing; a
+new default-off boolean would instead make a configured pin a silent no-op, which is the failure the
+`job_stages` validator already exists to prevent.
