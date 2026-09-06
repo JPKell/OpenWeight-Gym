@@ -331,3 +331,14 @@ FreeWeight `1.1` bundle carrying three subjects' records imported **one** and ha
 duplicates. The importer was right — refusing to merge two measurements is the rule — and the key
 was stale. It is the blocker for I18, and it sits one step *before* the registry gap row H2's
 handoff predicted: these records never reach binding at all.
+
+**ADR-0086 was added on 2026-09-06** (row H5, kickoff §0.1 — found by reading
+[ADR-0085](0085-the-evidence-uniqueness-key-carries-the-adapter.md) against LoadCoach's actual write
+path before implementing it). ADR-0085 spelled the consumer's new key column nullable, which is
+correct for FreeWeight's delete-then-insert writer and wrong for LoadCoach's: the consumer writes
+`capability_evidence` through `weightsdb.upsert`, an `INSERT … ON CONFLICT` whose conflict target
+**never fires on a `NULL`**, so a nullable key column would insert a second row on every re-import
+of a bare-base record — silently, and for ever. The column is `NOT NULL` with `''` for the bare
+base, which is the sentinel [ADR-0080](0080-a-persisted-decision-names-the-subject-by-reference-and-by-string.md)
+rule 5 already chose for the same reason in the same application. The two applications therefore
+spell one field differently, on purpose, and nothing crosses the wire either way.

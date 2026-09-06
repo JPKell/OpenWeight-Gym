@@ -79,6 +79,13 @@ subject and names it in the explanation.
 > collapse a base and every adapter subject on it into one row, and the consumer's duplicate
 > detector correctly rejects the extras. Measured at row H4's I18: a bundle of three subjects'
 > records imported one and discarded two.
+>
+> **Further amended by [ADR-0086](0086-the-consumers-adapter-key-column-is-not-nullable.md)
+> (2026-09-06).** The consumer's `adapter_artifact_digest` is **not nullable**: LoadCoach writes
+> this table through an `INSERT … ON CONFLICT` upsert, whose conflict target never fires on a
+> `NULL`, so the bare base is the empty string and the nullable `adapter_id` foreign key sits
+> beside it. The producer's `adapter_id` stays nullable — the two applications spell the same
+> field differently because they write it differently, and nothing crosses the wire either way.
 
 ### 4. Evidence for an unknown model is retained, not rejected
 

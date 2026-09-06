@@ -1,6 +1,11 @@
 # ADR-0085 — The evidence uniqueness key carries the adapter, on both sides
 
 **Status:** Accepted (2026-09-06)
+**Amended by:** [ADR-0086](0086-the-consumers-adapter-key-column-is-not-nullable.md) — decision 2's
+`adapter_artifact_digest` is **not nullable** in the consumer, and the bare base is the empty
+string. LoadCoach writes this table through `weightsdb.upsert`, an `INSERT … ON CONFLICT` whose
+conflict target never fires on a `NULL`, so a nullable key column would silently insert a second
+row on every re-import of a bare-base record. The producer's nullable `adapter_id` is unaffected.
 **Amends:** [ADR-0022](0022-capability-evidence-record-contract.md) §3 (the producer and consumer
 uniqueness keys), additively — both keys gain one column and nothing else changes.
 **Relates to:** [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) (the axis this key
