@@ -1,375 +1,418 @@
-# Kickoff — H3: IdeaPress per-stage adapter pins, and the three-stage LA2 demonstration
+# Kickoff — H3: IdeaPress per-stage adapter pins, the caller classification half, and the three-stage LA2 demonstration
 
 **Row:** H3 of [`docs/roadmap/outstanding-work.md`](docs/roadmap/outstanding-work.md) §1.
-**Model:** **Sonnet 5 · standard**, as scheduled ([model-assignment](docs/roadmap/model-assignment.md)).
-Config plus override passthrough against a settled contract — the judgement is in the config shape
-and the refusal semantics, not in the plumbing.
-**Repositories:** `/home/jpk/ai/suite/docs` first (§0.2 — this row has a documentation gap of its
-own), then `/home/jpk/ai/suite/IdeaPress`.
-**Ships:** **`ideapress 1.1.0` prepared, not published.** Version bump, changelog move and release
-commit are yours; **`git push`, the tag and the publish are the operator's** (standing instruction
-of 2026-09-04). Do not run a push dry-run.
-**Runs after:** H2 — **all of it**, not the half that exists today. See §0.1; this is a hard block.
-**Runs before:** nothing. H3 is a leaf. `outstanding-work` §4 lists it as flexible, "any time
-after H2".
-**Not in this session:** FreeWeight (H4), LoadCoach (H2 owns every line of it), ModelRack,
-PromptCadence. If a stage pin cannot be expressed without a LoadCoach change, that is a finding for
-H2's remainder, not a diff you write here.
+**Model:** **Opus 5 · high** — a deviation from the scheduled `Sonnet 5 · standard`, decided by the
+operator on 2026-09-05 and to be recorded under
+[model-assignment §3.5](docs/roadmap/model-assignment.md). The row was scheduled when it was one
+repository of configuration passthrough; it now spans two repositories, a routing-semantics change,
+a migration and a live three-stage demonstration, and the classification join is a security-shaped
+invariant whose failure mode is quiet.
+**Repositories:** `/home/jpk/ai/suite/docs` first, then `/home/jpk/ai/suite/LoadCoach` (one narrow
+change, §0.1a), then `/home/jpk/ai/suite/IdeaPress`.
+**Ships:** **`ideapress 1.1.0` prepared, not published**, and an amendment to the already-prepared,
+still-unpublished **`loadcoach 1.1.0`**. Version bumps, changelog moves and release commits are
+yours; `git push`, tags and publishes are the operator's (standing instruction of 2026-09-04). Do
+not run a push dry-run.
+**Runs after:** H2 — **now complete**: gates A–I built, green, and demonstrated live on the real
+`llama-server`.
+**Runs before:** nothing. H3 is a leaf; `outstanding-work` §3 lists it as flexible, "any time after
+H2".
+**Not in this session:** FreeWeight (H4), ModelRack, PromptCadence. In LoadCoach, nothing except the
+caller-classification field and its persistence.
 
 ---
 
-## 0. Machine facts, verified 2026-09-05 before this prompt was written
+## 0. Machine facts, verified 2026-09-05 immediately before this prompt
 
-Confirm the two marked; do not re-derive the rest.
+Confirm the marked ones; do not re-derive the rest.
 
-* **IdeaPress `main` is at `36cd3c6`**, clean, level with `origin`, tagged `v1.0.0`;
-  `__about__.py` says `1.0.0` and `ideapress 1.0.0` is on PyPI. **Confirm** `git status -sb` in
-  IdeaPress and in `docs` at the start and at the end (CLAUDE.md, working-tree integrity).
-* **The word "adapter" is already taken in this codebase, and it means something else.**
-  `spec.md` uses it six times for the **backend port's** three implementations — "one inference
-  port, three adapters, switchable by configuration alone" (`spec.md:56`), "the LoadCoach
-  adapter" (`:65`, `:138`, `:206`). `grep -rn adapter src/ --include=*.py` returns 57 hits, all of that kind. **There
-  are zero LoRA mentions in IdeaPress's documentation.** This is worse than H2's "adapter appears
-  zero times": a reader of your diff will not know which sense a bare `adapter` carries. Decide the
-  naming before you write, and say so in §0.3 decision 1.
+* **IdeaPress `main` is at `36cd3c6`**, clean, level with `origin`, tagged `v1.0.0`; `ideapress
+  1.0.0` is on PyPI. **Confirm** `git status -sb` in all three repositories at the start and at the
+  end of the session (CLAUDE.md, working-tree integrity).
+* **`docs` is at `4574b9a`, 3 ahead of `origin`; `LoadCoach` is at `e0d811a`, 9 ahead.** Both are
+  unpushed by design — the operator pushes. Do not read "ahead" as a defect.
+* **The highest ADR is `0082`; the next free number is `0083`** — confirm with `ls docs/adr/ |
+  tail -3`.
+* **The contract this row consumes is built, not merely specified.**
+  `LoadCoach/src/loadcoach/web/routes/routing.py:69` carries `adapter: str | None` on the overrides
+  body; `generate.py:264` passes it through; migrations reach `0012`; `kind = "llamacpp"` is
+  configurable with `model_directory` (required), `state_dir` and `server_path`. **Verify in one
+  command** before building: `grep -n adapter LoadCoach/src/loadcoach/web/routes/routing.py`.
+* **`loadcoach 1.1.0` is prepared and unpublished; PyPI still serves `1.0.0`.** The publish is held
+  until H3 and H4 land (H2's interview, decision 4). So the `loadcoach-contract` extra cannot
+  resolve the new field from PyPI — install LoadCoach editable into IdeaPress's dev venv for that
+  one job, with a `TODO: re-pin on publish`.
+* **The word "adapter" is already taken in IdeaPress, and it means something else.** `spec.md` uses
+  it for the **backend port's** three implementations ("the LoadCoach adapter"); `grep -rn adapter
+  src/ --include=*.py` returns 57 hits, all of that kind, and there are **zero LoRA mentions**
+  anywhere in IdeaPress's documentation. The naming is settled in §0.3 decision 1 — apply it before
+  you write.
 * **The per-stage model pin already exists, and it is deliberately off.** `[models.stages]` binds a
-  stage to a model (`config.py:282`, `StageBindings`; `:305` `ModelsSettings`), and
-  `inference.loadcoach.honour_stage_bindings` (`config.py:180`) sends that binding to LoadCoach as
-  a model override — **off by default**, because
+  stage to a model (`config.py:282` `StageBindings`, `:305` `ModelsSettings`), and
+  `inference.loadcoach.honour_stage_bindings` (`config.py:180`) sends that binding to LoadCoach as a
+  `model` override — off by default, because
   [ADR-0040](docs/adr/0040-routing-backend-owns-model-choice.md) gives model choice to the routing
-  backend, and its own docstring says turning it on "pins the model and gives up routing, evidence
-  and reliability for that stage". **An adapter pin does not have those consequences** (§0.3). That
-  asymmetry is this row's central design question.
-* **Stage names are validated, and the precedent is good.** `MODEL_STAGES` / `NO_MODEL_STAGES`
+  backend. **An adapter pin does not have that consequence**, which is why §0.3 decision 2 gives it
+  its own key.
+* **Stage-name validation has a good precedent to copy.** `MODEL_STAGES` / `NO_MODEL_STAGES`
   (`domain/stages.py:113`, `:118`) and the `job_stages` validator (`config.py:197`–`:219`) refuse a
-  configured stage name that is not a model-using stage, because — in the validator's own words —
-  naming a gate stage is "the same silent-no-op the `[models.stages]` startup check exists to
-  prevent". **Copy that shape.** A per-stage adapter pin naming a gate stage must be a startup
-  refusal, not a key that quietly does nothing.
-* **The `Attempt` row already carries model provenance.** `infrastructure/db/models.py:282`–`:285`:
+  configured stage name that is not a model-using stage — in the validator's own words, to prevent
+  "the same silent-no-op the `[models.stages]` startup check exists to prevent".
+* **`Attempt` already carries model provenance** — `infrastructure/db/models.py:277`–`:280`:
   `model_provider_kind`, `model_provider_name`, `model_digest`, `model_canonical_id`. The adapter
-  axis is an extension of exactly these four, not a new provenance mechanism. **Migrations end at
-  `0005_stage_run_ownership.py`, so yours is `0006`.**
-* **The pins:** `baseaicore>=0.4,<0.5`, `setspec>=0.4,<0.7`, `modelrack>=0.5,<0.6`
-  (`pyproject.toml:24`, `:28`, `:29`); `loadcoach` appears only in the `loadcoach-contract` extra
-  (`:69`). **`setspec` is already wide** (E5's sweep) and needs nothing. Whether `modelrack` or
-  `baseaicore` has to move is a real question with a probable answer of *no* — §0.4.
-* **The adapter artefacts now exist.** Three LoRA GGUFs for `Qwen2.5-1.5B-Instruct.Q8_0` under
-  `~/ai/models/adapters/llm/`, digests in `docs/history/H1_HANDOFF.2.md` §4; the base is under
-  `~/ai/models/llm/`. The demonstration this row owns (§0.5) is therefore runnable, which was not
-  true for any earlier row in this arc.
-* **Python 3.13.15 or 3.14.4 depending on the venv — check IdeaPress's own** and name the
-  interpreter and every exact invocation (M5C-13). IdeaPress's coverage floor is **85 %**
-  (application).
+  axis extends exactly these four. **Migrations end at `0005_stage_run_ownership.py`, so yours is
+  `0006`.**
+* **IdeaPress has no concept of data classification.** `grep -rn classification src/ideapress
+  --include=*.py` returns **nothing**. §0.1a introduces the first one; §0.3 decision 6 says where it
+  lives and what it defaults to.
+* **Pins:** `baseaicore>=0.4,<0.5`, `setspec>=0.4,<0.7`, `modelrack>=0.5,<0.6`. Published now:
+  `baseaicore 0.4.2`, `setspec 0.6.0`, `modelrack 0.7.0`. **Installed in IdeaPress's venv:
+  `baseaicore 0.4.1`, `modelrack 0.5.0`** — a widened floor does not move an installed venv (E5's
+  lesson). `AdapterIdentity` and `DataClassification` both arrived in `baseaicore 0.4.1`, so the
+  floor becomes `>=0.4.1,<0.5` the moment you import either.
+* **The artefacts exist.** Three LoRA GGUFs for `Qwen2.5-1.5B-Instruct.Q8_0` under
+  `~/ai/models/adapters/llm/` (`pirate`, `terse`, `verbose`, 35 MB each); the base is
+  `~/ai/models/llm/Qwen2.5-1.5B-Instruct.Q8_0.gguf`. Digests in `docs/history/H1_HANDOFF.2.md` §4.
+* **IdeaPress's venv is Python 3.13.15.** Name the interpreter and every exact invocation (M5C-13).
+  Coverage floor **85 %** (application).
 * **Never `git push`.** Commit at every gate boundary; leave pushing, tagging and publishing to the
   operator.
 
-## 0.1 The block — check this at minute one
+## 0.1a The scope that arrived after this row was written — the caller half of the classification join
 
-**H3 consumes the `adapter` override, and that override is specified but not built.** H2's handoff
-(`docs/history/H2_HANDOFF.md` §8) is explicit: *"The `adapter` override contract is specified
-(`routing.md` §10) but not built; gate E builds it. H3 must not start before this row closes."*
+Decided by the operator on 2026-09-05 at H2's closing interview, and recorded in the H3 row.
+**LoadCoach takes no caller classification today.** The machinery exists and is half-wired:
 
-As of 2026-09-05, **H2 has finished gates A, B and C only.** Gates D–I are open.
+* `ConstraintInputs.caller_data_classification` exists (`domain/routing/constraints.py:385`) and
+  **nothing ever sets it** — `services/routing.py:660` does not pass it, so it is always `None`.
+* `constraints.py:658`–`:667` already computes `_join_classification(caller,
+  adapter.data_classification)` and writes `caller_classification`, `effective_classification` into
+  the `adapter_classification_conflict` detail. With no caller, I19's denial honestly shows
+  `caller_classification: null`.
+* `services/execution.py:1223` persists `effective_data_classification = adapter.data_classification`
+  — the adapter's own value, not a join.
 
-```bash
-grep -rn '"adapter"' /home/jpk/ai/suite/LoadCoach/src/loadcoach/api/    # the request field
-grep -rn 'adapter' /home/jpk/ai/suite/LoadCoach/src/loadcoach/domain/routing/  # subject expansion
-git -C /home/jpk/ai/suite/LoadCoach log --oneline -5
-pip index versions loadcoach
-```
+**IdeaPress is the first caller in the suite with a classification to declare**, so
+`data_classification` joins `/generate`'s body here and LoadCoach computes `max(caller, adapter)` on
+the attempt and in the rejection detail — the caller half of
+[ADR-0065](docs/adr/0065-an-adapter-is-classified-and-local-only.md) rule 2. This is a **small,
+closed** LoadCoach change: one optional body field, one argument at the `ConstraintInputs` call
+site, one line in execution's persistence, the tests, and the `api.md` / `routing.md` sentences that
+describe them. **It is the one exception to "do not touch LoadCoach"** — anything else you find
+there is a finding for another row.
 
-**If `/api/v1/generate` does not accept an `adapter` field, stop and say so.** Do not build against
-a contract that exists only in `routing.md`; do not stub LoadCoach; do not "temporarily" send the
-pin as a `model` override, which has different semantics (§0.3) and would bake the wrong meaning
-into a shipped configuration file. Report which H2 gates remain and end the session. Everything in
-this row is downstream of that one field.
+**The field is optional, not required.** A required field would break every existing caller —
+PromptCadence speaks the 1.0 wire — and Gate C's compatibility golden exists to prevent exactly that
+class of break.
 
-What *is* buildable ahead of it, and is worth doing if you find the block: **§0.2's documentation
-gate and the naming decision**. Both are pure documentation, neither depends on LoadCoach, and both
-are the slow part. Land them, commit, and stop there.
+## 0.2 Gate A — the documentation does not describe any of this
 
-## 0.2 Gate 0 — the documentation does not describe any of this
-
-Same shape as H2's Gate 0, smaller. IdeaPress's `development-plan.md` has no phase for adapters and
-its `spec.md` §12 (configuration) describes `[models.stages]` with no adapter axis. **Before any
-source changes**, in workspace `docs/` and mirrored byte-identically into `IdeaPress/docs/`:
+Before any source change, in workspace `docs/` and mirrored byte-identically into the component
+repositories (`cmp` proves it):
 
 * **`apps/ideapress/development-plan.md` gains a phase** in the house shape the existing phases use
   — Goal, Prerequisites, Work, Tests, Acceptance criteria, Known risks, Likely failure modes, Gold
   standards, Deferred — with acceptance criteria written as **demonstrable** statements.
-* **`apps/ideapress/spec.md`**: §12 (the configuration section — the new keys and their startup
-  refusals), the data-ownership section (the new `attempts` columns are IdeaPress's), the error
-  table (what an unhonourable pin produces), and the compatibility section (what `1.1` adds and
-  what it does not break in a shipped `1.0` config).
-* **`apps/ideapress/workflows.md`**: which stages may carry a pin, and what a stage does when its
-  pin is refused.
-* Wherever the backend-port "adapter" language lives, **disambiguate it once** — §0.3 decision 1.
+* **`apps/ideapress/spec.md`**: §12 configuration (the new keys and their startup refusals), data
+  ownership (the new `attempts` columns are IdeaPress's), the error table (what an unhonourable pin
+  produces), and compatibility (what `1.1` adds and what it does not break in a shipped `1.0`
+  config).
+* **`apps/ideapress/workflows.md`**: which stages may carry a pin, and what a stage does when its pin
+  is refused.
+* **`apps/loadcoach/api.md`** and **`apps/loadcoach/routing.md`**: the `data_classification` request
+  field and the join it feeds (§0.1a). Amend before building it.
+* The naming disambiguation, once, wherever the backend-port "adapter" language lives (§0.3
+  decision 1).
 
 That is the row's first commit, before a line of source.
 
-## 0.3 The decisions this row must take, and record
+## 0.3 The decisions — taken by the operator on 2026-09-05, before the session
 
-Each has a recommendation; take it or overturn it, but **record which and why** in the handoff, and
-in an ADR where it outlives the row (CLAUDE.md: a missing architectural decision is a docs defect,
-closed with an ADR, not with an implementation). **ADR-0081 is the next free number — confirm**
-(`ls docs/adr/ | tail -3`; 0080 is the highest as of 2026-09-05).
+Five were settled at this prompt's interview and are **not** open for relitigation; the rest carry
+recommendations. Record in the handoff what you built and any place a decision did not survive
+contact with the code.
 
-1. **What the thing is called, in a codebase where "adapter" already means a backend port.**
-   Recommendation: keep `adapter` for the LoRA sense in *configuration and wire* fields, because
-   that is LoadCoach's field name and inventing a synonym at the boundary is worse; rename the
-   backend-port sense in prose to **"backend"** wherever the two could be read together, and say so
-   once in `spec.md`. Do **not** rename the port's Python symbols — that is a large mechanical diff
-   with no behavioural content, and this row is not the place. A naming note in the spec is enough.
+1. **Naming.** Keep `adapter` for the LoRA sense in *configuration and wire* fields — it is
+   LoadCoach's field name, and inventing a synonym at the boundary is worse. Call the port sense
+   "backend" in prose wherever the two could be read together, and say so once in `spec.md`. Do
+   **not** rename the port's Python symbols: a large mechanical diff with no behavioural content,
+   and not this row's business.
+2. **The pin gets its own key, in effect wherever it is set** — *decided*. A separate
+   `[models.stage_adapters]`-shaped table (name it in the spec; shape it like `[models.stages]`);
+   configuring a pin is configuring it on, with no second boolean. An adapter pin does not surrender
+   routing — `routing.md` §10: *"`adapter` without `model` is legal and means 'this adapter, on
+   whichever base can serve it': the compatible bases are scored normally and the pin selects among
+   their adapter subjects"* — so tying it to `honour_stage_bindings`, whose documented meaning is
+   "give up routing", would make the configuration lie. A pin behind a default-off boolean would
+   also be the silent no-op the `job_stages` validator exists to prevent. **State the both-set case
+   explicitly:** the model pin narrows to one base, the adapter pin selects among that base's
+   subjects, and that combination is the one place an adapter pin does surrender routing — because
+   the model pin already did. **This is ADR-0083.**
+3. **A refused pin fails its stage, with the refusal surfaced.** ADR-0064 rule 4: a pin that cannot
+   be honoured is refused by name, never silently served bare. An operator who pinned a house-voice
+   LoRA and got the base's prose back has been lied to about what produced their document, and
+   IdeaPress's whole provenance story is that this cannot happen. `ADAPTER_NOT_FOUND` (a 404 that
+   lists what does exist) and `PROFILE_MISMATCH` both get rows in the error table; both are
+   **permanent for the request as written** (H2 handoff §4.4), so neither is retryable.
+4. **A pin in direct/Ollama mode is refused at startup.** The scope decision is already made
+   (adapter-roadmap §4.4: that path stays adapter-free, because an adapter through the
+   OpenAI-compatible path would evade identity tracking); this is its enforcement, by the
+   `job_stages` validator shape, since the mode is known at startup. Not an ADR — spec §12.
+5. **A persisted attempt names the subject by string only.** ADR-0080 settled the LoadCoach case
+   (FK **and** string); IdeaPress has no adapters table and **must not grow one** — it does not own
+   the registry. Mirror `model_canonical_id` with the canonical subject string, plus the adapter's
+   name and artifact digest as their own columns so a query can group without parsing. Use
+   `baseaicore.AdapterIdentity.canonical_suffix()` and `canonical_subject_id()` — do not
+   re-implement the format. Cite ADR-0080; no new ADR.
+6. **IdeaPress declares one application-level classification, defaulting to the lowest class** —
+   *decided*. A single key (under `[inference]`, or wherever §12 reads most honestly) applying to
+   every request the instance makes: one value to keep correct, one place to audit, and the true
+   statement is about the installation, not about a stage. **Unset means the lowest
+   `baseaicore.DataClassification` level**, so every shipped `1.0` configuration keeps working and
+   the join `max(caller, adapter)` equals the adapter's own value — byte-identical to today's
+   behaviour for anyone who ignores the key. Under-declaration is possible and accepted: the adapter
+   half still fails closed against a remote registration, which is the invariant that matters.
+7. **The LoadCoach change folds into the unpublished `1.1.0`** — *decided*. No `1.2.0`: `1.1.0` has
+   never been published, so a second minor would record a distinction no user can observe. Add the
+   changelog entry to the same unreleased `1.1.0` section and amend or follow the existing release
+   commit; the tag and the publish still wait for H4.
 
-2. **Whether an adapter pin rides `honour_stage_bindings` or gets its own switch.**
-   This is the row's real decision. `honour_stage_bindings` is off by default because a model pin
-   surrenders routing (ADR-0040). An adapter pin does not: `routing.md` §10 says *"`adapter` without
-   `model` is legal and means 'this adapter, on whichever base can serve it': the compatible bases
-   are scored normally and the pin selects among their adapter subjects."* Routing still happens.
-   Recommendation: **its own key, defaulting on where a pin is configured**, independent of
-   `honour_stage_bindings` — because tying a non-surrendering pin to a flag whose documented meaning
-   is "give up routing" would make the configuration lie. State the interaction explicitly for the
-   case where both are set: the model pin narrows to one base, the adapter pin selects among that
-   base's subjects, and that combination is the one place an adapter pin does surrender routing —
-   because the model pin already did. This is an ADR.
+## 0.4 The pins — check rather than assume
 
-3. **What IdeaPress does when LoadCoach refuses the pin.** ADR-0064 rule 4 and `routing.md` §10:
-   *"a pin that cannot be honoured is refused by name rather than silently served bare"*. So
-   LoadCoach returns a refusal, not a bare-base answer. Recommendation: **the stage fails with the
-   refusal surfaced**, exactly as a validation refusal fails today — never a silent fall back to
-   the base. An operator who pinned a house-voice LoRA and got the base's prose back has been lied
-   to about what produced their document, and IdeaPress's whole provenance story is that this
-   cannot happen. Say in the spec's error table which refusal maps to which IdeaPress error, and
-   make sure `ADAPTER_NOT_FOUND` and `PROFILE_MISMATCH` both have rows — H1's handoff §4 notes that
-   `PROFILE_MISMATCH` is permanent for the request as written, so it belongs with
-   `ADAPTER_NOT_FOUND` and not with a retryable failure.
+`modelrack>=0.5,<0.6` predates `LlamaCppProvider` entirely, which looks alarming and is probably
+fine: IdeaPress reaches adapters only through LoadCoach's HTTP API, and its direct/Ollama path stays
+adapter-free by decision. If nothing in your diff imports a ModelRack adapter type, the pin does not
+move.
 
-4. **What a pin does in direct/Ollama mode.** The roadmap is already decided here —
-   adapter-roadmap §4.4: *"direct/Ollama mode stays adapter-free (recorded scope decision — an
-   adapter through the OpenAI-compatible path would evade identity tracking)"*. What is *not*
-   decided is whether a configured pin in that mode is ignored or refused. Recommendation:
-   **refused at startup**, by the same validator shape as `job_stages` (§0 above): a pin that
-   silently does nothing is precisely the silent-no-op that check exists to prevent, and the mode
-   is known at startup. Not an ADR — the scope decision is made; this is its enforcement, and it
-   belongs in the spec's configuration section.
+`baseaicore>=0.4,<0.5` is the honest one: using `AdapterIdentity`, `canonical_suffix()` or
+`DataClassification` makes the floor `>=0.4.1,<0.5`. **A floor a needed symbol is not in is the F3
+defect** (`docs/history/F3_HANDOFF.md` finding 4) — the code imports, then fails at the first
+adapter. `setspec>=0.4,<0.7` needs nothing.
 
-5. **How much of the subject a persisted attempt names.** [ADR-0080](docs/adr/0080-a-persisted-decision-names-the-subject-by-reference-and-by-string.md)
-   decided this for LoadCoach: by foreign key **and** by the canonical string written at the time,
-   because an explanation is kept for ever and an adapter directory is not. IdeaPress has no
-   adapters table and should not grow one — it does not own the registry. Recommendation:
-   **string only**, mirroring the existing `model_canonical_id` column, plus the adapter's name and
-   artifact digest as their own columns so a query can group by adapter without parsing.
-   `baseaicore.AdapterIdentity.canonical_suffix()` (`adapter.py:142`) and
-   `canonical_subject_id()` (`subject.py:141`) already produce the string — **use them; do not
-   re-implement the format**. Not an ADR; ADR-0080's reasoning transfers and should be cited.
+E5's lessons if any pin moves: a widened floor does not move an installed venv unless it excludes
+what is installed; `pip-compile` needs `-P` per package to move a satisfied pin; the flag is
+`--no-emit-index-url`, not `--no-index`.
 
-## 0.4 The pins — probably nothing to do, but check rather than assume
+## 0.5 The exit demonstration — this row owns it
 
-`modelrack>=0.5,<0.6` predates `LlamaCppProvider` entirely (Phase 6, `modelrack 0.7.0`). That looks
-alarming and is probably fine: **IdeaPress reaches adapters only through LoadCoach's HTTP API**, and
-the roadmap keeps its direct/Ollama path adapter-free by decision. If nothing in your diff imports a
-ModelRack adapter type, the pin does not move.
+Moved here from H2 by that row's §0.5, and the H3 row now says so. Precisely:
 
-`baseaicore>=0.4,<0.5` is the one to check honestly: if you use `AdapterIdentity` or
-`canonical_suffix()` for §0.3 decision 5, the floor must become `>=0.4.1,<0.5` — that is where
-`AdapterIdentity` arrived — and `>=0.4.2,<0.5` if anything touches `RuntimeProfile.adapters_registered`
-(it should not; IdeaPress does not build runtime profiles). **A floor that a needed symbol is not in
-is the F3 defect** (`docs/history/F3_HANDOFF.md` finding 4): the code imports and then fails at the
-first adapter.
-
-E5's lessons apply if any pin moves: a widened floor **does not move an installed venv** unless the
-floor excludes what is installed, `pip-compile` needs `-P` per package to move a satisfied pin, and
-the flag is `--no-emit-index-url`, not `--no-index`.
-
-## 0.5 The exit demonstration — this row inherits it, and the row text has not been edited to say so
-
-H2's kickoff §0.5 moved the IdeaPress three-stage demonstration **into this row**, and H2's handoff
-§8 records that *"the H3 row has not yet been edited to say so, and it should be when this row
-closes"*. **Check whether that edit has landed; if it has not, make it as part of this row's docs
-commit** and say so in the handoff.
-
-The demonstration, precisely:
-
-* A real IdeaPress project through **three model-using stages**, each stage pinning a **different**
-  adapter on **one** base, against real LoadCoach and a real `llama-server`.
+* A real IdeaPress project through **three model-using stages**, each pinning a **different** adapter
+  on **one** base, against a real LoadCoach and a real `llama-server`.
 * **Exactly one base load** across the whole project — I16, asserted from ModelRack's process table
   and load timings, not from absence of complaint. H1's `TestWarmBase`
-  (`py/ModelRack/tests/live/test_llamacpp_live.py`) is the assertion shape to copy; it proves the
-  same property from three witnesses.
+  (`py/ModelRack/tests/live/test_llamacpp_live.py`) is the assertion shape; H2 proved the same
+  property at the LoadCoach boundary (one pid, three pins, `list_resident` holding the base alone,
+  three visibly different answers).
 * Every attempt row naming the subject that answered it, so the three stages are distinguishable
   after the fact from the database alone.
-* **One recorded classification denial** — I19: a confidential-classified adapter meeting a
-  remote-tier request produces a queryable rejection.
-  [ADR-0079](docs/adr/0079-an-adapter-classification-refusal-is-a-routing-rejection.md) settled
-  where it is recorded: **a LoadCoach `routing_candidates` row with reason
-  `adapter_classification_conflict`, not a `governance.egress_decision`**. IdeaPress's part is to
-  provoke it and to surface the refusal (§0.3 decision 3), not to record it.
+* **One recorded classification denial** — I19 — now with **both halves of the join populated**,
+  which is what §0.1a buys: `caller_classification` is IdeaPress's declared value, not `null`.
+  [ADR-0079](docs/adr/0079-an-adapter-classification-refusal-is-a-routing-rejection.md): it is a
+  LoadCoach `routing_candidates` row with reason `adapter_classification_conflict`, **not** a
+  `governance.egress_decision`. IdeaPress provokes it and surfaces the refusal; it does not record
+  it. Note that with the default-lowest classification (§0.3(6)) the denial is driven by the
+  adapter's class — to see the caller half change the outcome, declare a higher class in the demo's
+  configuration and say so in the handoff.
+* **A live-journey trap H2 hit and you will too:** every shipped task profile that allows remote
+  demands ≥ 128k context, which a 1.5 B base cannot serve, so the journey writes its own small
+  `task_profiles.toml` into the scratch directory. `general_chat` is not a SetSpec capability; the
+  vocabulary term is `instruction_following`.
 
-Artefacts exist (§0). The base is small (1.5 B, Q8_0) and loads in about 750 ms, so this
-demonstration is minutes, not hours.
+Artefacts exist (§0). The base is 1.5 B at Q8_0 and loads in about 750 ms, so this demonstration is
+minutes, not hours.
 
 ## 1. Setup
 
 ```bash
 git -C /home/jpk/ai/suite/docs status -sb
+git -C /home/jpk/ai/suite/LoadCoach status -sb
 git -C /home/jpk/ai/suite/IdeaPress status -sb
-cd /home/jpk/ai/suite/IdeaPress && source .venv/bin/activate && pip install -e ".[dev]"
+source .venv/bin/activate && pip install -e ".[dev]"
 python -V && pip show baseaicore setspec modelrack | grep -E "^(Name|Version)"
 ```
 
-Every scratch database, config file, project directory and log goes in the session scratchpad —
-**never** the repository, never the workspace root, never `/tmp` directly.
+Every scratch database, configuration file, project directory and log goes in the session
+scratchpad — **never** the repository, never the workspace root, never `/tmp` directly.
 
 ## 2. Standing preamble ([outstanding-work §2](docs/roadmap/outstanding-work.md))
 
 * Work inside the component directory. Nothing at the workspace root is versioned.
-* The finish line: `ruff format --check . && ruff check . && mypy src tests && lint-imports &&
-  pytest -m "not live and not performance"` green, `CHANGELOG.md` updated, **one Conventional Commit
-  per gate**, every path staged by name — never `git add -A`.
+* The finish line, **in each repository you touch**: `ruff format --check . && ruff check . && mypy
+  src tests && lint-imports && pytest -m "not live and not performance"` green, `CHANGELOG.md`
+  updated, **one Conventional Commit per gate**, every path staged by name — never `git add -A`.
 * Docstring-first: define behaviour, write the Google-style docstring including what the function
   *refuses*, write the tests against it, then implement.
 * Workspace `docs/` is edited first and mirrored into the component; prove every mirror with `cmp`
   before the commit that carries it.
-* Route handlers and CLI command bodies contain no business logic — one service call and a render.
-* Name the interpreter and the exact invocation in the gate report (M5C-13).
+* Route handlers and CLI command bodies hold no business logic — one service call and a render.
+* Name the interpreter and the exact invocation in every gate report (M5C-13).
 
 ## 3. Reading list, in this order
 
-1. `docs/history/H2_HANDOFF.md` §7 (what gate E built) and §8 (**what H3 inherits** — read this
-   twice; it is the contract).
-2. `docs/apps/loadcoach/routing.md` §10 — the override table and the `adapter`-without-`model`
-   rule. This is the semantic you are consuming.
-3. `docs/adr/0064-adapters-are-selected-through-the-capability-vocabulary.md` rule 4 (a pin that
-   cannot be honoured is refused by name) and
-   `docs/adr/0065-an-adapter-is-classified-and-local-only.md` (the classification rule I19 trips).
-4. `docs/adr/0040-routing-backend-owns-model-choice.md` — the decision §0.3(2) has to sit beside.
+1. `docs/history/H2_HANDOFF.2.md` §§4–5 (the decisions and the two unplanned builds), §7 (**what H3
+   inherits** — read it twice), §9 (the interview that added §0.1a).
+2. `docs/apps/loadcoach/routing.md` §10 — the override table and the `adapter`-without-`model` rule.
+   This is the semantic you consume.
+3. `docs/adr/0065-an-adapter-is-classified-and-local-only.md` **rule 2** — the join §0.1a completes
+   — and `0064` rule 4 (a pin refused by name).
+4. `docs/adr/0040-routing-backend-owns-model-choice.md` — the decision §0.3(2) sits beside.
 5. `docs/adr/0080-a-persisted-decision-names-the-subject-by-reference-and-by-string.md` — the
-   reasoning §0.3(5) borrows.
-6. `docs/roadmap/adapter-roadmap.md` §4.4 (this row's scope) and §7 rows I16, I19.
-7. `IdeaPress/src/ideapress/config.py` §`LoadCoachSettings` (`:169`–`:230`) and `StageBindings`
-   (`:282`–`:320`) — the code the new keys live beside.
-8. `IdeaPress/src/ideapress/infrastructure/db/models.py:267`–`:295` — the `Attempt` row you extend.
-9. `docs/history/H1_HANDOFF.2.md` §3–§4 — the artefacts, and the I16 assertion shape.
+   reasoning §0.3(5) borrows; `0081` for why an adapter subject inherits no evidence, which is why a
+   pin is how an adapter is used at all until LA3.
+6. `docs/roadmap/adapter-roadmap.md` §4.4 and §7 rows I16, I19; accepted A-7 and A-8.
+7. `LoadCoach/src/loadcoach/domain/routing/constraints.py:355`–`:390` and `:650`–`:675`;
+   `services/routing.py:655`–`:680`; `services/execution.py:1215`–`:1230` — the four places §0.1a
+   touches.
+8. `IdeaPress/src/ideapress/config.py:169`–`:230` (`LoadCoachSettings`) and `:282`–`:320`
+   (`StageBindings`); `infrastructure/backends/loadcoach.py:726` — where `overrides` is built today,
+   model-only.
+9. `IdeaPress/src/ideapress/infrastructure/db/models.py:267`–`:300` — the `Attempt` row you extend.
+10. `docs/history/H1_HANDOFF.2.md` §§3–4 — the artefacts, and the I16 assertion shape.
 
-## 4. The shape of the work — five gates
+## 4. The shape of the work — six gates
 
-| Gate | What | Depends on |
-|---|---|---|
-| **A** | The plan, the spec, the workflows text, and the naming note (§0.2) | nothing |
-| **B** | Configuration: the per-stage pin, its validators, its startup refusals | A |
-| **C** | The passthrough: the pin reaches LoadCoach as an `adapter` override | B, **H2 gate E** |
-| **D** | Provenance: migration `0006`, the subject on every attempt | C |
-| **E** | The three-stage demonstration (§0.5) and the release commit | D, artefacts |
+| Gate | What | Repo | Depends on |
+|---|---|---|---|
+| **A** | The plan, the two specs, workflows, `api.md`/`routing.md`, the naming note (§0.2) | docs + both mirrors | — |
+| **B** | The caller classification: `data_classification` on `/generate`, through `ConstraintInputs`, joined onto the attempt (§0.1a) | LoadCoach | A |
+| **C** | Configuration: the per-stage pin, its validators and startup refusals; the application-level classification key (§0.3(6)) | IdeaPress | A |
+| **D** | The passthrough: the pin and the classification reach LoadCoach; refusals surface | IdeaPress | B, C |
+| **E** | Provenance: migration `0006`, the subject on every attempt | IdeaPress | D |
+| **F** | The three-stage demonstration (§0.5) and the release commits | both | E, artefacts |
 
-Gate boundaries are commit boundaries, so the row can be stopped and resumed. Gates A and B are
-buildable even if §0.1 finds H2 unfinished; C onward are not.
+Gate boundaries are commit boundaries, so the row can be stopped and resumed.
 
 ## 5. Gate A — the documentation
 
-§0.2, in full, plus the H3 row edit §0.5 asks for. Mirror into `IdeaPress/docs/` and prove with
-`cmp`.
+§0.2 in full, plus ADR-0083 for §0.3(2). Mirror into `IdeaPress/docs/` and `LoadCoach/docs/`, proved
+with `cmp`.
 
-**Commit:** `docs(ideapress): per-stage adapter pins and the subject on every attempt (LA2)`.
+**Commits:** `docs(ideapress): per-stage adapter pins and the subject on every attempt (LA2)`;
+`docs(loadcoach): a caller declares its data classification (ADR-0065 rule 2)`.
 
-## 6. Gate B — configuration
+## 6. Gate B — the caller half, in LoadCoach
 
-* The per-stage adapter pin, in the shape §0.3(2) decides, beside `[models.stages]`.
+* An **optional** `data_classification` on `GenerateBody`, validated against
+  `baseaicore.DataClassification`; `extra="forbid"` untouched.
+* Passed into `ConstraintInputs.caller_data_classification` at `services/routing.py:660`.
+* `effective_data_classification` persisted as the **join**, not the adapter's value, at
+  `services/execution.py:1223`.
+* Tests: a caller-only classification; an adapter-only one (today's behaviour, unchanged); the join
+  where both exist; the rejection detail carrying all three fields. A body without the field behaves
+  byte-identically to `1.1.0` as prepared — assert it.
+* Changelog into the existing unreleased `1.1.0` section (§0.3(7)); no version bump.
+
+**Commit:** `feat(routing): a caller's data classification joins the adapter's (ADR-0065 rule 2)`.
+
+## 7. Gate C — IdeaPress configuration
+
+* The per-stage adapter pin in the shape §0.3(2) decides, beside `[models.stages]`.
 * A validator refusing a pin on a stage that is not a model-using stage — the `job_stages` shape.
-* A validator refusing any pin at all when the backend is direct/Ollama (§0.3(4)).
-* The compatibility golden: **a shipped `1.0` configuration file loads to a byte-identical settings
-  object**. Assert it; do not argue it.
-* Tests: each refusal by its message, and the golden.
+* A validator refusing any pin when the backend is direct/Ollama (§0.3(4)).
+* The application-level `data_classification` key, defaulting to the lowest class (§0.3(6)).
+* **The compatibility golden: a shipped `1.0` configuration file loads to a byte-identical settings
+  object.** Assert it; do not argue it.
+* Tests: each refusal by its message, the default, and the golden.
 
 **Commit:** `feat(config): a stage may pin an adapter, and a pin that cannot apply is refused`.
 
-## 7. Gate C — the passthrough
+## 8. Gate D — the passthrough
 
 * The pin travels as LoadCoach's `adapter` override on the stage's `/generate` request, alongside
-  the existing model override where both are configured.
+  the existing `model` override where both are configured.
+* `data_classification` travels on every request.
 * A refusal comes back as a stage failure with the refusal surfaced (§0.3(3)), never a bare-base
-  answer. Both `ADAPTER_NOT_FOUND` and `PROFILE_MISMATCH` map to documented IdeaPress errors.
-* The LoadCoach contract tests (`loadcoach-contract` extra) gain the new field, so the shape is
-  asserted against the real client and not only against a fake.
-* Tests: pinned request carries the field; unpinned request is **byte-identical to `1.0`'s**; each
-  refusal fails the stage with its reason recorded.
+  answer; `ADAPTER_NOT_FOUND` and `PROFILE_MISMATCH` map to documented IdeaPress errors.
+* The `loadcoach-contract` tests gain the new fields, against an editable LoadCoach (§0), so the
+  shape is asserted against the real client and not only against a fake.
+* Tests: a pinned request carries the fields; an unpinned request is byte-identical to `1.0`'s
+  except the classification; each refusal fails its stage with the reason recorded.
 
 **Commit:** `feat(inference): a stage's adapter pin travels as LoadCoach's adapter override (A-7)`.
 
-## 8. Gate D — provenance
+## 9. Gate E — provenance
 
-* Migration **`0006`**: the adapter columns on `attempts`, beside the four model columns, plus the
+* Migration **`0006`**: the adapter columns on `attempts` beside the four model columns, plus the
   canonical subject string (§0.3(5)). A stated rule for existing rows in the migration's docstring —
   they are base subjects; say so.
-* Every attempt writes the subject that answered it, taken from LoadCoach's response, never
-  inferred from the configuration. What was *asked for* and what *answered* are different facts and
-  a pin can be refused between them.
-* Tests: a pinned attempt records its adapter; an unpinned one records `NULL` and not an empty
-  string; existing rows migrate unchanged.
+* Every attempt writes the subject that **answered** it, taken from LoadCoach's response, never
+  inferred from the configuration. What was asked for and what answered are different facts, and a
+  pin can be refused between them.
+* Tests: a pinned attempt records its adapter; an unpinned one records `NULL`, not an empty string;
+  existing rows migrate unchanged.
 
 **Commit:** `feat(persistence): an attempt names the adapter subject that answered it (ADR-0058)`.
 
-## 9. Gate E — the demonstration and the release commit
+## 10. Gate F — the demonstration and the release commits
 
 1. **The live proof** as §0.5 defines it, verbatim into the handoff: three stages, three adapters,
    one base, **one** base load, every attempt naming its subject, and the classification denial
-   queryable in LoadCoach.
-2. Version to `1.1.0`, `## [Unreleased]` moved, release commit prepared, wheel built into the
-   scratchpad and verified in a throwaway venv with the app's own smoke path. **No tag, no publish,
-   no push.**
+   queryable in LoadCoach with both halves of the join populated.
+2. `ideapress` to `1.1.0`, `## [Unreleased]` moved, release commit prepared, wheel built into the
+   scratchpad and verified in a throwaway venv with the app's own smoke path. LoadCoach keeps
+   `1.1.0` with the amended changelog (§0.3(7)). **No tag, no publish, no push.**
 
-**Commits:** `test(live): three stages, three adapters, one base load`,
+**Commits:** `test(live): three stages, three adapters, one base load`;
 `chore(release): ideapress 1.1.0`.
 
-## 10. Exit conditions — all of these, demonstrably
+## 11. Exit conditions — all of these, demonstrably
 
-1. The development plan has a phase for this work with demonstrable acceptance criteria; the four
-   IdeaPress documents describe adapter pins; workspace `docs/` and the mirror are `cmp`-identical.
+1. The development plan has a phase for this work with demonstrable acceptance criteria; the
+   IdeaPress and LoadCoach documents describe the pins and the join; workspace `docs/` and both
+   mirrors are `cmp`-identical.
 2. A stage can pin an adapter in configuration, and a pin naming a gate stage, an unknown stage, or
    any stage in direct/Ollama mode is refused **at startup**, by name.
-3. A pinned stage's request carries LoadCoach's `adapter` override; an unpinned stage's request is
-   byte-identical to `1.0`'s.
+3. A pinned stage's request carries the `adapter` override; every request carries
+   `data_classification`; an unpinned request is otherwise byte-identical to `1.0`'s.
 4. A refused pin fails its stage with the refusal surfaced — never a bare-base answer.
 5. Every attempt row names the subject that answered it; unpinned attempts are unchanged.
-6. **The three-stage demonstration**: one base load across three adapters, plus one recorded
+6. LoadCoach persists `max(caller, adapter)` and the rejection detail shows all three classification
+   fields, with `caller_classification` no longer `null`.
+7. **The three-stage demonstration**: one base load across three adapters, plus one recorded
    classification denial (§0.5).
-7. A configuration with no pins behaves byte-identically to `36cd3c6` — asserted, not argued.
-8. Full gate green; interpreter and exact invocations named; coverage ≥ 85 %.
+8. A configuration with no pins and no classification behaves byte-identically to `36cd3c6` —
+   asserted, not argued.
+9. Full gate green in both repositories; interpreter and exact invocations named; IdeaPress coverage
+   ≥ 85 %.
 
-## 11. Closing duties
+## 12. Closing duties
 
-1. Full gate; interpreter and exact invocations named (M5C-13).
-2. **`H3_HANDOFF.md` at the workspace root**, house shape, copied into `docs/history/`: gate
-   results; each §0.3 decision and why; the live evidence verbatim; what H4 and I2 inherit, if
-   anything; **and anything this prompt said that turned out not to be true** — that section has
-   been the most useful part of the last eight handoffs, so write it even when it is short.
-3. Say plainly what is left for the operator: push two repos, tag and publish `ideapress 1.1.0`,
-   verify the published wheel.
-4. Record any model deviation ([model-assignment §3.5](docs/roadmap/model-assignment.md)).
+1. Full gates; interpreter and exact invocations named (M5C-13).
+2. **`H3_HANDOFF.md` at the workspace root**, house shape, copied into `docs/history/`: gate results;
+   each §0.3 decision as built, and any that did not survive contact with the code; the live evidence
+   verbatim; what H4 and I2 inherit; **and anything this prompt said that turned out not to be true**
+   — that section has been the most useful part of the last nine handoffs, so write it even when it
+   is short.
+3. Say plainly what is left for the operator: push three repositories, tag and publish `ideapress
+   1.1.0`, and `loadcoach 1.1.0` once H4 lands; verify the published wheels.
+4. Record the model deviation to Opus 5 · high
+   ([model-assignment §3.5](docs/roadmap/model-assignment.md)).
 5. Update the H3 row in `docs/roadmap/outstanding-work.md` to **Done**, in the house form.
 
-## 12. Stop rules
+## 13. Stop rules
 
-* **Do not start if H2's gate E has not landed** (§0.1). Report and stop.
-* **Do not touch LoadCoach, FreeWeight, ModelRack or PromptCadence.** A missing field there is a
-  finding for that row, not a diff here.
-* **Do not send an adapter anywhere.** ADR-0065: local-only, classified, effective classification
-  is `max(caller, adapter)`.
-* **Do not let a refused pin degrade to the base.** §0.3(3) is the whole point of the row.
-* **Do not add an adapters table to IdeaPress.** It does not own the registry (ADR-0061 rule 3);
-  LoadCoach reads the operator's directory.
+* **Touch LoadCoach only for §0.1a.** Anything else there is a finding for another row.
+* **Do not touch FreeWeight, ModelRack or PromptCadence.**
+* **Do not send an adapter anywhere.** ADR-0065: local-only, classified, effective classification is
+  `max(caller, adapter)`.
+* **Do not let a refused pin degrade to the base.** §0.3(3) is the point of the row.
+* **Do not add an adapters table to IdeaPress.** It does not own the registry; LoadCoach reads the
+  operator's directory.
 * **Do not put an adapter on the direct/Ollama path.** Recorded scope decision, adapter-roadmap
   §4.4, and the reason is identity tracking.
-* **Do not break a shipped `1.0` configuration file.** The golden in gate B is the guard.
-* **Do not weaken `extra="forbid"`**, do not add `/api/v2`, do not weaken `.importlinter`, and do
-  not put business logic in a route handler or a CLI body.
+* **Do not break a shipped `1.0` configuration file.** Gate C's golden is the guard.
+* **Do not make `data_classification` required** on LoadCoach's wire — PromptCadence speaks the 1.0
+  wire.
+* **Do not weaken `extra="forbid"`**, do not add `/api/v2`, do not weaken `.importlinter`, and do not
+  put business logic in a route handler or a CLI body.
 * **Do not `git push`, tag or publish.** Never `git add -A`; never overwrite an unversioned
   workspace-root file; never leave a tree dirty at a gate boundary.
 
-## 13. If you finish with capacity left
+## 14. If you finish with capacity left
 
-Read-only, in priority order: (a) whether the stage → task-profile mapping (`spec.md` §206) should
-weight adapter-relevant capabilities once H4's evidence exists — a note for LA3, not a change.
-(b) Whether the three-stage demonstration is worth keeping as a marked `live` test rather than a
-one-off, given the artefacts are now cheap to serve. (c) Whether anything in IdeaPress's prose
-still reads ambiguously after §0.3(1)'s naming note.
+Read-only, in priority order: (a) whether the stage → task-profile mapping should weight
+adapter-relevant capabilities once H4's evidence exists — a note for LA3, not a change; (b) whether
+the three-stage demonstration is worth keeping as a marked `live` test rather than a one-off, now
+that the artefacts are cheap to serve; (c) whether IdeaPress's prose still reads ambiguously after
+§0.3(1)'s naming note.
