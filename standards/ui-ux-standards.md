@@ -314,17 +314,24 @@ shown in the user's locale with the UTC value available on hover. Never anthropo
 
 Shared shell, different content — this is deliberate and must not be homogenized.
 
-| FreeWeight | LoadCoach | IdeaPress |
-|---|---|---|
-| Dashboard | Dashboard | Projects |
-| Run | Jobs | Project workspace |
-| Results | Queue | Workflow |
-| Models | Models | Models / Backend |
-| Database | Task profiles | Exports |
-| Settings | Routing | Settings |
-| | Benchmarks (imported evidence) | |
-| | System | |
-| | Settings | |
+| FreeWeight | LoadCoach | IdeaPress | PromptCadence |
+|---|---|---|---|
+| Dashboard | Dashboard | Projects | Dashboard |
+| Run | Jobs | Project workspace | Trajectories |
+| Results | Queue | Workflow | Approvals |
+| Models | Models | Models / Backend | Tiers |
+| Database | Task profiles | Exports | Tools |
+| Settings | Routing | Settings | Ledger |
+| | Benchmarks (imported evidence) | | Egress |
+| | System | | System |
+| | Settings | | |
+
+PromptCadence's column was added with its console (row I1). Trajectories comes second because a
+trajectory is the unit of everything else there: approvals, debits and egress decisions all belong
+to one, and each of those pages links back to it. It shows **no models page** — models are
+LoadCoach's, and a second list of them would be a second answer to the same question; the console
+names the model that answered each turn and links to the LoadCoach job that chose it. It shows no
+telemetry bar for the same reason: PromptCadence reads no machine.
 
 ---
 
