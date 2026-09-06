@@ -9,6 +9,7 @@ vocabulary and the specialization rule), [LoadCoach Routing §5–§8](../apps/l
 reuses), [ADR-0040](0040-routing-backend-owns-model-choice.md) (the router owns model choice),
 [ADR-0059](0059-adapter-evidence-is-measured-never-inherited.md) (what the gate has to filter on),
 [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) (what is being selected).
+**Amended by:** [ADR-0087](0087-the-evidence-gate-admits-only-a-signal-that-scores.md) — rule 3's gate reads the *resolved* capability score, so a signal scoring excludes no longer satisfies it.
 **Source:** [Adapter roadmap §2, A-7](../roadmap/adapter-roadmap.md).
 
 ## Context

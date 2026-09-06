@@ -108,6 +108,9 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0083](0083-an-adapter-pin-is-configured-on-by-being-configured.md) | An adapter pin is configured on by being configured | Accepted |
 | [0084](0084-a-producer-chooses-a-payload-version-by-content.md) | A producer chooses a payload version by content, not by build | Accepted |
 | [0085](0085-the-evidence-uniqueness-key-carries-the-adapter.md) | The evidence uniqueness key carries the adapter, on both sides | Accepted |
+| [0086](0086-the-consumers-adapter-key-column-is-not-nullable.md) | The consumer's adapter key column is not nullable | Accepted |
+| [0087](0087-the-evidence-gate-admits-only-a-signal-that-scores.md) | The adapter evidence gate admits only a signal that scores | Accepted |
+| [0088](0088-an-excluded-measurement-falls-back-to-the-prior-it-displaced.md) | An excluded measurement falls back to the prior it displaced | Accepted |
 
 ## Writing a new ADR
 
@@ -342,3 +345,18 @@ of a bare-base record — silently, and for ever. The column is `NOT NULL` with 
 base, which is the sentinel [ADR-0080](0080-a-persisted-decision-names-the-subject-by-reference-and-by-string.md)
 rule 5 already chose for the same reason in the same application. The two applications therefore
 spell one field differently, on purpose, and nothing crosses the wire either way.
+
+**ADR-0087 and ADR-0088 were added on 2026-09-06** (row H6, from the H5 interview), and both come
+from one live failure that neither handoff predicted. Under a profile weighting `reliability`, two
+adapters whose manifests merely *declared* the capability scored `0.500 declared` and outranked the
+bare base, whose real measurement had been excluded as `evidence_profile_mismatch` and scored
+nothing — a claim beating a measurement, with `require_adapter_evidence` silent throughout.
+**0087**: the gate read `subject.signals`, the raw list, so a signal that scoring then excluded
+still satisfied it; it now reads the *resolved* capability score, so the gate and the scorer cannot
+disagree about what counts as measured, and the `adapter_unmeasured` rejection carries the resolved
+source, both hashes and the remedy instead of saying only "no measured evidence". **0088**: the
+other half — an excluded measurement was returned *before* the parameter-band prior, so a subject
+somebody had benchmarked scored strictly worse than one nobody had ever measured. It now scores the
+prior it displaced and keeps its own name, note and remedy, so the explanation is unchanged and the
+penalty is gone. Neither record weakens ADR-0017's or ADR-0023 §3's hard separations, and both
+landed inside the unpublished `loadcoach 1.1.0`.

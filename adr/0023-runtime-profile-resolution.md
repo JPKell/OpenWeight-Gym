@@ -3,6 +3,7 @@
 **Status:** Accepted (2026-08-21)
 **Amends:** [ADR-0008](0008-canonical-model-identity.md) (measurement subject in execution), [ADR-0017](0017-benchmark-confidence-and-freshness.md) (runtime-profile hard separation, made operable).
 **Amended by:** [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) — the execution subject gains an optional adapter axis; evidence applies only when the profile hash **and** the adapter axis match.
+**Amended by:** [ADR-0088](0088-an-excluded-measurement-falls-back-to-the-prior-it-displaced.md) — §3's exclusion is unchanged; what stands in its place is the band prior rather than nothing.
 
 ## Context
 
