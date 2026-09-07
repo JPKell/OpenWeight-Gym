@@ -55,7 +55,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0030](0030-model-cost-and-pricing.md) | Model cost: prices are dated observations, not model properties | Accepted |
 | [0031](0031-user-defined-goal-benchmarks.md) | User-defined goal benchmarks and the calibrated-judge instrument | Accepted |
 | [0032](0032-judge-validity-and-user-capability-namespace.md) | Judge validity in confidence, and the `user.*` capability namespace | Accepted |
-| [0033](0033-benchmark-interaction-protocol.md) | Benchmark interactions, the two scorer protocols, and enforced capability requirements | Accepted |
+| [0033](0033-benchmark-interaction-protocol.md) | Benchmark interactions: multi-turn execution and the two scorer protocols | Accepted |
 | [0034](0034-run-level-derived-metrics.md) | Run-level derived metrics: the second benchmark seam | Accepted |
 | [0035](0035-application-owned-document-schemas.md) | Application-owned document schemas, and `benchmark.export` | Accepted |
 | [0036](0036-queue-recovery-transitions.md) | Queue state machine: recovery edges for every lease-holding state | Accepted |
@@ -99,9 +99,9 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0074](0074-adapter-enabled-serving-is-a-runtime-profile-field.md) | Adapter-enabled serving is a `RuntimeProfile` field, not a `provider_options` convention | Accepted |
 | [0075](0075-a-request-carrying-tools-requires-tool-use-of-every-candidate.md) | A request carrying tools requires `tool_use` of every candidate | Accepted |
 | [0076](0076-a-step-retry-is-a-repeat-under-the-same-intent.md) | A step retry is a repeat under the same intent | Accepted |
-| [0077](0077-a-named-provider-block-and-the-singular-block-are-one-registry.md) | A named provider block and the singular block are one registry | Accepted |
-| [0078](0078-a-shipped-response-field-is-superseded-beside-its-replacement.md) | A shipped response field is superseded beside its replacement | Accepted |
-| [0079](0079-an-adapter-classification-refusal-is-a-routing-rejection.md) | An adapter's classification refusal is a routing rejection | Accepted |
+| [0077](0077-a-named-provider-block-and-the-singular-block-are-one-registry.md) | A named provider block and the singular block are one registry, and both together is a refusal | Accepted |
+| [0078](0078-a-shipped-response-field-is-superseded-beside-its-replacement.md) | A shipped response field is superseded beside its replacement, never reshaped under it | Accepted |
+| [0079](0079-an-adapter-classification-refusal-is-a-routing-rejection.md) | An adapter's classification refusal is a routing rejection, recorded in the explanation | Accepted |
 | [0080](0080-a-persisted-decision-names-the-subject-by-reference-and-by-string.md) | A persisted decision names the subject by reference and by string | Accepted |
 | [0081](0081-an-adapter-subject-inherits-no-evidence-from-its-base.md) | An adapter subject inherits no evidence from its base | Accepted |
 | [0082](0082-a-migration-run-suspends-sqlite-foreign-key-enforcement.md) | A migration run suspends SQLite foreign-key enforcement | Accepted |
