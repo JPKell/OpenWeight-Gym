@@ -8,7 +8,7 @@ operator present for the closing interview. **Date:** 2026-09-06.
 **Ships:** `loadcoach 1.1.1` **prepared** — bumped, changelogged, release-committed — and **not**
 tagged, pushed or published. Those are the operator's (§10).
 
-**Repositories touched:** `docs` (one commit) and `LoadCoach` (five). Both were clean at the start
+**Repositories touched:** `docs` (two commits) and `LoadCoach` (four — gate A's mirror rode with gate B). Both were clean at the start
 — `LoadCoach` at `93063bd`, level with `origin`; `docs` clean but for this row's untracked kickoff
 prompt — and both are clean at the end with the new work committed and unpushed. No `git push`, no
 push dry-run, no tag. Nothing was modified that this session did not edit.
@@ -269,8 +269,8 @@ isolate single files while iterating.
 
 ## 10. Left for the operator
 
-1. **The push list:** `docs` (one commit, `e8ef0ee`) and `LoadCoach` (five commits, `8a57472`
-   through `2a7ac58`). Nothing is pushed; no push dry-run was run.
+1. **The push list:** `docs` (two commits, `e8ef0ee` and `2385d20`) and `LoadCoach` (four commits,
+   `8a57472` through `2a7ac58`). Nothing is pushed; no push dry-run was run.
 2. **The tag and the publish are yours.** `loadcoach 1.1.1` is release-committed and untagged.
 3. **The 1.1.0-versus-1.1.1 sequencing question was not answered at kickoff**, so the default in
    the prompt was taken: 1.1.1 is prepared as its own release commit on top of the 1.1.0 one.
