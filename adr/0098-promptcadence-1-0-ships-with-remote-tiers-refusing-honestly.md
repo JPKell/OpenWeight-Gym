@@ -103,6 +103,20 @@ trajectory; reading the flag there costs nothing.
   console's tiers page renders, so a client can ask the question too.
 * The changelog's *Known limitations* names the deferred live run with this record's number.
 
+## Correction, found while building rule 1 (2026-09-06, the same row)
+
+**LoadCoach 1.1.0 does not render `is_remote` in `GET /models`.** H2 recorded the flag on the
+`models` table and on the generate response's `model` block (api.md §4 shows it there); the
+listing's `_model_to_json` renders neither `provider_name` nor `is_remote`. So rule 1's read of
+`/models` finds nothing on 1.1.0, and the safe default holds: the fact reads `False`, a remote
+registration is invisible before its first turn, and a remote tier stays unavailable with
+`loadcoach_has_no_remote_provider` — which is exactly this record's decision, honestly refused
+rather than guessed. Rule 2 — verification of a *response* by its declared `is_remote` — works on
+1.1.0 today. PromptCadence reads the flag from `/models` **when present**, so the day LoadCoach
+renders it (a one-line addition to `_model_to_json`, scheduled as a LoadCoach patch row) the
+fact arrives without a PromptCadence change. The recorded-transport journey (rule 4) runs against
+the fake, whose `/models` renders the field as api.md's shape-for-shape mirror should.
+
 ## Revisit when
 
 The live run happens. Its handoff records the provider, the model, the explanation and the debit,
