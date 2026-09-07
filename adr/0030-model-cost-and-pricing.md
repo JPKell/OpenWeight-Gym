@@ -1,6 +1,7 @@
 # ADR-0030 — Model cost: prices are dated observations, not model properties
 
 **Status:** Accepted (2026-08-22)
+**Amended by:** [ADR-0070](0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md) — the adapter reconciliation duty now covers cache detail (cache-write and cache-read classes).
 **Related:** [ADR-0016](0016-unavailable-is-not-zero.md) (unavailable is not zero),
 [ADR-0008](0008-canonical-model-identity.md) / [ADR-0024](0024-canonical-id-and-model-references.md)
 (what a model identity is and is not), [ADR-0017](0017-benchmark-confidence-and-freshness.md)

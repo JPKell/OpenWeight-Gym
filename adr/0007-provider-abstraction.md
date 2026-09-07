@@ -2,6 +2,7 @@
 
 **Status:** Accepted (2026-08-21)
 **Amended 2026-08-21** (final architecture audit): the capability list below is aligned with `ProviderCapabilities` in the ModelRack specification, which is normative.
+**Amended by:** [ADR-0062](0062-llamacpp-serves-adapters-through-a-supervised-process.md) — the `Provider` protocol gained `list_adapters()` and `register_adapters()` (and `resolve`, `list_resident`); the method block below is the 2026-08-21 shape and ModelRack spec §7 is the current one.
 
 ## Context
 

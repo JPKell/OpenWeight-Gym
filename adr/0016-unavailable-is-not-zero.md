@@ -1,6 +1,7 @@
 # ADR-0016 — Unavailable is not zero
 
 **Status:** Accepted (2026-08-21)
+**Amended by:** [ADR-0070](0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md) — the one carve-out: a token class the provider's protocol cannot bill is `0`, never `UNSUPPORTED`; every other unavailable measurement stays as this record says.
 
 ## Context
 
