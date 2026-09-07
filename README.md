@@ -1,8 +1,8 @@
 # Local AI Suite — Master Documentation
 
 **Status:** Architecture frozen 2026-08-21, audited and corrected the same day. Implementation is
-under way: seven of the nine components hold working software, and
-[the roadmap's §9](roadmap/master-roadmap.md#9-current-state-and-immediate-next-steps) is the one
+done: all fourteen components hold working software, are tagged, and are published or release-ready,
+and [the roadmap's §9](roadmap/master-roadmap.md#9-current-state-and-immediate-next-steps) is the one
 place that records where each of them stands. Read the
 [final architecture audit](reviews/final_architecture_audit.md) before starting a phase: it added
 ADR-0022 – ADR-0029 and corrected the specifications they touch.
@@ -26,8 +26,8 @@ FreeWeight       LoadCoach       IdeaPress
 Each application works alone. Each gains from the others without requiring them. Start with the
 [Executive Summary](architecture/executive-summary.md).
 
-**Specified, not yet built** — the two post-1.0 arcs planned on 2026-09-01/02, whose contracts were
-accepted as ADRs 0045–0067 before any code:
+**Built after 1.0** — the two post-1.0 arcs, planned on 2026-09-01/02 with their contracts accepted
+as ADRs 0045–0067 before any code, and delivered between 2026-09-02 and 2026-09-06:
 
 ```text
 Harness AI
@@ -36,10 +36,11 @@ PromptCadence    + CutCtx · ToolYard · LoadLedger · Commissioner
 
 PromptCadence is a fourth application — a plan-approved, tier-routed agent loop over LoadCoach — and
 the four packages are the capabilities it justifies extracting. In parallel, the
-[Adapter arc](roadmap/adapter-roadmap.md) adds hot-swappable LoRA serving to the existing
-components. Both are scheduled in [Outstanding Work](roadmap/outstanding-work.md); neither has a
-repository yet, so a reference to `promptcadence`, `cutctx`, `toolyard`, `loadledger` or `commissioner`
-in these documents names a **specification**, not an importable package.
+[Adapter arc](roadmap/adapter-roadmap.md) added hot-swappable LoRA serving, over llama.cpp, to the
+existing components. Both were executed row by row through
+[Outstanding Work](roadmap/outstanding-work.md), which records what each row shipped; each of the
+five has its own repository, and `promptcadence`, `cutctx`, `toolyard`, `loadledger` and
+`commissioner` are importable packages on PyPI.
 
 ---
 
@@ -124,7 +125,8 @@ Full index with statuses: [adr/README.md](adr/README.md).
 
 ADRs 0022–0044 were added during implementation (the post-freeze audit, then the FreeWeight,
 LoadCoach and IdeaPress builds). **ADRs 0045–0067** are the two post-1.0 arcs' contracts, written
-2026-09-02 before any of their code:
+2026-09-02 before any of their code; **ADRs 0068–0102** were added as those arcs were built, each
+closing a question the code raised:
 
 | ADR | Decision |
 |---|---|
@@ -170,7 +172,7 @@ LoadCoach and IdeaPress builds). **ADRs 0045–0067** are the two post-1.0 arcs'
 | [Development Plan](apps/ideapress/development-plan.md) | 9 phases, standalone first, LoadCoach last |
 | [Risks](apps/ideapress/risks.md) | Risks, trade-offs, traps |
 
-### [PromptCadence](apps/promptcadence/spec.md) — harness *(specified, not implemented)*
+### [PromptCadence](apps/promptcadence/spec.md) — harness
 
 | Document | Contents |
 |---|---|
@@ -190,14 +192,15 @@ LoadCoach and IdeaPress builds). **ADRs 0045–0067** are the two post-1.0 arcs'
 | **SweatMeter** | 3 — capability | [spec](packages/sweatmeter/spec.md) | [plan](packages/sweatmeter/development-plan.md) | Fourth (parallel with ModelRack) |
 | **WeightsDB** | 3 — capability | [spec](packages/weightsdb/spec.md) | [plan](packages/weightsdb/development-plan.md) | Extracted at LoadCoach P1 |
 | **MirrorWall** | 3 — capability | [spec](packages/mirrorwall/spec.md) | [plan](packages/mirrorwall/development-plan.md) | Extracted at LoadCoach P4 |
-| **CutCtx** | 3 — capability | [spec](packages/cutctx/spec.md) | [plan](packages/cutctx/development-plan.md) | *Specified;* M10, two named consumers |
-| **ToolYard** | 3 — capability | [spec](packages/toolyard/spec.md) | [plan](packages/toolyard/development-plan.md) | *Specified;* M10, before any PromptCadence tool executes |
-| **LoadLedger** | 3 — capability | [spec](packages/loadledger/spec.md) | [plan](packages/loadledger/development-plan.md) | *Specified;* M10 |
-| **Commissioner** | 3 — capability | [spec](packages/commissioner/spec.md) | [plan](packages/commissioner/development-plan.md) | *Specified;* M10, after SetSpec 0.5 publishes its payload |
+| **CutCtx** | 3 — capability | [spec](packages/cutctx/spec.md) | [plan](packages/cutctx/development-plan.md) | M10; published as `cutctx 0.1.0` |
+| **ToolYard** | 3 — capability | [spec](packages/toolyard/spec.md) | [plan](packages/toolyard/development-plan.md) | M10, before any PromptCadence tool executed; `toolyard 0.1.1` |
+| **LoadLedger** | 3 — capability | [spec](packages/loadledger/spec.md) | [plan](packages/loadledger/development-plan.md) | M10; published as `loadledger 0.2.0` |
+| **Commissioner** | 3 — capability | [spec](packages/commissioner/spec.md) | [plan](packages/commissioner/development-plan.md) | M10, after SetSpec 0.5 published its payload; `commissioner 0.1.1` |
 
-The last four have no repository yet — see §1. They are built at M10 of the
+The last four were built at M10 of the
 [PromptCadence arc](roadmap/promptcadence-roadmap.md), each with two named consumers, per
-[ADR-0011](adr/0011-shared-package-boundaries.md)'s extraction rule.
+[ADR-0011](adr/0011-shared-package-boundaries.md)'s extraction rule: PromptCadence is the first
+consumer of all four, and IdeaPress the second, adopting three of them at M13.
 
 ---
 
@@ -245,10 +248,10 @@ why. Keeping it separate stops it from being mistaken for current architecture, 
 citable from every document that inherited a pattern from it. It is the first place to look when
 someone asks "why didn't you just do what the old spec said?"
 
-Each application directory carries more than `spec.md` and `development-plan.md` because three
+Each application directory carries more than `spec.md` and `development-plan.md` because four
 subjects are too large to nest inside a specification without burying them: the benchmark catalogue,
-the routing and queue designs, and the workflow pipeline. Each is referenced from its specification
-and does not duplicate it.
+the routing and queue designs, the workflow pipeline, and the trajectory lifecycle. Each is
+referenced from its specification and does not duplicate it.
 
 ---
 
@@ -268,9 +271,9 @@ and does not duplicate it.
 | §28 Packaging and release standards | [Packaging and Release Standards](standards/packaging-and-release-standards.md) | Complete |
 | §28 UI/UX standards | [UI/UX Standards](standards/ui-ux-standards.md) | Complete |
 | §28 CLI standards | [CLI Standards](standards/cli-standards.md) | Complete |
-| §29 ADRs | [21 ADRs](adr/README.md), covering every listed topic and seven more | Complete |
-| §30 Specification per component | 9 specifications, each with all 21 required sections | Complete |
-| §31 Development plan per component | 9 plans, 55 phases, each with goal, prerequisites, work, files, tests, acceptance criteria, risks, failure modes, gold standards, deferred work | Complete |
+| §29 ADRs | [102 ADRs](adr/README.md) — 21 at the freeze, covering every listed topic and seven more, and one per decision taken since | Complete |
+| §30 Specification per component | 14 specifications, each with all 21 required sections | Complete |
+| §31 Development plan per component | 14 plans, 91 phases, each with goal, prerequisites, work, files, tests, acceptance criteria, risks, failure modes, gold standards, deferred work | Complete |
 | §32 Gold standards | [Gold Standards](standards/gold-standards.md), suite-wide and per component | Complete |
 | §33 Risk and failure analysis | [Risk Register](architecture/risk-register.md) + three application risk documents + per-phase risks | Complete |
 | §34 Traceability matrix | [Traceability Matrix](architecture/traceability-matrix.md) | Complete |

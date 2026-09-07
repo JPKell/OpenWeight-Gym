@@ -2,6 +2,9 @@
 
 **From:** empty repositories (architecture frozen 2026-08-21).
 **To:** three professionally deliverable applications and six published packages.
+**State (2026-09-07):** M1–M8 and the post-1.0 milestones M10–M12 are complete; M13 is in progress
+and M9 — the delivery checklist in §7 — is the one milestone nobody has walked. §9 has the
+per-component table.
 **Corrected 2026-08-21** by the [final architecture audit](../reviews/final_architecture_audit.md):
 the prompt library moves from FreeWeight P7 into P6 (the fingerprint needs it), `setspec.prompts` is
 extracted at LoadCoach P4 alongside MirrorWall, and LoadCoach P3 gains the VRAM estimator its
@@ -32,7 +35,7 @@ updated accordingly; no milestone number, package range or cross-application dep
 | **M8** | IdeaPress 1.0                            | IdeaPress P7–P9                                                                    | Optional LoadCoach backend; hardened; published to PyPI                                                            |
 | **M9** | Suite 1.0                                | Integration verification, cross-repository CI, documentation set, public release   | Every gold standard met; all install paths verified; release notes published                                       |
 
-**M10–M13 are post-1.0 and are planned elsewhere.** The
+**M10–M13 are post-1.0 and are planned elsewhere.** M10–M12 are built; M13 is the last row. The
 [PromptCadence arc](promptcadence-roadmap.md) owns them — the harness application, its four shared
 packages, LoadCoach's multi-provider registration and IdeaPress's adoption phases — with the
 [Adapter arc](adapter-roadmap.md) (LA0–LA3) running as a parallel stream that shares M10's contract
@@ -45,7 +48,7 @@ phase and converges at M12. Their decisions are ADRs
 | **M10** | Harness foundations | [PromptCadence arc §3](promptcadence-roadmap.md) | `baseaicore 0.4.1`, `setspec 0.5.0`, CutCtx/ToolYard/LoadLedger/Commissioner at `0.1.0` |
 | **M11** | PromptCadence beta | [PromptCadence arc §3](promptcadence-roadmap.md) | `promptcadence 0.9.0b0` |
 | **M12** | PromptCadence 1.0 | [PromptCadence arc §3](promptcadence-roadmap.md) | `promptcadence 1.0.0`, LoadCoach `1.1.0` (LC-E1) |
-| **M13** | Adoption — extraction complete | [PromptCadence arc §6](promptcadence-roadmap.md) | IdeaPress `1.1.0` on LoadLedger, Commissioner and CutCtx |
+| **M13** | Adoption — extraction complete | [PromptCadence arc §6](promptcadence-roadmap.md) | IdeaPress `1.2.0` on LoadLedger, Commissioner and CutCtx (in progress) |
 
 This roadmap stays authoritative for M1–M9 and for the sequencing principle both arcs inherit.
 
@@ -240,9 +243,6 @@ SetSpec's M3 column, `0.3 (frozen)`, also carries capability vocabulary **1.1** 
 [SetSpec Phase 3A](../packages/setspec/development-plan.md#phase-3a--capability-vocabulary-11-and-the-goal-payloads),
 which ships inside the same `0.3.0` release as Phase 4 rather than as a separate one — no version
 pin in any consuming `pyproject.toml` changes.
-| FreeWeight | — | 1.0-rc | 1.0-rc | 1.0-rc | **1.0** | 1.0.x | 1.1 |
-| LoadCoach | — | — | 0.9-beta | **1.0** | 1.0.x | 1.0.x | 1.1 |
-| IdeaPress | — | — | — | — | 0.9-beta | **1.0** | 1.0.x |
 
 **Corrected at M5 (2026-08-30), closing the discrepancy the M4 review recorded.** The table had
 BaseAiCore at 0.5 and ModelRack at 0.6 from M4, and MirrorWall at 0.3 at M5, with no phase in any
@@ -322,22 +322,30 @@ declared.
 
 ## 9. Current state and immediate next steps
 
-**Current state (2026-09-02).** The architecture is frozen, `docs/` is complete, and **all nine
-components of Suite 1.0 are built, tagged and published to PyPI.** The three applications reached
-1.0.0 in milestone order — LoadCoach (M5), FreeWeight (M6), IdeaPress (M8, after its M7
-verification's findings were closed and ADR-0039 was accepted and implemented).
+**Current state (2026-09-07).** The architecture is frozen, `docs/` is complete, and **all fourteen
+components are built and tagged.** All ten packages and three of the four applications are on PyPI;
+the newest application releases are prepared locally and wait on the operator to publish them. The
+four applications reached 1.0.0 in milestone order — LoadCoach (M5), FreeWeight (M6), IdeaPress (M8,
+after its M7 verification's findings were closed and ADR-0039 was accepted and implemented) and
+PromptCadence (M12). The version in the table below is each repository's `__about__.py`, which is
+the authoritative number; PyPI lags it wherever a release is marked *prepared*.
 
 | Component | Version | State |
 |---|---|---|
-| BaseAiCore | 0.4.0 | Complete through its plan; published. `0.4.1` is the PromptCadence arc's first code row |
-| SetSpec | 0.4.0 | Schemas frozen at 0.3; `setspec.prompts` at 0.4; published |
-| ModelRack | 0.6.0 | Complete; published |
+| BaseAiCore | 0.4.2 | Complete through its plan; published. `0.4.1` added `DataClassification` and `AdapterIdentity` for the two arcs |
+| SetSpec | 0.6.0 | Payloads frozen at 1.0; additive minors at 0.5.0 (`governance.egress_decision`, the adapter manifest) and 0.6.0 (evidence bundle 1.1); published |
+| ModelRack | 0.7.1 | P1–P8 complete, including `LlamaCppProvider` and hot-swappable LoRA adapters (LA1); published |
 | SweatMeter | 0.4.0 | Complete; published |
 | WeightsDB | 0.2.1 | P1–P3 complete; published |
-| MirrorWall | 0.2.1 | P1–P2 complete; published |
-| FreeWeight | 1.0.0 | P1–P14 complete; **tagged and published**; installs from the index and runs against a real Ollama |
-| LoadCoach | 1.0.0 | P1–P9 complete; M5 verification's fourteen findings closed; **tagged and published**. One later fix (`2c7d740`) is committed and unreleased — it ships with LoadCoach 1.1 (LC-E1) |
-| IdeaPress | 1.0.0 | P1–P9 complete (M8); ADRs 0039–0044 came out of its build and verification; **tagged and published** |
+| MirrorWall | 0.2.2 | P1–P3 complete; published |
+| CutCtx | 0.1.0 | P1–P2 complete; published |
+| ToolYard | 0.1.1 | P1–P3 complete, sandbox included; published |
+| LoadLedger | 0.2.0 | P1–P3 complete; published |
+| Commissioner | 0.1.1 | P1–P2 complete; published |
+| FreeWeight | 1.1.0 *(prepared)* | P1–P15 complete, adapter-aware through LA3; `1.0.0` tagged and published, `1.1.0` committed and untagged |
+| LoadCoach | 1.1.2 *(prepared)* | P1–P9 plus LC-E1 and the adapter work (LA2); `v1.1.0` tagged, `1.0.0` is the newest on the index |
+| IdeaPress | 1.1.0 | P1–P9 (M8) plus the per-stage adapter pins; tagged and published. `1.2.0` — the M13 adoption phases — is in preparation |
+| PromptCadence | 1.2.0 *(prepared)* | P1–P9 complete (M12), plus runtime settings and the `settings` verb; `1.1.0` tagged and published, `1.2.0` committed |
 
 **What remains, in two independent tracks.**
 
@@ -347,17 +355,17 @@ verification's findings were closed and ADR-0039 was accepted and implemented).
    suggested treatment is one audit session that walks §7 against the repositories and emits a gap
    list, then ordinary sessions per gap. The declaration itself is a human step. Its checklist in §7
    is unchanged and still outstanding.
-2. **The two post-1.0 arcs — M10–M13 and LA0–LA3.** Planned in the
-   [PromptCadence](promptcadence-roadmap.md) and [Adapter](adapter-roadmap.md) roadmaps, with their
-   contracts already accepted as ADRs [0045–0067](../adr/README.md). **The execution schedule is
-   [Outstanding Work](outstanding-work.md)** — every remaining row in dependency order, one per
-   session, with its model and effort; the arcs stay authoritative for rationale.
+2. **M13 — adoption**, the last milestone of the [PromptCadence arc](promptcadence-roadmap.md).
+   Everything else in both arcs is built: M10–M12 and LA0–LA3 ran row by row between 2026-09-02 and
+   2026-09-06, and their contracts — ADRs [0045–0067](../adr/README.md), plus the thirty-five taken
+   during the builds — are accepted. What is left is IdeaPress taking LoadLedger, Commissioner and
+   CutCtx as their second consumer, which is [Outstanding Work](outstanding-work.md)'s rows J1 and
+   J2; the arcs stay authoritative for rationale, and each finished row's
+   `docs/history/<ROW>_HANDOFF.md` records what it actually built.
 
-The immediate next row is **A2: `baseaicore 0.4.1`** — `DataClassification`
-([ADR-0046](../adr/0046-data-classification-is-ordered-and-defaults-closed.md)) and
-`AdapterIdentity` with the canonical adapter suffix
-([ADR-0058](../adr/0058-the-execution-subject-gains-an-adapter-axis.md)), additive inside every
-existing `>=0.4,<0.5` pin.
+The remaining releases — `freeweight 1.1.0`, `loadcoach 1.1.2` and `promptcadence 1.2.0` — are
+committed, gated and waiting on the operator's tag and PyPI approval, which is a human step by
+standing instruction.
 
 **The record of how each milestone was verified** stays in the handoff and verification documents:
 `docs/history/M4_HANDOFF.md`, `docs/history/M6_HANDOFF.md` and `docs/history/M7_HANDOFF.md` are where the decisions the
