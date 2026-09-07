@@ -2,6 +2,7 @@
 
 **Status:** Accepted (2026-08-21)
 **Amended by:** [ADR-0070](0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md) — the one carve-out: a token class the provider's protocol cannot bill is `0`, never `UNSUPPORTED`; every other unavailable measurement stays as this record says.
+**Amended by:** [ADR-0105](0105-a-shipped-usage-object-keeps-null-until-api-v2.md) — rule 4 is suspended for exactly two fields of one released body, `usage.input_tokens` and `usage.output_tokens` in LoadCoach's `/api/v1`, which keep `null` for an unavailable count until `/api/v2`; the rule is unchanged for every other JSON rendering in the suite.
 
 ## Context
 
