@@ -127,3 +127,17 @@ field. Acceptance-by-major already gives the consumer what negotiation would.
 * The rule has teeth only while the newer minor stays additive. A minor that *removed* or
   *narrowed* something would make "lowest expressible" ambiguous; ADR-0068 rule 1 forbids that, and
   if it were ever reopened this decision would have to be revisited with it.
+
+## Revisit when (added 2026-09-07)
+
+* **[ADR-0068](0068-a-post-freeze-minor-is-a-sibling-class.md) rule 1's additive-only guarantee is
+  reopened.** The Consequences say it outright: a minor that removed or narrowed something makes
+  "the lowest version that can express the document" ambiguous, and this decision would have to be
+  revisited with it.
+* **A payload reaches a third minor.** Choosing between two versions is a scan and a branch;
+  choosing among three is a capability computation, and the branch should become a function that
+  names which fields belong to which version rather than a hand-written condition per writer.
+* **A consumer is found inferring producer age from the payload version.** That is the misreading
+  this record forecloses — version is a statement about content, and `generator` in the envelope is
+  where producer identity lives — and one real instance means the document needs to say so, not
+  just the ADR.

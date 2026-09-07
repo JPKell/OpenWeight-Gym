@@ -133,3 +133,17 @@ applications, and belongs to a phase scoped for it, not to a run building IdeaPr
   decision above.
 * The policy is stated in the user's own terms and can be checked by a person: *two models
   contending for one GPU must both fit with room for their context, or the later one waits.*
+
+## Revisit when (added 2026-09-07)
+
+* **A second implementation of `estimate_vram` appears.** The decision above deliberately recorded
+  the estimator question with a recommendation instead of performing an extraction across a
+  published package and two 1.0 applications. A second copy is the trigger the recommendation was
+  waiting for: extract it to `modelrack`, where the descriptor and the profile already live.
+* **FreeWeight gains the free-VRAM preflight** the Consequences name as the open gap. At that point
+  three components implement one machine-wide policy, and where the policy lives — a shared
+  estimator, or three careful copies — has to be decided rather than inherited.
+* **Two applications are found contending for one card with LoadCoach absent**, in a real
+  deployment rather than in the plan. The serialise-and-unload obligation is per-process and cannot
+  see another process's residency; if that case becomes ordinary, the machine needs one admission
+  controller that is not an application.

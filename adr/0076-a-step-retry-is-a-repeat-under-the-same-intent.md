@@ -190,3 +190,15 @@ on the planned path, the `plan_steps.attempt` increment in that same write.
   contradicted the intent — the attempt produced no reality at all.
 * A `waiting` state with backoff, and retryability for an unreachable LoadCoach, remain open and
   are a separate decision.
+
+## Revisit when (added 2026-09-07)
+
+* **A `waiting` state with backoff is specified.** The Consequences name it as open: `QUEUE_FULL`
+  and `MAX_WAIT_EXCEEDED` repeat today rather than wait, and the moment a wait exists the order
+  between waiting and retrying is a new decision this record does not make.
+* **Retryability is wanted for an unreachable LoadCoach.** Also named as open, and the harder half:
+  an unreachable router is indistinguishable from one that is slow, so "spend nothing on an
+  unknown" would have to be traded against a trajectory that halts on a restart.
+* **Retry budgets are found exhausting routinely** rather than absorbing accidents. A retry that
+  usually fails is a delay dressed as a recovery, and the honest response is to halt sooner rather
+  than to raise `step_retries`.

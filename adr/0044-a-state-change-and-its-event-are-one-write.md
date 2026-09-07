@@ -90,3 +90,14 @@ people write.
 
 **Leave it to tests to catch.** Rejected: the failure is timing-dependent, so tests catch it as
 flakes, and a flake's usual treatment is a re-run.
+
+## Revisit when (added 2026-09-07)
+
+* **A store appears where the state and its event cannot share a transaction** — a message bus, a
+  second database, an outbox. The rule is written as "one write" because one write is available;
+  the moment it is not, the property has to be restated as an outbox with an at-least-once reader,
+  and every consumer gains a deduplication duty.
+* **A third application implements the naive order independently.** IdeaPress wrote it in three
+  places, which was the argument for this record; a third application writing it would be the
+  argument for moving the rule into the database or testing standards, where someone reads it
+  before writing the code.

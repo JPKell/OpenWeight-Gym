@@ -67,3 +67,38 @@ before.
 * A machine with no tool-calling provider serves every tool-free request exactly as before. Only
   requests that ask for tools are narrowed, which is the property that makes this additive within
   `/api/v1`.
+
+## Alternatives considered (added 2026-09-07)
+
+* **Let the tools reach whatever model routing chose.** The status quo before this record, and the
+  cheapest. Rejected on G1's evidence from the other side: a model told about tools it cannot call
+  invents names out of its own vocabulary, so the failure arrives after a model was chosen, as
+  refused calls the caller has to interpret.
+* **Drop `tools` silently for a candidate that cannot use them.** Every request still succeeds.
+  Rejected: it is the same failure with the evidence removed — the caller offered tools, none were
+  offered to the model, and nothing in the response says so.
+* **Make `tool_use` a preference rather than a filter** — score candidates that support it higher.
+  Rejected: a soft constraint means a caller that sent tools sometimes gets a model that cannot use
+  them, non-deterministically, depending on the rest of the score. A capability a request depends on
+  is not a tie-break.
+* **Require the task profile to declare `tool_use` instead.** Rejected: it makes a caller's request
+  depend on another application's configuration file — the coupling ADR-0041 exists to refuse — and
+  `tools.plan` is the counter-example, a profile that legitimately requires `structured_output` and
+  not `tool_use` right up until a caller offers it a tool.
+* **Add a `tools_unsupported` rejection reason.** Rejected: rejection reasons are a caller-visible
+  vocabulary, and this is `capability_unsupported` seen from a different angle. `required_by`
+  carries the difference in `details`, which is where a distinction that is not a new fact belongs.
+
+## Revisit when (added 2026-09-07)
+
+* **A provider supports tool calling for some of its models and not others.** The constraint is
+  evaluated against `ProviderCapabilities`, so a per-model flag would make the filter answer for the
+  provider when the question is about the model — and `NO_ELIGIBLE_MODEL` would name the wrong
+  candidates.
+* **A second tool-related capability is needed** — parallel calls, streamed calls, a tool-choice
+  mode. One flag currently stands for "can use tools at all"; the first request that needs more
+  than that reopens whether `tool_use` is one capability or a family.
+* **A caller wants "use tools if you can" semantics.** That is a different request, not a loosening
+  of this one, and it needs its own field rather than a weakening of the constraint — but it is the
+  ask most likely to arrive, so the shape should be decided when it does rather than by whoever
+  implements it.

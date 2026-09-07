@@ -123,3 +123,12 @@ better than a model call that cannot succeed.
 **Report rather than refuse** — let the plan proceed with a warning. Rejected: the M8 evidence is
 that a warning in a log is not read, and the artefact that *is* read reported full satisfaction.
 The system must not offer a green report it cannot justify.
+
+## Revisit when (added 2026-09-07)
+
+* **The P7-B measurement, re-run after this and ADR-0042 land, shows `fact_check` unreliable** on
+  the default models. A verification stage that cannot verify is worse than the refusal alone,
+  because it reports a check that did not happen.
+* **A project type appears that legitimately has no sources** and still carries grounding
+  requirements — at which point the deterministic refusal is refusing correct work, and the rule
+  needs a notion of what "grounded" means without a corpus.

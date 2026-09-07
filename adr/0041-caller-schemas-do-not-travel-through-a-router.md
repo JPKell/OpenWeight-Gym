@@ -107,3 +107,16 @@ which IdeaPress's contract could be sent.
   `content.review` correction closed for routing.
 * If LoadCoach later accepts a caller-supplied schema, this record is superseded rather than
   edited, and the degradation disappears on its own.
+
+## Revisit when (added 2026-09-07)
+
+* **LoadCoach accepts a caller-supplied `json_schema` on `/generate`.** This record's own
+  Consequences already name the outcome: it is superseded rather than edited, and the degradation
+  disappears on its own. The alternatives section records this as a post-1.0 candidate, so the
+  trigger is its scheduling, not its discovery.
+* **The measured difference between the two modes stops being equivalent.** The claim that output
+  is equivalent because IdeaPress validated it either way is an assertion about parse failure
+  rates; if LoadCoach-mode stages start failing validation materially more often, asking the
+  provider to enforce the shape is worth the coupling this record refuses.
+* **A second IdeaPress consumer of a router appears** whose own output contract differs again —
+  at which point "the caller still owns it" needs to be a port-level rule rather than one adapter's.

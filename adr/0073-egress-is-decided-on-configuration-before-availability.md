@@ -122,3 +122,38 @@ An egress denial ends the turn with a structured refusal carrying the policy's o
 * **This is a rule about ordering, not about policy.** It adds no classification level, no verdict
   and no configuration key. A build that reordered these checks would still pass every unit test of
   the policy itself, which is the argument for recording it here rather than only in a docstring.
+
+## Alternatives considered (added 2026-09-07)
+
+* **Check availability first and evaluate egress only if the tier can serve.** The cheapest
+  option: one fewer evaluation per turn, one fewer row on the local path, and the observable
+  behaviour is identical *today*. Rejected because it makes the recorded reason a property of the
+  deployment: the same trajectory is refused for `classification_exceeds_ceiling` on a host with a
+  remote provider and for `loadcoach_has_no_remote_provider` on one without, and the ledger every
+  audit reads would silently change meaning the day infrastructure changed.
+* **Keep one combined `resolve` that returns a tier and refuses one that cannot serve.** The
+  smaller API, and what the router already had. Rejected: a caller that must ask two questions in a
+  particular order cannot do so through one operation, and the ordering is the decision. The
+  combined form is retained only for callers that render no egress decision of their own.
+* **Skip the egress evaluation for local tiers**, since the answer is always `target_not_remote`.
+  Rejected: governance invariance is meant to be checkable by counting, and it stops being
+  checkable the moment some turns are exempt. The record would also lose its ability to answer
+  "where did this trajectory's data go" rather than only "when was something refused".
+* **Record the availability refusal as an `EgressDecision` with a deployment reason.** It would
+  satisfy criterion 4's "queryable decision" literally. Rejected: it puts an infrastructure fact
+  into the ledger of policy verdicts, so counting denials would count outages.
+* **Leave the order to a docstring and a test.** Rejected for the reason the Consequences give: a
+  build that reordered the checks passes every unit test of the policy itself, and the failure
+  appears only in a deployment nobody has yet.
+
+## Revisit when (added 2026-09-07)
+
+* **A new pre-flight is proposed** — a residency rule, a rate limit, a quota. The decision says
+  such a check must state where in this order it belongs and why; the first one to be proposed is
+  the test of whether the order is a principle or a list.
+* **A tier's configuration becomes dynamic.** "The tier as configured" is a stable fact only while
+  configuration is loaded at startup; a runtime-changeable tier would make the egress verdict a
+  function of when it was asked, which is the property this record exists to remove.
+* **The per-turn egress row becomes a measurable cost** at trajectory volumes nobody has run yet.
+  The cost was accepted deliberately as the price of countability; if it stops being small, the
+  answer is a cheaper row, not a skipped evaluation.

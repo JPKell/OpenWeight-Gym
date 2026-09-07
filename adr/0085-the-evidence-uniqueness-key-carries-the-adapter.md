@@ -151,3 +151,19 @@ never tell a retired subject from one that simply was not in this file. It also 
 * The producer's side is already live. FreeWeight's `0008` shipped the wider key, so a base and its
   adapter subjects have never collided in a FreeWeight database — which is why the defect surfaced
   at the consumer and not before.
+
+## Revisit when (added 2026-09-07)
+
+* **The execution subject gains a third axis**, as it gained the adapter one in
+  [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md). The failure this record fixes —
+  several subjects collapsing to one key, so an import keeps the first and rejects the rest as
+  duplicates — returns unchanged, and the fix is the same shape. Any proposal to extend the subject
+  should carry the key change with it rather than discover it at an integration verification.
+* **A producer needs to retire a subject's records.** The alternatives rejected per-subject files
+  partly because a consumer could not tell a retired subject from one simply absent from this
+  bundle. A real retirement requirement reopens that, and it is a bundle-shape question rather than
+  a key question.
+* **The key is needed on a wire rather than only in two schemas.** Today it exists in FreeWeight's
+  table and LoadCoach's, spelled differently on purpose
+  ([ADR-0086](0086-the-consumers-adapter-key-column-is-not-nullable.md)); the day a payload carries
+  the key itself, the two spellings have to become one and that is a SetSpec decision.

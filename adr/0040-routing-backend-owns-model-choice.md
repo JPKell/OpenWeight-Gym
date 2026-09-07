@@ -99,3 +99,15 @@ supplies the task, not the model.**
   live snapshot.
 * A future backend that routes internally — a hosted router, a second queue — sets one flag rather
   than discovering this problem again.
+
+## Revisit when (added 2026-09-07)
+
+* **A third backend that routes internally is added** — a hosted router, a second queue. The
+  `routes_internally` flag was designed for exactly that, so this is the moment to find out whether
+  one boolean was the right shape or whether the port needs to describe *what* a backend routes on.
+* **`model_override_not_honoured` becomes an ordinary degradation rather than a rare one.** A pin
+  that is usually not honoured is a pin nobody should be encouraged to set, and
+  `honour_stage_bindings` would need to refuse rather than degrade.
+* **LoadCoach gains a way to say "pin, and fail if you cannot".** Rule 5 makes a pin a request
+  because that is all the wire can express; a hard pin on the wire would make the degradation a
+  choice rather than a consequence.

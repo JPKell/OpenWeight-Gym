@@ -88,3 +88,13 @@ not lift. Rejected as unimplementable without a model, which returns the decisio
 
 **Do nothing and rely on the audit to catch it.** Rejected on evidence: the audit *did* catch it —
 the critique named R-006 — and the passing check overrode it, correctly.
+
+## Revisit when (added 2026-09-07)
+
+* **The deterministic/audit ratio does not recover after the compiler prompt is revised.** The
+  Consequences predict a drop and call it expected; if the revised prompt cannot produce checks
+  independent of the requirement's phrasing, then the problem is what a model can compile, not
+  which checks are allowed, and the compiler needs a different shape.
+* **A legitimate check is refused by this rule** — a requirement whose own words *are* the
+  mechanical evidence, such as a mandated identifier format or a required literal string. That is
+  the case the rule cannot currently distinguish, and one real example is enough to reopen it.

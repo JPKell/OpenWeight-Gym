@@ -113,3 +113,15 @@ what satisfies the gate.
 * Until acceptance, the coverage gate's behaviour is unchanged; the surfaces say so honestly.
 * Whatever is decided, `evaluate_coverage`'s asymmetry stands: where a deterministic check
   exists, the check decides, and no audit verdict can overturn it.
+
+## Revisit when (added 2026-09-07)
+
+* **The M8 attestation-reliability measurement comes back poor** on the default models — verdicts
+  that drift, invented keys, or `met` where a person would say `not_met`. The decision names option
+  (a) as the fallback explicitly, and this is the measurement that would call it in.
+* **`workflow.allow_audit_gated_requirements = false` becomes the setting people actually run.** If
+  the wholly-mechanical opt-out is the normal configuration, then attestation is not carrying its
+  weight and the gate should be mechanical by default with attestation the opt-in.
+* **A deterministic check becomes available for a requirement class that is audit-gated today** —
+  at which point that class moves back under the asymmetry's checked half, and the gate narrows
+  without this record changing.
