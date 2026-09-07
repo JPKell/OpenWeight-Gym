@@ -6,6 +6,10 @@
 evidence, routed and pinned adapter selection through LoadCoach, and adapter use in IdeaPress and
 PromptCadence — with every contract change additive.
 **Sequencing principle:** unchanged — dependency order and rework risk, no dates.
+**State (2026-09-07):** **built.** LA0–LA3 ran between 2026-09-02 and 2026-09-06; `modelrack 0.7.1`
+is published, `loadcoach 1.1.x` and `freeweight 1.1.0` are prepared, and IdeaPress's per-stage pins
+shipped in `ideapress 1.1.0`. What each row actually built is in
+[outstanding-work.md](outstanding-work.md) and the per-row `docs/history/<ROW>_HANDOFF.md`.
 **Relationship to the [PromptCadence arc](promptcadence-roadmap.md):** not before, not after —
 **contracts first, implementation as a parallel stream, converging at PromptCadence P9 (M12)**.
 The arc's Phase LA0 lands jointly with PromptCadence's Phase 0 so every new schema in the suite
@@ -30,8 +34,9 @@ artifacts. One adapter at a time. Full rationale: the
 
 ## 2. Decisions and the ADRs that must exist before code
 
-Written and accepted at LA0, numbered sequentially in the ADR index at writing time; A-ids are
-stable references for this plan.
+Written and accepted at LA0 on 2026-09-02 as **[ADRs 0058–0067](../adr/README.md)**, in A-order;
+A-ids remain the stable references for this plan. The build then raised further questions, closed
+by ADRs 0071, 0074 and most of 0078–0089.
 
 | ID | Decision (stated unambiguously) | Revisit when |
 |---|---|---|
@@ -53,8 +58,8 @@ Four phases, LA0–LA3. LA0 is joint with PromptCadence Phase 0; LA1–LA3 run a
 | # | Checkpoint | Content | Exit condition |
 |---|---|---|---|
 | **LA0** | Contracts (joint with PromptCadence Phase 0) | ADRs A-1…A-10 · BaseAiCore adapter types (additive: 0.4.x before the M9 1.0 pass, 1.1.0 after) · SetSpec `model.adapter_manifest` 1.0 + `CapabilityEvidence` v1.1 optional fields, goldens for both · PromptCadence schemas, fake-LoadCoach shapes and `trajectory_explanation` 1.0 born with optional adapter fields | A `setspec`-only script validates a manifest golden and an adapter-bearing evidence golden; a non-adapter evidence record round-trips byte-identically to today's |
-| **LA1** | Serve | ModelRack P6–P8 (§4.1): `LlamaCppProvider` with process supervision, adapter registration/selection, conformance + cache-correctness suites, recorded fixtures; capability flags; `AdapterNotFound` | On the reference machine: one llama-server base, three registered adapters; a scripted sequence alternates adapters across 20 generations with **zero base loads** (asserted from the process table and load timings) and the cache-correctness test passes |
-| **LA2** | Route, pinned | LoadCoach 1.1 (§4.2): generalized LC-E1, adapter registry rows + `adapters scan`, subject expansion + compatibility filter + classification filter, pins, two-level residency, per-subject reliability · IdeaPress per-stage pins (§4.4) | The motivating demo: an IdeaPress project whose fact-check, judge and draft stages pin three adapters on one base — total base loads across the project: **one**; every attempt's provenance names its subject |
+| **LA1** | Serve | ModelRack P6–P8 (§4.1): `LlamaCppProvider` with process supervision, adapter registration/selection, conformance + cache-correctness suites, recorded fixtures; capability flags; `AdapterNotFound`. **Done** at rows D3, F3 and H1 — the exit was proved live on 2026-09-05 once real LoRA GGUFs existed (`docs/history/H1_HANDOFF.2.md`), and `modelrack 0.7.1` is published | On the reference machine: one llama-server base, three registered adapters; a scripted sequence alternates adapters across 20 generations with **zero base loads** (asserted from the process table and load timings) and the cache-correctness test passes |
+| **LA2** | Route, pinned | LoadCoach 1.1 (§4.2): generalized LC-E1, adapter registry rows + `adapters scan`, subject expansion + compatibility filter + classification filter, pins, two-level residency, per-subject reliability · IdeaPress per-stage pins (§4.4). **Done** at rows H2 and H3 (2026-09-05): the motivating demo ran live — three IdeaPress stages, three pinned adapters, one `llama-server` process answering all three (`docs/history/H3_HANDOFF.md`) | The motivating demo: an IdeaPress project whose fact-check, judge and draft stages pin three adapters on one base — total base loads across the project: **one**; every attempt's provenance names its subject |
 | **LA3** | Route, on evidence | FreeWeight 1.1 (§4.3): adapter enumeration, panels + regression panel, serving-mode A/B, evidence export with adapter fields · LoadCoach routed selection live behind `require_adapter_evidence` · PromptCadence tiers select adapter subjects where evidence exists (§4.5). **Complete for FreeWeight and LoadCoach** (rows H4 and H5, 2026-09-06, `docs/history/H4_HANDOFF.md` + `docs/history/H5_HANDOFF.md`): every item above is built, green and demonstrated live on the reference machine, and **I18 passed whole** — a `1.1` bundle carried as a file, three records bound to three subjects with zero rejections, a measured adapter subject selected on a `benchmark` signal, and the sibling measured nowhere rejected `adapter_unmeasured` in the same decision. `loadcoach 1.1.0` and `freeweight 1.1.0` are prepared, not published. **Amended at row H6 (2026-09-06): the plumbing I18 proved is sound and the numbers it carried were not adapter measurements.** FreeWeight never sent the run's adapter to the provider, so every adapter-bearing record produced at H4 and H5 measures the bare base (`docs/apps/freeweight/risks.md`, *T12 realised*). Fixed at H6, and **I18 was then re-run whole on correct numbers** — twice: the shipped live pair unchanged, and again over the A-2 fixed rows, where the *shipped* `adapters.measured` profile ranked `+verbose` (0.909 instruction-following) above the bare base (0.727) above a deliberately damaged adapter (0.182), every score labelled `benchmark`. The exit condition is met on merit rather than on a gate decision, which is stronger than the demonstration LA3 was specified with. **PromptCadence's half (§4.5) remains**, rides I2, and is now unblocked: it was waiting on adapter evidence being able to bind at all | An imported bundle visibly changes which adapter a task profile selects, with the explanation showing per-capability adapter evidence beside the bare base; an unmeasured adapter is filtered with the named rejection; converges at or before PromptCadence P9 (M12) |
 
 ## 4. Per-component work
@@ -166,11 +171,11 @@ payoff moment) → LA3 → PromptCadence P8–P9.
 | Component | LA0 | LA1 | LA2 | LA3 |
 |---|---|---|---|---|
 | BaseAiCore | **+adapter types** (0.4.1) | **+`RuntimeProfile.adapters_registered`** (0.4.x, ADR-0074) | — | — |
-| SetSpec | **+manifest 1.0, evidence v1.1** (next minor) | — | — | — |
-| ModelRack | — | **+LlamaCppProvider** (next minor) | — | — |
+| SetSpec | **+manifest 1.0, evidence v1.1** (0.5.0 and 0.6.0) | — | — | — |
+| ModelRack | — | **+LlamaCppProvider** (0.7.0; `0.7.1` current) | — | — |
 | LoadCoach | — | — | **1.1.0** | 1.1.x |
 | FreeWeight | — | — | — | **1.1.0** |
-| IdeaPress | — | — | **pins** (with the M13 train or own minor) | — |
+| IdeaPress | — | — | **pins**, shipped as **1.1.0** (row H3) | — |
 | PromptCadence | schemas born adapter-aware | — | — | routed tiers (no release needed beyond M12) |
 
 ## 7. Integration verifications
@@ -196,6 +201,9 @@ payoff moment) → LA3 → PromptCadence P8–P9.
 | Scope creep toward composition or in-suite training | Medium | A-6 and §11 of the architecture doc; both need new ADRs to reopen |
 
 ## 9. LA0 documentation checklist
+
+**Done at row A1 on 2026-09-02**, jointly with the PromptCadence arc's Phase 0. The list below is
+the record of what that row covered, not outstanding work.
 
 * Write ADRs A-1…A-10 with real alternatives; link from the ADR index; note the amendments on
   ADR-0008/0023/0024.

@@ -1,13 +1,18 @@
 # PromptCadence Arc — Production Plan
 
-**From:** the accepted design skeleton (`harness.md`, 2026-09-01) — a plan-approved, tier-routed
-agent harness over LoadCoach, plus the shared capability packages it justifies.
+**From:** the accepted design skeleton (`harness.md`, 2026-09-01, since retired to a pointer at the
+workspace root) — a plan-approved, tier-routed agent harness over LoadCoach, plus the shared
+capability packages it justifies.
 **To:** one new application (`promptcadence 1.0.0`), four new published packages (`cutctx`,
 `toolyard`, `loadledger`, `commissioner`), two additive releases of existing packages
 (`baseaicore 0.4.1`, `setspec 0.5.0`), one additive LoadCoach enhancement (LC-E1), and adoption of
 three of the new packages by IdeaPress.
 **Sequencing principle:** unchanged from the [master roadmap](master-roadmap.md) — dependency
 order and rework risk, not calendar dates. Milestones continue the suite's numbering: **M10–M13**.
+**State (2026-09-07):** M10, M11 and M12 are complete — `promptcadence 1.1.0` and all four packages
+are on PyPI. M13, IdeaPress's adoption of three of them, is the last milestone and is under way.
+This document stays authoritative for rationale; what each session actually built is in
+[outstanding-work.md](outstanding-work.md) and the per-row `docs/history/<ROW>_HANDOFF.md`.
 **Parallel stream:** the [Adapter arc](adapter-roadmap.md) (hot-swappable LoRA serving via
 llama.cpp) shares this arc's Phase 0 — its contracts land jointly so every schema below is born
 adapter-aware — and converges at M12; its sequencing rules are that roadmap's §5.
@@ -65,9 +70,9 @@ multi-second model calls needs no budget of its own.
 ## 2. Decisions and the ADRs that must exist before code
 
 Per the suite's rule — a missing architectural decision is a documentation defect, closed with an
-ADR before code — Phase 0 of this arc writes the following. Numbers are assigned sequentially at
-writing time (0045 onward if nothing lands first); the D-ids below are stable references for this
-plan.
+ADR before code — Phase 0 of this arc wrote the following. **All thirteen were accepted on
+2026-09-02 as [ADRs 0045–0057](../adr/README.md)**, in D-order; the D-ids below remain the stable
+references for this plan.
 
 | ID | Decision (stated unambiguously) | Revisit when |
 |---|---|---|
@@ -91,8 +96,8 @@ plan.
 |---|---|---|---|
 | **M10** | Harness foundations | Phase 0 (ADRs + doc updates) · `baseaicore 0.4.1` · `setspec 0.5.0` (Phase 6: `governance.egress_decision`, goldens) · CutCtx P1–P2 · ToolYard P1–P3 · LoadLedger P1–P2 · Commissioner P1–P2 — all four at 0.1.0 on PyPI | Each package's standalone acceptance script runs in a clean venv with no suite application installed; a `setspec`-only reader validates an egress-decision golden |
 | **M11** | PromptCadence beta | PromptCadence P1–P7 | On real LoadCoach + Ollama: one planned and one bypassed trajectory, tools + budget + egress active in both, records identical in shape minus plan rows; a confidential trajectory provably cannot reach a remote tier; `0.9.0b0` tagged at the demonstration |
-| **M12** | PromptCadence 1.0 | PromptCadence P8–P9 · LC-E1 (LoadCoach 1.1) · CutCtx/ToolYard 0.2.0 | Every PromptCadence spec §20 criterion; one live remote-tier trajectory (public data, priced, budgeted, badged) or the explicit release-scope decision to ship with remote tiers refusing honestly; independent verification with permission to say *not ready*; `promptcadence 1.0.0` published |
-| **M13** | Adoption — extraction complete | IdeaPress 1.1: LoadLedger (per-unit/project cost), Commissioner (the S4 badge on real records), CutCtx (`project_review` context assembly) | IdeaPress shows what a unit cost and where its data went, from the shared packages; every new package has two real consumers — the ADR-0011 bar met in fact, not by intent |
+| **M12** | PromptCadence 1.0 | PromptCadence P8–P9 · LC-E1 (LoadCoach 1.1); the planned CutCtx/ToolYard `0.2.0` hardening minors were never cut | Every PromptCadence spec §20 criterion; one live remote-tier trajectory (public data, priced, budgeted, badged) or the explicit release-scope decision to ship with remote tiers refusing honestly; independent verification with permission to say *not ready*; `promptcadence 1.0.0` published |
+| **M13** | Adoption — extraction complete | IdeaPress 1.2: LoadLedger (per-unit/project cost), Commissioner (the S4 badge on real records), CutCtx (`project_review` context assembly) | IdeaPress shows what a unit cost and where its data went, from the shared packages; every new package has two real consumers — the ADR-0011 bar met in fact, not by intent |
 
 ## 4. Work streams, dependencies and parallelism
 
@@ -152,13 +157,13 @@ small) → PromptCadence P1–P7 straight through → LC-E1 while beta soaks →
 | **BaseAiCore** | `DataClassification` (D-2) | Additive, `0.4.1`; lands inside every existing pin |
 | **SetSpec** | Phase 6: `setspec.governance.v1`, `governance.egress_decision` 1.0, JSON Schema + ≥ 3 goldens; capability vocabulary untouched; frozen v1 payloads untouched | Additive, `0.5.0` |
 | **LoadCoach** | **LC-E1** (D-11, generalized): `[providers.<name>]` registration, local or remote; discovery tags each model with its provider and egress class; everything downstream (constraints, `allow_remote`, cost factor, explanations) already speaks "remote" | Additive config + registry code, LoadCoach `1.1.0` — the only code change to a shipped application in this arc |
-| **LoadCoach** | Five task profiles (`tools.plan`, `tools.agent.local_fast/local_large/remote_cheap/remote_frontier`) | Configuration in LoadCoach's shipped `task_profiles.toml`; no code. Not shipped as of LoadCoach `846348b`; decided and scheduled at **E4** in [`outstanding-work.md`](outstanding-work.md) §1 (2026-09-03) |
+| **LoadCoach** | Five task profiles (`tools.plan`, `tools.agent.local_fast/local_large/remote_cheap/remote_frontier`) | Configuration in LoadCoach's shipped `task_profiles.toml`; no code. **Shipped** at row E4; the five profiles are in the file, and row I3 left `thinking_control` unset on all five ([ADR-0099](../adr/0099-a-task-profile-may-ask-for-reduced-thinking.md)) |
 | **FreeWeight** | Nothing required. `native.tool_use`/`native.agent` evidence already reaches tier profiles through the normal evidence pipeline. A `native.plan` category is a recorded future extension, not a dependency | None |
-| **IdeaPress** | Nothing until M13 | Adoption only, `1.1.0` |
+| **IdeaPress** | Nothing until M13 | Adoption only, `1.2.0` (rows J1–J2) |
 | **ModelRack, SweatMeter, WeightsDB, MirrorWall** | Nothing | Pure reuse |
 | **docs/** | Phase 0 updates (§7) | Documentation |
 
-## 6. M13 — adoption phases (IdeaPress 1.1)
+## 6. M13 — adoption phases (IdeaPress 1.2)
 
 Three independent phases, each optional, each with the same shape: adopt, delete the in-app
 equivalent, prove behaviour unchanged plus the new capability.
@@ -176,6 +181,9 @@ equivalent, prove behaviour unchanged plus the new capability.
    fixture projects.
 
 ## 7. Phase 0 — documentation work (before any code)
+
+**Done at row A1 on 2026-09-02**, jointly with the adapter arc's LA0. The list below is the record
+of what that row covered, not outstanding work.
 
 * Write and accept ADRs D-1…D-13 with real alternatives; link from the ADR index.
 * Jointly with the [Adapter arc](adapter-roadmap.md)'s LA0: ADRs A-1…A-10, the additive
@@ -203,15 +211,20 @@ equivalent, prove behaviour unchanged plus the new capability.
 
 | Component | M10 | M11 | M12 | M13 |
 |---|---|---|---|---|
-| BaseAiCore | **0.4.1** | 0.4.1 | 0.4.1 | 0.4.1 |
-| SetSpec | **0.5.0** | 0.5.0 | 0.5.0 | 0.5.0 |
-| CutCtx | **0.1.0** | 0.1.0 | **0.2.0** | 0.2.x |
-| ToolYard | **0.1.0** | 0.1.0 | **0.2.0** | 0.2.x |
-| LoadLedger | **0.1.0** | 0.1.0 | 0.1.x | 0.1.x |
-| Commissioner | **0.1.0** | 0.1.0 | 0.1.x | 0.1.x |
-| LoadCoach | 1.0.x | 1.0.x | **1.1.0** (LC-E1) | 1.1.x |
-| PromptCadence | — | **0.9.0b0** | **1.0.0** | 1.0.x |
-| IdeaPress | 1.0.x | 1.0.x | 1.0.x | **1.1.0** |
+| BaseAiCore | **0.4.1** | 0.4.1 | 0.4.1 | 0.4.2 |
+| SetSpec | **0.5.0** | 0.5.0 | **0.6.0** | 0.6.0 |
+| CutCtx | **0.1.0** | 0.1.0 | 0.1.0 | 0.1.0 |
+| ToolYard | **0.1.0** | 0.1.0 | **0.1.1** | 0.1.1 |
+| LoadLedger | **0.1.0** | **0.2.0** | 0.2.0 | 0.2.0 |
+| Commissioner | **0.1.0** | 0.1.0 | **0.1.1** | 0.1.1 |
+| LoadCoach | 1.0.x | 1.0.x | **1.1.0** (LC-E1) | 1.1.2 |
+| PromptCadence | — | **0.9.0b0** | **1.0.0** | 1.2.0 |
+| IdeaPress | 1.0.x | 1.0.x | 1.0.x | **1.2.0** |
+
+The table is what actually shipped, corrected on 2026-09-07: the projected CutCtx and ToolYard
+`0.2.0` hardening minors were never scheduled, LoadLedger's `0.2.0` (a balance read that names no
+run) arrived early at row F4, SetSpec gained a further additive minor for the adapter arc, and
+PromptCadence took two point releases past 1.0 before M13.
 
 New packages reach 1.0 only when two applications have exercised them — after M13, at the suite's
 next collective 1.0 pass, matching the master roadmap's rule.
