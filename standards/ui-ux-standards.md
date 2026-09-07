@@ -333,6 +333,11 @@ LoadCoach's, and a second list of them would be a second answer to the same ques
 names the model that answered each turn and links to the LoadCoach job that chose it. It shows no
 telemetry bar for the same reason: PromptCadence reads no machine.
 
+**The System page is the suite's help/about page** (M9 item D5): it renders the version and health
+components an operator looks for first, and is the page this table's "System" row names for
+LoadCoach, IdeaPress and PromptCadence; **FreeWeight has none** — `web/routes/system.py` serves
+`/version` and `/system/status` as JSON only, with no `NAV_ITEMS` entry — and owes one.
+
 ---
 
 ## 13. Acceptance checklist
