@@ -1,7 +1,8 @@
 # SweatMeter — Specification
 
 **Type:** Python package · **Import/distribution name:** `sweatmeter` · **Layer:** 3 (capability package)
-**Status:** Specified, not implemented. **Decision record:** [ADR-0021](../../adr/0021-telemetry-collection-strategy.md).
+**Status:** Implemented and published as `sweatmeter 0.4.0`; every phase in the plan is complete.
+**Decision record:** [ADR-0021](../../adr/0021-telemetry-collection-strategy.md).
 
 ---
 

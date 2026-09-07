@@ -1,7 +1,9 @@
 # SetSpec — Specification
 
 **Type:** Python package · **Import/distribution name:** `setspec` · **Layer:** 2 (contract package)
-**Status:** Specified, not implemented. **Decision record:** [ADR-0009](../../adr/0009-setspec-schema-strategy.md).
+**Status:** Implemented and published as `setspec 0.6.0`; payload schemas frozen at `1.0`, with
+additive minors at 0.5.0 (`governance.egress_decision`, `model.adapter_manifest`) and 0.6.0
+(`benchmark.evidence_bundle` 1.1). **Decision record:** [ADR-0009](../../adr/0009-setspec-schema-strategy.md).
 
 ---
 
@@ -52,7 +54,7 @@ Jinja2 arrives with `setspec.prompts` ([ADR-0028](../../adr/0028-prompt-pack-gra
 records are versioned, hash-bearing documents whose hashes appear in cross-application evidence, so
 they belong with the other contracts rather than being implemented three times. Consumers that want
 schemas without a template engine are served by making it an extra if that need ever appears; today
-all three applications need both.
+all four applications need both.
 
 ## 6. Consumers
 

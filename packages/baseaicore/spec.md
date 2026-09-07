@@ -1,8 +1,10 @@
 # BaseAiCore — Specification
 
 **Type:** Python package · **Import/distribution name:** `baseaicore` · **Layer:** 1 (domain foundation)
-**Status:** Phase 1 implemented (measurement, identity, IDs, time, hashing, errors, money and
-cost). Phases 2–4 specified, not implemented.
+**Status:** Implemented and published as `baseaicore 0.4.2` — Phases 1–4 (measurement, identity,
+IDs, time, hashing, errors, money and cost; descriptor, runtime profile and subject; machine
+profile; capability identifiers), plus Phase 5 (`DataClassification` and the adapter axis, 0.4.1)
+and Phase 6 (adapter-enabled serving on the runtime profile, 0.4.2) for the two post-1.0 arcs.
 
 ---
 

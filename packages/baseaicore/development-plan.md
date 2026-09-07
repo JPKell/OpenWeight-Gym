@@ -2,6 +2,8 @@
 
 **Sequence position:** first component built in the suite. Nothing else can start meaningfully before Phase 1 completes.
 **Target:** `baseaicore 0.4.0` by the end of Phase 4 (version numbering starts at 0.1 and increments per phase).
+**Reached 2026-08-22.** Phases 5 and 6 followed for the two post-1.0 arcs and shipped `0.4.1` and
+`0.4.2`; **`0.4.2` is published** and is the version every consumer pins.
 
 ---
 
