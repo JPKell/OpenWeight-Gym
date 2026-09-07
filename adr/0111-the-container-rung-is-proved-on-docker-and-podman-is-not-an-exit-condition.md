@@ -5,8 +5,9 @@
 that named a podman host), [ToolYard spec §7](../packages/toolyard/spec.md) (the ladder's first
 rung is unchanged in code; what changes is what counts as having exercised it).
 **Relates to:** [ADR-0018](0018-external-benchmark-isolation.md) (tiered sandboxing),
-[ADR-0056](0056-a-tool-runs-in-the-strongest-tier-the-host-can-supply.md) (the tier ladder,
-container → bwrap → refuse).
+[ADR-0053](0053-a-refused-tool-call-is-a-result-not-an-exception.md) (`run_command` reuses
+ADR-0018's ladder verbatim, container → bwrap → refuse; the number cited here on 2026-09-07 was
+0056, which is a different record entirely — corrected as a cross-reference on the same day).
 **Source:** the operator's decision at the 2026-09-07 interview, asked because no podman host has
 ever been available and the item had blocked M11's declaration since E2.
 

@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-09-05)
 **Extends:** [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) (the subject's adapter
 axis and its canonical suffix), [LoadCoach Data Model](../apps/loadcoach/data-model.md).
-**Relates to:** [ADR-0024](0024-model-identity-formatting-and-normalization.md) (the canonical
+**Relates to:** [ADR-0024](0024-canonical-id-and-model-references.md) (the canonical
 string is display and lookup, never parsed back),
 [ADR-0061](0061-the-adapter-registry-is-a-directory-and-a-manifest.md) (identity is the hash, the
 path is a locator), [ADR-0067](0067-reliability-keys-on-the-subject-not-the-base.md) (reliability
@@ -15,7 +15,7 @@ keys on the subject), [Database Standards](../standards/database-standards.md).
 [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) gives the execution subject an
 adapter axis and gives the canonical string an optional `+name@sha256:…` suffix. It is explicit that
 the string stays a display and lookup key and is never parsed back into its parts
-([ADR-0024](0024-model-identity-formatting-and-normalization.md) §4).
+([ADR-0024](0024-canonical-id-and-model-references.md) §4).
 
 LoadCoach must now persist that subject in several places: the routing candidate rows that make up
 an explanation, the attempt rows that record what answered, the residency rows that decide what a
@@ -26,7 +26,7 @@ every one of them keys on `model_id`, a foreign key into `models`.
 Three ways to store the adapter half suggest themselves, and they fail differently. A **string
 only** — the suffixed canonical ID on the row — makes every query a `LIKE`, makes the reliability
 unique key a string comparison, and puts the parsing that
-[ADR-0024](0024-model-identity-formatting-and-normalization.md) forbids back on the read path the
+[ADR-0024](0024-canonical-id-and-model-references.md) forbids back on the read path the
 moment anyone needs the adapter's name. A **reference only** — a nullable `adapter_id` foreign key —
 is correct and queryable, but a decision record then depends on a row in a table whose contents
 follow an operator's directory: rescan after a rename, and the explanation for a decision made last
@@ -76,7 +76,7 @@ person reads.**
 on the read path: reliability, residency and candidate lookups all key on the subject, so the string
 becomes an index key and a `LIKE` target, and the first time anything needs the adapter's name it
 parses the suffix — which is exactly what
-[ADR-0024](0024-model-identity-formatting-and-normalization.md) §4 forbids, and forbids because the
+[ADR-0024](0024-canonical-id-and-model-references.md) §4 forbids, and forbids because the
 string is lossy.
 
 **The foreign key alone**, rendering the string on read. Correct, normalized, and the smaller

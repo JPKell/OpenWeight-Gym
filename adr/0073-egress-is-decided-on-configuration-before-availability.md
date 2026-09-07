@@ -1,7 +1,7 @@
 # ADR-0073 — Egress is decided on a tier's configuration, before its availability
 
 **Status:** Accepted (2026-09-04)
-**Extends, additively:** [ADR-0054](0054-commissioner-records-the-caller-enforces.md) (Commissioner
+**Extends, additively:** [ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md) (Commissioner
 renders and records a verdict; enforcing it is the caller's). Nothing in ADR-0054 changes; this
 record answers the question it left open — *when* the caller asks, relative to everything else it
 must ask before a turn runs.

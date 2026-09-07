@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-09-05)
 **Amends:** [Database Standards §2](../standards/database-standards.md) (`foreign_keys=ON` on every
 SQLite connection) — for the duration of a migration run only, and for no other connection.
-**Relates to:** [ADR-0006](0006-sqlite-and-postgresql-only.md) (SQLite by default, PostgreSQL
+**Relates to:** [ADR-0006](0006-sqlite-and-postgresql-roles.md) (SQLite by default, PostgreSQL
 supported), [WeightsDB spec](../packages/weightsdb/spec.md) (the migration runner and its backups).
 **Source:** Row H2, gate D — found by a test that inserted a routing decision and its candidate,
 migrated, and could not read the candidate back.

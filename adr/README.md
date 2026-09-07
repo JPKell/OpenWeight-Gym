@@ -19,6 +19,18 @@ Revisit when    The concrete trigger that would reopen the decision
 
 A decision without a "revisit when" trigger is a decision nobody can safely revisit.
 
+**"Alternatives considered" has an accepted variant.** Several records argue the losing options
+under a heading that names them for what they are — `## Options` and `## Recommendation` in
+[0039](0039-audit-gated-blocking-requirements.md), `## What this refuses` in
+[0076](0076-a-step-retry-is-a-repeat-under-the-same-intent.md),
+[0099](0099-a-task-profile-may-ask-for-reduced-thinking.md),
+[0100](0100-promptcadences-runtime-changeable-set-is-five-tuning-numbers.md) and
+[0104](0104-an-adopted-reductions-seam-and-error-vocabulary-survive-it.md), `## Why LoadLedger` in
+[0110](0110-the-pricing-file-reader-is-a-loadledger-surface.md). The section is required; its title
+is not. [ADR-0037](0037-production-evidence-never-raises-capability-scores.md) is the one record
+with no such section at all, found by the 2026-09-07 consistency review and left standing, because
+an ADR is superseded rather than edited.
+
 ## Index
 
 | ADR | Title | Status |

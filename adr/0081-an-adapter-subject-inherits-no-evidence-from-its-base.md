@@ -4,8 +4,8 @@
 **Extends:** [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) (the execution subject
 gains an adapter axis), [ADR-0064](0064-adapters-are-selected-through-the-capability-vocabulary.md)
 (adapters are selected through the capability vocabulary).
-**Relates to:** [ADR-0022](0022-evidence-binding-and-match-states.md) (evidence binding and match
-states), [ADR-0059](0059-evidence-is-measured-against-the-subject.md) (evidence is measured against
+**Relates to:** [ADR-0022](0022-capability-evidence-record-contract.md) (evidence binding and match
+states), [ADR-0059](0059-adapter-evidence-is-measured-never-inherited.md) (evidence is measured against
 the subject), [ADR-0067](0067-reliability-keys-on-the-subject-not-the-base.md) (reliability keys on
 the subject), [LoadCoach Routing §5](../apps/loadcoach/routing.md).
 **Source:** Row H2, gate D — a decision the gate had to take and no record covered.

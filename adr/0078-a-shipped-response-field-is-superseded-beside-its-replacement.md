@@ -5,7 +5,7 @@
 [ADR-0013](0013-api-versioning.md) (additive within `/api/v1`).
 **Relates to:** [ADR-0075](0075-a-request-carrying-tools-requires-tool-use-of-every-candidate.md)
 (the request side of the tool wire),
-[ADR-0041](0041-a-callers-schema-does-not-travel-through-a-router.md) (a caller's schema is
+[ADR-0041](0041-caller-schemas-do-not-travel-through-a-router.md) (a caller's schema is
 carried, not validated),
 [API and Contract Standards §4](../standards/api-and-contract-standards.md) (compatibility rules).
 **Source:** Row H2, decision 2 of its kickoff §0.2; the defect is

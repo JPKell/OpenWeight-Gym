@@ -3,9 +3,10 @@
 **From:** empty repositories (architecture frozen 2026-08-21).
 **To:** four professionally deliverable applications and ten published packages (three and six when
 this line was written; the PromptCadence and adapter arcs added the rest — see §1's M10–M13 table).
-**State (2026-09-07):** M1–M8 and the post-1.0 milestones M10–M12 are complete; M13 is in progress
-and M9 — the delivery checklist in §7 — is the one milestone nobody has walked. §9 has the
-per-component table.
+**State (2026-09-07):** M1–M8 and the post-1.0 milestones M10–M12 are complete; M13's content
+shipped with `ideapress 1.2.0` and awaits only its declaration, and M9 — the delivery checklist in
+§7 — has now been walked by an audit (`~/ai/suite/M9_AUDIT.md`) whose gaps are rows L1–L6 of
+[Outstanding Work](outstanding-work.md). §9 has the per-component table.
 **Corrected 2026-08-21** by the [final architecture audit](../reviews/final_architecture_audit.md):
 the prompt library moves from FreeWeight P7 into P6 (the fingerprint needs it), `setspec.prompts` is
 extracted at LoadCoach P4 alongside MirrorWall, and LoadCoach P3 gains the VRAM estimator its
@@ -49,7 +50,7 @@ phase and converges at M12. Their decisions are ADRs
 | **M10** | Harness foundations | [PromptCadence arc §3](promptcadence-roadmap.md) | `baseaicore 0.4.1`, `setspec 0.5.0`, CutCtx/ToolYard/LoadLedger/Commissioner at `0.1.0` |
 | **M11** | PromptCadence beta | [PromptCadence arc §3](promptcadence-roadmap.md) | `promptcadence 0.9.0b0` |
 | **M12** | PromptCadence 1.0 | [PromptCadence arc §3](promptcadence-roadmap.md) | `promptcadence 1.0.0`, LoadCoach `1.1.0` (LC-E1) |
-| **M13** | Adoption — extraction complete | [PromptCadence arc §6](promptcadence-roadmap.md) | IdeaPress `1.2.0` on LoadLedger, Commissioner and CutCtx (in progress) |
+| **M13** | Adoption — extraction complete | [PromptCadence arc §6](promptcadence-roadmap.md) | IdeaPress `1.2.0` on LoadLedger, Commissioner and CutCtx (shipped 2026-09-07; declaration outstanding) |
 
 This roadmap stays authoritative for M1–M9 and for the sequencing principle both arcs inherit.
 

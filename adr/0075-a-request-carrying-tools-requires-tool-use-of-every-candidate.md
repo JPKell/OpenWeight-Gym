@@ -1,9 +1,9 @@
 # ADR-0075 — A request carrying tools requires `tool_use` of every candidate
 
 **Status:** Accepted (2026-09-04)
-**Relates to:** [ADR-0041](0041-a-callers-schema-does-not-travel-through-a-router.md) (a caller's
+**Relates to:** [ADR-0041](0041-caller-schemas-do-not-travel-through-a-router.md) (a caller's
 schema is passed through, never validated — the rule this record inherits for a tool's
-`parameters`), [ADR-0007](0007-provider-capability-declaration.md) (a provider declares what it can
+`parameters`), [ADR-0007](0007-provider-abstraction.md) (a provider declares what it can
 do and is refused what it cannot), [ADR-0016](0016-unavailable-is-not-zero.md) (an absent fact is
 not a permissive one).
 **Source:** G1's real-stack evidence (`docs/history/G1_HANDOFF.md` §9.3) and row G2 of

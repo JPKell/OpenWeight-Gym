@@ -15,8 +15,9 @@ with an ADR before writing the code.
 
 ## 1. What this suite is
 
-Applications and shared Python packages for operating local open-weight AI models. The nine
-components of Suite 1.0:
+Applications and shared Python packages for operating local open-weight AI models. Suite 1.0 is
+declared over **fourteen** components — four applications and ten packages
+([ADR-0113](adr/0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md)). The original nine:
 
 ```text
 Measure AI   →   Manage AI   →   Apply AI
@@ -200,7 +201,8 @@ closing a question the code raised:
 The last four were built at M10 of the
 [PromptCadence arc](roadmap/promptcadence-roadmap.md), each with two named consumers, per
 [ADR-0011](adr/0011-shared-package-boundaries.md)'s extraction rule: PromptCadence is the first
-consumer of all four, and IdeaPress the second, adopting three of them at M13.
+consumer of all four, and IdeaPress the second, adopting three of them at M13. ToolYard is the
+exception and still has one: PromptCadence is its only consumer.
 
 ---
 
@@ -290,37 +292,78 @@ referenced from its specification and does not duplicate it.
 
 ## 11. Consistency review
 
-Performed across the whole set on 2026-08-21, per requirement §39. Each item states how it was
-verified, not merely that it was.
+**Re-run 2026-09-07 (row L2), per requirement §39.** The previous run was dated 2026-08-21 — before
+five of the fourteen components existed and before 92 of the 114 ADRs were written — and its counts
+("all nine development plans", "all three specs", "21 ADRs", "the 74 phases", "M1–M9") had stopped
+describing the set. This run covers **fourteen development plans (92 phases), four application
+specs, three application API documents, 114 ADRs, and milestones M1–M13 plus LA0–LA3.** Each check
+states how it was verified, not merely that it was, and every mechanical check below was executed
+rather than recalled.
 
 | Check | Verification | Result |
 |---|---|---|
-| Component names used consistently | Grep for every component name and its lowercase form across all documents; no `openweight_bench`, no alternative spellings | Pass |
+| Component names used consistently | Grep for every component name and its lowercase form across the set; no `openweight_bench`, no alternative spellings, outside `inventory/` and `standards/coding-standards.md` where the dead name is quoted as history | Pass |
 | Public contracts agree across documents | Evidence bundle, generate response, event and error envelopes cross-checked between producer spec, consumer spec, API documents and SetSpec | Pass |
-| Model identity consistent everywhere | `ModelIdentity` fields, canonical-ID form and column set compared across BaseAiCore, both data models, both APIs and the architecture document | Pass |
-| Configuration precedence consistent | Defaults → file → env → CLI stated identically in the standards and all three specs; the separate execution-parameter chain named as separate in both places it appears | Pass |
-| API conventions consistent | Versioning, envelopes, pagination, SSE framing and error codes cross-checked between the standards and all three API documents | Pass |
-| Database ownership consistent | Each data model states exclusive ownership; no document describes an application reading another's database | Pass |
-| No application accesses another's DB | Stated as forbidden in the architecture, boundary rules, database standards and all three specs; the "temporary shortcut" from old planning explicitly rejected | Pass |
+| Model identity consistent everywhere | `ModelIdentity` fields, canonical-ID form and column set compared across BaseAiCore, the data models, the APIs and the architecture document; the adapter axis added by ADR-0058 carried into all of them | Pass |
+| Configuration precedence consistent | The standard states it once (`configuration-standards` §1, and §1.1 for the execution-parameter chain); the four specs defer to it rather than restating it, and the two documented deviations — FreeWeight's benchmark execution parameters and the database-backed settings layer at §7 — appear in both places. LoadCoach's implementation had the opposite precedence until row I8 closed it on 2026-09-07 | Pass |
+| API conventions consistent | Versioning, envelopes, pagination, SSE framing and error codes cross-checked between the standards and the three API documents | Pass, with a gap: **PromptCadence has no `api.md`** (row L5) |
+| Database ownership consistent | Each data model states exclusive ownership; no document describes an application reading another's database; the package-mounted tables (`loadledger.sql`, `commissioner.sql`) are owned by the mounting application per ADR-0050 | Pass |
+| No application accesses another's DB | Stated as forbidden in the architecture, boundary rules, database standards and all four specs; composition is HTTP + SetSpec payloads only | Pass |
 | No shared package imports application code | Import-linter contracts specified per repository; clean-venv install-check specified; each package spec lists its permitted imports | Pass |
-| FreeWeight runs independently | Spec §20.1, degradation matrix, and its e2e suite requirement (peers absent) | Pass |
-| LoadCoach runs independently | Spec §20.1 and §20.3 (routes with no evidence and no FreeWeight); declared-capability fallback documented in Routing §5.1 | Pass |
-| IdeaPress runs independently | Spec §20.1, backend-parity test, and standalone-first phase ordering (LoadCoach not touched until P7) | Pass |
-| IdeaPress can optionally use LoadCoach | Spec §20.2, Workflows §6, IdeaPress P7, LoadCoach API §12 | Pass |
-| LoadCoach can optionally consume FreeWeight evidence | LoadCoach P6, FreeWeight API §6, integration milestone I4 | Pass |
-| Tests planned before implementation | Every one of the 74 phases lists its tests before its acceptance criteria; Testing Standards rule zero | Pass |
-| All phases contain acceptance criteria | Verified per phase across all nine development plans | Pass |
-| All major decisions have rationale | 21 ADRs, each with context, decision, real alternatives, consequences and a revisit trigger | Pass |
+| Each application runs independently | FreeWeight spec §20.1; LoadCoach §20.1/§20.3; IdeaPress §20.1 + backend parity; PromptCadence starts, serves and reports `loadcoach: degraded` with LoadCoach absent (ADR-0045), proved by `e2e/test_server_boot.py` | Pass |
+| Optional composition links documented | IdeaPress → LoadCoach (IP spec §20.2, LoadCoach API §12); LoadCoach → FreeWeight evidence (LC P6, FW API §6); PromptCadence → LoadCoach as its **only** model path, which is not optional (ADR-0045) | Pass |
+| Tests planned before implementation | Every phase across the fourteen plans lists its tests before its acceptance criteria; Testing Standards rule zero | Pass |
+| All phases contain acceptance criteria | Executed over all 92 phases in the fourteen plans. One exception: FreeWeight's `Phase 0 (upstream)`, which is a pointer to SetSpec Phase 3A and owns no work | Pass (1 documented exception) |
+| All major decisions have rationale | 114 ADRs. Every one has Status, Context, Decision, Consequences and a Revisit-when trigger, checked mechanically | Pass |
+| ADR alternatives section present | Same mechanical check. **Seven ADRs carry no "Alternatives considered" heading**: 0039 (`## Options` + `## Recommendation`), 0076, 0099, 0100 and 0104 (`## What this refuses`), 0110 (`## Why LoadLedger`), and 0037 (none at all). The first six argue alternatives under a different heading; 0037 does not | **Partial** — §Format above now names the accepted variant; 0037 is a genuine gap that only a superseding record can close |
+| Cross-document links resolve | Every relative link in every document outside `history/`, `reviews/` and `inventory/` checked against the file tree. **12 were broken**, all of them ADR cross-references naming a filename the ADR never had; all repaired in this review's commit, target only, prose untouched | Pass after repair |
+| ADR cross-references name the right record | `ADR-0111` cited "ADR-0056 (the tier ladder, container → bwrap → refuse)"; ADR-0056 is *Every turn executes under one ExecutionIntent*. The ladder is ADR-0018, applied by ADR-0053. Corrected as a header cross-reference | Pass after repair |
 | Old planning not treated as authoritative | Inventory §3 lists 21 rejected concepts with reasons; §4 records 10 conflicts and their resolutions | Pass |
-| No unnecessary infrastructure introduced | No Redis, Celery, RabbitMQ, Kafka, Kubernetes, message broker, external cache or service mesh appears anywhere; ADR-0010 records the reasoning and the revisit trigger | Pass |
-| Milestone labels consistent | M1–M9 cross-checked between the executive summary, the roadmap and all three development plans | Pass |
-| Cross-document links resolve | Every relative link in every document checked against the file tree | Pass |
-| Phase cross-references consistent | Extraction and adoption phases (WeightsDB at LC-P1, MirrorWall at LC-P4, both adopted at FW-P12) consistent in all five documents that mention them | Pass |
+| No unnecessary infrastructure introduced | Grep for Redis, Celery, RabbitMQ, Kafka, Kubernetes, memcached, message broker, external cache and service mesh across the set: every hit is a rejection with a reason (ADR-0004, ADR-0010, risk register, executive summary) | Pass |
+| Milestone labels consistent | M1–M13 and LA0–LA3 cross-checked between the executive summary, the master roadmap, both arc roadmaps and the traceability matrix. M11 was declared by ADR-0111 and M13's content shipped on 2026-09-07; both now read the same in §1 and §9 of the roadmap | Pass after repair |
+| Version and status statements match the repositories | Every `__about__.py`, every pushed tag and the PyPI index read directly. `master-roadmap` §9 was stale on four rows and is restated with an "On PyPI" column | Pass after repair |
+| Degradation matrix covers every application | It covered three. PromptCadence gained a column and §2.1 gained a row-to-test index | Pass after repair |
+| Dependency budget matches what is declared | Every `pyproject.toml` read; `gold-standards` §1.1 rewritten as an enumeration ([ADR-0114](adr/0114-the-dependency-budget-is-the-enumerated-set-a-component-declares.md)) | Pass after repair |
 
-Issues found and fixed during the review are listed in the review's own commit; the two substantive
-ones were a milestone renumbering (FreeWeight 1.0 needed its own milestone, M6, because it lands
-after LoadCoach's extractions) and phase-reference drift between the package plans and FreeWeight's
-adoption phase.
+### What this run changed
+
+* **`master-roadmap`** — §6's trajectory table and its 1.0 rule (ADR-0113), §5's S5 gate, §7 restated
+  over fourteen components and four applications, §9 verified against the repositories and the
+  index, §1's state line and M13 row, and the "three applications and six packages" header.
+* **`gold-standards`** — §1.1 replaced by the enumerated dependency sets (ADR-0114), G16's measure
+  corrected from "§2" to §1.1, §4 restated over fourteen.
+* **`architecture/graceful-degradation.md`** — a PromptCadence column on all 30 condition rows,
+  three footnotes, and the new §2.1 row-to-test index.
+* **`adr/`** — twelve broken cross-reference targets repaired, ADR-0111's mis-numbered relation
+  corrected, and ADRs 0113 and 0114 added.
+* **This document** — §1's component count and §7's "two named consumers" claim (ToolYard has one).
+
+### What this run found and did not fix
+
+* **`apps/ideapress/spec.md` links to `adr/0020-server-rendered-html.md`**, which does not exist
+  (the file is `0020-ui-rendering-strategy.md`). Left alone: the file was off-limits to this
+  session, and it is mirrored into the IdeaPress repository, so the fix has to land in both copies
+  together.
+* **`apps/promptcadence/spec.md` §13 contradicts `lifecycle.md` §8.1.** The LoadCoach code map says
+  a connection refusal "parks the trajectory in `waiting`"; there is no `waiting` state in the state
+  machine, and §13's own closing paragraph says so and says the trajectory fails at T13 instead. The
+  degradation matrix follows the state machine and footnotes the discrepancy; the spec sentence
+  needs deleting in both the workspace copy and the PromptCadence mirror.
+* **PromptCadence never checks LoadCoach's API version.** Its client pins the `/api/v1` prefix and
+  never reads `api_versions`, where IdeaPress's backend does and names both versions on a mismatch.
+  Recorded in the degradation matrix as a gap, unimplemented.
+* **ADR-0037 argues no alternatives.** Only a superseding record can add them; none is warranted for
+  that reason alone.
+* **`loadcoach 1.1.0`, `1.1.2` and `1.1.3` are tagged and pushed with no release run**, so the index
+  is at `1.0.0`. Recorded in `master-roadmap` §9; fixing it is a workflow question, not a document
+  one.
+* **PromptCadence has no `docs/apps/promptcadence/api.md`**, where the other three applications do.
+  Scheduled as row L5.
+
+Issues found and fixed by the 2026-08-21 run are listed in that review's own commit; the two
+substantive ones were a milestone renumbering (FreeWeight 1.0 needed its own milestone, M6, because
+it lands after LoadCoach's extractions) and phase-reference drift between the package plans and
+FreeWeight's adoption phase.
 
 ---
 

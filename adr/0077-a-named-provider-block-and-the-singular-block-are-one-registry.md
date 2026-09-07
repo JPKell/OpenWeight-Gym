@@ -4,7 +4,7 @@
 **Extends:** [ADR-0055](0055-loadcoach-registers-providers-by-name-and-kind.md) (LoadCoach
 registers providers by name and kind), [LoadCoach Spec §12](../apps/loadcoach/spec.md)
 (configuration).
-**Relates to:** [ADR-0019](0019-configuration-and-data-formats.md) (config is TOML),
+**Relates to:** [ADR-0019](0019-python-baseline-and-config-format.md) (config is TOML),
 [ADR-0013](0013-api-versioning.md) (additive within `/api/v1`),
 [Configuration Standards](../standards/configuration-standards.md) (defaults → file → environment
 → CLI, field by field).
@@ -83,7 +83,7 @@ deprecation warning on every startup of a correct configuration trains operators
 **Auto-migrate the file: rewrite `[provider]` into `[providers.<kind>]` on first 1.1 startup.**
 Rejected outright. The suite does not edit an operator's configuration file; a configuration is
 something a person owns, diffs and puts under version control (the same property that puts prompts
-and adapter manifests in files, [ADR-0012](0012-prompt-management.md),
+and adapter manifests in files, [ADR-0012](0012-prompt-storage-format.md),
 [ADR-0061](0061-the-adapter-registry-is-a-directory-and-a-manifest.md)).
 
 **Name the singular registration `"default"` rather than after its kind.** Considered seriously, and
