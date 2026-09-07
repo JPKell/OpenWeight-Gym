@@ -5,6 +5,7 @@
 a `pricing_hash`, never stored as a money figure). Nothing in ADR-0030 changes; this record answers
 the question it left to whoever needed a price first — *where does a `ModelPricing` come from, on
 disk, and what does the file look like*.
+**Amended by:** [ADR-0110](0110-the-pricing-file-reader-is-a-loadledger-surface.md) — §8's trigger fired at row J1 (IdeaPress transcribed the reader) and was answered at row K4: the reader is `loadledger.pricing`, not `baseaicore` and not a package of its own. §8's "the first implementation is `promptcadence.services.pricing`" is now historical; the format and the rules this record fixes are unchanged.
 **Relates to:** [ADR-0016](0016-unavailable-is-not-zero.md) (an omitted rate is "not stated", never
 free), [ADR-0019](0019-python-baseline-and-config-format.md) (config is TOML, data is JSON),
 [ADR-0008](0008-canonical-model-identity.md) and [ADR-0024](0024-canonical-id-and-model-references.md)

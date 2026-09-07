@@ -132,6 +132,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0107](0107-two-loadcoach-clients-are-not-yet-one-package.md) | The second LoadCoach consumer arrived; the client package is still declined | Accepted |
 | [0108](0108-the-snapshot-contracts-the-surface-and-goldens-contract-the-bodies.md) | The OpenAPI snapshot contracts the surface; captured goldens contract the bodies | Accepted |
 | [0109](0109-a-stored-row-this-build-cannot-read-serves-configuration.md) | A stored settings row this build cannot read serves configuration, and the changeable set is an enumeration | Accepted |
+| [0110](0110-the-pricing-file-reader-is-a-loadledger-surface.md) | The pricing-file reader is a LoadLedger surface, at ADR-0072's own second-consumer trigger | Accepted |
 | [0111](0111-the-container-rung-is-proved-on-docker-and-podman-is-not-an-exit-condition.md) | The container rung is proved on docker, and podman is not an exit condition | Accepted |
 | [0112](0112-the-usage-object-spells-unavailable-one-way-inside-api-v1.md) | The `usage` object spells "unavailable" one way, inside `/api/v1` | Accepted |
 
@@ -584,3 +585,17 @@ classes, from `loadcoach 1.1.3`, closing ADR-0016 rule 4's exception rather than
 [ADR-0013](0013-api-versioning.md), argued on today's specific fact (no external consumer, both of
 the workspace's own checked directly) and not a general license to break a released field — the
 next such change still owes `/api/v2` or an equally explicit exception argued on its own facts.
+
+**ADR-0110 was added on 2026-09-07** (row K4). [ADR-0072](0072-the-model-pricing-record-file.md)
+fixed the price-catalogue format and left the reader in its first consumer, naming the trigger that
+would move it: a second consumer needing the reader itself. Row J1 fired that trigger by
+transcribing PromptCadence's 368-line module into IdeaPress as 315 lines that differed in the
+docstrings, the application error raised and the container shape — and in nothing that parses. The
+record puts the reader in `loadledger.pricing`, because LoadLedger already stores the
+`pricing_hash` the reader's output is joined by and already decides what an untotalled estimate
+means to a ceiling; `baseaicore` was declined because it would have to break its no-I/O rule to
+take it, and a package of its own was declined for being a repository and a release series around
+250 lines. Each application keeps its edge — where the path comes from, and reporting a broken file
+in its own configuration vocabulary. The proof is that both applications' pricing tests pass
+unchanged, plus a golden case in the package asserting the moved reader reproduces the exact
+`pricing_hash` values both loaders produced before adoption.
