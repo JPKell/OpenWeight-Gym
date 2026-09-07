@@ -142,14 +142,18 @@ Cross-application compatibility is proven without a shared environment:
    golden payload structurally.
 3. The consumer's test suite asserts that it can read every golden payload for every supported major
    version, and that it rejects the next major with `SCHEMA_VERSION_UNSUPPORTED`.
-4. The same technique applies to HTTP, and the artifact needs a distribution channel or the technique
-   is theoretical. Each application **ships its committed OpenAPI snapshot as package data**
-   (`<app>/api/openapi-v1.json`, loadable through `importlib.resources`) and exposes it as
-   `<app>.api_snapshot()`. A consumer's contract tests install the producer's distribution as a
-   **test-only** dependency and drive a schema-driven mock from that file. This is not a runtime
-   dependency and not an import of the producer's code: `ideapress[dev]` may depend on `loadcoach`,
-   while `ideapress` must not, and the import-linter contract that forbids
-   `from loadcoach import …` in `src/` is what keeps the two apart. The same mechanism gives
+4. **HTTP is contracted in two halves** ([ADR-0108](../adr/0108-the-snapshot-contracts-the-surface-and-goldens-contract-the-bodies.md)).
+   The producer commits its OpenAPI snapshot at `docs/openapi.json` and tests it byte for byte
+   against what it serves; that contracts the **surface** — paths, methods, parameters, request
+   schemas and status codes. It does **not** contract response bodies: handlers returning
+   dictionaries produce open response schemas, so a mock validated against one agrees with any
+   response and proves nothing. **Response bodies are contracted by goldens captured from a running
+   producer** — keys and value types, never values, recorded against a named producer version — and
+   a consumer's contract tests assert its double against those goldens. A consumer vendors the
+   producer's snapshot beside its own tests with a recorded digest, and validates every *request* it
+   sends against it. No consumer imports the producer's code: `ideapress[dev]` may depend on
+   `loadcoach`, while `ideapress` must not, and the import-linter contract that forbids
+   `from loadcoach import …` in `src/` is what keeps the two apart. The same golden discipline gives
    MirrorWall the two applications' template suites for its cross-consumer render job.
 5. A nightly **compatibility matrix** job installs the released versions of each pair and runs the
    contract suites, so a package release that breaks a consumer is caught before the consumer

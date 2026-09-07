@@ -346,9 +346,15 @@ Detail in [ADR-0014](../adr/0014-authentication-strategy.md) and
 * FastAPI generates OpenAPI 3.1 at `/api/v1/openapi.json`, with interactive docs at `/api/v1/docs`
   (loopback only by default; disabled when bound non-loopback unless explicitly enabled).
 * Every endpoint has a summary, a description, documented error codes and at least one example.
-* The OpenAPI document is committed as a snapshot artifact (`docs/api/openapi-v1.json` in each app
-  repo) and a CI test fails when it changes without a corresponding changelog entry — that is how
-  accidental breaking changes are caught.
+* The OpenAPI document is committed as a snapshot artifact (`docs/openapi.json` in each app repo),
+  compared **byte for byte** with the document the application serves, and a CI test fails when it
+  changes without a corresponding changelog entry — that is how accidental breaking changes are
+  caught.
+* **The snapshot contracts the surface, not the bodies.** Paths, methods, parameters, request
+  schemas (which are closed) and status codes are contracted by it; response bodies are contracted
+  by goldens captured from a running producer, because handlers returning dictionaries produce open
+  response schemas that agree with anything
+  ([ADR-0108](../adr/0108-the-snapshot-contracts-the-surface-and-goldens-contract-the-bodies.md)).
 * SetSpec publishes JSON Schema for every payload version; a schema change without a version bump
   fails CI.
 
