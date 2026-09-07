@@ -32,6 +32,12 @@ ollama pull qwen3.5:9b-q8_0      # IdeaPress structured work
 ollama pull gemma4:12b           # IdeaPress prose
 ```
 
+**One caveat about the index (2026-09-07).** `pip install` gets you `freeweight 1.0.0` and
+`loadcoach 1.0.0`; the `1.1` releases that add LoRA adapter serving — §1.6 and §2.5 below, and the
+llama.cpp provider behind them — are built but not yet published. Until they are, install
+those two from their repositories (`pip install -e ~/ai/suite/FreeWeight`) if you want the adapter
+sections, and skip them otherwise. Everything else in this plan works from the index.
+
 Each application starts with zero configuration, binds to loopback only, and owns its own port
 and its own SQLite database:
 

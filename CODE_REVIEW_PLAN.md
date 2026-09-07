@@ -97,8 +97,9 @@ documentation defect, and the suite's rule is that it gets an ADR, not a workaro
 ### Do not
 
 * Do not read `.old_projects/`. It is superseded and the inventory records what was taken from it.
-* Do not read the five planned-but-empty components' specs as if they had code. As of this date
-  all ten packages have code; check `docs/roadmap/outstanding-work.md` if unsure.
+* Do not assume a specification describes something unbuilt. Every one of the fourteen components
+  has code, all ten packages are published, and each component's `spec.md` header names the version
+  it has reached; `docs/roadmap/master-roadmap.md` §9 is the one table of where everything stands.
 * Do not run `git push`, and do not commit while a session is in progress on another tree.
 
 ---
