@@ -427,3 +427,15 @@ configuration. A set `think` requires `thinking_control` of every candidate at r
 as `capability_unsupported` with `required_by`, and travels beside `requires_capabilities` rather
 than inside it, because that field is validated against the SetSpec vocabulary and
 `thinking_control` is a provider flag rather than a capability.
+
+**ADR-0100 was added on 2026-09-06** (row I5, PromptCadence 1.1.0). It fills the runtime-settings
+hole spec §7.1 had promised since the specification was written: five tuning numbers move at
+runtime — the retention hours, the compaction threshold, the two execution bounds and the
+planner's corrective retries — and everything that decides exposure, egress, credentials,
+containment, retention or spend is refused by name with `FORBIDDEN`, whole sections at a time. The
+budget ceilings are refused deliberately: a form that raised one would be a second path to the
+same money with no `approval_requests` row behind it, beside the `ceiling_raise` approval that
+records an approver. Membership is tested by re-reading, not by plausibility — a key the running
+process does not re-read is not runtime-changeable — and precedence follows configuration
+standards §7 rather than LoadCoach's implementation, so the environment still beats a stored row
+and a shadowed row is shown as shadowed instead of being applied or dropped in silence.
