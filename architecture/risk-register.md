@@ -131,7 +131,7 @@ would turn it into work:
 | Watch item | Trigger that makes it real |
 |---|---|
 | A shared queue package | FreeWeight needing priorities, leases or multi-worker scheduling |
-| `LoadCoachClient` package | A second consumer of LoadCoach's API outside IdeaPress |
+| `LoadCoachClient` package | A third consumer of LoadCoach's API, or typed response bodies in its OpenAPI document — the second consumer (PromptCadence) arrived and extraction was declined ([ADR-0107](../adr/0107-two-loadcoach-clients-are-not-yet-one-package.md)) |
 | Async ModelRack | More than ~50 concurrent executions, or remote-provider fan-out as a primary use case |
 | DuckDB for FreeWeight analytics | Aggregate query budgets missed at realistic volume on SQLite |
 | Monorepo consolidation | Sustained cross-repository coordination cost (ADR-0001) |
