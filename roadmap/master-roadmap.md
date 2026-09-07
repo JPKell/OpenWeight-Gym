@@ -200,7 +200,7 @@ Stabilization is scheduled work, not what happens if there is time left.
 | **S2 — FreeWeight stabilization** | FW P14 (M6) | Performance budgets, security checklist, accessibility audit, upgrade testing from every released version, documentation | All FreeWeight acceptance criteria and gold standards met |
 | **S3 — LoadCoach stabilization** | LC P9 (M5) | Auth and LAN-exposure review, scheduling simulation at scale, security checklist, operations documentation | All LoadCoach acceptance criteria and gold standards met |
 | **S4 — IdeaPress stabilization** | IP P9 (M8) | Model-output sanitization sweep, archive-import hardening, performance, documentation | All IdeaPress acceptance criteria and gold standards met |
-| **S5 — Suite stabilization** | M9 | Cross-repository compatibility matrix, install-path verification, documentation consistency review, dependency audit, release notes, **and the package-1.0 range widening** (every application needs a release whose ranges admit the 1.0 packages — see [Packaging Standards §4](../standards/packaging-and-release-standards.md)) | Every item in §7 checked |
+| **S5 — Suite stabilization** | M9 | Cross-repository compatibility matrix, install-path verification, documentation consistency review, dependency audit, release notes. **No package-1.0 range widening**: M9 bumps no package, and every application's declared range is proved at both ends by the matrix instead ([ADR-0113](../adr/0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md), [Packaging Standards §4 and §7](../standards/packaging-and-release-standards.md)) | Every item in §7 checked |
 
 ---
 
@@ -208,22 +208,27 @@ Stabilization is scheduled work, not what happens if there is time left.
 
 **Packages**
 
-| Component | M1 | M2 | M3 | M4 | M5 | M6 | M8 | M9 |
-|---|---|---|---|---|---|---|---|---|
-| BaseAiCore | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.6 | 0.6 | **1.0** |
-| SetSpec | 0.2 | 0.2 | **0.3** (frozen) | 0.4 | 0.4 | 0.4 | 0.5 | **1.0** |
-| ModelRack | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | 0.7 | 0.7 | **1.0** |
-| SweatMeter | 0.3 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | **1.0** |
-| WeightsDB | — | — | — | **0.2** | 0.2 | 0.3 | 0.3 | **1.0** |
-| MirrorWall | — | — | — | **0.2** | 0.2 | 0.3 | 0.4 | **1.0** |
+| Component | M1 | M2 | M3 | M4 | M5 | M6 | M8 | M9 | M10–M13 | Today |
+|---|---|---|---|---|---|---|---|---|---|---|
+| BaseAiCore | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4.1–0.4.2 | **0.4.2** |
+| SetSpec | 0.2 | 0.2 | **0.3** (frozen) | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.5–0.6 | **0.6.0** |
+| ModelRack | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | 0.6 | 0.6 | 0.6 | 0.7 | **0.7.1** |
+| SweatMeter | 0.3 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | **0.4.0** |
+| WeightsDB | — | — | — | **0.2** | 0.2 | 0.2 | 0.2 | 0.2 | 0.2 | **0.2.1** |
+| MirrorWall | — | — | — | **0.2** | 0.2 | 0.2 | 0.2 | 0.2 | 0.2 | **0.2.2** |
+| CutCtx | — | — | — | — | — | — | — | — | **0.1** (M10) | **0.1.0** |
+| ToolYard | — | — | — | — | — | — | — | — | **0.1** (M10) | **0.1.1** |
+| LoadLedger | — | — | — | — | — | — | — | — | **0.1** (M10) | **0.2.0** |
+| Commissioner | — | — | — | — | — | — | — | — | **0.1** (M10) | **0.1.1** |
 
 **Applications**
 
-| Component | M2 | M3 | M4 | M5 | M6 | M8 | M9 |
-|---|---|---|---|---|---|---|---|
-| FreeWeight | **0.9-beta** | 1.0-rc | 1.0-rc | 1.0-rc | **1.0** | 1.0 | **1.0** |
-| LoadCoach | — | — | **0.9-beta** | **1.0** | 1.0 | 1.0 | **1.0** |
-| IdeaPress | — | — | — | — | — | **1.0** | **1.0** |
+| Component | M2 | M3 | M4 | M5 | M6 | M8 | M9 | M10–M13 | Today |
+|---|---|---|---|---|---|---|---|---|---|
+| FreeWeight | **0.9-beta** | 1.0-rc | 1.0-rc | 1.0-rc | **1.0** | 1.0 | 1.0 | 1.1 (LA3) | **1.1.0** |
+| LoadCoach | — | — | **0.9-beta** | **1.0** | 1.0 | 1.0 | 1.0 | 1.1 (M12, LA2) | **1.1.3** |
+| IdeaPress | — | — | — | — | — | **1.0** | 1.0 | 1.1–1.2 (LA2, M13) | **1.2.0** |
+| PromptCadence | — | — | — | — | — | — | — | **0.9-beta** (M11) → **1.0** (M12) → 1.2 | **1.2.0** |
 
 **FreeWeight is `0.9-beta` at M2**, not `0.1.0`. The trajectory used to start it at M3, which left
 the version of a feature-complete application undecided and understated ten delivered phases to
@@ -244,18 +249,30 @@ SetSpec's M3 column, `0.3 (frozen)`, also carries capability vocabulary **1.1** 
 which ships inside the same `0.3.0` release as Phase 4 rather than as a separate one — no version
 pin in any consuming `pyproject.toml` changes.
 
-**Corrected at M5 (2026-08-30), closing the discrepancy the M4 review recorded.** The table had
-BaseAiCore at 0.5 and ModelRack at 0.6 from M4, and MirrorWall at 0.3 at M5, with no phase in any
-of those packages' plans behind the bumps and no entry in the milestones' Content columns. The
-columns now say what the packages are — 0.4, 0.5 and 0.2 — through M5, and the bumps stay at M6,
-which is the first milestone whose content touches them. A version bump with no change behind it
-is exactly the fiction the FreeWeight note above argues against. SetSpec's M4 column reads 0.4 for
-the reason stated below.
+**Corrected at M5 (2026-08-30), and again at row L2 (2026-09-07).** The M5 correction removed
+bumps that had no phase behind them — BaseAiCore at 0.5 and ModelRack at 0.6 from M4, MirrorWall at
+0.3 at M5 — and deferred the rest to M6. The L2 correction finishes the job: the M6 and M8 columns
+had BaseAiCore reaching 0.6, ModelRack 0.7, WeightsDB 0.3 and MirrorWall 0.3 then 0.4, and none of
+those happened either. Those columns now record what each package actually was at each milestone,
+the four PromptCadence-arc packages have rows, and a **Today** column carries each repository's
+`__about__.py` so the forecast and the fact sit side by side. A version bump with no change behind
+it is exactly the fiction the FreeWeight note above argues against, and a forecast left standing
+after the fact is the same fiction told backwards. SetSpec's M4 column reads 0.4 for the reason
+stated below.
 
-Packages reach 1.0 only at M9, when all three applications have exercised them. Applications reach
-1.0 when their own acceptance criteria pass — an application at 1.0 depending on a `0.x` package is
-deliberate and honest, and the compatible-range pinning in
-[Packaging Standards](../standards/packaging-and-release-standards.md) makes it safe.
+**No package reaches 1.0 at M9** ([ADR-0113](../adr/0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md),
+2026-09-07, superseding this section's earlier "packages reach 1.0 only at M9, when all three
+applications have exercised them"). A package reaches 1.0 when its public surface has survived two
+consecutive minors with no breaking change **and** the cross-repository compatibility matrix
+([Packaging Standards §7](../standards/packaging-and-release-standards.md)) is green on both ends
+of every application's declared range for it. Each package earns that on its own schedule; there is
+no cohort bump, and no milestone confers it. Until then each application's `<0.x+1` ceiling is the
+contract, and widening one is a deliberate act with a lock recompile behind it.
+
+Applications reach 1.0 when their own acceptance criteria pass — an application at 1.0 depending on
+a `0.x` package is deliberate and honest, and the compatible-range pinning in
+[Packaging Standards](../standards/packaging-and-release-standards.md) makes it safe. That is the
+state the suite ships in today, on purpose: four `1.x` applications over ten `0.x` packages.
 
 ---
 

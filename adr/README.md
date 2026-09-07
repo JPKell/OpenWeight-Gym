@@ -135,6 +135,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0110](0110-the-pricing-file-reader-is-a-loadledger-surface.md) | The pricing-file reader is a LoadLedger surface, at ADR-0072's own second-consumer trigger | Accepted |
 | [0111](0111-the-container-rung-is-proved-on-docker-and-podman-is-not-an-exit-condition.md) | The container rung is proved on docker, and podman is not an exit condition | Accepted |
 | [0112](0112-the-usage-object-spells-unavailable-one-way-inside-api-v1.md) | The `usage` object spells "unavailable" one way, inside `/api/v1` | Accepted |
+| [0113](0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md) | Packages stay `0.x` at M9; a `1.0` is earned per package | Accepted |
 
 ## Writing a new ADR
 
@@ -599,3 +600,17 @@ take it, and a package of its own was declined for being a repository and a rele
 in its own configuration vocabulary. The proof is that both applications' pricing tests pass
 unchanged, plus a golden case in the package asserting the moved reader reproduces the exact
 `pricing_hash` values both loaders produced before adoption.
+
+**ADR-0113 was added on 2026-09-07** (row L2), out of the M9 audit's item O3 — the one item the
+audit named an architect's decision it could not make. `master-roadmap` §6 promised every original
+package a **1.0** in its M9 column; all ten packages sit at `0.x`, and closing the gap by bumping
+them would mean ten releases, four ceiling widenings and four lock recompiles in the same week the
+job that would prove any of it (the cross-repository compatibility matrix, row L6) still does not
+exist. The record keeps the packages at `0.x`, makes 1.0 a per-package thing earned by two
+breaking-change-free minors **and** a matrix green on both ends of every declared range, and
+restates M9's O3 as that matrix property rather than as ten version numbers. It is written as the
+**coordinator's recommendation on the operator's authority**, and says so in its Status: the
+operator may still overrule decision 1, in which case the record's criteria are what the bump has
+to satisfy or explicitly waive. Two facts corrected the audit's framing on the way: ToolYard has
+one in-suite consumer, not two, and SetSpec's frozen *payloads* are not its *package* surface —
+which is why the "bump only the frozen one" option loses.
