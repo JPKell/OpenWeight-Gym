@@ -70,7 +70,11 @@ two ordinary subjects and answer the overhead question **empirically on the depl
 hardware** — expected to be memory-only for registered-but-inactive adapters and low single-digit
 percent decode cost for an active adapter (rank-proportional), but the suite measures rather than
 believes. Adapter-enabled serving is the **configuration default** for llama.cpp tiers, overridable
-per runtime profile — config, not code.
+per runtime profile — config, not code. That A/B was run at row H4 on the reference machine
+(RTX 5060 Ti, `llama-server` b10792 CUDA) and measured the serving-mode overhead at **+0.9 %** —
+about 6 ms on a ~750 ms run, at the noise floor — so [ADR-0060](../adr/0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md)'s
+"material on reference hardware" trigger did not fire and **the default stands**
+([H4_HANDOFF.md](../history/H4_HANDOFF.md) §4).
 
 ## 4. The registry: a directory and a manifest (A-4)
 
