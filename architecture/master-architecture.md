@@ -245,7 +245,7 @@ Each row states what a component owns and — as importantly — what it must ne
 
 ## 4. Application internal architecture
 
-All three applications use the same internal shape. Web and CLI are two thin adapters over one
+All four applications use the same internal shape. Web and CLI are two thin adapters over one
 service layer — no business logic in either.
 
 ```mermaid
@@ -454,14 +454,17 @@ graph TD
     U["Browser / terminal"] --> FW["FreeWeight :8765"]
     U --> LC["LoadCoach :8766"]
     U --> IP["IdeaPress :8767"]
+    U --> PC["PromptCadence :8768"]
     IP -. optional .-> LC
     LC -. optional .-> FW
+    PC --> LC
     FW --> OL["Ollama :11434"]
     LC --> OL
     IP --> OL
     FW --> D1[("freeweight.sqlite3")]
     LC --> D2[("loadcoach.sqlite3")]
     IP --> D3[("ideapress.sqlite3")]
+    PC --> D4[("promptcadence.sqlite3")]
 ```
 
 ### 8.2 GPU host + client machines
@@ -504,8 +507,10 @@ LoadCoach reachable it starts, serves, reports degraded health and parks submitt
 a recorded reason, and it never executes around the outage
 ([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)). Its remote tiers
 additionally need LoadCoach's multi-provider registration
-([ADR-0055](../adr/0055-loadcoach-registers-providers-by-name-and-kind.md)); until that lands they
-refuse with `loadcoach_has_no_remote_provider`, which is specified behaviour rather than a defect.
+([ADR-0055](../adr/0055-loadcoach-registers-providers-by-name-and-kind.md)), which LoadCoach 1.1
+ships; against a LoadCoach that registers no remote provider they refuse with
+`loadcoach_has_no_remote_provider`, naming the unmet precondition, which is specified behaviour
+rather than a defect ([ADR-0098](../adr/0098-promptcadence-1-0-ships-with-remote-tiers-refusing-honestly.md)).
 
 ### 8.3 Headless / CI benchmarking
 

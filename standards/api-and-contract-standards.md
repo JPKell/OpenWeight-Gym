@@ -237,7 +237,7 @@ Rules:
 ## 8. Streaming
 
 Server-Sent Events, not WebSockets ([ADR-0004](../adr/0004-sse-vs-websockets.md)). One convention
-across all three applications.
+across all four applications.
 
 ```text
 GET /api/v1/runs/{run_id}/events        Accept: text/event-stream

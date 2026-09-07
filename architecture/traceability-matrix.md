@@ -49,11 +49,11 @@ resolved.
 | Hardware telemetry | **SweatMeter** | FreeWeight, LoadCoach, IdeaPress (optional) | Python API | [SweatMeter §7](../packages/sweatmeter/spec.md) |
 | Static machine profiling | **SweatMeter** | FreeWeight, LoadCoach | Python API | [SweatMeter §7](../packages/sweatmeter/spec.md) |
 | Energy estimation | **SweatMeter** (integration) / **FreeWeight** (metrics) | FreeWeight | Python API | [SweatMeter §7](../packages/sweatmeter/spec.md) · [Benchmark Catalog §3.14](../apps/freeweight/benchmark-catalog.md) |
-| Database engine, sessions, pragmas | **WeightsDB** | All three applications | Python API | [ADR-0005](../adr/0005-database-strategy.md) |
-| Migrations, backup, restore, DB health | **WeightsDB** | All three applications | Python API | [Database Standards](../standards/database-standards.md) |
-| Design tokens and UI components | **MirrorWall** | All three applications | Jinja macros + CSS/JS | [ADR-0020](../adr/0020-ui-rendering-strategy.md) |
-| JSON/error envelopes, request IDs | **MirrorWall** (helpers) / **SetSpec** (shapes) | All three applications | Python API + SetSpec | [API Standards §4](../standards/api-and-contract-standards.md) |
-| SSE transport with replay | **MirrorWall** | All three applications | HTTP v1 (SSE) | [MirrorWall §7](../packages/mirrorwall/spec.md) |
+| Database engine, sessions, pragmas | **WeightsDB** | All four applications | Python API | [ADR-0005](../adr/0005-database-strategy.md) |
+| Migrations, backup, restore, DB health | **WeightsDB** | All four applications | Python API | [Database Standards](../standards/database-standards.md) |
+| Design tokens and UI components | **MirrorWall** | All four applications | Jinja macros + CSS/JS | [ADR-0020](../adr/0020-ui-rendering-strategy.md) |
+| JSON/error envelopes, request IDs | **MirrorWall** (helpers) / **SetSpec** (shapes) | All four applications | Python API + SetSpec | [API Standards §4](../standards/api-and-contract-standards.md) |
+| SSE transport with replay | **MirrorWall** | All four applications | HTTP v1 (SSE) | [MirrorWall §7](../packages/mirrorwall/spec.md) |
 
 ## 3. Contract requirements
 
@@ -65,8 +65,8 @@ resolved.
 | Runtime profile resolution and served context | **LoadCoach** (for execution) / **FreeWeight** (for measurement) | Both | Recorded on every job and every run | [ADR-0023](../adr/0023-runtime-profile-resolution.md) |
 | Envelope boundaries (what carries `schema_version`) | **SetSpec** | All | SetSpec + OpenAPI | [ADR-0025](../adr/0025-envelope-boundaries.md) |
 | Per-device measurement and admission | **SweatMeter** (reports) / consumers (attribute) | FreeWeight, LoadCoach | Python API + `gpu_index` on every figure | [ADR-0027](../adr/0027-multi-gpu-semantics.md) |
-| Prompt record schema, rendering and hashing | **SetSpec** (`setspec.prompts`) | All three applications | Python API + `prompt.record` / `prompt.manifest` | [ADR-0028](../adr/0028-prompt-pack-granularity.md) |
-| `Host` validation, CSRF, outbound-fetch allowlist | **MirrorWall** (middleware) / **Standards** (policy) | All three applications | HTTP | [ADR-0026](../adr/0026-local-http-hardening.md) |
+| Prompt record schema, rendering and hashing | **SetSpec** (`setspec.prompts`) | All four applications | Python API + `prompt.record` / `prompt.manifest` | [ADR-0028](../adr/0028-prompt-pack-granularity.md) |
+| `Host` validation, CSRF, outbound-fetch allowlist | **MirrorWall** (middleware) / **Standards** (policy) | All four applications | HTTP | [ADR-0026](../adr/0026-local-http-hardening.md) |
 | Evidence bundle | **SetSpec** (shape) / **FreeWeight** (content) | LoadCoach | SetSpec `benchmark.evidence_bundle` | [FreeWeight API §6](../apps/freeweight/api.md) |
 | Event envelope | **SetSpec** | All | SetSpec `event.envelope` | [Observability §4.1](../standards/observability-standards.md) |
 | Egress decision payload | **SetSpec** (shape) / **Commissioner** (content) | PromptCadence, IdeaPress (M13) | SetSpec `governance.egress_decision` | [ADR-0051](../adr/0051-plans-stay-internal-and-one-payload-travels.md) · [ADR-0054](../adr/0054-commissioner-records-egress-it-does-not-enforce-it.md) |
@@ -112,17 +112,17 @@ resolved.
 
 | Requirement | Owner | Applies to | Contract | Specification |
 |---|---|---|---|---|
-| Configuration strategy and precedence | **Standards** (each app implements) | All three applications | Config | [Configuration Standards](../standards/configuration-standards.md) |
+| Configuration strategy and precedence | **Standards** (each app implements) | All four applications | Config | [Configuration Standards](../standards/configuration-standards.md) |
 | Prompt storage and versioning | **Standards** (each component implements) | FreeWeight, LoadCoach, IdeaPress | JSON records + package data | [ADR-0012](../adr/0012-prompt-storage-format.md) |
-| API conventions and versioning | **Standards** (each app implements) | All three applications | HTTP v1 | [ADR-0013](../adr/0013-api-versioning.md) |
-| Authentication and exposure | **Standards** (each app implements) | All three applications | HTTP v1 | [ADR-0014](../adr/0014-authentication-strategy.md) |
+| API conventions and versioning | **Standards** (each app implements) | All four applications | HTTP v1 | [ADR-0013](../adr/0013-api-versioning.md) |
+| Authentication and exposure | **Standards** (each app implements) | All four applications | HTTP v1 | [ADR-0014](../adr/0014-authentication-strategy.md) |
 | Security posture and trust boundaries | **Standards** | All | — | [Security Standards](../standards/security-standards.md) |
-| Structured logging, request IDs, events | **Standards** + **MirrorWall** helpers | All three applications | Log format + SetSpec | [Observability Standards](../standards/observability-standards.md) |
-| Health and status reporting | **Standards** + **MirrorWall** primitives | All three applications | HTTP v1 | [Graceful Degradation §3](graceful-degradation.md) |
+| Structured logging, request IDs, events | **Standards** + **MirrorWall** helpers | All four applications | Log format + SetSpec | [Observability Standards](../standards/observability-standards.md) |
+| Health and status reporting | **Standards** + **MirrorWall** primitives | All four applications | HTTP v1 | [Graceful Degradation §3](graceful-degradation.md) |
 | Graceful degradation behaviour | **Standards** (each component implements) | All | — | [Graceful Degradation](graceful-degradation.md) |
 | Performance budgets | **Standards** (each component measures) | All | Tests | [Performance Targets](performance-targets.md) |
 | Cross-platform isolation | **Standards** + **SweatMeter** interfaces | All | Python protocols | [Cross-Platform Standards](../standards/cross-platform-standards.md) |
-| Packaging, versioning, release | **Standards** | All nine repositories | — | [Packaging Standards](../standards/packaging-and-release-standards.md) |
+| Packaging, versioning, release | **Standards** | All fourteen repositories | — | [Packaging Standards](../standards/packaging-and-release-standards.md) |
 | Testing architecture | **Standards** | All | — | [Testing Standards](../standards/testing-standards.md) |
 | Quality targets | **Standards** | All | Measured gates | [Gold Standards](../standards/gold-standards.md) |
 

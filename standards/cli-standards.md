@@ -1,6 +1,6 @@
 # CLI Standards
 
-**Applies to:** `freeweight`, `loadcoach`, `ideapress`.
+**Applies to:** `freeweight`, `loadcoach`, `ideapress`, `promptcadence`.
 **Framework:** Typer (Click underneath) — typed signatures, generated help, shell completion.
 **Rule:** every CLI command calls the same service layer as the web UI. Command bodies parse input,
 call one service, render output. No business logic lives here.

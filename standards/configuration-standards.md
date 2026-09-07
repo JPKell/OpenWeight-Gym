@@ -1,6 +1,6 @@
 # Configuration Standards
 
-**Applies to:** all three applications. Shared packages take configuration as constructor
+**Applies to:** all four applications. Shared packages take configuration as constructor
 arguments and never read files or environment variables themselves.
 
 ---

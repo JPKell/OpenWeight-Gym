@@ -2,7 +2,7 @@
 
 **Status:** Normative. Violations are build failures, not style opinions.
 
-The suite's promise — three applications that each work alone and compose when combined — survives
+The suite's promise — four applications that each work alone and compose when combined — survives
 exactly as long as these rules do. This document states them, explains why each exists, and defines
 how each is checked.
 
@@ -15,7 +15,11 @@ Applications  →  Capability packages  →  Contract package  →  Domain found
 FreeWeight       ModelRack                SetSpec              BaseAiCore
 LoadCoach        SweatMeter
 IdeaPress        WeightsDB
-                 MirrorWall
+PromptCadence    MirrorWall
+                 CutCtx
+                 ToolYard
+                 LoadLedger
+                 Commissioner
 ```
 
 Every arrow points right. There are no arrows pointing left, and no arrows between siblings in the
@@ -31,25 +35,35 @@ capability layer.
 | `sweatmeter` | stdlib, `baseaicore` |
 | `weightsdb` | stdlib, `sqlalchemy`, `alembic`, `baseaicore` |
 | `mirrorwall` | stdlib, `fastapi`/`starlette`, `jinja2`, `baseaicore`, `setspec` |
-| `freeweight`, `loadcoach`, `ideapress` | any package above, plus their own declared dependencies |
+| `cutctx` | stdlib, `baseaicore` — and not even a clock, a filesystem or a database ([ADR-0052](../adr/0052-compaction-is-a-view-and-the-package-plans-it-only.md)) |
+| `toolyard` | stdlib, `jsonschema`, `httpx` (confined to `toolyard.tools.fetch`), `baseaicore` |
+| `loadledger` | stdlib, `baseaicore`, and `sqlalchemy` under the `[sql]` extra |
+| `commissioner` | stdlib, `baseaicore`, `setspec`, and `sqlalchemy` under the `[sql]` extra |
+| `freeweight`, `loadcoach`, `ideapress`, `promptcadence` | any package above, plus their own declared dependencies |
 
 `setspec` is permitted in `mirrorwall` solely for the event and error envelope models, which are
-cross-application payloads by definition.
+cross-application payloads by definition, and in `commissioner` for the same reason — it owns the
+Python form of `governance.egress_decision`
+([ADR-0051](../adr/0051-plans-stay-internal-and-one-payload-travels.md)).
+`promptcadence` imports neither `modelrack` nor `sweatmeter`: a harness with direct provider access
+would own a second, ungoverned egress path
+([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)).
 
 ### 1.2 Forbidden imports
 
 ```python
 # In any shared package — always wrong, including inside TYPE_CHECKING or a function body:
-from freeweight...   from loadcoach...   from ideapress...
+from freeweight...   from loadcoach...   from ideapress...   from promptcadence...
 
 # In any application — always wrong:
-from loadcoach...    # inside freeweight or ideapress
-from freeweight...   # inside loadcoach or ideapress
-from ideapress...    # inside freeweight or loadcoach
+from loadcoach...    # inside freeweight, ideapress or promptcadence
+from freeweight...   # inside loadcoach, ideapress or promptcadence
+from ideapress...    # inside freeweight, loadcoach or promptcadence
 
 # In a capability package — always wrong:
 from modelrack import ...     # inside sweatmeter
 from weightsdb import ...     # inside modelrack
+from toolyard import ...      # inside cutctx
 ```
 
 A shared package that "needs" an application type has been given application responsibility by
@@ -95,6 +109,7 @@ Every cross-application connection is optional and degrades explicitly:
 |---|---|
 | LoadCoach → FreeWeight evidence | Route on declared capabilities and production evidence; UI states "no benchmark evidence"; routing explanation records it |
 | IdeaPress → LoadCoach | Fall back to the configured direct backend, or fail the stage with `BACKEND_UNAVAILABLE` if the user pinned LoadCoach; never a startup failure |
+| PromptCadence → LoadCoach | The only path to a model PromptCadence has ([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)), and still not a startup dependency: it starts, serves, reports degraded health and parks submitted trajectories with a recorded reason, and never executes around the outage |
 | Any → provider (Ollama) | Health endpoint reports degraded; operations that need inference fail with `PROVIDER_UNAVAILABLE`; the rest of the app works |
 
 A cross-application dependency that is required to *start* is a design error.
@@ -130,7 +145,7 @@ Rules:
 ### 5.1 `import-linter` contracts (every repository, every CI run)
 
 Each repository ships `.importlinter`. Package repositories declare a forbidden contract against
-all three application names; application repositories declare their layer contract.
+all four application names; application repositories declare their layer contract.
 
 ```ini
 # py/ModelRack/.importlinter
@@ -144,6 +159,7 @@ source_modules = modelrack
 forbidden_modules = freeweight
                     loadcoach
                     ideapress
+                    promptcadence
 
 [importlinter:contract:no-sibling-packages]
 name = ModelRack must not import sibling capability packages
@@ -152,6 +168,10 @@ source_modules = modelrack
 forbidden_modules = sweatmeter
                     weightsdb
                     mirrorwall
+                    cutctx
+                    toolyard
+                    loadledger
+                    commissioner
 ```
 
 ```ini

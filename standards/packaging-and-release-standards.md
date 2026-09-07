@@ -264,7 +264,7 @@ statement to users, tested before every application 1.0:
 
 ## 8. Distribution names and public publishing
 
-* Publish to PyPI only what is genuinely reusable: the six shared packages, and the three
+* Publish to PyPI only what is genuinely reusable: the ten shared packages, and the four
   applications (so users can `pip install freeweight`).
 * Distribution names are claimed before first publish. If a name is taken, the documented fallback
   is `aisuite-<name>` with the import name unchanged; the choice is recorded in the repository's

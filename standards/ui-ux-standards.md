@@ -1,11 +1,11 @@
 # UI/UX Standards
 
-**Applies to:** the web interface of all three applications.
+**Applies to:** the web interface of all four applications.
 **Shared implementation:** [MirrorWall](../packages/mirrorwall/spec.md).
 **Rendering decision:** [ADR-0020](../adr/0020-ui-rendering-strategy.md) — server-rendered HTML with
 progressive enhancement; no npm, no bundler, no SPA framework.
 
-The three applications should feel like one product family without pretending their information
+The four applications should feel like one product family without pretending their information
 architectures are the same. Shared: tokens, components, interaction rules, accessibility, the
 telemetry bar, the shell. Not shared: pages, navigation, terminology, data density decisions.
 
@@ -180,7 +180,7 @@ Rules:
 * State is expressed with `data-` attributes (`data-variant="primary"`, `data-status="running"`),
   not with utility-class sprawl.
 
-### 4.1 Status vocabulary (identical across all three applications)
+### 4.1 Status vocabulary (identical across all four applications)
 
 | Status | Colour token | Applies to |
 |---|---|---|

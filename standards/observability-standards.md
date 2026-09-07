@@ -1,6 +1,6 @@
 # Observability Standards
 
-**Applies to:** all three applications; shared helpers live in MirrorWall (request IDs, envelopes)
+**Applies to:** all four applications; shared helpers live in MirrorWall (request IDs, envelopes)
 and in each application's `observability/` module.
 **Principle:** an operator must be able to answer "what happened, to what, when, and why" from the
 logs and the database alone — without reproducing the problem.

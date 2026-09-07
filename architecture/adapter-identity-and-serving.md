@@ -1,10 +1,14 @@
 # Adapter Identity and Serving — Hot-Swappable LoRA in the Suite
 
-**Status:** Designed 2026-09-01, not implemented. The decisions here are scheduled as ADRs A-1…A-10
-in the [adapter roadmap §2](../roadmap/adapter-roadmap.md) and amend
+**Status:** Designed 2026-09-01; **built and shipped** through checkpoints LA0–LA3, 2026-09-03 to
+2026-09-06. The decisions here were accepted as ADRs 0058–0067 (the A-1…A-10 of the
+[adapter roadmap §2](../roadmap/adapter-roadmap.md)) and amend
 [ADR-0008](../adr/0008-canonical-model-identity.md),
 [ADR-0023](../adr/0023-runtime-profile-resolution.md) and
-[ADR-0024](../adr/0024-canonical-id-and-model-references.md) without reversing any of them.
+[ADR-0024](../adr/0024-canonical-id-and-model-references.md) without reversing any of them; ADRs
+0071, 0074 and most of 0078–0089 close the questions the build raised. The serving path is
+`modelrack 0.7.1`'s `LlamaCppProvider`; selection, pins and the registry are LoadCoach 1.1; adapter
+evidence is FreeWeight 1.1.
 **Audience:** every component — this is a cross-cutting identity and serving design, like
 [Canonical Model Identity](canonical-model-identity.md), which it extends.
 

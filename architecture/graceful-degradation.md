@@ -24,7 +24,13 @@ Choosing between them is a design decision made per case in the table below — 
 ## 2. Degradation matrix
 
 `E` = error, `D` = degraded, `U` = unsupported, `Q` = queued. Every row names the user-visible
-signal and the code path that must exist.
+signal and the code path that must exist. PromptCadence has no column of its own because it reaches
+no provider and no machine directly: every row below reaches it through LoadCoach, and its own
+degradation — LoadCoach unreachable, a tier's task profile missing, a budget window exhausted, an
+egress target denied — is specified in [its spec §13](../apps/promptcadence/spec.md) and
+[lifecycle](../apps/promptcadence/lifecycle.md). With LoadCoach down it starts, serves, reports
+degraded health and parks submitted trajectories with a recorded reason
+([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)).
 
 | Condition | FreeWeight | LoadCoach | IdeaPress | Signal |
 |---|---|---|---|---|
