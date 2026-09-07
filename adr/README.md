@@ -126,6 +126,11 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0101](0101-a-runtime-setting-need-not-be-a-configuration-key.md) | A runtime setting need not be a configuration key, and the ones that are not say so | Accepted |
 | [0102](0102-freeweights-settings-body-gains-the-suites-shape.md) | FreeWeight's settings body gains the suite's shape, and `items` is deprecated | Accepted |
 | [0104](0104-an-adopted-reductions-seam-and-error-vocabulary-survive-it.md) | An adopted reduction's seam and error vocabulary survive it | Accepted |
+| [0105](0105-a-shipped-usage-object-keeps-null-until-api-v2.md) | A shipped `usage` object keeps `null` on two of its five classes until `/api/v2` | Accepted |
+| [0106](0106-the-provider-protocol-carries-the-adapter-inventory.md) | The `Provider` protocol carries the adapter inventory, and the `lora` field carries the complete set | Accepted |
+| [0107](0107-two-loadcoach-clients-are-not-yet-one-package.md) | The second LoadCoach consumer arrived; the client package is still declined | Accepted |
+| [0108](0108-the-snapshot-contracts-the-surface-and-goldens-contract-the-bodies.md) | The OpenAPI snapshot contracts the surface; captured goldens contract the bodies | Accepted |
+| [0109](0109-a-stored-row-this-build-cannot-read-serves-configuration.md) | A stored settings row this build cannot read serves configuration, and the changeable set is an enumeration | Accepted |
 
 ## Writing a new ADR
 
@@ -479,3 +484,70 @@ let through, so a shared package's adoption does not silently change a caller's 
 contract. `_rank_of` and `_priority_key` survive the adoption in a narrower role — positioning
 sections for CutCtx's policy to decide, then re-presenting what it decided — which the ADR records
 so a reader does not mistake "the decision code goes" for "the function goes".
+
+**ADRs 0105 to 0109 were added on 2026-09-07**, out of an audit of the whole set rather than out of
+a build. Its finding was one failure repeated: a decision that was taken, argued and confirmed by
+the operator, and then left out of the ADR set because the row that found it was scoped to
+something else. Three of the five therefore write down an answer that already exists in the tree;
+two settle a question the tree answers three different ways.
+
+**ADR-0105** is the small record row C6's handoff asked for and no row owned. LoadCoach's `usage`
+object renders `"unsupported"` on `cache_write_tokens`, `cache_read_tokens` and `thinking_tokens`
+and `null` on `input_tokens` and `output_tokens`, in one object, for the same condition — and
+[ADR-0016](0016-unavailable-is-not-zero.md) rule 4 forbids the second spelling in as many words.
+The two older fields shipped in `loadcoach 1.0.0`, so changing their type is exactly what
+[ADR-0013](0013-api-versioning.md) makes a major change; the divergence therefore stands, is named,
+and ends at `/api/v2` where all five use one spelling. What the record adds beyond the exemption is
+the consumer's rule — `null` on those two keys is *unavailable*, never zero — and a sentence
+placing [ADR-0070](0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md)'s
+carve-out beside it, so a reader who arrives at ADR-0016 through its header can learn from the
+records alone when a zero is legitimate.
+
+**ADR-0106** writes down two readings the operator confirmed on 2026-09-04 and explicitly declined
+to have amended into their records at the time. The `Provider` protocol gained `list_adapters()`
+and `register_adapters()`, against [ADR-0062](0062-llamacpp-serves-adapters-through-a-supervised-process.md)
+decision 1's "the `Provider` protocol does not change", because the alternative is LoadCoach
+`isinstance`-checking `LlamaCppProvider` wherever an adapter row is rendered or a rescan folded in —
+importing a concrete adapter into the application the protocol exists to keep provider-agnostic.
+Decision 1 is narrowed to the load/unload seam it was actually about, where it remains true and no
+lifecycle method was added. And [ADR-0063](0063-one-adapter-at-a-time.md) rules 1–2 are read as
+governing *enabled* entries: the wire sends every registered adapter, the selected one at `1.0` and
+the rest explicitly at `0.0`, because `b10792`'s llama-server restores the launch-time set for a
+request that names none — so an absent field would run the bare base under *every* adapter. At most
+one is ever enabled, at exactly `1.0`, and a server with no adapters registered still sends no
+`lora` key.
+
+**ADR-0107** answers a trigger that fired and was never called. [ADR-0011](0011-shared-package-boundaries.md)
+promised `LoadCoachClient` the moment a second consumer of LoadCoach's API appeared outside
+IdeaPress, and [ADR-0045](0045-promptcadence-reaches-models-only-through-loadcoach.md) created one
+deliberately; the record still describes IdeaPress's adapter as "~200 lines" against a tree holding
+1 422 and 1 291. Extraction is **declined** anyway, for a reason the original rejection could not
+have anticipated: the two clients diverge in what they bind — stage bindings, adapter pins and a
+degradation vocabulary on one side, turn provenance, a strict parser and an error map on the other
+— neither is thin, and the package would be a third API surface to version between two applications
+that already track LoadCoach's directly. The new trigger is a third consumer, or the day LoadCoach's
+OpenAPI document carries typed response bodies.
+
+**ADR-0108** closes the one cross-cutting promise the standards make and the code does not keep. G6
+says "API bodies contracted by the committed OpenAPI snapshot"; testing standards §8.4 describes
+package-data snapshots, an `api_snapshot()` accessor and a schema-driven mock. None of it exists,
+and none of it could work: LoadCoach's committed document describes no body at all for 32 of its 49
+JSON responses, so a mock validated against it agrees with anything — which IdeaPress discovered
+through three M8 defects and wrote up in a test docstring. The snapshot contracts the **surface**
+(paths, methods, parameters, closed request schemas, status codes) at `docs/openapi.json`, compared
+byte for byte; response **bodies** are contracted by goldens captured from a running producer plus
+each consumer's contract tests. The three standards were corrected in the same commit. IdeaPress
+commits no snapshot at all and owes one; a scheduled row carries it.
+
+**ADR-0109** settles the two behavioural questions row I8/I9 recorded as findings. A stored
+settings row this build cannot read is *a row this build cannot read*: the application serves the
+configured value, reports the row and the reason on the settings surface, logs it once, keeps the
+row, and never refuses to start — because a tuning number written by an older build must not stop a
+process from serving, and a clamped or deleted row is indistinguishable from one somebody chose.
+And the runtime-changeable set is an explicit enumeration: a key absent from the registry is
+config-only, so a security-relevant setting nobody remembered to forbid falls closed, with the
+named `FORBIDDEN` refusals a diagnostic layer above that fence rather than the fence itself. All
+three applications already implement the enumeration; the log-once clause is met by FreeWeight
+alone, and the surface-reporting clause by none — LoadCoach and PromptCadence render
+`source: "database"` for a row whose value never took effect, which the record names as owed work
+rather than describing as done.
