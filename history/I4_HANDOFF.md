@@ -5,8 +5,14 @@
 **Date:** 2026-09-06.
 **Repository:** `/home/jpk/ai/suite/PromptCadence` only. LoadCoach was read and never written; it
 ends this row exactly where it started, at `2a7ac58`, clean.
-**Ships:** `promptcadence 1.0.1` **prepared, not published** — four commits on `main`, ahead of
-`origin/main` by four, untagged. The push, the tag and the publish are the operator's.
+**Ships:** `promptcadence 1.0.1` **not yet cut.** Five commits sit on `main`, ahead of
+`origin/main` by five; the release commit is deliberately *not* among them. An operator interview
+at the end of this row (§9) took all three of its open questions off their defaults, and one of the
+three — resolving the private `toolyard._safe` import by making the name public — puts a ToolYard
+publish between this work and the version bump. `toolyard 0.1.1` is prepared in
+`/home/jpk/ai/suite/py/ToolYard` (two commits, unpushed). Once it is on PyPI, `requirements/ci.lock`
+regenerates and 1.0.1 is cut; until then the lock pins `toolyard==0.1.0` while `pyproject.toml`
+requires `>=0.1.1`, so **CI is expected red**. §10 is the exact sequence.
 
 **Interpreter, named once for the whole report (M5C-13):**
 `/home/jpk/ai/suite/PromptCadence/.venv/bin/python`, **CPython 3.13.15**. Every invocation below
@@ -95,7 +101,9 @@ FAILED tests/integration/test_tool_execution.py::test_the_started_events_digest_
 
 and with the fix in place it passes. A test that would pass either way would have pinned nothing.
 
-### Gate D — the release commit
+### Gate D — the release commit, cut and then withdrawn
+
+Gate D was completed as the kickoff specified and the release commit `0ec2c36` was made:
 
 ```bash
 .venv/bin/python -c 'from tests.contract.test_openapi_snapshot import write; write()'
@@ -111,17 +119,74 @@ git diff docs/openapi.json    # -    "version": "1.0.0"  /  +    "version": "1.0
 # Required test coverage of 85.0% reached. Total coverage: 91.51%
 ```
 
+It was then **withdrawn** — `git reset --soft HEAD~1` followed by a full restore of its three
+files — because the operator interview (§9) added work that must land *before* a version bump, and
+a release commit is worth nothing if it is not last. The regenerated `docs/openapi.json` and the
+`__about__.py` bump were reverted with it, so the tree is back to `1.0.0` and Gate D will be redone
+in full once §10 step 2 completes. Everything above is a rehearsal that passed; nothing about it is
+in doubt except its timing.
+
+### Gate E — the flaky test (interview decision 1)
+
+```bash
+.venv/bin/python -m pytest -q --randomly-seed=4198236421   # the seed that failed: 1199 passed
+for i in $(seq 1 10); do .venv/bin/python -m pytest -q; done   # 10 / 10 green
+```
+
+Ten consecutive full-suite runs plus the previously failing seed, against a prior rate of roughly
+one failure in five. See §8 for the diagnosis, which is not the one this row first reached.
+
+### Gate F — the public `json_sanitize` (interview decision 2)
+
+In `/home/jpk/ai/suite/py/ToolYard`, against its own venv:
+
+```bash
+.venv/bin/ruff check . && .venv/bin/ruff format --check .
+.venv/bin/mypy src tests                 # Success: no issues found in 36 source files
+.venv/bin/lint-imports                   # Contracts: 7 kept, 0 broken.
+.venv/bin/python -m pytest -q -m "not live and not performance"
+# 748 passed, 2 skipped, 4 deselected in 40.04s
+```
+
+No new ToolYard test was needed: `tests/unit/test_boundaries.py:220` already walks `__all__` and
+asserts every name in it resolves, so the export is covered the moment it is listed.
+
+Back in PromptCadence, verified against a locally built `toolyard-0.1.1-py3-none-any.whl`:
+
+```bash
+.venv/bin/pip install --no-deps --force-reinstall .../toolyard-0.1.1-py3-none-any.whl
+.venv/bin/python -c "from toolyard import json_sanitize"      # public import ok
+.venv/bin/ruff check . && .venv/bin/mypy src tests && .venv/bin/lint-imports
+.venv/bin/python -m pytest -q            # 1199 passed, 2 skipped, 10 deselected
+```
+
+**The venv now holds a locally built `toolyard 0.1.1` that is not on any index.** That is
+deliberate — it is how the import was proved before the publish — but it means this workstation's
+venv cannot be reproduced from `ci.lock` until step 2 of §10 is done.
+
 ## 2. The gates as commits
 
+PromptCadence (`main`, ahead of `origin/main` by five, **no release commit**):
+
 ```
-0ec2c36 chore(release): promptcadence 1.0.1
+dcade58 fix(events): take json_sanitize from toolyard's public surface
+16beb22 test(conftest): restore the root logger between tests
 b96d2d8 fix(events): tool.call.started digests the arguments the record digests
 9b5fb44 fix(explanation): a turn that completed with no text says so
 6356f73 test(contract): the vendored LoadCoach snapshots are 1.1.1's
 ```
 
+ToolYard (`main`, ahead of `origin/main` by two):
+
+```
+338f9c7 chore(release): toolyard 0.1.1
+1e14788 feat(api): export json_sanitize from the package root
+```
+
 Gate B's commit is a `fix(...)` rather than the kickoff's `docs(changelog): …` because the
-explanation-surface check found a real one-line render to take (§3, decision 1).
+explanation-surface check found a real one-line render to take (§3, decision 1). The last two
+PromptCadence commits and both ToolYard commits are the interview's (§9); everything before them
+is the row as written.
 
 ## 3. The two decisions, with the reason and what the losing option would have claimed
 
@@ -224,12 +289,14 @@ one with parsed arguments (the case that disagreed) and one whose fragment is no
 case that already agreed and must keep agreeing) — and asserts `event["args_sha256"] ==
 record.args_sha256` for each.
 
-**One thing to flag rather than hide.** The fix imports `json_sanitize` from `toolyard._safe`, a
-private module. It is in that module's `__all__`, and the import carries a comment saying why:
-the two digests have to agree byte for byte, so borrowing ToolYard's function is safer than
-reimplementing a hardening routine that must produce identical output. `lint-imports` is content
-(5 contracts kept). The clean resolution is for ToolYard to re-export `json_sanitize` at package
-level, which is a ToolYard change and therefore not this row's — see §6.
+**The private import, raised and then resolved.** The fix first imported `json_sanitize` from
+`toolyard._safe`, a private module — in that module's `__all__`, and with a comment saying why
+borrowing beat reimplementing, but private all the same. It was put to the operator (§9) with
+three options, and the operator chose to make the name public: `toolyard 0.1.1` exports
+`json_sanitize` from the package root, PromptCadence imports it from there, and the floor moves to
+`toolyard>=0.1.1`. ToolYard's own docstring now records *why* one function from a private module is
+public, so the next reader does not quietly un-export it. The cost is that 1.0.1 waits on a
+ToolYard publish (§10).
 
 ## 4. Exit conditions (kickoff §9)
 
@@ -243,11 +310,14 @@ level, which is a ToolYard change and therefore not this row's — see §6.
 4. **The pairing assertion exists** and was proved to fail without the fix (§1, Gate C). ✔
 5. **F2's decision is in the changelog** (under *Known limitations*, with the reason) **and in
    this handoff** (§3). ✔
-6. **`docs/openapi.json` differs from `b4b67ac`'s by `info.version` only** —
-   `git diff v1.0.0..HEAD -- docs/openapi.json` is two lines. ✔
-7. **`git log --oneline v1.0.0..HEAD`** shows the four gate commits ending in the release commit;
-   `git status -sb` is clean in both repositories (PromptCadence `ahead 4`, LoadCoach level); the
-   three mirrors are still `cmp`-identical. ✔
+6. **`docs/openapi.json` differs from `b4b67ac`'s by `info.version` only** — demonstrated at
+   Gate D (`git diff docs/openapi.json` was exactly that one line) and then reverted with the rest
+   of the release commit, so it re-applies at §10 step 3. ✔ *as measured, pending as committed.*
+7. **`git log --oneline v1.0.0..HEAD`** shows the gate commits — five of them, not four, and
+   **not** ending in a release commit, which is §9's doing and is deliberate. `git status -sb` is
+   clean in every repository touched (PromptCadence `ahead 5`, ToolYard `ahead 2`, LoadCoach
+   level and unmodified); the three mirrors are still `cmp`-identical. ✔ *with the release commit
+   held.*
 
 ## 5. Things this prompt said that turned out not to be true
 
@@ -291,36 +361,22 @@ level, which is a ToolYard change and therefore not this row's — see §6.
 
 ## 6. What I5 inherits
 
-1. **A pre-existing flaky test, shipped in 1.0.0, not caused by this row.**
-   `tests/e2e/test_explanation_surfaces.py::test_the_cli_prints_the_document_with_json` fails
-   roughly once in four full-suite runs, and passes every time in isolation. The cause is a
-   time-of-check/time-of-use race in `_closed_port()` (`tests/e2e/test_explanation_surfaces.py:46`):
-   it binds an ephemeral port, reads the number, closes the socket, and then assumes nothing else
-   binds it before the CLI probes it — so the CLI intermittently finds a *live* listener where the
-   test wanted "either"-mode to fall through to its local path. **This was verified against
-   `v1.0.0` in a scratch worktree, not assumed:** nine full-suite runs at `b4b67ac` produced the
-   same failure, the same test, at the same rate. It is untouched by I4 (`_closed_port` last moved
-   at `63c6014`, before 1.0.0, and no file this row edited is reachable from it). Left alone
-   deliberately — a patch release should not widen into test infrastructure — but it should be
-   fixed, and the fix is to force the local path explicitly rather than to guess an unused port.
-2. **`toolyard._safe.json_sanitize` should be re-exported from `toolyard`.** PromptCadence now
-   imports it privately, out of necessity (§3). A one-line addition to ToolYard's `__init__` would
-   make the import public; it is a ToolYard change and would ride ToolYard's next release.
-3. **`upgrading.md`'s compatibility line is now understated.** It says *"PromptCadence 1.0.0 is
-   tested against LoadCoach `1.1.0`"*; the contract tests now vendor `1.1.1`. The requirement
-   (`≥ 1.1`) is unchanged and no migration exists, so §7 below says 1.0.1 needs no *Migration
-   notes* row — but that one sentence wants updating, and doing it here would have put a doc commit
-   after the release commit. Left for I5, which touches this document anyway.
-4. Nothing else. No route, no `[server]`/`[tools]` key, no pin, no dependency and no LoadCoach file
-   was touched, and nothing that looked like I5's (runtime-settings endpoints) or I6's (thinking
-   control) work was started.
+**Nothing that this row found.** All three items I5 would have inherited were raised at the
+interview (§9) and the operator took every one of them off its default, so all three are done here
+rather than deferred. What remains is not inheritance, it is a publish sequence — §10.
+
+The one standing caution for I5: it ships `1.1.0` **on top of** `1.0.1`, and `1.0.1` is not cut
+yet. Do not start I5 until §10 has run to completion, or the version edge stated in
+`roadmap/outstanding-work.md` §3 breaks and 1.0.1 becomes a maintenance branch off `v1.0.0`.
 
 ## 7. §12's read-only items, answered
 
 1. **Does `upgrading.md` need a 1.0.1 line?** For *Migration notes*, **no** — 1.0.1 adds no
    migration, changes no schema and changes no stored value, so the table's contract ("which
-   revisions this version introduces") has nothing to record. The *Compatibility* sentence is a
-   separate matter; see §6 item 3.
+   revisions this version introduces") has nothing to record. The *Compatibility* sentence was a
+   separate matter and the operator chose to fix it here (§9): it now names LoadCoach `1.1.1`, says
+   the `≥ 1.1` requirement did not move, and records the one dependency floor that did
+   (`toolyard`).
 2. **Is the golden's `args_sha256` the event's or the record's?** The event's, three times, and
    all three are masked to `"<sha>"`. Gate C had to find out. See §5 item 5.
 3. **Does `adapters.measured` mean anything to a PromptCadence tier?** No. `grep` over `src/` and
@@ -331,23 +387,107 @@ level, which is a ToolYard change and therefore not this row's — see §6.
    It is LoadCoach's H5/LA3 profile for selecting among a base and its measured adapter subjects —
    FreeWeight evidence territory, not harness territory.
 
-## 8. Left for the operator
+## 8. The flaky test, and a first diagnosis that was wrong
 
-Four commits sit on `main` in `/home/jpk/ai/suite/PromptCadence`, ahead of `origin/main` by four,
-**unpushed and untagged** (standing instruction of 2026-09-04 — no push was run, and no push
-dry-run either):
+Worth recording in full, because the first answer was confident and false.
+
+`tests/e2e/test_explanation_surfaces.py::test_the_cli_prints_the_document_with_json` failed about
+one full-suite run in five and passed every time in isolation. It was **verified pre-existing**
+before anything was changed: nine full-suite runs at `v1.0.0` in a scratch worktree reproduced the
+same test at the same rate, so it shipped in 1.0.0 and is not this row's doing.
+
+**The wrong diagnosis.** `_closed_port()` binds an ephemeral port, reads the number, closes the
+socket and assumes nothing claims it before the CLI probes it — a textbook time-of-check /
+time-of-use race, in a helper duplicated across two test files. It looked like the answer. It was
+replaced with the discard port (`9`) that `tests/e2e/test_bypass_journey.py:282` already used —
+privileged, outside the ephemeral range, unassignable — and the flake **carried on failing**. Had
+the fix been committed on the strength of the reasoning without re-running the suite twenty times,
+the row would have shipped a confident non-fix and closed the finding.
+
+**The actual cause**, from the captured failure:
 
 ```
-0ec2c36 chore(release): promptcadence 1.0.1
-b96d2d8 fix(events): tool.call.started digests the arguments the record digests
-9b5fb44 fix(explanation): a turn that completed with no text says so
-6356f73 test(contract): the vendored LoadCoach snapshots are 1.1.1's
+assert json.loads(result.output)["schema"] == SCHEMA_NAME
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+s = '--- Logging error ---\nTraceback ...\nValueError: I/O operation on closed file.\n
+     ... Message: \'Will assume %s DDL.\' Arguments: (\'non-transactional\',)'
 ```
 
-1. `git push origin main` from `PromptCadence`, and confirm CI green.
-2. `git tag -a v1.0.1` and push the tag.
-3. Publish `promptcadence 1.0.1` to PyPI.
-4. `git push` the `docs` repository, which is ahead by four including this handoff.
+`configure_logging` installs `logging.StreamHandler(sys.stderr)`, which binds the stream object
+*at call time* — as the standard library's own handler does. Under Click's `CliRunner` that object
+is a temporary buffer, closed when the invocation ends; the handler survives on the root logger,
+which is process-global and which no test owns. Later, another test's `TestClient` starts an
+application on an anyio portal thread, the application runs its migrations, Alembic logs *"Will
+assume non-transactional DDL"* — and that record writes to the closed buffer, raises, and
+`logging` reports the failure to whatever `sys.stderr` is current. Which is the *next* CLI
+invocation's captured output. The JSON document the command printed is then no longer the only
+thing in `result.output`.
 
-Two things the operator may want to decide before tagging are raised in §6: the flaky e2e test
-(inherited, pre-1.0.0) and the private `toolyard._safe` import.
+So it is cross-test contamination through global logging state, not a port race at all, and it can
+strike any test that parses a CLI invocation's output — the ledger surfaces are equally exposed.
+The fix is an autouse fixture in `tests/conftest.py` that saves the root logger's handlers and
+level and restores them afterwards. Test-only; no shipped behaviour changes.
+
+**Why not fix it in `configure_logging` instead.** Making the handler resolve `sys.stderr` per
+record (the standard library's own `_StderrHandler` idiom) would stop the stale-stream exception —
+and would make things worse here, because every background log line would then land in the current
+`CliRunner` buffer and pollute the output directly rather than occasionally. The production
+handler is not the defect; the tests never restoring what they configured is.
+
+**Proof:** the failing seed `4198236421` now passes, and ten consecutive full-suite runs are green
+(§1, Gate E).
+
+The `_closed_port` → discard-port change was kept even though it was not the cause. It removes a
+duplicated helper and twelve lines, closes a real if much narrower race, and matches an idiom
+already in the repository — but it fixed nothing, and this handoff says so rather than letting the
+commit imply otherwise.
+
+## 9. The operator interview, and what it changed
+
+Three questions were put at the end of the row. All three had a default; the operator declined
+every default. That roughly doubled the row and moved the release behind another package's
+publish, which is stated here so the size of I4 is not mistaken for scope creep.
+
+| Question | Default offered | Chosen | Consequence |
+| --- | --- | --- | --- |
+| The pre-existing e2e flake | leave for I5 | **fix now, in 1.0.1** | Gate E; and the first diagnosis turned out wrong (§8) |
+| The private `toolyard._safe` import | ship as-is, re-export later | **bump ToolYard first** | Gate F; `toolyard 0.1.1` prepared; 1.0.1 now waits on a publish |
+| `upgrading.md`'s stale LoadCoach line | leave for I5 | **update now** | folded into `dcade58`, together with the `toolyard` floor |
+
+The second is the one with teeth. `pyproject.toml` now requires `toolyard>=0.1.1`; PyPI has only
+`0.1.0`; `requirements/ci.lock` still pins `0.1.0` with hashes and **cannot be regenerated until
+`0.1.1` is published**, because the lock is generated with `--generate-hashes` and hashes require
+the artefact on an index. So PromptCadence CI is expected red on these five commits, and the
+release commit is held. This was the stated cost of the choice, not a surprise.
+
+## 10. Left for the operator — a sequence, in this order
+
+The order matters; steps 2 and 3 cannot be swapped.
+
+**1. Publish ToolYard.** In `/home/jpk/ai/suite/py/ToolYard`, two commits ahead of `origin/main`,
+unpushed and untagged (no push was run, and no push dry-run — standing instruction of 2026-09-04):
+
+```
+338f9c7 chore(release): toolyard 0.1.1
+1e14788 feat(api): export json_sanitize from the package root
+```
+
+Push, confirm CI green, tag `v0.1.1`, publish `toolyard 0.1.1` to PyPI.
+
+**2. Regenerate PromptCadence's lock**, once `toolyard 0.1.1` resolves from PyPI —
+`requirements/README.md:41` holds the invocation, and from I3: `pip-compile` needs
+`--upgrade-package toolyard` to move a single pin. Then reinstall the venv from the lock, which
+also replaces the locally built wheel this row installed (§1, Gate F).
+
+**3. Cut `promptcadence 1.0.1`** — redo Gate D exactly as §1 records it: move `[Unreleased]` to
+`## [1.0.1]`, `__about__.py` to `1.0.1`, regenerate `docs/openapi.json` (the diff is the one
+`info.version` line), run the full gate and `pytest --cov`, commit `chore(release): promptcadence
+1.0.1`. Then push, tag `v1.0.1`, publish.
+
+**4. Push `docs`**, which is ahead by five including this handoff.
+
+Two things to know while doing it. PromptCadence CI will be **red between steps 1 and 2** and that
+is expected, not a regression — the lock installs `toolyard 0.1.0` and the loop imports a name
+`0.1.1` introduced. And `loadcoach 1.1.1` is still untagged with PyPI holding `1.0.0`; that does
+not block anything here, since the contract snapshots vendor files at a commit, but it is the same
+publish backlog.
