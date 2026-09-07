@@ -1,10 +1,11 @@
 # I5 — PromptCadence 1.1.0, runtime settings
 
 **Row:** I5 (Opus 5 · high) of [`roadmap/outstanding-work.md`](../roadmap/outstanding-work.md) §1.
-**Ships:** `promptcadence 1.1.0`, prepared on `main` at `1af331e`, **untagged and unpushed**.
-**Repositories touched:** `PromptCadence` (7 commits) and `docs` (2 commits). Nothing else.
-**Date:** 2026-09-06. Ran attended; no interview was needed — every judgement call below took the
-conservative option, as the kickoff's overnight clause asked.
+**Ships:** `promptcadence 1.1.0`, prepared on `main` at `a1ffdf4`, **untagged and unpushed**.
+**Repositories touched:** `PromptCadence` (8 commits) and `docs` (4 commits). Nothing else.
+**Date:** 2026-09-06, with the post-build interview on 2026-09-07. Every judgement call took the
+conservative option first, as the kickoff's overnight clause asked; §8 records the four the
+operator then reviewed, one of which changed the build.
 
 ---
 
@@ -19,7 +20,7 @@ One interpreter throughout: **`/home/jpk/ai/suite/PromptCadence/.venv/bin/python
 .venv/bin/mypy src tests               # Success: no issues found in 177 source files
 .venv/bin/lint-imports                 # Contracts: 5 kept, 0 broken
 .venv/bin/python -m pytest -m "not live and not performance" -q
-                                       # 1261 passed, 2 skipped, 10 deselected in 82.99s
+                                       # 1261 passed, 2 skipped, 10 deselected in 81.90s
 .venv/bin/python -m pytest --cov --cov-report=term-missing -q
                                        # Required test coverage of 85.0% reached.
                                        # Total coverage: 91.66%
@@ -53,7 +54,8 @@ registry assertion in `tests/unit/test_config_reference.py`.
 | D | `f8f72ee` | `feat(console): a Settings page that says what cannot change here too` — the page, the nav entry, the template, the form parser |
 | E | `9324016` | `feat(cli): config show marks database-sourced values` |
 | F | `9f9a8ec` (PromptCadence) + `13dac8e` (docs) | The spec, the plan, ADR-0100, the generated reference's column, and the three repo-local documents |
-| G | `1af331e` | `chore(release): promptcadence 1.1.0` |
+| — | `1b02560` | `feat(settings): widen the turn caps and describe max_turns_per_step` — the interview's one build change (§8) |
+| G | `a1ffdf4` | `chore(release): promptcadence 1.1.0` |
 
 `docs` also carries `de81d47`, the kickoff prompt.
 
@@ -75,12 +77,13 @@ own, because that is the half a reviewer reads first:
   fires and nothing else; there is no security surface, and a tier's own
   `context_budget_tokens` (which decides how much data a turn may carry) is config-only.
 * **`execution.step_retries`** — read per step attempt, inside ADR-0076's envelope, and bounded
-  0–10 here. A retry is a repeat of the same intent revision, so raising it cannot widen what a
-  step is allowed to do; it can only spend more attempts inside a governance envelope that has
-  already been minted.
-* **`execution.max_turns_per_step`** — read per turn, bounded 1–64. The same argument, plus: the
-  trajectory's own `max_turns`/`max_steps` and the budget ceilings still bind, so this key cannot
-  buy a trajectory more than the ceilings allow, only more round trips inside them.
+  0–25 here (0–10 as first built; widened at the interview, §8). A retry is a repeat of the same
+  intent revision, so raising it cannot widen what a step is allowed to do; it can only spend more
+  attempts inside a governance envelope that has already been minted.
+* **`execution.max_turns_per_step`** — read per turn, bounded 1–200 (1–64 as first built; §8).
+  The same argument, plus: the trajectory's own `max_turns`/`max_steps` and the budget ceilings
+  still bind, so this key cannot buy a trajectory more than the ceilings allow, only more round
+  trips inside them.
 * **`planning.corrective_retries`** — read by the planner, bounded 0–5. It changes how many
   corrective drafts an invalid plan may attempt; the validator's rules, the plan's schema and the
   approval that follows are all unchanged. This is the key that forced the membership rule below.
@@ -217,6 +220,9 @@ documented behaviour). Both servers are stopped and the scratch directory is out
 
 ## 7. For another row
 
+* **Two of these are now scheduled rows** — **I8** (the LoadCoach precedence fix) and **I9** (the
+  `settings` CLI verb), added to `roadmap/outstanding-work.md` §1 at the interview. They are kept
+  below in full because the row text points back here.
 * **LoadCoach's precedence diverges from the standard it publishes.** `loadcoach`'s
   `services/settings.py::read_runtime_settings` takes the stored value whenever a row exists, so a
   database row beats `LOADCOACH_*` in the environment and a `serve --port` flag, while
@@ -225,12 +231,30 @@ documented behaviour). Both servers are stopped and the scratch directory is out
   have a CLI layer, so it should consult `LoadedSettings.sources` rather than `os.environ`), and
   report the shadowed row in `GET /settings`. **A finding, not a fix — nothing in LoadCoach was
   touched by this row.**
-* **`execution.max_turns_per_step` has no `description` in `config.py`,** so its row in
-  `docs/configuration.md` renders with an empty Description cell (visible now that the row also
-  says `yes`). One line in `ExecutionSettings`; not this row's file to churn.
+* ~~**`execution.max_turns_per_step` has no `description` in `config.py`.**~~ Folded into 1.1.0
+  at the interview (`1b02560`): the field now carries the description, and the generated reference
+  renders it.
 * **No `promptcadence settings` CLI verb was added**, as the kickoff directed. The API and the
   console cover the surface, and `config show` answers "what is effective, and from where" without
-  one. Add it when an operator asks for a scriptable write.
+  one. The operator asked for it at the interview: scheduled as **I9**.
 * **The registry holds no boolean today.** The page renders numbers only; the boolean branch in
   the form parser is marked `pragma: no cover` rather than tested against a key that does not
   exist. The first boolean key added should delete that pragma and bring a test.
+
+## 8. The interview (2026-09-07)
+
+Four questions, after the build and before the tag.
+
+1. **The registry's UI bounds** — mine, and narrower than the config model's own validation. The
+   operator **widened the turn caps**: `execution.max_turns_per_step` 1–64 → **1–200**,
+   `execution.step_retries` 0–10 → **0–25**. Reason given: a long agentic step needs the room, and
+   the guardrail that matters is elsewhere — the trajectory's own `max_turns`/`max_steps` and the
+   budget ceilings still bind, so a wider cap buys round trips *inside* an envelope, never outside
+   it. The other three keep the bounds as built. Commit `1b02560`, gates re-run whole.
+2. **The budget ceilings stay config-only** — ADR-0100 rule 4 confirmed as written. No change.
+3. **`max_turns_per_step`'s missing description** — folded into 1.1.0 rather than deferred, since
+   the gates were reopening anyway. Same commit.
+4. **The two deferrals became rows** — **I8** (LoadCoach's precedence) and **I9** (the `settings`
+   CLI verb). Neither is a change to 1.1.0.
+
+The release path chosen: push, tag, publish — no TestPyPI dry run, as at 1.0.1.
