@@ -1,6 +1,10 @@
 # ADR-0105 — A shipped `usage` object keeps `null` on two of its five classes until `/api/v2`
 
 **Status:** Accepted (2026-09-07)
+**Superseded by:** [ADR-0112](0112-the-usage-object-spells-unavailable-one-way-inside-api-v1.md) —
+the operator reversed this record the same day: `/api/v1` has no consumer yet, so the two fields
+move to `"unsupported"` now, inside `/api/v1`, on a one-time exception to ADR-0013 rather than at
+a future `/api/v2`.
 **Amends:** [ADR-0016](0016-unavailable-is-not-zero.md) rule 4, for exactly two fields of one
 released response body — `usage.input_tokens` and `usage.output_tokens` in LoadCoach's `/api/v1`.
 Nothing else in the suite gains a `null`, and the rule is unchanged everywhere else.

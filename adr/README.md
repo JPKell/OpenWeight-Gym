@@ -127,12 +127,13 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0102](0102-freeweights-settings-body-gains-the-suites-shape.md) | FreeWeight's settings body gains the suite's shape, and `items` is deprecated | Accepted |
 | [0103](0103-ideapress-reacts-to-a-verdict-it-does-not-own.md) | IdeaPress reacts to a verdict it does not own: a bound ceiling pauses, an undeclared remote ceiling denies | Accepted |
 | [0104](0104-an-adopted-reductions-seam-and-error-vocabulary-survive-it.md) | An adopted reduction's seam and error vocabulary survive it | Accepted |
-| [0105](0105-a-shipped-usage-object-keeps-null-until-api-v2.md) | A shipped `usage` object keeps `null` on two of its five classes until `/api/v2` | Accepted |
+| [0105](0105-a-shipped-usage-object-keeps-null-until-api-v2.md) | A shipped `usage` object keeps `null` on two of its five classes until `/api/v2` | Superseded by ADR-0112 |
 | [0106](0106-the-provider-protocol-carries-the-adapter-inventory.md) | The `Provider` protocol carries the adapter inventory, and the `lora` field carries the complete set | Accepted |
 | [0107](0107-two-loadcoach-clients-are-not-yet-one-package.md) | The second LoadCoach consumer arrived; the client package is still declined | Accepted |
 | [0108](0108-the-snapshot-contracts-the-surface-and-goldens-contract-the-bodies.md) | The OpenAPI snapshot contracts the surface; captured goldens contract the bodies | Accepted |
 | [0109](0109-a-stored-row-this-build-cannot-read-serves-configuration.md) | A stored settings row this build cannot read serves configuration, and the changeable set is an enumeration | Accepted |
 | [0111](0111-the-container-rung-is-proved-on-docker-and-podman-is-not-an-exit-condition.md) | The container rung is proved on docker, and podman is not an exit condition | Accepted |
+| [0112](0112-the-usage-object-spells-unavailable-one-way-inside-api-v1.md) | The `usage` object spells "unavailable" one way, inside `/api/v1` | Accepted |
 
 ## Writing a new ADR
 
@@ -573,3 +574,13 @@ podman host that never existed, and the milestone stayed formally open under a s
 shipped 1.0. The record makes the exit "the container rung exercised on the reference machine's
 runtime" — docker, done at E4 — declares M11, keeps ToolYard's probe order and its honest skip
 unchanged, and hands the podman canary to whoever first installs podman beside the suite.
+
+**ADR-0112 was added on 2026-09-07**, the same day as ADR-0105 and reversing it. The operator
+found, hours after accepting ADR-0105, that `/api/v1` has no consumer yet — so the wall ADR-0105
+built around `input_tokens` and `output_tokens` was protecting nobody. ADR-0112 supersedes it in
+full: both fields render `"unsupported"` for an unreported count, like the other three token
+classes, from `loadcoach 1.1.3`, closing ADR-0016 rule 4's exception rather than carrying it to a
+`/api/v2` that nothing forces into existence. It is explicit that this is a one-time exception to
+[ADR-0013](0013-api-versioning.md), argued on today's specific fact (no external consumer, both of
+the workspace's own checked directly) and not a general license to break a released field — the
+next such change still owes `/api/v2` or an equally explicit exception argued on its own facts.
