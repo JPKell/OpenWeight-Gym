@@ -2,6 +2,7 @@
 
 **Status:** Accepted (2026-08-21)
 **Amended by:** [ADR-0028](0028-prompt-pack-granularity.md) — adds prompt tooling to the extraction schedule, at the same second-consumer trigger.
+**Amended by:** [ADR-0107](0107-two-loadcoach-clients-are-not-yet-one-package.md) — the `LoadCoachClient` trigger fired (PromptCadence, per ADR-0045) and extraction was **declined**: the sizing below ("~200 lines", "eight HTTP calls") is stale, the two clients are 1 422 and 1 291 lines and diverge in what they bind, and the trigger is replaced by a third consumer or a LoadCoach OpenAPI document with typed response bodies.
 
 ## Context
 

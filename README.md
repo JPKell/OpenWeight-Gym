@@ -111,7 +111,7 @@ Full index with statuses: [adr/README.md](adr/README.md).
 | [0008](adr/0008-canonical-model-identity.md) | Minimal immutable identity; descriptor and runtime profile separate |
 | [0009](adr/0009-setspec-schema-strategy.md) | Pydantic models, per-payload `MAJOR.MINOR`, goldens and JSON Schema |
 | [0010](adr/0010-queue-implementation.md) | Database-backed queue with leases; no broker |
-| [0011](adr/0011-shared-package-boundaries.md) | Extraction at the second consumer; `LoadCoachClient` deferred |
+| [0011](adr/0011-shared-package-boundaries.md) | Extraction at the second consumer; `LoadCoachClient` declined again when it fired ([ADR-0107](adr/0107-two-loadcoach-clients-are-not-yet-one-package.md)) |
 | [0012](adr/0012-prompt-storage-format.md) | Prompts as versioned JSON records |
 | [0013](adr/0013-api-versioning.md) | Path-based major versioning, additive within a major |
 | [0014](adr/0014-authentication-strategy.md) | No auth on loopback; mandatory bearer tokens otherwise |
