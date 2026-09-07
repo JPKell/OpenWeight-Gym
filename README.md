@@ -349,9 +349,9 @@ rather than recalled.
   machine, and §13's own closing paragraph says so and says the trajectory fails at T13 instead. The
   degradation matrix follows the state machine and footnotes the discrepancy; the spec sentence
   needs deleting in both the workspace copy and the PromptCadence mirror.
-* **PromptCadence never checks LoadCoach's API version.** Its client pins the `/api/v1` prefix and
-  never reads `api_versions`, where IdeaPress's backend does and names both versions on a mismatch.
-  Recorded in the degradation matrix as a gap, unimplemented.
+* **PromptCadence's API-version check landed the same day this review ran** (row K1,
+  PromptCadence `c6842f1`): the client now reads `GET /version` on first contact and once per TTL,
+  and refuses with `SCHEMA_VERSION_UNSUPPORTED` on a major mismatch. The matrix row is corrected.
 * **ADR-0037 argues no alternatives.** Only a superseding record can add them; none is warranted for
   that reason alone.
 * **`loadcoach 1.1.0`, `1.1.2` and `1.1.3` are tagged and pushed with no release run**, so the index
