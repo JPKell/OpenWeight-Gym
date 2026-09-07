@@ -1,7 +1,7 @@
 # ADR-0009 — SetSpec schema and versioning strategy
 
 **Status:** Accepted (2026-08-21)
-**Amended by:** [ADR-0025](0025-envelope-boundaries.md) — defines which bodies carry the envelope; [ADR-0022](0022-capability-evidence-record-contract.md) — normative field list for `capability.evidence`; [ADR-0028](0028-prompt-pack-granularity.md) — adds `setspec.prompts`.
+**Amended by:** [ADR-0025](0025-envelope-boundaries.md) — defines which bodies carry the envelope; [ADR-0022](0022-capability-evidence-record-contract.md) — normative field list for `capability.evidence`; [ADR-0028](0028-prompt-pack-granularity.md) — adds `setspec.prompts`; [ADR-0068](0068-a-post-freeze-minor-is-a-sibling-class.md) — a post-freeze additive minor is a sibling class, and a bare class name keeps its version.
 
 ## Context
 

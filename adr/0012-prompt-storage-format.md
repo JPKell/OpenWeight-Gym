@@ -1,6 +1,7 @@
 # ADR-0012 — Prompts as versioned JSON records
 
 **Status:** Accepted (2026-08-21)
+**Amended by:** [ADR-0028](0028-prompt-pack-granularity.md) — attribution granularity is the prompt pack, and the loader/renderer/hasher become shared tooling in `setspec.prompts`.
 
 ## Context
 
