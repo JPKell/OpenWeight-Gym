@@ -1,6 +1,7 @@
 # ADR-0062 — llama.cpp serves adapters, through a process the suite supervises
 
 **Status:** Accepted (2026-09-02)
+**Amended by:** [ADR-0106](0106-the-provider-protocol-carries-the-adapter-inventory.md) — decision 1's "the `Provider` protocol does not change" is narrowed to the load/unload seam it was about; the protocol gained `list_adapters()` and `register_adapters()`, and no lifecycle method was added.
 **Extends:** [ADR-0007](0007-provider-abstraction.md) (the `Provider` protocol and provider
 capabilities), [Master Architecture §10](../architecture/master-architecture.md) (extension points),
 [Adapter Identity and Serving §5](../architecture/adapter-identity-and-serving.md).

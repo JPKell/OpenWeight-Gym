@@ -1,6 +1,7 @@
 # ADR-0063 — One adapter at a time, at a fixed scale
 
 **Status:** Accepted (2026-09-02)
+**Amended by:** [ADR-0106](0106-the-provider-protocol-carries-the-adapter-inventory.md) — rules 1–2 govern **enabled** entries. A request to a server with adapters registered sends the complete set — the selected adapter at `1.0`, every other explicitly at `0.0`, which is a disable and not a second adapter — because llama-server restores the launch-time set for a request naming none. At most one is ever enabled, at exactly `1.0`.
 **Extends:** [Adapter Identity and Serving §11](../architecture/adapter-identity-and-serving.md)
 (deliberately excluded from v1).
 **Relates to:** [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md) (identity is one
