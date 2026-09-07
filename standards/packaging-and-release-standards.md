@@ -254,6 +254,22 @@ statement to users, tested before every application 1.0:
   suite package it depends on.
 * A nightly **compatibility matrix** job installs the current release of each application against
   the lowest and highest supported version of each package and runs the contract and e2e suites.
+  It lives in the docs repository (`docs/.github/workflows/compatibility-matrix.yml`) rather than
+  in any one component's CI, because the matrix is a claim about the suite's published releases,
+  not about one repository's source, and the docs repo is the only one every component mirrors
+  from with no CI of its own to compete with the schedule. Pins for each cell are derived by
+  downloading the application's published sdist from PyPI and reading its `pyproject.toml`
+  (`docs/scripts/compatibility_matrix.py`, runnable standalone against one `<app> <lowest|highest>`
+  cell for local proof) — never from a checkout, so the matrix tests what a consumer's `pip
+  install` actually resolves. A fifth job, **co-install**, installs all four applications' latest
+  releases into one venv with no suite-package pins, proving the composition model (LoadCoach
+  consuming FreeWeight evidence, IdeaPress and PromptCadence routing through LoadCoach) can
+  actually share a Python environment. **A cell that cannot resolve is a failure named in the job
+  summary, not a skip** — read a red run by opening its step summary table: the `Detail` column
+  names either the unsatisfiable range (no published package version admits the declared floor or
+  ceiling) or the first pip resolver conflict, so the fix is either a floor/ceiling that needs
+  raising in one repository's `pyproject.toml`, or a new release of the package caught between
+  two applications' ranges.
 * SetSpec additionally runs a **schema compatibility** job: every published schema version is
   validated against its golden payloads, and the reader in each application is tested against every
   supported major.

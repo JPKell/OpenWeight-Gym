@@ -1,0 +1,90 @@
+name: Compatibility Matrix
+
+# Packaging and release standards §7: a nightly job that installs the current release of each
+# application against the lowest and highest supported version of every suite package it declares,
+# and runs the contract and e2e suites. This lives in the docs repo -- the one repository every
+# component mirrors from, and the only one with no CI of its own competing for the schedule slot --
+# because the matrix is about the *suite's* published releases, not any one repository's source.
+#
+# Pins are derived from each application's published sdist on PyPI (scripts/compatibility_matrix.py:
+# `pip download --no-deps --no-binary :all: <app>==<version>` then read `pyproject.toml`), never
+# from a checkout, so this tests exactly what a `pip install` hands a real consumer.
+#
+# A cell that cannot resolve (no published package version satisfies a declared range, or the
+# resolved set cannot co-install) is a **failure** named in the job summary, not a skip -- that is
+# the finding this workflow exists to surface (ADR-0113: 1.0 needs this matrix green at both ends
+# of every application's range).
+
+on:
+  schedule:
+    # 04:30 UTC -- 30 minutes off ModelRack's/FreeWeight's nightly.yml cron, so a shared runner
+    # queue doesn't make one late.
+    - cron: "30 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  matrix:
+    name: ${{ matrix.app }} / ${{ matrix.bound }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [freeweight, loadcoach, ideapress, promptcadence]
+        bound: [lowest, highest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Compatibility cell header
+        run: |
+          echo "| App | Bound | Result | Detail |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+
+      # scripts/compatibility_matrix.py resolves the pins from the PyPI sdist, builds a clean
+      # venv, installs `<app>==<latest>` plus every suite package at this cell's bound, runs
+      # `<app> --version`, and -- if tests/contract or tests/e2e ship in the sdist -- runs
+      # `pytest -m "contract or e2e"` against the installed wheel from the extracted sdist. Today
+      # (2026-09-07) every application ships its contract/e2e suites in the sdist, so the
+      # clone-the-tag fallback path documented in the script is unexercised; if a future release
+      # stops shipping tests/, this step's exit code still reflects install-only success, and the
+      # script's report names the gap rather than passing silently.
+      - name: Run compatibility cell
+        run: python scripts/compatibility_matrix.py ${{ matrix.app }} ${{ matrix.bound }}
+
+  co-install:
+    name: co-install (all four latest, no suite-package pins)
+    runs-on: ubuntu-latest
+    # A fifth, separate job: the four cells above each test one application against one package's
+    # extremes, but say nothing about whether the four applications' *own* latest releases can sit
+    # in one venv together. They must, for any workflow that composes them (IdeaPress routing
+    # through LoadCoach, PromptCadence calling LoadCoach, etc. -- master-architecture.md's
+    # composition model).
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # KNOWN FAILING as of 2026-09-07: ideapress 1.3.0 (the version on PyPI) pins
+      # `modelrack>=0.5,<0.6` while freeweight 1.1.0 and loadcoach 1.1.3 pin `modelrack>=0.7,<0.8`
+      # -- no single modelrack version satisfies both, so pip's resolver refuses and this job is
+      # red. IdeaPress's `pyproject.toml` already carries the fix locally (widened to
+      # `modelrack>=0.7,<0.8`, uncommitted at the time this workflow was written) as the prepared
+      # `ideapress 1.3.1`; this job goes green the day that version publishes to PyPI, with no
+      # change to this workflow.
+      - name: Install all four applications' latest releases together
+        id: install
+        run: |
+          python -m venv /tmp/co-install-venv
+          /tmp/co-install-venv/bin/pip install -q --upgrade pip
+          /tmp/co-install-venv/bin/pip install freeweight loadcoach ideapress promptcadence
+
+      - name: Record result in the job summary
+        if: always()
+        run: |
+          if [ "${{ steps.install.outcome }}" = "success" ]; then
+            echo "co-install: PASS -- all four latest applications resolve into one venv" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "co-install: **FAIL** -- see the install step above (expected until ideapress 1.3.1 publishes; see comment in this file)" >> "$GITHUB_STEP_SUMMARY"
+          fi
