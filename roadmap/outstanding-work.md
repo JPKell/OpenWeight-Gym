@@ -247,6 +247,17 @@ GPU sessions never share the machine with FreeWeight benchmark runs.
   tag could fire), `ideapress 1.2.0` then `1.3.0`, `promptcadence 1.2.0` then `1.3.0`,
   `loadledger 0.3.0`. Every repository's `main` is pushed and CI-green on the checked repos.
 
+* **Patch releases of 2026-09-07 (evening), all tagged; the `pypi` approvals are the operator's:**
+  `freeweight 1.1.1`, `loadcoach 1.1.4`, `ideapress 1.3.1`, `promptcadence 1.3.1`. They carry
+  L3's schema-ahead fixes (IdeaPress and PromptCadence never detected a database ahead of the
+  code; FreeWeight and LoadCoach never named the backup directory), the `pydantic-settings`
+  removal (ADR-0114), IdeaPress's `modelrack` widen to `>=0.7,<0.8` (the four applications could
+  not co-install — found by the post-publish check), and FreeWeight's SSE-replay test no longer
+  waiting on the real idle-settle gate. **Still under `[Unreleased]` in all four:** the
+  `mirrorwall` floor raised to `0.2.2` (L6's matrix found 0.2.0/0.2.1 pin `setspec<0.5`, so no
+  application resolved at its declared lowest range) — it rides the next patch, and the matrix's
+  `lowest` cells stay red until then.
+
 ## 5. Milestone map
 
 | Milestone | Rows | Declared when |
