@@ -24,46 +24,119 @@ Choosing between them is a design decision made per case in the table below — 
 ## 2. Degradation matrix
 
 `E` = error, `D` = degraded, `U` = unsupported, `Q` = queued. Every row names the user-visible
-signal and the code path that must exist. PromptCadence has no column of its own because it reaches
-no provider and no machine directly: every row below reaches it through LoadCoach, and its own
-degradation — LoadCoach unreachable, a tier's task profile missing, a budget window exhausted, an
-egress target denied — is specified in [its spec §13](../apps/promptcadence/spec.md) and
-[lifecycle](../apps/promptcadence/lifecycle.md). With LoadCoach down it starts, serves, reports
-degraded health and parks submitted trajectories with a recorded reason
-([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)).
+signal and the code path that must exist.
 
-| Condition | FreeWeight | LoadCoach | IdeaPress | Signal |
+**PromptCadence gained a column on 2026-09-07 (row L2).** It had none because it reaches no provider
+and no machine directly — every provider row below arrives through LoadCoach
+([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)) — but "it inherits
+LoadCoach's behaviour" is not a behaviour, and G20 makes every row's test a blocking gate. Its cells
+are sourced from [its spec §13](../apps/promptcadence/spec.md) (the error vocabulary and the
+complete LoadCoach code map, one mapping per code so no LoadCoach failure reaches a caller as
+`INTERNAL_ERROR`) and from [lifecycle §5](../apps/promptcadence/lifecycle.md) (deviation handling)
+and [§8](../apps/promptcadence/lifecycle.md) (the state machine and its recovery edges).
+
+Three footnotes carry the `n/a` cells:
+
+1. **n/a¹ — no machine axis.** PromptCadence declares neither `sweatmeter` nor `modelrack` and reads
+   no telemetry: it has no GPU, sensor or placement facts to degrade. Machine conditions reach it
+   only as LoadCoach routing outcomes, which are the `INSUFFICIENT_RESOURCES` and
+   `NO_ELIGIBLE_MODEL` rows.
+2. **n/a² — no evidence axis.** Capability evidence is LoadCoach's input, never PromptCadence's. A
+   tier names a LoadCoach task profile; PromptCadence never imports, scores, ages or matches
+   evidence, so no evidence condition can arise inside it.
+3. **³** LoadCoach unreachable is the one row where the spec contradicts itself: §13's code map says
+   a connection refusal *parks the trajectory in `waiting`*, and §13's own closing paragraph plus
+   the state machine in lifecycle §8.1 say there **is no `waiting` state** and that an unreachable
+   LoadCoach mid-turn is T13 (`failed`). The state machine is authoritative and the cell follows it;
+   the spec sentence is recorded as drift in [the consistency review](../README.md#11-consistency-review).
+
+| Condition | FreeWeight | LoadCoach | IdeaPress | PromptCadence | Signal |
+|---|---|---|---|---|---|
+| **No GPU present** | D — GPU/VRAM/energy metrics `U`; quality benchmarks run normally; memory-slope benchmark skipped with reason | D — admission control uses RAM only; VRAM constraints not applied | D — telemetry widget hidden | n/a¹ | Health: `gpu: unavailable`; run record notes skipped tests |
+| **`nvidia-smi` missing or failing** | D — same as above, distinguished as "tool unavailable" not "no GPU" | D | D | n/a¹ | Health component `gpu_telemetry: unavailable (nvidia-smi not found)` |
+| **GPU sensor unavailable** (temp/power/fan/clock) | U per field; energy metrics become `U` when power is `U` | Ignored by admission control | Blank in widget | n/a¹ | `—` in UI; NULL + `reason` in DB |
+| **Ollama not running** | E on any run start (`PROVIDER_UNAVAILABLE`); discovery returns the last known models marked stale; UI and CLI still work | E on execute; jobs stay `queued` with `waiting_for_provider` up to their max wait, then `failed` | E on the stage; workflow pauses at the failed stage, project intact | E — LoadCoach's `PROVIDER_UNAVAILABLE`; the turn is repeated on the same tier under the same intent up to `[execution] step_retries`, then halts naming the last cause and **every** attempt. It does not wait and does not back off | Health: `provider: unavailable`; explicit banner |
+| **Provider returns malformed JSON** | E for that sample; run continues; sample stored with `error_text` and the raw body as an artifact | E for that attempt; retry policy applies; then fallback candidate | E for the stage; retry per stage policy | E — `PROVIDER_PROTOCOL_ERROR`, same repeat ladder; surfaced as `LOADCOACH_ERROR` with the original code in `details`, never `INTERNAL_ERROR` | `PROVIDER_PROTOCOL_ERROR` |
+| **Provider timeout** | Sample marked `timeout`; never counted as a score of 0 | Attempt fails; retry/fallback; job records each attempt | Stage retry then pause | E — `PROVIDER_TIMEOUT`, same repeat ladder. The client's *own* read timeout first cancels the job the request may have started, then repeats (`reason = client_timeout`) | `PROVIDER_TIMEOUT` |
+| **Model not found** | E at run start with the list of known models | Candidate removed from routing with rejection reason `model_absent` | E with the configured model named | E — halt **without** a repeat: the same request gets the same answer, so a deterministic code is never retried | `MODEL_NOT_FOUND` |
+| **Insufficient VRAM for the requested context** | Context-fit benchmark records the maximum successful context — this *is* the measurement, not a failure | Candidate rejected with `insufficient_vram (needs X, free Y)`; if all candidates fail, job stays `queued` as `waiting_for_resources` | Surfaced from LoadCoach or from the direct backend error | E/D — `INSUFFICIENT_RESOURCES` repeats, then halts. `NO_ELIGIBLE_MODEL` instead falls to the intent's next `fallback_tier`, else raises a `tier_escalation` drift for scoped re-approval, else halts `TIER_UNAVAILABLE`. There is no queue and no `waiting` state | `INSUFFICIENT_RESOURCES` |
+| **Insufficient system RAM** | Run refused before start with the estimate | Same as VRAM | Same | Same as VRAM | `INSUFFICIENT_RESOURCES` |
+| **Model lacks a required capability** (tools, structured output) | Test skipped with `unsupported_capability`, never scored 0 | Hard-constraint rejection before scoring | Stage requiring it errors with a clear message and a suggested model | E — `CAPABILITY_UNSUPPORTED` halts without a repeat; a tier that cannot serve the step at all escalates instead | `CAPABILITY_UNSUPPORTED` |
+| **Container runtime absent** (code-execution benchmarks) | Benchmark **skipped**, reason `sandbox_unavailable`; never executed on the host | n/a | n/a | D — ToolYard's ladder falls to `bwrap` and then to refusal; the refusal is a structured `ToolResult` returned to the model, and one refused call never ends a trajectory. Podman is unexercised by choice (ADR-0111) | ADR-0018 tier check |
+| **No benchmark evidence at all** | n/a | D — routes on declared capabilities + config; every decision states `evidence: none`; confidence factor at its floor | n/a | n/a² | UI banner "routing without measured evidence" |
+| **Stale benchmark evidence** | Marks results stale in the UI when environment drift is detected | D — confidence decayed per ADR-0017; explanation shows age and decay | n/a | n/a² | Badge with age and reason |
+| **Incompatible SetSpec major version** | Import/export refused with both versions named | Import refused; existing evidence untouched | Backend adapter refuses to start in LoadCoach mode | E — `SCHEMA_VERSION_UNSUPPORTED`, on LoadCoach responses and on `governance.egress_decision` payloads alike | `SCHEMA_VERSION_UNSUPPORTED` |
+| **Incompatible API major version** | n/a | Client rejects with both versions named | Same | **Gap** — the client pins the `/api/v1` prefix and never reads LoadCoach's `api_versions`; a major bump would arrive as ordinary 404s mapped to `LOADCOACH_ERROR`. Owed work, not a documented behaviour | `API_VERSION_UNSUPPORTED` |
+| **Optional application unreachable** | n/a | Evidence import skipped; last import retained and marked stale | Fall back to direct backend (or error if pinned) | E/park — LoadCoach is **not** optional here (ADR-0045). It still starts and serves; health reports `loadcoach: degraded`, never `unavailable`; a trajectory that cannot reach it mid-turn is T13 `failed` with the cause after any orphan job is cancelled, and recovery is deferred while it is unreachable³ | Health component `degraded` |
+| **Evidence measured under a different runtime profile** | n/a | D — that evidence does not apply; the capability is **absent** for the candidate (not zeroed), the explanation names both hashes and the FreeWeight invocation that would fix it, and the decision counts toward `low_evidence` | n/a | n/a² | `evidence_profile_mismatch` in the explanation |
+| **Evidence for a model not yet discovered** | n/a | Retained with `match_state = "unmatched"`, reported in the import result, contributes nothing, binds automatically on the next discovery pass | n/a | n/a² | Import counts; evidence page |
+| **Served context cannot be established** | Recorded on the run with its source | D — decision flagged `assumed_context`; a profile needing a context the provider will not be asked to serve is rejected `context_not_configurable` | Surfaced from LoadCoach as a degradation on the attempt | `assumed_context` is carried through from LoadCoach on the turn; `CONTEXT_LIMIT_EXCEEDED` triggers compaction and one retry, then `COMPACTION_FAILED` naming both figures | `assumed_context` |
+| **More than one GPU visible, placement unreported** | Memory, KV and energy tests **skipped** with `multi_gpu_placement_unknown`; quality and throughput unaffected | D — admission evaluates each device independently; a model fitting no single device is deferred, never admitted on a summed total | n/a | n/a¹ | Skip reason on the run; per-device numbers in the rejection |
+| **`Host` header not in the allowlist** | 421 before routing and before auth | Same | Same | Same — 421 before routing and before authentication | `MISDIRECTED_REQUEST`, WARNING log with the presented value |
+| **Evidence import URL fails the fetch allowlist** | n/a | E — `EVIDENCE_SOURCE_REFUSED` before any bytes are parsed; existing evidence untouched | n/a | n/a² for evidence. The analogous rule is the `http_fetch` tool's allowlist: a non-allowlisted host, a literal IP, an off-allowlist redirect or an oversized body is a structured `ToolResult` refusal, never an exception | Names the rule that refused it |
+| **Database migration pending** | Startup refuses with the exact `alembic upgrade` command; read-only inspection commands still work | Same | Same | Same | `MIGRATION_REQUIRED`, exit 4 |
+| **Database migration fails** | Automatic restore from the pre-migration backup; original DB never left half-migrated | Same | Same | Same | `MIGRATION_FAILED` + restore log |
+| **Database locked (SQLite)** | Retry with backoff to `busy_timeout`, then E | Same | Same | Same | `STORAGE_BUSY` |
+| **Disk full** | Run aborted at the next checkpoint; completed samples preserved | Job fails; queue preserved | Draft written to a temp file and reported | Turn aborted at the next boundary; committed turns and their events survive, because a state change and the event announcing it are one write (ADR-0044) | `STORAGE_FULL` |
+| **SSE client disconnects** | Nothing; events are rows. Client replays from `Last-Event-ID` | Same | Same | Same — events are rows; the client replays from `Last-Event-ID` | Debug log only |
+| **Server restarts mid-run/job** | Run marked `interrupted` on startup recovery; completed tests retained; resumable | Leases expire; jobs return to `queued` (idempotent) or `failed` (non-idempotent, per policy) | Workflow resumes at the last committed unit | Leases expire and the reaper takes over only an expired one; a turn in flight has its orphan LoadCoach job cancelled and resumes, or halts `recovered` when it cannot be reconciled | Startup recovery log + UI notice |
+| **Prompt pack missing/invalid** | Startup validation fails with the file and field named | Same | Same | Same — startup validation fails with the file and field named | `PROMPT_INVALID`, exit 3 |
+| **Remote provider configured but unreachable** | E, and the error names the remote host so egress is obvious | E | E | E — and egress was already decided on the tier's *configuration* before its availability (ADR-0073), so a denied remote tier is denied whether or not it answers; unreachability then names the tier | `PROVIDER_UNAVAILABLE` |
+
+---
+
+## 2.1 Row index — which test proves each row
+
+**Added 2026-09-07 (row L2).** G20 makes "every row of the degradation matrix has a test" a blocking
+gate, and nothing anywhere mapped rows to tests. This is that map, built by grepping the four
+applications' `tests/` trees for each condition's code, sentinel or state. Paths are relative to
+each application repository. **`untested`** means no test was found — it is a claim about this
+search, and it is the input to the sessions that close G20, not an invitation to invent a test that
+asserts the row's text back at itself
+([ADR-0042](../adr/0042-a-check-may-not-restate-its-requirement.md)).
+
+`n/a` cells carry the same footnotes as §2. A row marked `untested` in every column is not a
+disproved behaviour; it is an unproved one.
+
+| Condition | FreeWeight | LoadCoach | IdeaPress | PromptCadence |
 |---|---|---|---|---|
-| **No GPU present** | D — GPU/VRAM/energy metrics `U`; quality benchmarks run normally; memory-slope benchmark skipped with reason | D — admission control uses RAM only; VRAM constraints not applied | D — telemetry widget hidden | Health: `gpu: unavailable`; run record notes skipped tests |
-| **`nvidia-smi` missing or failing** | D — same as above, distinguished as "tool unavailable" not "no GPU" | D | D | Health component `gpu_telemetry: unavailable (nvidia-smi not found)` |
-| **GPU sensor unavailable** (temp/power/fan/clock) | U per field; energy metrics become `U` when power is `U` | Ignored by admission control | Blank in widget | `—` in UI; NULL + `reason` in DB |
-| **Ollama not running** | E on any run start (`PROVIDER_UNAVAILABLE`); discovery returns the last known models marked stale; UI and CLI still work | E on execute; jobs stay `queued` with `waiting_for_provider` up to their max wait, then `failed` | E on the stage; workflow pauses at the failed stage, project intact | Health: `provider: unavailable`; explicit banner |
-| **Provider returns malformed JSON** | E for that sample; run continues; sample stored with `error_text` and the raw body as an artifact | E for that attempt; retry policy applies; then fallback candidate | E for the stage; retry per stage policy | `PROVIDER_PROTOCOL_ERROR` |
-| **Provider timeout** | Sample marked `timeout`; never counted as a score of 0 | Attempt fails; retry/fallback; job records each attempt | Stage retry then pause | `PROVIDER_TIMEOUT` |
-| **Model not found** | E at run start with the list of known models | Candidate removed from routing with rejection reason `model_absent` | E with the configured model named | `MODEL_NOT_FOUND` |
-| **Insufficient VRAM for the requested context** | Context-fit benchmark records the maximum successful context — this *is* the measurement, not a failure | Candidate rejected with `insufficient_vram (needs X, free Y)`; if all candidates fail, job stays `queued` as `waiting_for_resources` | Surfaced from LoadCoach or from the direct backend error | `INSUFFICIENT_RESOURCES` |
-| **Insufficient system RAM** | Run refused before start with the estimate | Same as VRAM | Same | `INSUFFICIENT_RESOURCES` |
-| **Model lacks a required capability** (tools, structured output) | Test skipped with `unsupported_capability`, never scored 0 | Hard-constraint rejection before scoring | Stage requiring it errors with a clear message and a suggested model | `CAPABILITY_UNSUPPORTED` |
-| **Container runtime absent** (code-execution benchmarks) | Benchmark **skipped**, reason `sandbox_unavailable`; never executed on the host | n/a | n/a | ADR-0018 tier check |
-| **No benchmark evidence at all** | n/a | D — routes on declared capabilities + config; every decision states `evidence: none`; confidence factor at its floor | n/a | UI banner "routing without measured evidence" |
-| **Stale benchmark evidence** | Marks results stale in the UI when environment drift is detected | D — confidence decayed per ADR-0017; explanation shows age and decay | n/a | Badge with age and reason |
-| **Incompatible SetSpec major version** | Import/export refused with both versions named | Import refused; existing evidence untouched | Backend adapter refuses to start in LoadCoach mode | `SCHEMA_VERSION_UNSUPPORTED` |
-| **Incompatible API major version** | n/a | Client rejects with both versions named | Same | `API_VERSION_UNSUPPORTED` |
-| **Optional application unreachable** | n/a | Evidence import skipped; last import retained and marked stale | Fall back to direct backend (or error if pinned) | Health component `degraded` |
-| **Evidence measured under a different runtime profile** | n/a | D — that evidence does not apply; the capability is **absent** for the candidate (not zeroed), the explanation names both hashes and the FreeWeight invocation that would fix it, and the decision counts toward `low_evidence` | n/a | `evidence_profile_mismatch` in the explanation |
-| **Evidence for a model not yet discovered** | n/a | Retained with `match_state = "unmatched"`, reported in the import result, contributes nothing, binds automatically on the next discovery pass | n/a | Import counts; evidence page |
-| **Served context cannot be established** | Recorded on the run with its source | D — decision flagged `assumed_context`; a profile needing a context the provider will not be asked to serve is rejected `context_not_configurable` | Surfaced from LoadCoach as a degradation on the attempt | `assumed_context` |
-| **More than one GPU visible, placement unreported** | Memory, KV and energy tests **skipped** with `multi_gpu_placement_unknown`; quality and throughput unaffected | D — admission evaluates each device independently; a model fitting no single device is deferred, never admitted on a summed total | n/a | Skip reason on the run; per-device numbers in the rejection |
-| **`Host` header not in the allowlist** | 421 before routing and before auth | Same | Same | `MISDIRECTED_REQUEST`, WARNING log with the presented value |
-| **Evidence import URL fails the fetch allowlist** | n/a | E — `EVIDENCE_SOURCE_REFUSED` before any bytes are parsed; existing evidence untouched | n/a | Names the rule that refused it |
-| **Database migration pending** | Startup refuses with the exact `alembic upgrade` command; read-only inspection commands still work | Same | Same | `MIGRATION_REQUIRED`, exit 4 |
-| **Database migration fails** | Automatic restore from the pre-migration backup; original DB never left half-migrated | Same | Same | `MIGRATION_FAILED` + restore log |
-| **Database locked (SQLite)** | Retry with backoff to `busy_timeout`, then E | Same | Same | `STORAGE_BUSY` |
-| **Disk full** | Run aborted at the next checkpoint; completed samples preserved | Job fails; queue preserved | Draft written to a temp file and reported | `STORAGE_FULL` |
-| **SSE client disconnects** | Nothing; events are rows. Client replays from `Last-Event-ID` | Same | Same | Debug log only |
-| **Server restarts mid-run/job** | Run marked `interrupted` on startup recovery; completed tests retained; resumable | Leases expire; jobs return to `queued` (idempotent) or `failed` (non-idempotent, per policy) | Workflow resumes at the last committed unit | Startup recovery log + UI notice |
-| **Prompt pack missing/invalid** | Startup validation fails with the file and field named | Same | Same | `PROMPT_INVALID`, exit 3 |
-| **Remote provider configured but unreachable** | E, and the error names the remote host so egress is obvious | E | E | `PROVIDER_UNAVAILABLE` |
+| No GPU present | `unit/test_telemetry_service.py::test_gpu_telemetry_component_is_degraded_with_no_gpu_and_overall_health_degrades` | `unit/test_telemetry_stream.py::test_payload_names_why_there_is_no_gpu`; `unit/test_routing_constraints.py` | untested | n/a¹ |
+| `nvidia-smi` missing or failing | `unit/test_telemetry_service.py::test_degrades_to_null_host_reader_when_platform_unsupported` | `unit/test_telemetry_stream.py::test_a_collector_that_cannot_read_produces_no_frame` | untested | n/a¹ |
+| GPU sensor unavailable | `unit/test_telemetry_service.py::test_unsupported_measurement_renders_as_the_fixed_string`; `unit/test_energy_integration.py` | `unit/test_telemetry_stream.py::test_payload_carries_numbers_and_unsupported_never_zero` | untested | n/a¹ |
+| Ollama not running | `e2e/test_models_flow.py::test_http_models_page_survives_a_provider_that_cannot_be_reached`, `::test_cli_show_falling_back_to_an_unreachable_provider_exits_4` | `unit/test_health.py::test_unreachable_provider_degrades_but_never_makes_overall_unavailable`; `e2e/test_server_boot.py::test_health_reports_degraded_with_no_provider` | `integration/test_loadcoach_degradation.py::test_an_unreachable_loadcoach_raises_backend_unavailable` | `unit/test_loadcoach_client.py::test_a_transport_failure_is_unavailable_and_a_timeout_is_an_error` |
+| Provider returns malformed JSON | untested *(provider-level; `unit/test_external_output_parsing.py` covers the external-framework parser, not a provider body)* | `unit/test_retry_policy.py::test_protocol_error_retries_exactly_once`; `simulation/test_scheduling_properties.py::test_a_connection_error_falls_back_at_once_and_a_protocol_error_retries_once` | untested | `unit/test_loadcoach_client.py` (`PROVIDER_PROTOCOL_ERROR` in the code map); `fakes/loadcoach_app.py` scripts it |
+| Provider timeout | untested *(the sandbox/external-tool hang is covered by `integration/test_sandbox_tiers.py::test_a_hang_is_killed_at_the_timeout`; the provider timeout is not)* | `integration/test_generate.py::test_a_timeout_is_recorded_as_a_provider_error_and_falls_back`; `unit/test_retry_policy.py::test_timeout_retries_the_same_model_up_to_the_limit_then_falls_back` | `integration/test_loadcoach_degradation.py::test_a_stalled_loadcoach_raises_provider_timeout` | `integration/test_step_retry.py::test_a_step_that_fails_twice_completes_on_its_third_attempt`, `::test_the_budget_is_spent_and_the_halt_names_the_last_cause_and_every_attempt` |
+| Model not found | `e2e/test_models_flow.py::test_http_detail_page_404s_on_an_unknown_reference`, `::test_cli_show_of_an_unknown_reference_exits_2` | `e2e/test_model_and_profile_detail.py`; `unit/test_doctor.py` | `integration/test_loadcoach_degradation.py::test_the_refusal_names_loadcoach_s_own_code_and_message` | `integration/test_step_retry.py::test_a_deterministic_refusal_is_never_repeated` |
+| Insufficient VRAM for the requested context | `integration/test_performance_benchmark.py` (the context-fit ladder records the maximum successful context) | `unit/test_admission.py`; `unit/test_routing_constraints.py`; `integration/test_fake_provider_vram.py`; `integration/test_route_endpoint.py` | untested | `integration/test_step_retry.py::test_a_tier_that_cannot_serve_escalates_rather_than_repeating` |
+| Insufficient system RAM | untested | `unit/test_admission.py`; `simulation/test_scheduling_properties.py` | untested | covered by the row above (one ladder) |
+| Model lacks a required capability | `integration/test_quality_suites.py`; `unit/test_scorers_tools.py` | `unit/test_admission.py`; `integration/test_tool_wire.py`; `integration/test_generate.py` | `integration/test_loadcoach_degradation.py` | `integration/test_bypass_loop.py`; `unit/test_loadcoach_client.py` |
+| Container runtime absent | `security/test_sandbox_refusal.py`; `integration/test_sandbox_tiers.py` | n/a | n/a | `integration/test_tool_execution.py`; ToolYard's own `isolation`-marked suite (podman rung skipped, ADR-0111) |
+| No benchmark evidence at all | n/a | `integration/test_evidence_routing_change.py::test_with_no_evidence_source_configured_the_explanation_says_so` | n/a | n/a² |
+| Stale benchmark evidence | `unit/test_provenance.py` (drift marking) | `integration/test_evidence_routing_change.py::test_freshness_uses_measured_at_so_re_aggregation_does_not_change_a_decision` | n/a | n/a² |
+| Incompatible SetSpec major version | `contract/test_export_schemas.py`; `contract/test_evidence_schema.py` | `contract/test_schema_rejection.py`; `integration/test_evidence_importer.py` | `contract/test_envelope_conformance.py` | `unit/test_loadcoach_client.py` (`SCHEMA_VERSION_UNSUPPORTED`); `integration/test_bypass_loop.py` |
+| Incompatible API major version | n/a | untested | `integration/test_loadcoach_degradation.py::test_a_version_mismatch_names_both_versions_and_does_not_downgrade` | untested — **and unimplemented**: the client pins `/api/v1` and never reads `api_versions` |
+| Optional application unreachable | n/a | `integration/test_evidence_routing_change.py::test_an_unreachable_freeweight_keeps_routing_on_the_last_import_and_says_so`; `unit/test_health.py::test_evidence_degrades_when_the_configured_source_is_unreachable` | `integration/test_loadcoach_degradation.py::test_an_unreachable_loadcoach_falls_back_and_records_the_degradation`, `::test_committed_units_survive_loadcoach_disappearing_mid_project` | `e2e/test_server_boot.py::test_loadcoach_component_degraded_never_unavailable`; `integration/test_recovery.py::test_recovery_is_deferred_when_loadcoach_is_unreachable` |
+| Evidence measured under a different runtime profile | `unit/test_runtime_profile.py` | `integration/test_evidence_routing_change.py::test_evidence_measured_under_another_profile_is_absent_with_both_hashes_and_a_remedy` | n/a | n/a² |
+| Evidence for a model not yet discovered | n/a | `integration/test_evidence_routing_change.py::test_unmatched_evidence_contributes_nothing_and_is_counted`; `contract/test_evidence_import.py` | n/a | n/a² |
+| Served context cannot be established | `unit/test_effective_context.py` | `unit/test_routing_explanation.py`; `integration/test_route_endpoint.py::test_a_model_advertising_131072_but_served_4096_is_rejected_not_truncated` | `contract/test_loadcoach_backend.py` | `integration/test_compaction.py` (the `CONTEXT_LIMIT_EXCEEDED` → compact → retry path) |
+| More than one GPU visible, placement unreported | `integration/test_performance_benchmark.py` (`multi_gpu_placement_unknown`) | untested | n/a | n/a¹ |
+| `Host` header not in the allowlist | `e2e/test_server_boot.py::test_mismatched_host_header_is_rejected`; `security/test_security_checklist.py` | `e2e/test_server_boot.py::test_wrong_host_header_rejected_with_421`; `security/test_checklist.py` | `e2e/test_system.py::test_host_validation_runs_before_routing_on_every_request`; `security/test_lan_exposure.py` | `e2e/test_server_boot.py::test_wrong_host_header_rejected_with_421`; `security/test_checklist.py` |
+| Evidence import URL fails the fetch allowlist | n/a | `integration/test_evidence_fetch.py`; `integration/test_evidence_api.py` | n/a | `security/test_injection_corpus.py` (the `http_fetch` allowlist cases) |
+| Database migration pending | `integration/test_migrations.py` | `unit/test_doctor.py`; `e2e/test_server_boot.py::test_database_migrates_on_first_boot` | `integration/test_migrations.py` | `e2e/test_server_boot.py::test_database_migrates_on_first_boot` |
+| Database migration fails | `integration/test_migrations.py::test_failed_migration_restores_the_original_database_byte_identical` | `integration/test_migrations.py::test_failed_migration_restores_backup_on_sqlite` | untested | untested |
+| Database locked (SQLite) | `integration/test_transactions.py` | untested *(`unit/test_doctor.py` names the code, does not exercise the retry)* | untested | untested |
+| Disk full | untested | untested | untested | untested |
+| SSE client disconnects | `integration/test_sse_replay.py::test_a_disconnecting_client_ends_the_generator`, `::test_a_reconnect_continues_exactly_where_it_stopped` | `integration/test_queue_stream.py`; `integration/test_streaming.py` | `e2e/test_stage_stream.py::test_a_reconnect_with_last_event_id_replays_only_what_was_missed` | `e2e/test_bypass_journey.py::test_the_stream_replays_from_last_event_id_without_gap_or_duplicate` |
+| Server restarts mid-run/job | `integration/test_recovery.py::test_a_killed_run_is_interrupted_not_failed` (+8 more) | `integration/test_recovery.py::test_kill_minus_nine_is_recovered_and_the_job_completes_exactly_once` | `integration/test_stage_recovery.py::test_resume_recovers_a_unit_a_failure_left_mid_review` | `integration/test_recovery.py::test_kill_minus_nine_with_a_turn_in_flight_cancels_the_orphan_and_resumes` |
+| Prompt pack missing/invalid | `unit/test_prompt_pack.py::test_a_missing_required_field_is_refused` (+6 refusal cases) | n/a *(no prompt pack)* | `unit/test_prompt_pack.py::test_a_missing_required_variable_is_refused` | `unit/test_prompt_pack.py::test_a_missing_required_variable_is_refused` |
+| Remote provider configured but unreachable | `security/test_settings_boundary.py` (the `allow_remote` acknowledgement); untested for the unreachable path itself | `integration/test_route_endpoint.py`; `unit/test_config.py` (binding refusals) | `integration/test_stage_governance.py`; `e2e/test_backends_surface.py` | `integration/test_remote_tier.py`; `unit/test_remote_tier_checks.py`; `integration/test_egress.py` |
+
+**What this index shows.** Four rows are untested in every application that has them — **disk full**,
+**database locked** (proved only in FreeWeight), **database migration failure** (proved in
+FreeWeight and LoadCoach, missing in the two newest applications) and **incompatible API major
+version** (proved only in IdeaPress). IdeaPress has no machine-condition tests at all, which is
+consistent with its cells being "telemetry widget hidden" but leaves three rows unproved. G20 cannot
+be turned on until those are closed.
 
 ---
 
