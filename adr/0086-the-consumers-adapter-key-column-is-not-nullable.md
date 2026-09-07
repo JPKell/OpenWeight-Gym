@@ -1,6 +1,7 @@
 # ADR-0086 — The consumer's adapter key column is not nullable
 
 **Status:** Accepted (2026-09-06)
+**Clarified 2026-09-07:** inside LoadCoach the same subject axis is spelled two ways on purpose. `capability_evidence.adapter_artifact_digest` carries the adapter's **artifact digest** — this record's column — because imported evidence arrives from another machine and may name an adapter that has never been present here, so a local row id would be unresolvable and the digest is the only identity that travels. `reliability_stats.adapter_key` carries the adapter's **row id**, because reliability is computed from this machine's own attempts, where the adapter row always exists. Both use `''` for the bare base, for the reason decided below. Do not harmonize them (H5_HANDOFF.md §5, note on decisions 1 and 5).
 **Amends:** [ADR-0085](0085-the-evidence-uniqueness-key-carries-the-adapter.md) decision 2 (the
 consumer's key column spelling), and through it
 [ADR-0022](0022-capability-evidence-record-contract.md) §3.
