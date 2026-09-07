@@ -69,8 +69,9 @@ Python ≥ 3.12 standard library. Nothing else, at runtime or as an optional ext
 
 ## 6. Consumers
 
-SetSpec, ModelRack, SweatMeter, WeightsDB, MirrorWall, FreeWeight, LoadCoach, IdeaPress, and any
-external tool that wants suite-compatible identities.
+SetSpec, ModelRack, SweatMeter, WeightsDB, MirrorWall, CutCtx, ToolYard, LoadLedger, Commissioner,
+FreeWeight, LoadCoach, IdeaPress, PromptCadence, and any external tool that wants suite-compatible
+identities.
 
 ## 7. Public API
 

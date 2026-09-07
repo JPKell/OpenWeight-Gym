@@ -59,7 +59,7 @@ PostgreSQL.
 
 ## 6. Consumers
 
-FreeWeight, LoadCoach, IdeaPress. (Extracted only once the second consumer exists.)
+FreeWeight, LoadCoach, IdeaPress, PromptCadence. (Extracted only once the second consumer existed.)
 
 ## 7. Public API
 

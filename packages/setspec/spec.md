@@ -59,7 +59,8 @@ all four applications need both.
 ## 6. Consumers
 
 FreeWeight (producer of results/evidence), LoadCoach (consumer of evidence, producer of job events),
-IdeaPress (consumer of results, producer of feedback), MirrorWall (event and error envelopes), and
+IdeaPress (consumer of results, producer of feedback), PromptCadence (event envelopes, the egress
+decision payload), MirrorWall and Commissioner (envelopes and the Python form of a payload), and
 any external tool reading a suite export.
 
 ## 7. Public API

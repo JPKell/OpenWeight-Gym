@@ -64,7 +64,7 @@ application's FastAPI; declared as a dependency for the middleware and response 
 
 ## 6. Consumers
 
-FreeWeight, LoadCoach, IdeaPress.
+FreeWeight, LoadCoach, IdeaPress, PromptCadence.
 
 ## 7. Public API
 
