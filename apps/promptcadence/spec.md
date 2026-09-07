@@ -1,10 +1,11 @@
 # PromptCadence — Specification
 
 **Type:** Application · **Import/distribution name:** `promptcadence` · **Default port:** 8768 · **Env prefix:** `PROMPTCADENCE_`
-**Status:** Specified, not implemented. Expanded 2026-09-01 from the design skeleton (`harness.md`);
-every open question in that skeleton's §9 is resolved here or in the
-[PromptCadence roadmap](../../roadmap/promptcadence-roadmap.md) §2, and each resolution is scheduled as an ADR
-before code is written.
+**Status:** Implemented through Phase 9 and beyond. `promptcadence 1.1.0` is published; `1.2.0` —
+the `settings` CLI verb — is committed and prepared. Expanded 2026-09-01 from the design skeleton
+(`harness.md`, since retired); every open question in that skeleton's §9 was resolved here or in the
+[PromptCadence roadmap](../../roadmap/promptcadence-roadmap.md) §2, and each resolution was accepted
+as an ADR (0045–0057) before code was written.
 **Related:** [Lifecycle](lifecycle.md) · [Development Plan](development-plan.md) ·
 [PromptCadence roadmap](../../roadmap/promptcadence-roadmap.md) ·
 [CutCtx](../../packages/cutctx/spec.md) · [ToolYard](../../packages/toolyard/spec.md) ·

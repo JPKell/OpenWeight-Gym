@@ -1,7 +1,9 @@
 # LoadCoach — Specification
 
 **Type:** Application · **Import/distribution name:** `loadcoach` · **Default port:** 8766 · **Env prefix:** `LOADCOACH_`
-**Status:** Specified, not implemented. Corrected 2026-08-21 by the
+**Status:** Implemented through Phase 11. `loadcoach 1.0.0` is published; `1.1.0` (LC-E1, the
+adapter registry and pins) is tagged, and `1.1.2` is committed and prepared.
+Corrected 2026-08-21 by the
 [final architecture audit](../../reviews/final_architecture_audit.md) (ADR-0022–0027, ADR-0029).
 **Related:** [Routing](routing.md) · [Queue and Scheduling](queue-and-scheduling.md) · [API](api.md) · [Data Model](data-model.md) · [Development Plan](development-plan.md) · [Risks](risks.md)
 
