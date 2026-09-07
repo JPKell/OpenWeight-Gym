@@ -287,10 +287,10 @@ isolate single files while iterating.
    * **The `think: false` stream failure gets its own ModelRack row** — `I6`. Reproduce, then
      decide whether `OllamaProvider`'s stream parser drops a mid-stream error object or Ollama
      really closes without a terminal chunk; the two have different fixes.
-   * **PromptCadence's two hash-pinned snapshots are refreshed in a 1.0.1 row** — `I5`, scheduled
+   * **PromptCadence's two hash-pinned snapshots are refreshed in a 1.0.1 row** — `I5` (renumbered `I4` on 2026-09-06), scheduled
      **before J1**, together with F1's neighbours, so adoption work does not open against a red
      contract suite.
-   * **A short read-only probe of which local models honour the control** — `I7`. I3 proved the
+   * **A short read-only probe of which local models honour the control** — `I7` (folded into `I6` on 2026-09-06). I3 proved the
      lever reaches the wire; nothing yet proves any installed model obeys it, and the answer
      belongs somewhere the next person reaching for `execution.think` will read it.
 6. **One incident, recorded because the tree-integrity rule exists.** A `pkill` killed its own

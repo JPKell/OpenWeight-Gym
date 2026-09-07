@@ -368,7 +368,7 @@ Decided at the interview, and done in this row:
 1. **Fix F1 first, rerun, then tag** — done (§10, run 4). The tag stays the operator's.
 2. **The SSE poll follows LoadCoach to 2 ms** — done; median 1.40 ms, p95 2.18 ms (§8).
 3. **`GET/PUT /settings`: schedule a runtime-settings row** rather than strike them from spec
-   §7.1 — row **I4** in `outstanding-work` §1.
+   §7.1 — row **I4** in `outstanding-work` §1 (renumbered **I5** on 2026-09-06, when the 1.0.1 row was placed ahead of it).
 4. **One LoadCoach 1.1.1 row before J1** for the `/models` render and the thinking control —
    row **I3**, with an ordering note in §3.
 
