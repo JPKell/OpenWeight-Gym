@@ -5,7 +5,7 @@
 component says about a remote tier; [PromptCadence Roadmap §9](../roadmap/promptcadence-roadmap.md)
 I13 — the recorded-transport half lands at 1.0, the live half after it.
 **Relates to:** [ADR-0073](0073-egress-is-decided-on-configuration-before-availability.md)
-(egress and pricing precede availability), [ADR-0055](0055-a-provider-registration-declares-its-egress-class.md)
+(egress and pricing precede availability), [ADR-0055](0055-loadcoach-registers-providers-by-name-and-kind.md)
 (LoadCoach declares a registration's egress class; it is never inferred),
 [ADR-0072](0072-the-model-pricing-record-file.md) (the pricing record a remote tier must name).
 **Source:** Row I2, decision 4 — the release-scope decision the development plan's Phase 9 *Known
