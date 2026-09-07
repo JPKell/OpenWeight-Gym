@@ -9,10 +9,11 @@ gate, every probe and every capture.
 `0.7.1` (`2163e7d`). The row ends in documentation, which is the outcome the kickoff named as
 acceptable.
 
-**Repositories touched:** `docs` (one commit), `LoadCoach` (one commit, the `routing.md` mirror)
-and `py/ModelRack` (one commit, the `spec.md` mirror). All three were clean at the start —
+**Repositories touched:** `docs` (two commits), `LoadCoach` (one commit, the `routing.md` mirror)
+and `py/ModelRack` (two commits: the `spec.md` mirror, and the probe harness the closing interview
+chose to keep). All three were clean at the start —
 `docs` at `834c9ab`, `LoadCoach` at `2a7ac58`, `ModelRack` at `2163e7d` — and all three are clean
-at the end with the new work committed and unpushed. **No source file changed in any repository.**
+at the end with the new work committed and unpushed. **No file under any `src/` changed.**
 No `git push`, no push dry-run, no tag. The I8/I9 session was not running: `docs` and `LoadCoach`
 were clean at the start and again immediately before these edits, so the preamble's cleanup was
 never needed and nothing of another session's was touched.
@@ -127,6 +128,12 @@ millisecond offset — no ModelRack code in the path at all. Six runs with `thin
 | `think: false` + `format: "json"` | 6 | **0 / 6** | Clean chunked EOF, HTTP 200, `content-type: application/x-ndjson` |
 | `think` unset + `format: "json"` | 6 | **6 / 6** | Clean chunked EOF, terminal chunk present |
 
+Across every request this row sent with that exact body straight to Ollama — the six above, the
+narrowing matrix's three, the probe's one and the committed script's three — the count is **12 of
+13 with no terminal chunk**. It is highly reproducible, not deterministic; the single run that
+completed did so after §7's script was committed, which is why the figure here is 12 of 13 and not
+the 6 of 6 the first capture alone showed.
+
 Every line in every failing stream was valid JSON and a well-formed object. The last thing five of
 the six failing streams delivered was an ordinary content delta:
 
@@ -187,10 +194,10 @@ retry_policy.py:105` maps `ProviderProtocolError` to `FailureKind.PROTOCOL`, and
 answers `RETRY_SAME` with reason `protocol_error` up to `PROTOCOL_ERROR_RETRIES`, then
 `FALLBACK` with `protocol_error_retries_exhausted`. That is the treatment the kickoff said a
 retryable provider failure deserves, so **there is nothing to file**. Worth one sentence for
-whoever reads I3's table again: the retries do not help here because the failure is deterministic
-for the body, not intermittent — 6 of 6 straight to Ollama — so on `tools.plan` with
-`think = false` LoadCoach spends its protocol retries and falls back, which is precisely the
-0 / 6 delivered that I3 measured.
+whoever reads I3's table again: the retries barely help, because the failure follows the body
+rather than the moment — 12 of 13 straight to Ollama — so on `tools.plan` with `think = false`
+LoadCoach spends its protocol retries on a request that fails again and falls back, which is
+precisely the 0 / 6 delivered that I3 measured.
 
 ## 4. The probe's full run log
 
@@ -261,11 +268,28 @@ together they do not. The `deepseek` "unset" row measured nothing about `unset` 
 already down from the row above it — and is recorded rather than dropped so the number of runs in
 this handoff matches the number of requests made.
 
-Scratchpad layout, for whoever re-runs it:
-`i6/prompt.py` (the one prompt), `i6/capture.py` (gate B, raw bytes),
-`i6/probe.py` (gate A, ten models), `i6/narrow.py` (the matrix),
-`i6/through_modelrack.py` (the same body through `OllamaProvider`), with `i6/raw/`, `i6/probe/`,
-`i6/capture.json`, `i6/probe.json` and `i6/narrow.jsonl` beside them.
+**The harness is committed**, at the closing interview's decision (§7):
+`py/ModelRack/scripts/probe_thinking_control.py`, beside the existing
+`generate_provider_matrix.py`. It carries both halves — `probe` for the table, `capture` for the
+raw bytes — and the prompt is embedded **verbatim**, asserted byte-identical to the 1 976-character
+string every cell above used, so a re-run after an Ollama upgrade or a model pull produces columns
+that mean what these ones mean:
+
+```bash
+python scripts/probe_thinking_control.py --out <dir> probe
+python scripts/probe_thinking_control.py --out <dir> capture gpt-oss:20b --runs 6
+```
+
+It is not a test, CI does not run it, and it changes nothing it looks at. The first draft of it
+paraphrased the prompt rather than embedding it, and the difference showed immediately — one of two
+captures completed, and `ornith:9b` returned 1 240 content characters where the table says 721. The
+committed version reproduces the table.
+
+The session scratchpad held the originals — `i6/prompt.py`, `i6/capture.py`, `i6/probe.py`,
+`i6/narrow.py`, `i6/through_modelrack.py`, with `i6/raw/`, `i6/probe/`, `i6/capture.json`,
+`i6/probe.json` and `i6/narrow.jsonl` — and evaporates with the session. Only
+`through_modelrack.py` is not in the committed script, deliberately: running the failing body
+through `OllamaProvider` is a one-off proof, not something to re-measure.
 
 ## 5. Exit conditions, answered
 
@@ -290,9 +314,10 @@ Scratchpad layout, for whoever re-runs it:
   13.8 GB each on a 16 GB card. The kickoff's "cap the set or unload between models" escape was
   taken in its second form and cost nothing.
 * **The kickoff framed the failure as intermittent** ("four of six", "a stream that dies at 1.3 s in
-  four of six runs is a *retryable* provider failure"). Straight to Ollama it is **not**
-  intermittent at all: 6 of 6 under `think: false` + `format: "json"`. Through ModelRack the same
-  body failed 1 of 3, and the difference is not transport — the two runs that "succeeded" returned
+  four of six runs is a *retryable* provider failure"). Straight to Ollama it is far more
+  reproducible than that: **12 of 13** under `think: false` + `format: "json"`, and the first nine
+  in a row. Through ModelRack the same body failed 1 of 3, and the difference is not transport —
+  the two runs that "succeeded" returned
   reasoning prose as `text`, which is the same underlying misbehaviour landing on the other side of
   Ollama's harmony parser. I3's four-of-six is the LoadCoach-level count of a defect that is
   deterministic at the wire.
@@ -311,11 +336,24 @@ Scratchpad layout, for whoever re-runs it:
 publish and `modelrack` stays at `0.7.1`. The push list is three commits — one in `docs`, one in
 `LoadCoach`, one in `py/ModelRack` — and pushing them is yours as always.
 
-One judgement call is worth putting in front of you rather than deciding here: **`deepseek-coder-v2:
-latest` crashes Ollama on `think: false`**, and nothing in the suite stops a profile from routing to
-it with the field set. Today no shipped profile sets `think`, so nothing is exposed. If one ever
-does, the guard belongs somewhere — a LoadCoach constraint, an operator note, or a pull of that
-model — and that is a decision, not a defect to fix here (§8).
+**The closing interview (2026-09-07) decided four things**, and two of them were work:
+
+1. **The `deepseek-coder-v2` crash gets the documentation and nothing else.** It crashes Ollama on
+   `think: false` and nothing in the suite stops a profile from routing to it with the field set —
+   but no shipped profile sets `think`, so nothing is exposed today, and the warning in
+   `routing.md` §2 is the whole guard. The losing options were a LoadCoach routing-time refusal,
+   which needs per-model knowledge LoadCoach does not have and probably should not acquire, and
+   pulling the model, which removes the only non-thinking model on the machine. **Revisit only if a
+   profile ever sets the field.**
+2. **Neither Ollama defect is filed upstream.** Both are reproducible from the committed script and
+   recorded here; filing is yours whenever you want it, and nothing in the suite waits on an
+   upstream fix.
+3. **The probe harness is committed** to `py/ModelRack/scripts/probe_thinking_control.py` (§4),
+   with a `CHANGELOG.md` `[Unreleased]` entry. It makes the `routing.md` table re-measurable rather
+   than a one-time reading; the losing option was letting the scratchpad evaporate and having the
+   next person rewrite 150 lines from this handoff's prose.
+4. **The roadmap row is closed here**, in the house shape, rather than left for your next
+   reconciliation.
 
 ## 8. Anything found that belongs to another row
 
@@ -331,7 +369,8 @@ model — and that is a decision, not a defect to fix here (§8).
   routing-time refusal for a model that accepts `think: false` and dies on it, which needs
   per-model knowledge LoadCoach does not have and probably should not acquire; the cheaper answer
   is the operator note that now exists in `routing.md`. Left unscheduled deliberately.
-* **An Ollama upstream report is available to whoever wants to file it** — `0.32.13`,
+* **An Ollama upstream report is available to whoever wants to file it, and the interview left it
+  unfiled** (§7) — `0.32.13`,
   `gpt-oss:20b`, `think: false` + `format: "json"` ends a 200 NDJSON stream with no terminal chunk
   and sometimes `error parsing tool call`; `deepseek-coder-v2:latest` + `think: false` kills the
   server. Both reproduce from the scratchpad scripts. Not this suite's work.
