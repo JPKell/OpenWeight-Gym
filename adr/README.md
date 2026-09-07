@@ -122,6 +122,9 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0097](0097-a-performance-budget-asserts-its-ceiling-and-reports-its-target.md) | A performance budget asserts its ceiling and reports its target | Accepted |
 | [0098](0098-promptcadence-1-0-ships-with-remote-tiers-refusing-honestly.md) | PromptCadence 1.0 ships with remote tiers refusing honestly | Accepted |
 | [0099](0099-a-task-profile-may-ask-for-reduced-thinking.md) | A task profile may ask for reduced thinking, and routing enforces that it can be asked | Accepted |
+| [0100](0100-promptcadences-runtime-changeable-set-is-five-tuning-numbers.md) | PromptCadence's runtime-changeable set is five tuning numbers, and the environment still wins | Accepted |
+| [0101](0101-a-runtime-setting-need-not-be-a-configuration-key.md) | A runtime setting need not be a configuration key, and the ones that are not say so | Accepted |
+| [0102](0102-freeweights-settings-body-gains-the-suites-shape.md) | FreeWeight's settings body gains the suite's shape, and `items` is deprecated | Accepted |
 
 ## Writing a new ADR
 
@@ -439,3 +442,25 @@ records an approver. Membership is tested by re-reading, not by plausibility —
 process does not re-read is not runtime-changeable — and precedence follows configuration
 standards §7 rather than LoadCoach's implementation, so the environment still beats a stored row
 and a shadowed row is shown as shadowed instead of being applied or dropped in silence.
+
+**ADR-0101 was added on 2026-09-07** (row I8/I9, LoadCoach 1.1.2). It names a shape the
+configuration standards never described and LoadCoach has shipped since P5: a runtime-changeable
+setting that is **not** a configuration key. `queue.paused` and `queue.draining` live only in the
+`settings` table — `QueueSettings` has no such fields — so they have no environment variable, no
+row in the generated reference, and a `LOADCOACH_QUEUE__PAUSED` is refused by the loader as an
+unknown key rather than shadowing a stored row. The one precedence rule applies to them unchanged
+and costs nothing, the reference's header now says they exist and why its tables cannot list them,
+and the test for admitting another is whether setting the key in `config.toml` would mean
+anything: a pause is operational state, a threshold is configuration. Adding the two to the
+settings model for uniformity was refused — it would create the shadowing hazard they are
+currently immune to. (This row also added 0100's missing index row.)
+
+**ADR-0102 was added on 2026-09-07** (row I8/I9, FreeWeight 1.1). Three applications serve a
+runtime-settings surface built on one idea and no shared code, and FreeWeight's wire shape was the
+odd one out: `{items: [...]}` with `stored_value`/`overridden_by_env` against LoadCoach's and
+PromptCadence's `{settings, definitions}` with `stored`/`shadowed_by`. Rewriting it was forbidden
+— ADR-0013 makes changes additive-only inside a major version — so the body now carries **both**:
+the suite's shape is added, `items` is unchanged and deprecated, and it goes when FreeWeight next
+needs an `/api/v2`. `configured` became answerable again by keeping the loaded settings pristine
+beside the applied ones, and `settings` applies the stored row at read time rather than reporting
+what was folded in at startup, which is where the two renderings can honestly disagree.

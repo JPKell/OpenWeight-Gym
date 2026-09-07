@@ -4,8 +4,11 @@
 **Date:** 2026-09-07. **Both parts complete.** `promptcadence 1.1.0` was tagged (`v1.1.0`) and on
 PyPI, so the version edge in the kickoff did not bind and Part 2 ran.
 
-**Ships, both prepared and neither tagged nor pushed:** `loadcoach 1.1.2` (`1a3e2a7`),
-`promptcadence 1.2.0` (`57b1e58`).
+**Ships, prepared and neither tagged nor pushed:** `loadcoach 1.1.2` (release commit `1a3e2a7`,
+two documentation commits after it — tag `8162f68`), `promptcadence 1.2.0` (`57b1e58`). A
+2026-09-07 interview after both parts were green added four further decisions (§6a), which put
+three commits on **FreeWeight** as well, riding its unreleased 1.1.0, and two new records:
+**ADR-0101** and **ADR-0102**.
 
 ---
 
@@ -316,8 +319,8 @@ Line numbers are omitted below where they had moved; the reasoning matters more 
    environment, publish.
 2. **Tag and publish PromptCadence 1.2.0**: `git tag -a v1.2.0` on `57b1e58`, push, approve the
    `pypi` environment, publish.
-3. **Push three repositories**: `LoadCoach` (5 commits), `PromptCadence` (2 commits), and `docs`
-   (1 commit, `60faadf`).
+3. **Push four repositories**: `LoadCoach` (7 commits), `PromptCadence` (2 commits), `FreeWeight`
+   (3 commits, riding its unreleased 1.1.0 — nothing to tag or publish here yet), and `docs`.
 4. **`roadmap/outstanding-work.md` is left modified and uncommitted in `docs/`, and it is not this
    row's change** — row I6 was running against the same workspace and holds that file. The docs
    commit staged only `apps/loadcoach/api.md`, `apps/promptcadence/spec.md` and this handoff, by
@@ -326,34 +329,128 @@ Line numbers are omitted below where they had moved; the reasoning matters more 
 5. **A note before pushing LoadCoach migrations** (carried forward from H4, unchanged by this row):
    run the suite with `WEIGHTSDB_REQUIRE_POSTGRES=1` first. This row adds no migration.
 
-**One thing worth an operator's eye before publishing:** `pip index versions loadcoach` reports
-**only `1.0.0` on PyPI**. `v1.1.0` and `v1.1.1` are tagged locally but do not appear to have been
-published. 1.1.2 is prepared on top of 1.1.1 regardless — the version bump is correct — but if the
-intent is for PyPI to carry the current LoadCoach, two earlier releases are outstanding as well.
+**Decided at the interview (D6):** `pip index versions loadcoach` reports **only `1.0.0` on
+PyPI** — `v1.1.0` and `v1.1.1` are tagged locally and were never published. Publish **1.1.2 only**;
+it supersedes both and the two tags stay as repository history.
+
+---
+
+## 6a. The 2026-09-07 interview — four further decisions, and what was built from them
+
+Asked after the row's two parts were green. Each is recorded here rather than as a separate
+document because each changed what shipped.
+
+### D6 — the two unpublished LoadCoach tags. **Publish 1.1.2 only.**
+
+`v1.1.0` and `v1.1.1` are tagged locally and absent from PyPI, which carries `loadcoach 1.0.0`
+alone. 1.1.2 supersedes both and carries their changes, so PyPI jumps 1.0.0 → 1.1.2 and the two
+tags stay as repository history. **What the losing option would have claimed:** that PyPI's history
+should match the repository's, which would mean three approvals, three workflow runs, and each
+older tag building green against today's lock — for versions no consumer is pinned to, because
+none was ever published.
+
+### D7 — FreeWeight's `(database)` gap. **Fixed now, as a third part.**
+
+`freeweight config show` opened no database and so never marked a database-sourced value, breaking
+configuration standards §7's third rule in the third application. Transcribed from LoadCoach's fix:
+`_database_overlay`, the same never-raises and never-creates-a-file discipline, four tests, and one
+sentence in the generated reference's header. Proved live on a scratch tree:
+`telemetry.interval_ms  500  (database)`, and with the variable set,
+`250  (env FREEWEIGHT_TELEMETRY__INTERVAL_MS; database row 500 shadowed)`, and no file created when
+none exists. **FreeWeight's precedence was already correct** — `read_settings` has computed
+`from_env` and `overridden_by_env` since it was written — so only the reporting was missing.
+Commit `1f37cdc`, on FreeWeight's unreleased 1.1.0.
+
+### D8 — the configuration-less keys. **ADR-0101.**
+
+`queue.paused` and `queue.draining` are runtime-changeable keys that are not configuration keys, a
+shape the standards never described (see D1 above for how the row found it). ADR-0101 names it,
+states that the one precedence rule still applies unchanged, explains why the generated reference's
+tables cannot list them, and gives the test for admitting another: a pause is operational state, a
+threshold is configuration. Adding the two to `QueueSettings` for uniformity was refused — it would
+create the shadowing hazard they are currently immune to. LoadCoach's api.md §9 and its reference
+header now cite the record instead of explaining it twice (`bf27301`, `8162f68`).
+
+### D9 — the three near-copies of one registry. **Converged, and it cost more than the question implied.**
+
+The decision was to converge FreeWeight onto LoadCoach's and PromptCadence's shape. Two findings
+came out of doing it, and the second changed the plan:
+
+* **The free half was real and is done.** `FREEWEIGHT_<SECTION>__<FIELD>` was spelled out in three
+  places — the loader's source tracking, `RuntimeSetting.env_var` and the reference generator.
+  `env_var_for` is now the one spelling all three call, matching the other two applications. The
+  generated document is byte-identical (`dae2319`).
+* **The rest is a breaking wire change, and ADR-0013 forbids it.** FreeWeight's
+  `GET /api/v1/settings` returns `{items: [...]}` with `value`/`stored_value`/`overridden_by_env`
+  and a `source` vocabulary of `"env"`/`"database"`/`"file or default"`; the other two return
+  `{settings, definitions}` with `configured`/`stored`/`source`/`shadowed_by`. Rewriting a `v1`
+  response is not additive, and ADR-0013 requires a `/api/v2` with a deprecation window for that —
+  a second API major in FreeWeight to rename four fields.
+
+  So it was done **additively**, which is what ADR-0013 permits: the body now carries both
+  renderings. `settings` and `definitions` are added in the suite's vocabulary (plus `unit`,
+  `choices` and `env_var`, which FreeWeight's page needs and the other two have no use for);
+  `items` is unchanged, deprecated, and removed when FreeWeight next has an `/api/v2`. Recorded as
+  **ADR-0102**. Commit `320ec27`.
+
+  Two things fell out of building it, both worth reading:
+
+  1. **`configured` was unanswerable.** FreeWeight folded stored values over its settings object
+     during startup and kept only the result, so "what was configured" no longer existed in the
+     process — exactly what ADR-0100 refused for PromptCadence. The lifespan now keeps the pristine
+     object beside the applied one.
+  2. **The two renderings can honestly disagree.** `items[*].value` reports the value folded in
+     when the process *started*; `settings` applies the stored row at read time, so it answers
+     "what will the next run use". Proved live: after `PUT {"telemetry.interval_ms": 2000}`,
+     `settings` reads 2000 and `items[*].value` reads 1000, with `stored: 2000` and
+     `source: "database"` beside both. That is a defect in `items`, and it is one of the reasons
+     `items` is the half being deprecated rather than the half being kept.
+
+**What the losing options would have claimed.** Converging the other two onto FreeWeight would
+break a contract `promptcadence 1.1.0` has already published and that `loadcoach 1.1.2` was
+prepared with hours earlier. Extracting a shared layer-3 package would be an abstraction over three
+registries with three refusal policies, two `kind` vocabularies and — until this change — two
+response shapes; ADR-0102 removes the shape half of that objection and leaves the question open for
+a fourth application. Stopping at `env_var_for` was the recommendation and was overruled; the
+additive route delivered the convergence without the breakage the recommendation was protecting.
+
+### FreeWeight's gate, for the record
+
+Interpreter `.venv/bin/python` → **Python 3.14.4**. Same six invocations as §1.
+`ruff format --check` clean, `ruff check` clean, `mypy src tests` → *no issues found in 299 source
+files*, `lint-imports` → *4 kept, 0 broken*, `pytest -m "not live and not performance"` →
+**2603 passed, 28 skipped, 30 deselected**, `pytest --cov` → **88.28 %** against an 85 % floor.
+Three commits on `main`, unpushed: `1f37cdc`, `dae2319`, `320ec27`. Nothing tagged; FreeWeight's
+1.1.0 remains unreleased and these ride it.
 
 ---
 
 ## 7. Findings that belong to another row
 
-1. **FreeWeight resolves precedence correctly, and breaks the third rule.** `freeweight
-   .services.settings` implements configuration standards §7 properly — its module docstring states
-   the chain, `read_settings` computes `from_env = setting.env_var in os.environ` and reports
-   `overridden_by_env`, and its refusal is an **allowlist** (`RUNTIME_SETTINGS` enumerates what may
-   change), which is stronger than LoadCoach's and PromptCadence's blocklist-plus-registry pair.
-   **But `freeweight config show` opens no database** and renders `loaded.sources` only, so a
-   database-sourced value is never marked `(database)` — the same rule LoadCoach broke, in the
-   third application. `_database_overlay` from either LoadCoach or PromptCadence transcribes
-   directly. **A finding, not a fix in this row.**
-2. **`queue.paused` / `queue.draining` are registry keys with no configuration counterpart.** They
-   have no environment variable, no default in the settings model, no row in `docs/configuration.md`,
-   and `_configured()` reaches them only through a `getattr` default of `False`. It works, and Gate
-   D documents it, but "a runtime-changeable key that is not a configuration key" is a shape the
-   standards do not describe. Worth an ADR or a `RuntimeSetting` field that says so explicitly.
-3. **Three applications now hold three copies of the same `RuntimeSetting` dataclass and `coerce`.**
-   LoadCoach's and PromptCadence's are near-identical; FreeWeight's is a third variant with its own
-   `env_var` field and view type. That is exactly the kind of duplication a layer-3 package exists
-   for, and equally the kind of "shared abstraction over three slightly different needs" that ages
-   badly. Recording it, recommending nothing.
-4. **`test_the_running_worker_applies_a_write_within_one_reap_cadence` is load-sensitive** (§1). It
+The first three findings this row recorded were **acted on** at the interview and are written up in
+§6a: FreeWeight's `(database)` gap (D7, fixed), the configuration-less keys (D8, ADR-0101) and the
+three near-copies of one registry (D9, ADR-0102). What remains open:
+
+1. **FreeWeight's OpenAPI snapshot had been stale since the 1.1.0 version bump.** `docs/openapi.json`
+   still said `"version": "1.0.0"`, and no test caught it:
+   `tests/integration/test_integration_milestones.py` compares **path keys only**, where LoadCoach
+   and PromptCadence compare the document byte for byte. This row regenerated it, so the immediate
+   drift is closed, but the guard is still weaker than the other two applications' and will let the
+   next drift through. A one-line change to that assertion, in whichever row next opens FreeWeight.
+2. **FreeWeight raises at startup on a stored row it cannot coerce**, where LoadCoach and
+   PromptCadence fall back to configuration and keep serving. `apply_stored` feeds stored values
+   through `Settings.model_validate`, so a row written by a version with wider bounds stops this
+   one from starting. The other two treat that as "a row this build cannot read" and serve the
+   configured value. A real robustness difference, named in ADR-0102's Consequences and not fixed
+   there.
+3. **FreeWeight's refusal is an allowlist and the other two are blocklist-plus-registry.**
+   `RUNTIME_SETTINGS` enumerates what may change, so a security-relevant key nobody remembered to
+   forbid is config-only by default. That is the **stronger** direction, and it is FreeWeight that
+   has it. If the three ever converge further, they should converge on this, not away from it.
+4. **The registry is still three implementations.** ADR-0102 settled the wire shape; the internal
+   divergence remains — a string `kind` with a `"choice"` variant against a Python type, `unit` and
+   `choices` in one of the three, and three `coerce` implementations. The layer-3-package question
+   is deliberately left open, and ADR-0102 says when to ask it again.
+5. **`test_the_running_worker_applies_a_write_within_one_reap_cadence` is load-sensitive** (§1). It
    polls a worker thread on a ten-second wall clock and failed once under a parallel test run. If
    CI ever goes red there, it is the clock, not the settings.
