@@ -121,6 +121,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0096](0096-replayed-tool-call-arguments-are-capped-at-the-records-bound.md) | Replayed tool-call arguments are capped at the record's bound | Accepted |
 | [0097](0097-a-performance-budget-asserts-its-ceiling-and-reports-its-target.md) | A performance budget asserts its ceiling and reports its target | Accepted |
 | [0098](0098-promptcadence-1-0-ships-with-remote-tiers-refusing-honestly.md) | PromptCadence 1.0 ships with remote tiers refusing honestly | Accepted |
+| [0099](0099-a-task-profile-may-ask-for-reduced-thinking.md) | A task profile may ask for reduced thinking, and routing enforces that it can be asked | Accepted |
 
 ## Writing a new ADR
 
@@ -416,3 +417,13 @@ never asserted, and a missed ceiling is a finding rather than a wider number. **
 with I13's recorded-transport half proven in CI — the remote-provider fact read from LoadCoach's
 `is_remote`, never inferred from a kind — and the live remote run deferred; a remote tier refuses
 honestly, naming `loadcoach_has_no_remote_provider` or `unpriced`, until an operator meets both.
+
+**ADR-0099 was added on 2026-09-06** (row I3, LoadCoach 1.1.1). It closes the two halves of one
+patch release: `GET /models` renders `provider_name` and `is_remote` under the names the generate
+response already uses, so ADR-0098 rule 1 reads a true fact from a real LoadCoach without a
+PromptCadence change; and `TaskProfileExecution.think` — ModelRack's name and its three states,
+overridable by `sampling.think` — makes the thinking control G2 could only name reachable from
+configuration. A set `think` requires `thinking_control` of every candidate at routing, rejected
+as `capability_unsupported` with `required_by`, and travels beside `requires_capabilities` rather
+than inside it, because that field is validated against the SetSpec vocabulary and
+`thinking_control` is a provider flag rather than a capability.
