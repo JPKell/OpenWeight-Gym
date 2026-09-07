@@ -136,6 +136,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0111](0111-the-container-rung-is-proved-on-docker-and-podman-is-not-an-exit-condition.md) | The container rung is proved on docker, and podman is not an exit condition | Accepted |
 | [0112](0112-the-usage-object-spells-unavailable-one-way-inside-api-v1.md) | The `usage` object spells "unavailable" one way, inside `/api/v1` | Accepted |
 | [0113](0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md) | Packages stay `0.x` at M9; a `1.0` is earned per package | Accepted |
+| [0114](0114-the-dependency-budget-is-the-enumerated-set-a-component-declares.md) | The runtime dependency budget is an enumerated set, not a count | Accepted |
 
 ## Writing a new ADR
 
@@ -614,3 +615,17 @@ operator may still overrule decision 1, in which case the record's criteria are 
 to satisfy or explicitly waive. Two facts corrected the audit's framing on the way: ToolYard has
 one in-suite consumer, not two, and SetSpec's frozen *payloads* are not its *package* surface —
 which is why the "bump only the frozen one" option loses.
+
+**ADR-0114 was added on 2026-09-07** (row L2), out of the same audit's G16 finding. `gold-standards`
+§1.1 allowed each application six direct non-suite runtime dependencies and MirrorWall two; the four
+applications declare nine or ten and MirrorWall three, with no ADR justifying any of it. Reading
+every `pyproject.toml` settled which way the discrepancy pointed: every name but one is imported by
+the component declaring it, and three of them (`pydantic`, `sqlalchemy`, `alembic`) are declared
+*because* they are imported even though they also arrive transitively — which is packaging
+correctness, not appetite. So the budget becomes the enumerated set, a count becomes a consequence,
+and G16's rule ("a new name needs an ADR") is untouched. The one name that does not survive the read
+is `pydantic-settings`: all four applications declare it and none imports it, because each
+`config.py` merges its own layers so `config show` can name the layer every value came from. §1.1
+lists it as declared, unapproved and owed removal rather than pretending either way. The gate — a
+test comparing `pyproject.toml` against the table — exists in three repositories and is owed by
+eleven.

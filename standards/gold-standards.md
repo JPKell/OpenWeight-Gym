@@ -25,7 +25,7 @@ it meets its gold standards.
 | G13 | Safe upgrades | Migration tests: fresh, stepwise, idempotent, failure+restore, both dialects | CI, blocking |
 | G14 | Predictable errors | Every error has a stable code, documented in the component spec, asserted by tests | Contract tests |
 | G15 | Documented behaviour | Every public function/class/module has a docstring stating its contract | `ruff D1xx`, blocking |
-| G16 | Minimal dependency footprint | Runtime dependency budget respected (§2); a new dependency needs a PR justification | Review + a test asserting the declared set |
+| G16 | Minimal dependency footprint | Each component declares exactly the enumerated set in §1.1; a new name needs an ADR ([ADR-0114](../adr/0114-the-dependency-budget-is-the-enumerated-set-a-component-declares.md)) | A test comparing `pyproject.toml` against §1.1 |
 | G17 | Accessible UI | WCAG 2.1 AA checklist passes; contrast asserted over token pairs in both themes | Pre-release checklist + contrast test |
 | G18 | Reproducible releases | Tag → CI → artifacts; no manual upload; install-check passes from the index | Release workflow |
 | G19 | Application overhead is measured, not assumed | Every performance budget has a test; regressions > 25 % fail | Nightly performance job |
@@ -36,21 +36,47 @@ it meets its gold standards.
 
 ### 1.1 Runtime dependency budget
 
-| Component | Allowed runtime dependencies | Count |
+**The budget is the enumerated set below, per component — not a count**
+([ADR-0114](../adr/0114-the-dependency-budget-is-the-enumerated-set-a-component-declares.md),
+2026-09-07, replacing the earlier "≤ 6 direct non-suite" allowance). Every name here is imported by
+the component that declares it. Suite packages are unbudgeted; so are `dev` and optional extras
+(`[postgres]`/`[postgresql]`, `[sql]`, `[telemetry]`, `[pynvml]`, `[psutil]`), which a plain
+`pip install <component>` does not fetch. Counts are reported for orientation only.
+
+| Component | Approved runtime dependencies | Count |
 |---|---|---:|
-| BaseAiCore | *(none)* | 0 |
+| BaseAiCore | *(none — stdlib only)* | 0 |
 | SetSpec | `pydantic`, `jinja2` (prompt rendering, [ADR-0028](../adr/0028-prompt-pack-granularity.md)) | 2 |
 | ModelRack | `httpx` | 1 |
 | SweatMeter | *(none)* | 0 |
 | WeightsDB | `sqlalchemy`, `alembic` | 2 |
-| MirrorWall | `jinja2`, `starlette` | 2 |
+| MirrorWall | `jinja2`, `starlette` (the framework it extends), `anyio` (its SSE and to-thread helpers) | 3 |
 | CutCtx | *(none)* | 0 |
 | ToolYard | `jsonschema`, `httpx` | 2 |
 | LoadLedger | *(none; `sqlalchemy` under the `sql` extra)* | 0 |
 | Commissioner | *(none; `sqlalchemy` under the `sql` extra)* | 0 |
-| Each application | `fastapi`, `uvicorn`, `typer`, `pydantic-settings`, plus suite packages | ≤ 6 direct non-suite |
+| FreeWeight | `fastapi`, `uvicorn[standard]`, `typer`, `pydantic`, `sqlalchemy`, `alembic`, `jinja2`, `httpx`, `python-multipart` | 9 |
+| LoadCoach | the same, without `python-multipart` | 8 |
+| IdeaPress | the same as FreeWeight | 9 |
+| PromptCadence | the same, without `python-multipart` | 8 |
 
-Exceeding a budget requires an ADR.
+Why each application name is there: `pydantic` for the wire models; `sqlalchemy` and `alembic`
+because an application owns its own migration history and a package never may
+([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)); `jinja2` for
+server-rendered HTML ([ADR-0020](../adr/0020-ui-rendering-strategy.md)); `httpx` for the CLI and the
+peer-application clients; `python-multipart` because Starlette's form parser requires it for the
+`Form(...)`/`UploadFile` routes FreeWeight and IdeaPress have and the other two do not. Three of
+them (`pydantic`, `sqlalchemy`, `alembic`) are also reachable transitively through `setspec` and
+`weightsdb`; declaring what you import is required, not a breach.
+
+**Declared but unapproved — owed removal:** all four applications also declare
+`pydantic-settings`, and none of them imports it. Each `config.py` performs its own layered merge so
+that `config show` can report which layer produced every leaf value. The name leaves each
+`pyproject.toml` at that application's next release.
+
+Adding a name to any set requires an ADR. Removing one requires only a release; a version-range
+change is neither. The gate is a test comparing each `pyproject.toml`'s `dependencies` against this
+table — present in `BaseAiCore`, `CutCtx` and `ToolYard`, owed by the other eleven repositories.
 
 ---
 
