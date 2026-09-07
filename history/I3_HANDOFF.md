@@ -273,12 +273,27 @@ isolate single files while iterating.
    `8a57472` through `2a7ac58`). Nothing is pushed; no push dry-run was run.
 2. **The tag and the publish are yours.** `loadcoach 1.1.1` is release-committed and untagged.
 3. **The 1.1.0-versus-1.1.1 sequencing question was not answered at kickoff**, so the default in
-   the prompt was taken: 1.1.1 is prepared as its own release commit on top of the 1.1.0 one.
-   `git tag` still lists only `v1.0.0`, and PyPI still holds `loadcoach 1.0.0`. Whether `v1.1.0` is
-   tagged first or 1.1.1 becomes the first published 1.1.x is still open, and changes nothing that
-   was built.
+   the prompt was taken while building: 1.1.1 is prepared as its own release commit on top of the
+   1.1.0 one. `git tag` still lists only `v1.0.0`, and PyPI still holds `loadcoach 1.0.0`. **At the
+   closing interview the operator chose: tag both, publish 1.1.1 only** — `v1.1.0` on `93063bd`,
+   `v1.1.1` on `2a7ac58`, and one upload. 1.1.0 ships the models-listing defect this row fixes, so
+   it gets a tag for the record and not a release.
 4. **Model deviation:** scheduled Sonnet 5 · high, ran on Opus 5 (model-assignment §3.5).
-5. **One incident, recorded because the tree-integrity rule exists.** A `pkill` killed its own
+5. **The closing interview (2026-09-06) decided four things**, and three of them are now rows:
+   * **Tag both, publish 1.1.1 only.** `v1.1.0` on `93063bd` and `v1.1.1` on `2a7ac58`, so the
+     history carries a tag per release commit, and only the 1.1.1 wheel goes to PyPI — 1.1.0 ships
+     the models-listing defect this row exists to fix, so publishing it would be publishing a known
+     omission.
+   * **The `think: false` stream failure gets its own ModelRack row** — `I6`. Reproduce, then
+     decide whether `OllamaProvider`'s stream parser drops a mid-stream error object or Ollama
+     really closes without a terminal chunk; the two have different fixes.
+   * **PromptCadence's two hash-pinned snapshots are refreshed in a 1.0.1 row** — `I5`, scheduled
+     **before J1**, together with F1's neighbours, so adoption work does not open against a red
+     contract suite.
+   * **A short read-only probe of which local models honour the control** — `I7`. I3 proved the
+     lever reaches the wire; nothing yet proves any installed model obeys it, and the answer
+     belongs somewhere the next person reaching for `execution.think` will read it.
+6. **One incident, recorded because the tree-integrity rule exists.** A `pkill` killed its own
    shell before a heredoc had written a scratch `config.toml`, so a `loadcoach serve` started with
    `--config <a path that did not exist>`, fell back to the defaults, and briefly bound `:8766`
    against **the operator's own data directory** (`~/.local/share/loadcoach/loadcoach.sqlite3`). It
