@@ -8,13 +8,19 @@
 
 ## 1. Ownership
 
-* **One database per application.** `freeweight.sqlite3`, `loadcoach.sqlite3`, `ideapress.sqlite3`
-  (or one PostgreSQL database/schema each).
+* **One database per application.** `freeweight.sqlite3`, `loadcoach.sqlite3`, `ideapress.sqlite3`,
+  `promptcadence.sqlite3` (or one PostgreSQL database/schema each).
 * An application reads and writes **only its own** database. No cross-application queries, no shared
   tables, no "read-only" access to a peer's schema, not even temporarily.
 * WeightsDB provides plumbing only — engine, session, pragmas, migrations, backup, health. It defines
   **no** application table and no shared `Base` with domain meaning.
 * Each application owns its own `MetaData`, its own models, and its own Alembic history.
+* A capability package may ship **mountable** tables — plain-typed SQLAlchemy models the
+  application mounts into its own `MetaData` and its own Alembic history, under a prefix it
+  chooses. The package never owns an engine, a session, a migration history or the data, and it
+  never imports WeightsDB ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)).
+  LoadLedger and Commissioner ship theirs behind a `[sql]` extra, so a consumer that wants only the
+  types does not acquire an ORM.
 
 ---
 

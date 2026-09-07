@@ -14,18 +14,19 @@ graph TD
         U["Browser / terminal on this machine"]
     end
     subgraph T1["T1 — Application process"]
-        APP["FreeWeight / LoadCoach / IdeaPress"]
+        APP["FreeWeight / LoadCoach / IdeaPress / PromptCadence"]
         DB[("Application database")]
         FSD["Data root (artifacts, exports, backups)"]
     end
     subgraph T2["T2 — Semi-trusted local services"]
-        OL["Ollama / OpenAI-compatible server"]
+        OL["Ollama / llama-server / OpenAI-compatible server"]
         NS["nvidia-smi, /proc, /sys"]
     end
     subgraph T3["T3 — Untrusted data"]
         GEN["Model-generated content"]
         IMP["Imported files / evidence bundles"]
         EXT["External benchmark datasets and code"]
+        TOOL["Model-directed tool calls"]
     end
     subgraph T4["T4 — Remote, off by default"]
         REM["Remote model providers (OpenAI, Anthropic, …)"]
@@ -41,6 +42,8 @@ graph TD
     GEN -.->|data only, never executed| APP
     IMP -.->|schema-validated, size-limited| APP
     EXT -.->|sandboxed subprocess| APP
+    GEN --> TOOL
+    TOOL -.->|allowlisted, schema-validated, isolated or refused| APP
     APP -.->|explicit opt-in only| REM
 ```
 
@@ -50,6 +53,7 @@ graph TD
 | T4(NET) → T1 | LAN requests | Bearer token mandatory; startup refuses non-loopback bind without tokens |
 | T1 → T2 | Provider and sensor calls | Timeouts, size caps, output parsed defensively, no shell |
 | T3 → T1 | Model output, imports, datasets | Treated as hostile data: never executed, never a path, never unescaped |
+| T3 → T1 | A tool call a model asked for | Only a registered tool, only if the caller's `ExecutionIntent` allows it, arguments schema-validated, `run_command` inside the §7 ladder or refused; the refusal is a recorded result ([ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md)) |
 | T1 → T4(REM) | Remote inference | Off by default; requires `allow_remote_providers = true` plus a provider entry; every call site labelled as egress in the UI |
 | T1 → T4(NET) | An outbound fetch whose URL came from a request body (`POST /evidence/import`) | Scheme, host-allowlist (loopback only by default), literal-IP, redirect and size checks ([ADR-0026 §3](../adr/0026-local-http-hardening.md)) |
 
@@ -171,20 +175,33 @@ Treated as untrusted data at all times.
 * **Tool calls** requested by a model are executed only when: the tool is on the caller's explicit
   allowlist for that request, the arguments validate against the tool's schema, and the tool itself
   is a bounded, side-effect-audited implementation. Filesystem tools operate on read-only fixtures
-  or a dedicated sandbox directory. There is no `shell`, no `delete`, no arbitrary `http` tool.
-* Prompt-injection posture: because models never gain execution or path authority, an injected
-  instruction can at worst produce bad content — which the validation gates then reject.
+  or a dedicated sandbox directory. There is no `shell` and no `delete`.
+* The one implementation of that discipline is **ToolYard**, and its two dangerous built-ins are
+  bounded rather than absent: `run_command` runs only inside the §7 isolation ladder and **refuses**
+  when no rung is available — there is no host-execution fallback and no `shell=True` anywhere in
+  the package — and `http_fetch` implements
+  [ADR-0026 §3](../adr/0026-local-http-hardening.md) itself (scheme and host allowlist, no
+  redirects to a forbidden host, size cap enforced mid-stream). A refusal is a structured
+  `ToolResult`, never an exception, and every call is recorded including the refused ones
+  ([ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md)).
+* Prompt-injection posture: a model's authority is what its caller granted it and nothing more. In
+  FreeWeight, LoadCoach and IdeaPress that is no execution and no path authority, so an injected
+  instruction can at worst produce bad content — which the validation gates then reject. In
+  PromptCadence it is the tools and the classification ceiling named in the turn's approved
+  `ExecutionIntent`, so an injected instruction can at worst ask for something the harness refuses
+  and records. The injection corpus asserts the refusal, never the model's behaviour
+  ([ADR-0095](../adr/0095-the-injection-corpus-asserts-the-harness-never-the-model.md)).
 
 ---
 
 ## 7. Code execution and sandboxing
 
-Benchmarks that execute generated code (EvalPlus, CRUXEval, SWE-bench) and any future
-code-execution feature obey a tiered policy ([ADR-0018](../adr/0018-external-benchmark-isolation.md)):
+Benchmarks that execute generated code (EvalPlus, CRUXEval, SWE-bench) and ToolYard's
+`run_command` obey one tiered policy ([ADR-0018](../adr/0018-external-benchmark-isolation.md)):
 
 | Tier | Requirement | Status on the reference machine |
 |---|---|---|
-| 1 | Container (`podman` preferred, then `docker`): no network, read-only rootfs, tmpfs workdir, CPU/memory/pids limits, wall-clock timeout, non-root user, dropped capabilities | Not installed |
+| 1 | Container (`podman` preferred, then `docker`): no network, read-only rootfs, tmpfs workdir, CPU/memory/pids limits, wall-clock timeout, non-root user, dropped capabilities | `docker` present, `podman` not |
 | 2 | `bubblewrap` (`bwrap`): unshare net/pid/ipc/uts, read-only bind of the minimal runtime, private tmp, no new privileges, rlimits + timeout | Available |
 | 3 | **Refuse** | — |
 
@@ -225,6 +242,12 @@ code-execution feature obey a tiered policy ([ADR-0018](../adr/0018-external-ben
   the export explicitly requests it, and the export dialog/flag states that clearly.
 * No user content is written to logs at INFO or above. Full-content logging is opt-in
   (`logging.include_content = true`), off by default, and warns at startup when enabled.
+* An application that governs egress **records every verdict, approval and denial alike**, in
+  Commissioner's append-only ledger, against the ordered `baseaicore.DataClassification` lattice;
+  an undeclared ceiling on a remote target is a denial, never an assumption
+  ([ADR-0046](../adr/0046-data-classification-is-ordered-and-defaults-closed.md),
+  [ADR-0054](../adr/0054-commissioner-records-egress-it-does-not-enforce-it.md)). Commissioner
+  records; the application enforces.
 
 ---
 

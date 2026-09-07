@@ -133,7 +133,7 @@ Defaults must produce a working, safe, local installation with **no configuratio
 | Setting | Default | Why |
 |---|---|---|
 | `server.host` | `127.0.0.1` | Local-first; never exposed by accident |
-| `server.port` | 8765 / 8766 / 8767 | Distinct per application |
+| `server.port` | 8765 / 8766 / 8767 / 8768 | Distinct per application |
 | `server.allow_lan_exposure` | `false` | Exposure is a deliberate act |
 | `storage.database_url` | `sqlite:///<data_dir>/<app>.sqlite3` | Zero configuration |
 | `storage.auto_migrate` | `true` for SQLite, `false` for PostgreSQL — the default is **dialect-dependent**, resolved from `database_url`, and the value shown by `config show` names which applied | Shared databases are upgraded deliberately |
