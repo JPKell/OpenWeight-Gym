@@ -1,7 +1,8 @@
 # Master Development Roadmap
 
 **From:** empty repositories (architecture frozen 2026-08-21).
-**To:** three professionally deliverable applications and six published packages.
+**To:** four professionally deliverable applications and ten published packages (three and six when
+this line was written; the PromptCadence and adapter arcs added the rest — see §1's M10–M13 table).
 **State (2026-09-07):** M1–M8 and the post-1.0 milestones M10–M12 are complete; M13 is in progress
 and M9 — the delivery checklist in §7 — is the one milestone nobody has walked. §9 has the
 per-component table.
@@ -280,12 +281,18 @@ state the suite ships in today, on purpose: four `1.x` applications over ten `0.
 
 Nothing here is optional; each maps to requirement §37.
 
+**Restated 2026-09-07 (row L2) over fourteen components and four applications.** The checklist was
+written when the suite was nine components and three applications; `outstanding-work` §1.1 declares
+M9 over fourteen, and the boxes below say so. The four applications are FreeWeight, LoadCoach,
+IdeaPress and PromptCadence; the ten packages are BaseAiCore, SetSpec, ModelRack, SweatMeter,
+WeightsDB, MirrorWall, CutCtx, ToolYard, LoadLedger and Commissioner.
+
 **Installation and distribution**
-- [ ] `pip install freeweight|loadcoach|ideapress` into a clean venv, each starting with zero configuration
-- [ ] `pipx install` verified for all three
-- [ ] All six packages installable and importable standalone
-- [ ] `python -m <app>` works for all three
-- [ ] Optional extras (`[postgres]`) install and function
+- [ ] `pip install freeweight|loadcoach|ideapress|promptcadence` into a clean venv, each starting with zero configuration
+- [ ] `pipx install` verified for all four
+- [ ] All ten packages installable and importable standalone
+- [ ] `python -m <app>` works for all four
+- [ ] Optional extras (`[postgres]`/`[postgresql]`, and IdeaPress's `[telemetry]`) install and function
 
 **Releases**
 - [ ] Every component released from a tag by CI with Trusted Publishing; no manual upload has ever occurred
@@ -311,17 +318,21 @@ Nothing here is optional; each maps to requirement §37.
 - [ ] Coverage floors met in every repository
 - [ ] Performance budgets measured on the reference machine and published with the machine described
 - [ ] Security checklist complete; `pip-audit` and `gitleaks` clean
-- [ ] Accessibility checklist complete for all three UIs
-- [ ] Cross-repository compatibility matrix green
+- [ ] Accessibility checklist complete for all four UIs
+- [ ] Cross-repository compatibility matrix green over four applications × {lowest, highest} pin of every suite package
 
 **Operations**
 - [ ] Migration path tested from every released version with real data
 - [ ] Downgrade procedure exercised: upgrade, write data, restore the pre-migration backup, start the
       older version — and a database ahead of the code refuses with `SchemaAhead` naming both revisions
-- [ ] Every application's dependency ranges admit the 1.0 packages, verified by a clean-venv resolve
+- [ ] Every application's declared range for every suite package resolves at **both ends** in a clean
+      venv and passes its contract and e2e suites, proved by the compatibility matrix. *(Restated by
+      [ADR-0113](../adr/0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md): M9 bumps no
+      package to 1.0, so "admit the 1.0 packages" is no longer the property being checked.)*
 - [ ] Backup/restore tested on both dialects
 - [ ] `<app> doctor` diagnoses every documented failure mode
-- [ ] Degradation matrix exercised end to end for all three applications
+- [ ] Degradation matrix exercised end to end for all four applications, every row indexed to the
+      test that proves it ([graceful degradation §2.1](../architecture/graceful-degradation.md))
 
 ---
 
@@ -339,50 +350,58 @@ declared.
 
 ## 9. Current state and immediate next steps
 
-**Current state (2026-09-07).** The architecture is frozen, `docs/` is complete, and **all fourteen
-components are built and tagged.** All ten packages and three of the four applications are on PyPI;
-the newest application releases are prepared locally and wait on the operator to publish them. The
-four applications reached 1.0.0 in milestone order — LoadCoach (M5), FreeWeight (M6), IdeaPress (M8,
-after its M7 verification's findings were closed and ADR-0039 was accepted and implemented) and
-PromptCadence (M12). The version in the table below is each repository's `__about__.py`, which is
-the authoritative number; PyPI lags it wherever a release is marked *prepared*.
+**Current state (2026-09-07, verified at row L2 against every `__about__.py`, every repository's
+pushed tags and the PyPI index).** The architecture is frozen, `docs/` is complete, and **all
+fourteen components are built and tagged.** The four applications reached 1.0.0 in milestone order —
+LoadCoach (M5), FreeWeight (M6), IdeaPress (M8, after its M7 verification's findings were closed and
+ADR-0039 was accepted and implemented) and PromptCadence (M12). The version in the table below is
+each repository's `__about__.py`, which is the authoritative number; where PyPI has not caught up
+the table says what is tagged and what the index holds.
 
-| Component | Version | State |
-|---|---|---|
-| BaseAiCore | 0.4.2 | Complete through its plan; published. `0.4.1` added `DataClassification` and `AdapterIdentity` for the two arcs |
-| SetSpec | 0.6.0 | Payloads frozen at 1.0; additive minors at 0.5.0 (`governance.egress_decision`, the adapter manifest) and 0.6.0 (evidence bundle 1.1); published |
-| ModelRack | 0.7.1 | P1–P8 complete, including `LlamaCppProvider` and hot-swappable LoRA adapters (LA1); published |
-| SweatMeter | 0.4.0 | Complete; published |
-| WeightsDB | 0.2.1 | P1–P3 complete; published |
-| MirrorWall | 0.2.2 | P1–P3 complete; published |
-| CutCtx | 0.1.0 | P1–P2 complete; published |
-| ToolYard | 0.1.1 | P1–P3 complete, sandbox included; published |
-| LoadLedger | 0.2.0 | P1–P3 complete; published |
-| Commissioner | 0.1.1 | P1–P2 complete; published |
-| FreeWeight | 1.1.0 *(prepared)* | P1–P15 complete, adapter-aware through LA3; `1.0.0` tagged and published, `1.1.0` committed and untagged |
-| LoadCoach | 1.1.2 *(prepared)* | P1–P9 plus LC-E1 and the adapter work (LA2); `v1.1.0` tagged, `1.0.0` is the newest on the index |
-| IdeaPress | 1.1.0 | P1–P9 (M8) plus the per-stage adapter pins; tagged and published. `1.2.0` — the M13 adoption phases — is in preparation |
-| PromptCadence | 1.2.0 *(prepared)* | P1–P9 complete (M12), plus runtime settings and the `settings` verb; `1.1.0` tagged and published, `1.2.0` committed |
+One release is stuck rather than pending: **LoadCoach `v1.1.0`, `v1.1.2` and `v1.1.3` are all tagged
+and pushed, and none of them triggered a `release.yml` run**, so the index is still at `1.0.0`.
+Publishing it is not an operator approval waiting to be given — it is a workflow that never fired,
+and it needs a look before the M9 release boxes can be ticked.
+
+| Component | Version | On PyPI | State |
+|---|---|---|---|
+| BaseAiCore | 0.4.2 | 0.4.2 | Complete through its plan. `0.4.1` added `DataClassification` and `AdapterIdentity` for the two arcs |
+| SetSpec | 0.6.0 | 0.6.0 | Payloads frozen at 1.0; additive minors at 0.5.0 (`governance.egress_decision`, the adapter manifest) and 0.6.0 (evidence bundle 1.1) |
+| ModelRack | 0.7.1 | 0.7.1 | P1–P8 complete, including `LlamaCppProvider` and hot-swappable LoRA adapters (LA1) |
+| SweatMeter | 0.4.0 | 0.4.0 | Complete |
+| WeightsDB | 0.2.1 | 0.2.1 | P1–P3 complete |
+| MirrorWall | 0.2.2 | 0.2.2 | P1–P3 complete |
+| CutCtx | 0.1.0 | 0.1.0 | P1–P2 complete |
+| ToolYard | 0.1.1 | 0.1.1 | P1–P3 complete, sandbox included. One in-suite consumer (PromptCadence) |
+| LoadLedger | 0.3.0 *(prepared)* | 0.2.0 | P1–P3 published; `0.3.0` takes the pricing-file reader ([ADR-0110](../adr/0110-the-pricing-file-reader-is-a-loadledger-surface.md)), committed and untagged |
+| Commissioner | 0.1.1 | 0.1.1 | P1–P2 complete |
+| FreeWeight | 1.1.0 | 1.1.0 | P1–P15 complete, adapter-aware through LA3; tagged 2026-09-07 and published by CI |
+| LoadCoach | 1.1.3 | **1.0.0** | P1–P9 plus LC-E1, the adapter work (LA2) and the settings-precedence fix (row I8). `v1.1.0`, `v1.1.2` and `v1.1.3` tagged and pushed; **no release run fired for any of them** |
+| IdeaPress | 1.2.0 | 1.2.0 | P1–P9 (M8), the per-stage adapter pins, and the M13 adoption phases; tagged 2026-09-07 and published by CI |
+| PromptCadence | 1.2.0 | 1.2.0 | P1–P9 complete (M12), plus runtime settings and the `settings` verb; tagged 2026-09-07 and published by CI |
 
 **What remains, in two independent tracks.**
 
-1. **M9 — the professional delivery checklist** (§7 below), over the nine components as they stand.
-   It predates both arcs and appears in neither; it neither gates nor is gated by any arc row, so it
-   can run at any time. Many of its boxes are likely already true and merely unticked — the
-   suggested treatment is one audit session that walks §7 against the repositories and emits a gap
-   list, then ordinary sessions per gap. The declaration itself is a human step. Its checklist in §7
-   is unchanged and still outstanding.
+1. **M9 — the professional delivery checklist** (§7 above), over all fourteen components as they
+   stand. It predates both arcs and appears in neither; it neither gates nor is gated by any arc
+   row, so it can run at any time. The audit session it asked for has now run
+   (`~/ai/suite/M9_AUDIT.md`, 2026-09-07): **9 of 28 items met outright, 10 partial, 9 unmet**, with
+   none of the gaps architectural. Its seven gap groups are scheduled as rows L1–L6 of
+   [Outstanding Work](outstanding-work.md). §7 above is the restated checklist; the declaration
+   itself is a human step.
 2. **M13 — adoption**, the last milestone of the [PromptCadence arc](promptcadence-roadmap.md).
-   Everything else in both arcs is built: M10–M12 and LA0–LA3 ran row by row between 2026-09-02 and
-   2026-09-06, and their contracts — ADRs [0045–0067](../adr/README.md), plus the thirty-five taken
-   during the builds — are accepted. What is left is IdeaPress taking LoadLedger, Commissioner and
-   CutCtx as their second consumer, which is [Outstanding Work](outstanding-work.md)'s rows J1 and
-   J2; the arcs stay authoritative for rationale, and each finished row's
+   Everything in both arcs is built: M10–M12 and LA0–LA3 ran row by row between 2026-09-02 and
+   2026-09-06, and their contracts — ADRs [0045–0067](../adr/README.md), plus the sixty-odd taken
+   during the builds — are accepted. M13's content, IdeaPress taking LoadLedger, Commissioner and
+   CutCtx as their second consumer, shipped as `ideapress 1.2.0` on 2026-09-07
+   ([Outstanding Work](outstanding-work.md) rows J1 and J2). Declaring the milestone is a human
+   step; the arcs stay authoritative for rationale, and each finished row's
    `docs/history/<ROW>_HANDOFF.md` records what it actually built.
 
-The remaining releases — `freeweight 1.1.0`, `loadcoach 1.1.2` and `promptcadence 1.2.0` — are
-committed, gated and waiting on the operator's tag and PyPI approval, which is a human step by
-standing instruction.
+Of the releases that were pending on 2026-09-06, `freeweight 1.1.0`, `ideapress 1.2.0` and
+`promptcadence 1.2.0` were tagged and published by CI on 2026-09-07. What remains is
+`loadcoach 1.1.3` (tagged, unpublished — see the note above the table) and `loadledger 0.3.0`
+(committed, untagged). Tagging and PyPI approval stay a human step by standing instruction.
 
 **The record of how each milestone was verified** stays in the handoff and verification documents:
 `docs/history/M4_HANDOFF.md`, `docs/history/M6_HANDOFF.md` and `docs/history/M7_HANDOFF.md` are where the decisions the

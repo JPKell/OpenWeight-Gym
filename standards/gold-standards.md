@@ -273,19 +273,19 @@ table — present in `BaseAiCore`, `CutCtx` and `ToolYard`, owed by the other el
 
 ## 4. Release gold standards (suite 1.0)
 
-- [ ] All three applications install from PyPI into a clean venv and start with zero configuration.
-- [ ] All six packages install standalone and pass their own test suites.
+Restated 2026-09-07 (row L2). **Suite 1.0 is declared over all fourteen components** — the four
+applications and the ten packages — at the versions they hold. It does not require any package to
+be at 1.0; a package earns that on its own schedule per
+[ADR-0113](../adr/0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md).
 
-*(Suite 1.0 is declared over all **fourteen** components — the four applications and the ten
-packages — at the versions they hold. It does not require any package to be at 1.0; a package earns
-that on its own schedule per
-[ADR-0113](../adr/0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md).)*
+- [ ] All **four** applications install from PyPI into a clean venv and start with zero configuration.
+- [ ] All **ten** packages install standalone and pass their own test suites.
 - [ ] Compatibility matrix green across the declared version ranges.
 - [ ] Every gate in §1 is enforced in CI in every repository.
 - [ ] Every component meets its §2 standards.
 - [ ] Migration path documented and tested from every previously released version.
 - [ ] Security checklist complete; no known vulnerable dependency.
-- [ ] Accessibility checklist complete for all three UIs.
+- [ ] Accessibility checklist complete for all four UIs.
 - [ ] README, configuration reference, API docs, troubleshooting guide and backup/restore procedure
       published per component.
 - [ ] Performance budgets measured on the reference machine and published with the machine described.
