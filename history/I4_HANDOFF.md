@@ -369,6 +369,12 @@ The one standing caution for I5: it ships `1.1.0` **on top of** `1.0.1`, and `1.
 yet. Do not start I5 until §10 has run to completion, or the version edge stated in
 `roadmap/outstanding-work.md` §3 breaks and 1.0.1 becomes a maintenance branch off `v1.0.0`.
 
+**I6 runs next, not I5** (operator decision, 2026-09-06). I6 — the thinking control on Ollama —
+depends on I3, which is done, and no release waits on it: its first half is a read-only probe of
+which installed models honour `think`, and nothing in the suite sets `think` today. So it is the
+one row that can run in full while 1.0.1 is held, and it cannot collide with the version bump
+because it touches no task profile and no version. I5 stays behind §10.
+
 ## 7. §12's read-only items, answered
 
 1. **Does `upgrading.md` need a 1.0.1 line?** For *Migration notes*, **no** — 1.0.1 adds no
