@@ -125,6 +125,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0100](0100-promptcadences-runtime-changeable-set-is-five-tuning-numbers.md) | PromptCadence's runtime-changeable set is five tuning numbers, and the environment still wins | Accepted |
 | [0101](0101-a-runtime-setting-need-not-be-a-configuration-key.md) | A runtime setting need not be a configuration key, and the ones that are not say so | Accepted |
 | [0102](0102-freeweights-settings-body-gains-the-suites-shape.md) | FreeWeight's settings body gains the suite's shape, and `items` is deprecated | Accepted |
+| [0104](0104-an-adopted-reductions-seam-and-error-vocabulary-survive-it.md) | An adopted reduction's seam and error vocabulary survive it | Accepted |
 
 ## Writing a new ADR
 
@@ -464,3 +465,17 @@ the suite's shape is added, `items` is unchanged and deprecated, and it goes whe
 needs an `/api/v2`. `configured` became answerable again by keeping the loaded settings pristine
 beside the applied ones, and `settings` applies the stored row at read time rather than reporting
 what was folded in at startup, which is where the two renderings can honestly disagree.
+
+**ADR-0104 was added on 2026-09-07** (row J2, IdeaPress's CutCtx adoption). CutCtx's spec has
+named IdeaPress's stage-context reduction as an adoption target since before CutCtx existed, but
+neither document said what happens at the seam between the two — only at each side of it
+separately. The record settles three things the adoption forced: `cutctx` types stay inside
+`domain/context_assembly.py` rather than reaching `AssembledContext`'s callers, so the same shared
+package can back two different public seams without either seam becoming the other's business;
+`CompactionBudget.protected_recent_turns` is fixed at `0` and the untouchable set is expressed
+entirely as `pinned`, because IdeaPress's undroppable sections are named, not a tail; and
+`cutctx.BudgetUnsatisfiable` is translated into `ContextLimitExceeded` at that boundary rather than
+let through, so a shared package's adoption does not silently change a caller's own error
+contract. `_rank_of` and `_priority_key` survive the adoption in a narrower role — positioning
+sections for CutCtx's policy to decide, then re-presenting what it decided — which the ADR records
+so a reader does not mistake "the decision code goes" for "the function goes".
