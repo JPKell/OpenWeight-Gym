@@ -186,7 +186,7 @@ model said.
 | 5 | Every §15 budget measured and asserted, target-and-ceiling; the ≤ 25 ms row as a number | **Met** — §8: per-turn overhead **13.45 ms median** |
 | 6 | I13 done, or the release-scope decision recorded; the recorded half green either way | **Met** — ADR-0098; `tests/integration/test_remote_tier.py` (three tests) green |
 | 7 | The operator set, the OpenAPI snapshot, the generated reference, `ci.lock` committed; `pip-audit` and `gitleaks` clean; upgrade and clean-venv installs proved | **Met** — §1, §9 |
-| 8 | The independent-brief verification run, verdict stated plainly | **Run, verdict stated** — §10: the harness is ready; the brief was not delivered in three runs on gpt-oss:20b, with three named findings |
+| 8 | The independent-brief verification run, verdict stated plainly | **Run, verdict stated** — §10: three runs on gpt-oss:20b delivered nothing (three named findings); F1 fixed at the interview's direction, the fourth run delivered the brief with every governance property holding. **Ready.** |
 | 9 | `promptcadence 1.0.0` prepared, unpushed, untagged | **Met** — the release commit |
 | 10 | Full gate green, interpreter and invocations named; mirrors `cmp`-identical | **Met** — §1; `cmp` on the three mirrored documents at the end |
 
@@ -216,7 +216,7 @@ model said.
 | Tool dispatch overhead excluding tool runtime | 10 / 50 ms | **2.09 ms** | 2.20 ms | inside target |
 | Ledger debit, ceilings evaluated | 5 / 20 ms | **3.15 ms** | 4.17 ms | inside target |
 | Compaction plan, 200-turn transcript | 50 / 200 ms | **1.51 ms** | 1.66 ms | inside target |
-| Added latency per SSE event (real loopback socket) | 5 / 20 ms | **10.00 ms** | 19.16 ms | **under the ceiling, over the target** — see below |
+| Added latency per SSE event (real loopback socket) | 5 / 20 ms | **1.40 ms** (was 10.00 at the 20 ms poll) | 2.18 ms | inside target after the interview's decision — see below |
 | Explanation retrieval, terminal (materialized), 500 turns | 25 / 100 ms | **2.01 ms** | 2.11 ms | inside target |
 | Explanation materialization, 500-turn trajectory | 2 / 10 s | **40 ms** | 119 ms | inside target |
 | Recovery of 100 in-flight trajectories at startup | 2 / 10 s | **280 ms** | — (n = 1) | inside target |
@@ -228,11 +228,11 @@ tool time are therefore reported *separately* by construction; against the real 
 turn rows carry `overhead_ms` **52–55 ms** beside `loadcoach_ms` 1 233 and 43 769 — the real
 figure includes the wire build, compaction estimate and the two writes around a real HTTP call.
 
-**The SSE row is a finding, not a knob.** The distribution is uniform between 0 and 20 ms: the
-stream's `poll_interval_seconds=0.02` in `web/routes/trajectories.py` quantises delivery. LoadCoach
-hit the same wall at F12 and moved its poll to 2 ms as a decision. The ceiling was not widened;
-the interview decides whether PromptCadence follows (one constant) or keeps the 20 ms poll and
-the recorded number.
+**The SSE row was a finding first.** At the shipped `poll_interval_seconds=0.02` the distribution
+was uniform between 0 and 20 ms — median **10.00 ms**, p95 19.16 ms — under the ceiling and over
+the target; the poll quantised delivery, exactly LoadCoach's F12 finding. The ceiling was not
+widened. **The interview chose to follow LoadCoach to 2 ms** (2026-09-06), and the rerun measured
+median 1.40 ms, p95 2.18 ms, max 2.49 ms over 60 events.
 
 ## 9. The upgrade and the clean install
 
@@ -298,8 +298,26 @@ and that is where the three findings live:
   than re-measured — one run, one data point.
 
 What this does **not** change: exit conditions 1–7, 9 and 10 stand on tests and demonstrations
-that do not depend on this brief, and the release commit is prepared as the kickoff asked. Whether
-to tag with F1 open is the interview's first question (§14 item 5).
+that do not depend on this brief.
+
+### The interview's decision, and run 4
+
+The operator chose **fix F1 first, rerun, then tag** (2026-09-06). F1 is one sentence appended to
+`read_file`'s and `list_dir`'s descriptions when `[tools] read_roots` is configured — *"Also
+readable, by absolute path: … (read-only roots the operator configured; nothing else outside the
+workspace is)"* — rebuilt from the spec's own fields as `_redacting` is, with a unit test and the
+corpus's verbatim-description assertion still holding. Same stack, same brief, same command:
+
+| Run | Path | Outcome | Wall | What the record says |
+|---|---|---|---|---|
+| 4 | planned, **F1 in place** | **completed — brief delivered** | 1 min 33 s | One valid draft, a **seven-step plan, every step `committed`**. 18 tool calls: `list_dir` on the read root and three `read_file`s `ok` on absolute paths; five relative guesses `file_not_found`; four `path_escape` refusals, every one correct (a mangled path, `/`, the scratchpad's parent); two invented `container.exec` calls refused `unknown_tool` with `undeclared_tool` deviations; **`write_file` `ok`**; the closing `list_dir` `ok` naming `summary.txt`. Eight `budget_overrun` drifts recorded and continued under the default scope (step slices sized from the configured default, 25 turns in all). 25 egress decisions, all `target_not_remote`; 25 debits; 147 events; no halt. `summary.txt` (614 bytes) names the migration, Tomás's schema change, Priya's dashboards, the 06:00 UTC export deadline and the cut-over on the 12th — correct against the notes. Final answer: *"The workspace directory has been listed, confirming that `summary.txt` exists."* |
+
+**Verdict, revised:** *ready.* With F1 fixed, the independent brief was delivered on the real
+stack with the shipped defaults and one configured read root, every governance property holding
+on the way — including the two invented tools and four escapes the model tried in the same run.
+F2 and F3 stand as findings with rows (§14). One brief, one delivered run after one halted and
+two empty ones: the number to carry forward is that the harness's record made every one of the
+four legible, which is what M12 exists to prove.
 
 ## 11. The gold standards, item by item (Gold Standards §2, PromptCadence)
 
@@ -342,7 +360,26 @@ reason. The commit was not rewritten.
    fact reads `False` on a real LoadCoach and remote tiers refuse honestly (ADR-0098's correction).
 4. **The `[1;3m` gitleaks docker image** is now pulled locally; CI's action needs nothing.
 
-## 14. The interview items
+## 14. The interview (2026-09-06) — what was decided, and what remains
+
+Decided at the interview, and done in this row:
+
+1. **Fix F1 first, rerun, then tag** — done (§10, run 4). The tag stays the operator's.
+2. **The SSE poll follows LoadCoach to 2 ms** — done; median 1.40 ms, p95 2.18 ms (§8).
+3. **`GET/PUT /settings`: schedule a runtime-settings row** rather than strike them from spec
+   §7.1 — row **I4** in `outstanding-work` §1.
+4. **One LoadCoach 1.1.1 row before J1** for the `/models` render and the thinking control —
+   row **I3**, with an ordering note in §3.
+
+Still the operator's:
+
+* **The tag and the publish** (§13) — the release commit is prepared with run 4 in the record.
+* **F2** — whether an empty declared `stop` should complete a step (contract 6 says it does).
+* **The event/record digest mismatch** (§5) — fix `tool.call.started` to the structure digest, or
+  document the difference.
+* **The live remote run** (ADR-0098 rule 5) — when an endpoint and a key exist; `docs/tiers.md`.
+
+## The interview items as first put
 
 Decisions this row took under the standing rules and that the operator may want to revisit, plus
 the ones the row could not take:
