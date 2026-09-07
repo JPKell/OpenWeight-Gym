@@ -291,7 +291,7 @@ deliberate rejection, like `LoadCoachClient`.
    nothing here can establish that it was the tier that promised to. Both halt and record a
    `VIOLATION` `EgressDecision` under the verification step's own policy name, never under the
    evaluating policy's — that policy answers "may this go?" before the fact and never produced
-   this verdict ([ADR-0054](../../adr/0054-commissioner-records-the-caller-enforces.md) rule 7).
+   this verdict ([ADR-0054](../../adr/0054-commissioner-records-egress-it-does-not-enforce-it.md) rule 7).
 5. **Budget contract.** Money ceilings govern priced usage; token ceilings govern all usage. A
    local model's cost is `UNSUPPORTED`, never `$0.00`
    ([ADR-0030](../../adr/0030-model-cost-and-pricing.md)); a remote tier with no configured

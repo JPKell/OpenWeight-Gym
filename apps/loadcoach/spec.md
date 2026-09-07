@@ -369,7 +369,7 @@ Behavioural rules:
   exposed, so it is also the one most exposed to DNS rebinding when it is not.
 * Tool definitions supplied by callers are passed to the provider and returned; **LoadCoach never
   executes a tool call**, and never validates a tool's `parameters` schema
-  ([ADR-0041](../../adr/0041-a-callers-schema-does-not-travel-through-a-router.md)). A tool's
+  ([ADR-0041](../../adr/0041-caller-schemas-do-not-travel-through-a-router.md)). A tool's
   `description` is caller-written prompt content and reaches the model's context unmodified, on the
   same terms as `system` and `prompt`. A request offering tools requires `tool_use` of every routing
   candidate ([ADR-0075](../../adr/0075-a-request-carrying-tools-requires-tool-use-of-every-candidate.md)),
