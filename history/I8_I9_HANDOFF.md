@@ -316,13 +316,13 @@ Line numbers are omitted below where they had moved; the reasoning matters more 
    environment, publish.
 2. **Tag and publish PromptCadence 1.2.0**: `git tag -a v1.2.0` on `57b1e58`, push, approve the
    `pypi` environment, publish.
-3. **Push three repositories**: `LoadCoach` (5 commits), `PromptCadence` (2 commits), and `docs`.
-4. **Commit the `docs/` changes.** They are left **uncommitted deliberately**: row I6 was running
-   against the same workspace and `roadmap/outstanding-work.md` is modified by that session, not by
-   this one. This row's files are `apps/loadcoach/api.md` and `apps/promptcadence/spec.md` and
-   nothing else; stage those two by name rather than `git add -A`, and leave
-   `roadmap/outstanding-work.md` to I6. Rows I8 and I9 were **not** marked done in
-   `outstanding-work.md` for the same reason.
+3. **Push three repositories**: `LoadCoach` (5 commits), `PromptCadence` (2 commits), and `docs`
+   (1 commit, `60faadf`).
+4. **`roadmap/outstanding-work.md` is left modified and uncommitted in `docs/`, and it is not this
+   row's change** — row I6 was running against the same workspace and holds that file. The docs
+   commit staged only `apps/loadcoach/api.md`, `apps/promptcadence/spec.md` and this handoff, by
+   name. Rows I8 and I9 were therefore **not** marked done in `outstanding-work.md`; that edit
+   belongs to whoever lands I6's work.
 5. **A note before pushing LoadCoach migrations** (carried forward from H4, unchanged by this row):
    run the suite with `WEIGHTSDB_REQUIRE_POSTGRES=1` first. This row adds no migration.
 
