@@ -225,7 +225,7 @@ None is complete on the basis of a code review.
 | **I10** | PromptCadence ↔ LoadCoach | S-P3, re-run each phase | Contract tests against LoadCoach's committed OpenAPI snapshot; every configured tier's task profile exists in the running LoadCoach; the prompt LoadCoach forwards equals the prompt PromptCadence sent; one marked live journey |
 | **I11** | Governance invariance | S-P7 | The contract-1 diff: planned vs bypassed records identical in shape minus plan/approval rows, on the same scripted task |
 | **I12** | Egress contract | M10, re-run at M13 | A `setspec`-only script validates and reads a PromptCadence-exported `governance.egress_decision`; IdeaPress's badge later reads the same shape |
-| **I13** | Mixed-pool routing (LC-E1) | S-P9 | With one local + one remote provider registered: a `remote_cheap`-tier step routes to the remote model with the egress badge and cost factor in LoadCoach's own explanation, and a local tier never does — recorded transport in CI, one live run |
+| **I13** | Mixed-pool routing (LC-E1) | S-P9 | With one local + one remote provider registered: a `remote_cheap`-tier step routes to the remote model with the egress badge and cost factor in LoadCoach's own explanation, and a local tier never does — recorded transport in CI, one live run. **Recorded half done at I2 (2026-09-06); the live half is deferred past 1.0 by [ADR-0098](../adr/0098-promptcadence-1-0-ships-with-remote-tiers-refusing-honestly.md), which names the run** |
 | **I14** | Mounted persistence | LL-P2/SC-P2, then S-P5/P6 | Package tables autogenerate, migrate, and survive kill −9 inside a real host application's Alembic history on both dialects |
 
 ## 10. Top risks
@@ -234,7 +234,7 @@ None is complete on the basis of a code review.
 |---|---|---|
 | Local models draft unusable plans, making the planned path feel worse than bypass | High — the product's thesis | Corrective-retry budget; `tools.plan` constraints; a simpler linear plan shape as fallback; measured honestly in beta; `native.plan` benchmark as the long-term fix |
 | Prompt injection through tool results steers the loop | High | D-9 discipline: allowlist + schema + containment + egress checks are all model-independent; the P9 injection corpus is a release gate |
-| LC-E1 slips | Medium | 1.0 may ship with remote tiers refusing honestly — specified, documented behaviour; the release-scope decision is recorded at M12, not improvised |
+| LC-E1 slips | Medium | 1.0 may ship with remote tiers refusing honestly — specified, documented behaviour; the release-scope decision is recorded at M12, not improvised. **Recorded 2026-09-06 as [ADR-0098](../adr/0098-promptcadence-1-0-ships-with-remote-tiers-refusing-honestly.md)** |
 | The mountable-models pattern (D-6) fights a host's Alembic setup | Medium | The miniature-host test in each package; PromptCadence as first real host before any 1.0 promise; the pattern is confined to two tiny packages |
 | Governance overhead makes the harness slower than a raw loop by more than its worth | Medium | Spec §15 budgets bound PromptCadence's own overhead (≤ 25 ms/turn); the expensive part — planning — is exactly what the bypass removes, by design |
 | Package sprawl: four new repos' maintenance | Medium | Each package is deliberately small with a named second consumer; ThreadRack was folded in precisely to hold this line |

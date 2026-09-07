@@ -117,6 +117,10 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0092](0092-the-invalidation-entry-point-ships-before-the-sweep-that-calls-it.md) | The invalidation entry point ships before the sweep that calls it | Accepted |
 | [0093](0093-materialization-follows-the-terminal-transition.md) | Materialization follows the terminal transition, and a missing revision is not a missing explanation | Accepted |
 | [0094](0094-the-console-authenticates-as-the-api-does.md) | The console authenticates as the API does, and every form is CSRF-protected | Accepted |
+| [0095](0095-the-injection-corpus-asserts-the-harness-never-the-model.md) | The injection corpus asserts the harness, never the model | Accepted |
+| [0096](0096-replayed-tool-call-arguments-are-capped-at-the-records-bound.md) | Replayed tool-call arguments are capped at the record's bound | Accepted |
+| [0097](0097-a-performance-budget-asserts-its-ceiling-and-reports-its-target.md) | A performance budget asserts its ceiling and reports its target | Accepted |
+| [0098](0098-promptcadence-1-0-ships-with-remote-tiers-refusing-honestly.md) | PromptCadence 1.0 ships with remote tiers refusing honestly | Accepted |
 
 ## Writing a new ADR
 
@@ -398,3 +402,17 @@ composition path serves it and `rebuild-explanations` fills it in, which is what
 revision a genuine cache. **0094**: the console authenticates exactly as the API does, adds no
 session cookie, and wires MirrorWall's double-submit CSRF in the same commit that renders the
 first form, retiring `web/app.py`'s "there is no HTML UI yet" deferral.
+
+**ADR-0095 to ADR-0098 were added on 2026-09-06** (row I2, PromptCadence Phase 9 — the 1.0
+hardening). **0095**: a prompt-injection corpus case asserts a model-independent property of the
+harness — which tool ran, what the workspace holds, which `EgressDecision` was written — and never
+what the model said; it runs in CI against the fake and is the release gate, and a live pass is
+evidence, not the gate. **0096**: the hazard G2 moved rather than removed — model-chosen tool
+arguments replayed onto the wire uncapped — is bounded at ToolYard's own record bound, with the
+record's size-and-digest object standing in for oversize arguments, so the wire and `args_json`
+agree by construction and nothing is truncated mid-string. **0097**: every spec §15 budget is a
+`performance`-marked test whose median must not exceed the **ceiling**; the target is reported,
+never asserted, and a missed ceiling is a finding rather than a wider number. **0098**: 1.0 ships
+with I13's recorded-transport half proven in CI — the remote-provider fact read from LoadCoach's
+`is_remote`, never inferred from a kind — and the live remote run deferred; a remote tier refuses
+honestly, naming `loadcoach_has_no_remote_provider` or `unpriced`, until an operator meets both.
