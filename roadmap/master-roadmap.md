@@ -378,7 +378,7 @@ and it needs a look before the M9 release boxes can be ticked.
 | Commissioner | 0.1.1 | 0.1.1 | P1–P2 complete |
 | FreeWeight | 1.1.0 | 1.1.0 | P1–P15 complete, adapter-aware through LA3; tagged 2026-09-07 and published by CI |
 | LoadCoach | 1.1.3 | **1.0.0** | P1–P9 plus LC-E1, the adapter work (LA2) and the settings-precedence fix (row I8). `v1.1.0`, `v1.1.2` and `v1.1.3` tagged and pushed; **no release run fired for any of them** |
-| IdeaPress | 1.2.0 | 1.2.0 | P1–P9 (M8), the per-stage adapter pins, and the M13 adoption phases; tagged 2026-09-07 and published by CI |
+| IdeaPress | 1.3.0 *(prepared)* | 1.2.0 | P1–P9 (M8), the per-stage adapter pins, and the M13 adoption phases; `1.2.0` tagged 2026-09-07 and published by CI, `1.3.0` committed and untagged (row K3) |
 | PromptCadence | 1.2.0 | 1.2.0 | P1–P9 complete (M12), plus runtime settings and the `settings` verb; tagged 2026-09-07 and published by CI |
 
 **What remains, in two independent tracks.**
