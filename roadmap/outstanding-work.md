@@ -188,7 +188,7 @@ GPU sessions never share the machine with FreeWeight benchmark runs.
 * Review the morning diffs for every overnight batch; review Fable batch output same-day.
 * After D1 (done and reviewed 2026-09-03, unpushed): push ToolYard `main` and docs `main`, confirm
   CI green (the `isolation` tests skip on the runner — a skip, visible, not a pass).
-* **Podman is unverified and is now a blocking item for M11.** It is *first* in ToolYard's ladder,
+* ~~**Podman is unverified and is now a blocking item for M11.**~~ **Closed 2026-09-07 by [ADR-0111](../adr/0111-the-container-rung-is-proved-on-docker-and-podman-is-not-an-exit-condition.md):** M11's exit is the container rung exercised on the reference machine's runtime (docker, done at E4); the podman rung stays unexercised and says so, and the first podman host runs `pytest -m isolation -rs` before anything else. The original text follows for the record. It is *first* in ToolYard's ladder,
   so it is the rung that will actually run commands on any podman host, and no canary has ever run
   on one: `E2` published `toolyard 0.1.0` without it (the step was written before E2 and did not
   block it), and E4 exercised the container rung through **docker** on the reference machine.
@@ -242,7 +242,7 @@ GPU sessions never share the machine with FreeWeight benchmark runs.
 |---|---|---|
 | **M9** — Suite 1.0 (pre-arc) | §1.1 — audit + gap sessions, any time | Master-roadmap §7 checklist complete over the nine existing components |
 | **M10** — foundations | A1–F2 package rows (A1, A2, B1–B3, C1–C3, C5, C6, D1, E1–E3) | All four packages at 0.1.0, clean-venv acceptance scripts pass |
-| **M11** — beta | B4, C4, D2, E4, F1, F2, G1 | The planned-vs-bypassed demo on real LoadCoach; **`pytest -m isolation -rs` green on a real podman host** (see §4 — podman is first in ToolYard's ladder and has never been exercised; the reference machine has docker only, and E4 ran the container rung through docker); `0.9.0b0` — **cut 2026-09-04 (G1); the podman condition remains open** |
+| **M11** — beta | B4, C4, D2, E4, F1, F2, G1 | **Declared 2026-09-07 (ADR-0111):** the planned-vs-bypassed demo on real LoadCoach (G1) and the container rung exercised on the reference machine's runtime (docker, E4). The former condition — **`pytest -m isolation -rs` green on a real podman host** (see §4 — podman is first in ToolYard's ladder and has never been exercised; the reference machine has docker only, and E4 ran the container rung through docker); `0.9.0b0` — **cut 2026-09-04 (G1); the podman condition remains open** |
 | **LA1/LA2/LA3** | D3, F3, H1 / H2, H3 / B5, H4, H5 | Adapter-roadmap §3 exit conditions |
 | **M12** — 1.0 | I1, I2 (+ H2 as the LC-E1 dependency; G2 the tool wire and G3 per-step retry, both found at G1) | Spec §20; `promptcadence 1.0.0` published. **I1 and I2 done 2026-09-06; the 1.0.0 release commit is prepared (`b4b67ac`) and the tag/publish is the operator's, with I2's verification verdict (F1) in hand** |
 | **M13** — adoption | J1–J2 (the three adoption phases; J1 carries two) | **Done 2026-09-07**: `ideapress 1.2.0` prepared (`dcb2a17`), every harness-arc package has two real consumers; the tag and publish are the operator's. K1–K4 are the follow-ups the rows found |

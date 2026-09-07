@@ -132,6 +132,7 @@ A decision without a "revisit when" trigger is a decision nobody can safely revi
 | [0107](0107-two-loadcoach-clients-are-not-yet-one-package.md) | The second LoadCoach consumer arrived; the client package is still declined | Accepted |
 | [0108](0108-the-snapshot-contracts-the-surface-and-goldens-contract-the-bodies.md) | The OpenAPI snapshot contracts the surface; captured goldens contract the bodies | Accepted |
 | [0109](0109-a-stored-row-this-build-cannot-read-serves-configuration.md) | A stored settings row this build cannot read serves configuration, and the changeable set is an enumeration | Accepted |
+| [0111](0111-the-container-rung-is-proved-on-docker-and-podman-is-not-an-exit-condition.md) | The container rung is proved on docker, and podman is not an exit condition | Accepted |
 
 ## Writing a new ADR
 
@@ -566,3 +567,9 @@ three applications already implement the enumeration; the log-once clause is met
 alone, and the surface-reporting clause by none — LoadCoach and PromptCadence render
 `source: "database"` for a row whose value never took effect, which the record names as owed work
 rather than describing as done.
+
+**ADR-0111 was added on 2026-09-07** (the operator's interview). M11's exit condition had named a
+podman host that never existed, and the milestone stayed formally open under a shipped beta and a
+shipped 1.0. The record makes the exit "the container rung exercised on the reference machine's
+runtime" — docker, done at E4 — declares M11, keeps ToolYard's probe order and its honest skip
+unchanged, and hands the podman canary to whoever first installs podman beside the suite.
