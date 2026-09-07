@@ -155,6 +155,14 @@ Streaming never accumulates a full response in more than one place; long documen
 artifacts rather than held in memory. A test drives a 1 M-token synthetic stream and asserts a flat
 memory profile.
 
+**PromptCadence has no row above, and no memory budget of its own.** Its budgets are per-turn and
+per-operation — trajectory admission, per-turn overhead excluding LoadCoach, tool dispatch, ledger
+debit, compaction planning, explanation retrieval and materialization — and they live in
+[its spec §15](../apps/promptcadence/spec.md), asserted against their ceilings and reported against
+their targets ([ADR-0097](../adr/0097-a-performance-budget-asserts-its-ceiling-and-reports-its-target.md)).
+Giving its server an RSS figure beside its three siblings is an open item, not a decision taken
+elsewhere.
+
 ---
 
 ## 5. What is deliberately not promised
