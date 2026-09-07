@@ -8,7 +8,7 @@ corpus" option was therefore taken for the whole row rather than for the corpus 
 **Ships:** `promptcadence 1.0.0` **prepared** — bumped, changelogged, release-committed — and
 **not** tagged, pushed or published. Those are the operator's (§13), with §10's verdict in hand.
 
-**Repositories touched:** `PromptCadence` (nine commits) and `docs` (two commits). Both were clean
+**Repositories touched:** `PromptCadence` (ten commits) and `docs` (four commits). Both were clean
 at the start — PromptCadence seven ahead of `origin`, docs ten ahead, as I1 left them — and both
 are clean at the end with the new work committed and unpushed. Nothing was modified that this
 session did not edit; no push and no push dry-run was run.
@@ -349,8 +349,9 @@ reason. The commit was not rewritten.
 
 ## 13. Left for the operator
 
-1. **Push two repositories.** `PromptCadence` (sixteen ahead of `origin`: seven from I1 and the
-   Commissioner chore, nine from this row) and `docs` (twelve ahead). Nothing was pushed.
+1. **Push two repositories.** `PromptCadence` (seventeen ahead of `origin`: seven from I1 and the
+   Commissioner chore, ten from this row, the last being the release commit `b4b67ac`) and `docs`
+   (fourteen ahead). Nothing was pushed.
 2. **Tag `v1.0.0` and publish.** `promptcadence 1.0.0` is M12's exit condition and rows J1–J3 wait
    on a *released* 1.0 (ADR-0011). The release commit is in place; the tag triggers `release.yml`,
    which builds from `requirements/release.lock`, runs the suite against the wheel, and publishes
