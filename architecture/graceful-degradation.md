@@ -66,7 +66,7 @@ Three footnotes carry the `n/a` cells and the gaps row L8 found:
 | **No benchmark evidence at all** | n/a | D — routes on declared capabilities + config; every decision states `evidence: none`; confidence factor at its floor | n/a | n/a² | UI banner "routing without measured evidence" |
 | **Stale benchmark evidence** | Marks results stale in the UI when environment drift is detected | D — confidence decayed per ADR-0017; explanation shows age and decay | n/a | n/a² | Badge with age and reason |
 | **Incompatible SetSpec major version** | Import/export refused with both versions named | Import refused; existing evidence untouched | Backend adapter refuses to start in LoadCoach mode | E — `SCHEMA_VERSION_UNSUPPORTED`, on LoadCoach responses and on `governance.egress_decision` payloads alike | `SCHEMA_VERSION_UNSUPPORTED` |
-| **Incompatible API major version** | n/a | **Gap** in LoadCoach's *own* client role (found at row L8, 2026-09-07): this cell is about LoadCoach calling FreeWeight's evidence API, and `FreeWeightClient` (`infrastructure/freeweight_client.py`) calls a fixed path and never reads or checks any version field from the response — "Client rejects with both versions named" describes no code that exists. Owed work, not a documented behaviour | Same — IdeaPress's own LoadCoach client rejects with both versions named | **Gap** — the client pins the `/api/v1` prefix and never reads LoadCoach's `api_versions`; a major bump would arrive as ordinary 404s mapped to `LOADCOACH_ERROR`. Owed work, not a documented behaviour | `API_VERSION_UNSUPPORTED` |
+| **Incompatible API major version** | n/a | Closed at row M2 (2026-09-07): `FreeWeightClient.version()` negotiates FreeWeight's `GET /version` before any evidence is read (ADR-0013), cached with a TTL on the client. A served-majors list excluding `v1`, or a FreeWeight too old to serve `/version` at all (404), is refused as `EvidenceSourceIncompatible` (`API_VERSION_UNSUPPORTED`), naming both versions; existing evidence is left untouched, the same way a refused URL is | Same — IdeaPress's own LoadCoach client rejects with both versions named | **Gap** — the client pins the `/api/v1` prefix and never reads LoadCoach's `api_versions`; a major bump would arrive as ordinary 404s mapped to `LOADCOACH_ERROR`. Owed work, not a documented behaviour | `API_VERSION_UNSUPPORTED` |
 | **Optional application unreachable** | n/a | Evidence import skipped; last import retained and marked stale | Fall back to direct backend (or error if pinned) | E/park — LoadCoach is **not** optional here (ADR-0045). It still starts and serves; health reports `loadcoach: degraded`, never `unavailable`; a trajectory that cannot reach it mid-turn is T13 `failed` with the cause after any orphan job is cancelled, and recovery is deferred while it is unreachable³ | Health component `degraded` |
 | **Evidence measured under a different runtime profile** | n/a | D — that evidence does not apply; the capability is **absent** for the candidate (not zeroed), the explanation names both hashes and the FreeWeight invocation that would fix it, and the decision counts toward `low_evidence` | n/a | n/a² | `evidence_profile_mismatch` in the explanation |
 | **Evidence for a model not yet discovered** | n/a | Retained with `match_state = "unmatched"`, reported in the import result, contributes nothing, binds automatically on the next discovery pass | n/a | n/a² | Import counts; evidence page |
@@ -114,7 +114,7 @@ disproved behaviour; it is an unproved one.
 | No benchmark evidence at all | n/a | `integration/test_evidence_routing_change.py::test_with_no_evidence_source_configured_the_explanation_says_so` | n/a | n/a² |
 | Stale benchmark evidence | `unit/test_provenance.py` (drift marking) | `integration/test_evidence_routing_change.py::test_freshness_uses_measured_at_so_re_aggregation_does_not_change_a_decision` | n/a | n/a² |
 | Incompatible SetSpec major version | `contract/test_export_schemas.py`; `contract/test_evidence_schema.py` | `contract/test_schema_rejection.py`; `integration/test_evidence_importer.py` | `contract/test_envelope_conformance.py` | `unit/test_loadcoach_client.py` (`SCHEMA_VERSION_UNSUPPORTED`); `integration/test_bypass_loop.py` |
-| Incompatible API major version | n/a | `untested — behaviour not implemented, see L8 handoff` (§2's `FreeWeightClient` gap) | `integration/test_loadcoach_degradation.py::test_a_version_mismatch_names_both_versions_and_does_not_downgrade` | `unit/test_loadcoach_client.py::test_an_incompatible_api_major_refuses_generate_as_a_loadcoach_error`, `integration/test_bypass_loop.py::test_an_incompatible_api_major_halts_where_a_loadcoach_error_halts_today` (row K1, 2026-09-07) |
+| Incompatible API major version | n/a | `integration/test_evidence_fetch.py::test_an_incompatible_major_is_refused_before_any_evidence_is_read`, `::test_a_freeweight_too_old_to_serve_version_is_incompatible_not_unreachable`, `::test_the_version_cache_is_honoured_within_its_ttl_and_expires_after_it`, `::test_an_incompatible_freeweight_records_the_refusal_without_touching_evidence`; `integration/test_evidence_api.py::test_import_refuses_a_freeweight_serving_an_incompatible_major_with_422` (row M2, 2026-09-08) | `integration/test_loadcoach_degradation.py::test_a_version_mismatch_names_both_versions_and_does_not_downgrade` | `unit/test_loadcoach_client.py::test_an_incompatible_api_major_refuses_generate_as_a_loadcoach_error`, `integration/test_bypass_loop.py::test_an_incompatible_api_major_halts_where_a_loadcoach_error_halts_today` (row K1, 2026-09-07) |
 | Optional application unreachable | n/a | `integration/test_evidence_routing_change.py::test_an_unreachable_freeweight_keeps_routing_on_the_last_import_and_says_so`; `unit/test_health.py::test_evidence_degrades_when_the_configured_source_is_unreachable` | `integration/test_loadcoach_degradation.py::test_an_unreachable_loadcoach_falls_back_and_records_the_degradation`, `::test_committed_units_survive_loadcoach_disappearing_mid_project` | `e2e/test_server_boot.py::test_loadcoach_component_degraded_never_unavailable`; `integration/test_recovery.py::test_recovery_is_deferred_when_loadcoach_is_unreachable` |
 | Evidence measured under a different runtime profile | `unit/test_runtime_profile.py` | `integration/test_evidence_routing_change.py::test_evidence_measured_under_another_profile_is_absent_with_both_hashes_and_a_remedy` | n/a | n/a² |
 | Evidence for a model not yet discovered | n/a | `integration/test_evidence_routing_change.py::test_unmatched_evidence_contributes_nothing_and_is_counted`; `contract/test_evidence_import.py` | n/a | n/a² |
@@ -131,23 +131,22 @@ disproved behaviour; it is an unproved one.
 | Prompt pack missing/invalid | `unit/test_prompt_pack.py::test_a_missing_required_field_is_refused` (+6 refusal cases) | n/a *(no prompt pack)* | `unit/test_prompt_pack.py::test_a_missing_required_variable_is_refused` | `unit/test_prompt_pack.py::test_a_missing_required_variable_is_refused` |
 | Remote provider configured but unreachable | `security/test_settings_boundary.py` (the `allow_remote` acknowledgement); untested for the unreachable path itself | `integration/test_route_endpoint.py`; `unit/test_config.py` (binding refusals) | `integration/test_stage_governance.py`; `e2e/test_backends_surface.py` | `integration/test_remote_tier.py`; `unit/test_remote_tier_checks.py`; `integration/test_egress.py` |
 
-**What this index shows, updated 2026-09-07 (row L8).** **Disk full** is now proved in all four
+**What this index shows, updated 2026-09-08 (row M2).** **Disk full** is now proved in all four
 applications, **database locked** in the three that lacked it (FreeWeight already had one), and
-**database migration failure** in the two newest applications. One row stays `untested`, a
-documented behaviour that was never built rather than a missing test: LoadCoach's half of
-**incompatible API major version** (`FreeWeightClient` never reads a version from FreeWeight's
-response, §2's corrected cell). IdeaPress's three machine-condition rows (**No GPU present**,
-**`nvidia-smi` missing or failing**, **GPU sensor unavailable**) are no longer in this count: row M3
-(2026-09-07) found `show_telemetry_bar` hardcoded `False` and never wired to a `TelemetrySnapshot`,
-the same defect L8 found, and closed it by removal rather than by building —
+**database migration failure** in the two newest applications. IdeaPress's three machine-condition
+rows (**No GPU present**, **`nvidia-smi` missing or failing**, **GPU sensor unavailable**) are not
+in this count: row M3 (2026-09-07) found `show_telemetry_bar` hardcoded `False` and never wired to
+a `TelemetrySnapshot`, the same defect L8 found, and closed it by removal rather than by building —
 [ADR-0115](../adr/0115-ideapress-shows-no-machine-telemetry.md) records that IdeaPress shows no
-machine telemetry by decision, and the three cells now read `n/a — ADR-0115`. Per row L8's own
-kickoff, a documented behaviour that is not implemented is left `untested` rather than proved with a
-test that asserts the row's own text back at itself (ADR-0042); building or scoping it out is
-separate work, recorded in `docs/history/L8_HANDOFF.md` and, for IdeaPress's rows,
-`docs/history/M3_HANDOFF.md`. G20 can be turned on once LoadCoach's row is either built and tested or
-formally scoped out, the way ADR-0111 scopes out ToolYard's podman rung and ADR-0115 now scopes out
-IdeaPress's telemetry rows.
+machine telemetry by decision, and the three cells now read `n/a — ADR-0115`. LoadCoach's half of
+**incompatible API major version** — the last row L8 left `untested` as a documented behaviour that
+was never built — is closed the same way, by building rather than scoping out:
+`FreeWeightClient.version()` now negotiates FreeWeight's `GET /version` before any evidence is
+read (row M2, 2026-09-08; `docs/history/M2_HANDOFF.md`). No cell in this index still reads
+`untested — behaviour not implemented`; every remaining plain `untested` cell is an ordinary
+missing-test gap on an already-built behaviour, not a documented behaviour nobody wrote, the
+distinction ADR-0042 draws. G20 can be turned on, the way ADR-0111 scopes out ToolYard's podman
+rung and ADR-0115 scopes out IdeaPress's telemetry rows for the two rows that stay `n/a`.
 
 ---
 
