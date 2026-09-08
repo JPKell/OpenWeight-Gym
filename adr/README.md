@@ -654,3 +654,19 @@ accepts (ADR-0040) — so a second bar would show a state IdeaPress never acts o
 dead branch are deleted; the `[telemetry]` extra and its presence probe survive for the VRAM
 preflight, which is a real, tested capability flag; and `graceful-degradation.md`'s three affected
 rows move from `untested` to `n/a — ADR-0115`.
+
+**ADR-0116 was added on 2026-09-08** (row M1), the record workflows §2 said would decide the
+`research` stage's binding when a research backend finally shipped. Its binding is `toolyard`:
+IdeaPress becomes the package's second consumer, executing `read_file` and `http_fetch` through one
+`ToolExecutor` per stage run rather than writing a second `httpx` fetch loop with a second, subtly
+different reading of ADR-0026 §3. Four things in it are decisions rather than transcription. The
+allowlist defaults **closed** and an empty `[research] allowed_hosts` means the fetch tool is not
+registered at all — deliberately *not* ToolYard's own "empty means loopback", which for an
+application holding the user's drafts would let a URL in a brief reach a service on their own
+machine. Containment is `PathContainment` rather than `TieredSandbox`, because neither registered
+tool runs a subprocess and a probe that launches a canary would buy nothing. A research note is a
+`sources` row — the table `fact_check` has read since P1 and nothing has ever written — rather than
+a new table, which is what makes the stage's output reach grounding, export and context assembly
+without a union. And the egress verdict is rendered per host **before** the executor is entered and
+enforced by the invocation's `max_egress`, so a denied host leaves both an `egress_decisions` row
+and a `tool_call_records` row and raises nothing (ADR-0073, ADR-0103 decision 2, fail closed).
