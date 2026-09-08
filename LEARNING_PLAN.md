@@ -32,11 +32,10 @@ ollama pull qwen3.5:9b-q8_0      # IdeaPress structured work
 ollama pull gemma4:12b           # IdeaPress prose
 ```
 
-**One caveat about the index (2026-09-07).** `pip install` gets you `freeweight 1.0.0` and
-`loadcoach 1.0.0`; the `1.1` releases that add LoRA adapter serving — §1.6 and §2.5 below, and the
-llama.cpp provider behind them — are built but not yet published. Until they are, install
-those two from their repositories (`pip install -e ~/ai/suite/FreeWeight`) if you want the adapter
-sections, and skip them otherwise. Everything else in this plan works from the index.
+**The index is current (2026-09-08).** `pip install` gets `freeweight 1.1.2`, `loadcoach 1.1.6`,
+`ideapress 1.3.3` and `promptcadence 1.3.2`, and the four co-install; the adapter sections (§1.6,
+§2.5) work from the index. To run them on llama.cpp instead of Ollama, follow
+[`LLAMACPP_SETUP.md`](LLAMACPP_SETUP.md) first — install, model directory, adapters, swapping.
 
 Each application starts with zero configuration, binds to loopback only, and owns its own port
 and its own SQLite database:
