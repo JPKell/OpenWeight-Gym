@@ -72,7 +72,7 @@ in the invocation above).
 ```text
 docs (/home/jpk/ai/suite/docs)
 7af3ff4  docs(ideapress): the research stage runs under ToolYard (ADR-0116, row M1)
-<M1 row> docs(roadmap): mark row M1 done, add its handoff
+f6b65b6 docs(roadmap): mark row M1 done, add its handoff
 
 IdeaPress (/home/jpk/ai/suite/IdeaPress)
 b2a7b2c  feat(research): tool_call_records, ToolYard's record shape in IdeaPress's own table
@@ -86,7 +86,8 @@ Nothing pushed, nothing tagged, nothing published. The `docs` repository was sha
 tonight: only the files named in each commit were staged, never `git add -A`, and M2's three
 files (`apps/loadcoach/api.md`, `apps/loadcoach/spec.md`, `architecture/graceful-degradation.md`)
 were already committed by M2 as `2e1b38c` before this row's first commit — they were neither
-staged nor touched here.
+staged nor touched here. M2's own handoff commit (`90e38ab`) landed between this row's two `docs`
+commits, which is what the shared-repository rule is for; no rebase or retry was needed.
 
 ## 3. What was built, gate by gate
 
