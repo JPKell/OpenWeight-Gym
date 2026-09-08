@@ -323,7 +323,7 @@ Shared shell, different content — this is deliberate and must not be homogeniz
 | Database | Task profiles | Exports | Tools |
 | Settings | Routing | Settings | Ledger |
 | | Benchmarks (imported evidence) | | Egress |
-| | System | | System |
+| System | System | | System |
 | | Settings | | |
 
 PromptCadence's column was added with its console (row I1). Trajectories comes second because a
@@ -334,9 +334,8 @@ names the model that answered each turn and links to the LoadCoach job that chos
 telemetry bar for the same reason: PromptCadence reads no machine.
 
 **The System page is the suite's help/about page** (M9 item D5): it renders the version and health
-components an operator looks for first, and is the page this table's "System" row names for
-LoadCoach, IdeaPress and PromptCadence; **FreeWeight has none** — `web/routes/system.py` serves
-`/version` and `/system/status` as JSON only, with no `NAV_ITEMS` entry — and owes one.
+components an operator looks for first, and is the page this table's "System" row names for all
+four applications.
 
 ---
 
