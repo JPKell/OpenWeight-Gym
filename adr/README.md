@@ -149,6 +149,7 @@ an ADR is superseded rather than edited.
 | [0112](0112-the-usage-object-spells-unavailable-one-way-inside-api-v1.md) | The `usage` object spells "unavailable" one way, inside `/api/v1` | Accepted |
 | [0113](0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md) | Packages stay `0.x` at M9; a `1.0` is earned per package | Accepted |
 | [0114](0114-the-dependency-budget-is-the-enumerated-set-a-component-declares.md) | The runtime dependency budget is an enumerated set, not a count | Accepted |
+| [0115](0115-ideapress-shows-no-machine-telemetry.md) | IdeaPress shows no machine telemetry | Accepted |
 
 ## Writing a new ADR
 
@@ -641,3 +642,15 @@ is `pydantic-settings`: all four applications declare it and none imports it, be
 lists it as declared, unapproved and owed removal rather than pretending either way. The gate — a
 test comparing `pyproject.toml` against the table — exists in three repositories and is owed by
 eleven.
+
+**ADR-0115 was added on 2026-09-07** (row M3), out of the L8 finding that `apps/ideapress/spec.md`
+§16 promised an optional telemetry display nothing had built: `show_telemetry_bar`
+(`web/rendering.py`) was a hard-coded `False` never wired to a `TelemetrySnapshot`, and
+`sweatmeter`'s only real use was already a presence probe for the VRAM-preflight capability flag.
+The row offered a build-or-remove choice; the coordinator chose removal, because IdeaPress does not
+schedule or measure work on the machine itself — every call either serialises and unloads locally
+(ADR-0038) or routes through LoadCoach, which owns the machine's telemetry surface for what it
+accepts (ADR-0040) — so a second bar would show a state IdeaPress never acts on. The flag and its
+dead branch are deleted; the `[telemetry]` extra and its presence probe survive for the VRAM
+preflight, which is a real, tested capability flag; and `graceful-degradation.md`'s three affected
+rows move from `untested` to `n/a — ADR-0115`.

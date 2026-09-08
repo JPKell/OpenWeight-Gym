@@ -35,7 +35,7 @@ complete LoadCoach code map, one mapping per code so no LoadCoach failure reache
 `INTERNAL_ERROR`) and from [lifecycle §5](../apps/promptcadence/lifecycle.md) (deviation handling)
 and [§8](../apps/promptcadence/lifecycle.md) (the state machine and its recovery edges).
 
-Four footnotes carry the `n/a` cells and the gaps row L8 found:
+Three footnotes carry the `n/a` cells and the gaps row L8 found:
 
 1. **n/a¹ — no machine axis.** PromptCadence declares neither `sweatmeter` nor `modelrack` and reads
    no telemetry: it has no GPU, sensor or placement facts to degrade. Machine conditions reach it
@@ -49,20 +49,12 @@ Four footnotes carry the `n/a` cells and the gaps row L8 found:
    the state machine in lifecycle §8.1 say there **is no `waiting` state** and that an unreachable
    LoadCoach mid-turn is T13 (`failed`). The state machine is authoritative and the cell follows it;
    the spec sentence is recorded as drift in [the consistency review](../README.md#11-consistency-review).
-4. **⁴ — IdeaPress's telemetry display does not exist yet.** Found at row L8 (2026-09-07):
-   `show_telemetry_bar` (`web/rendering.py`) is a hardcoded `False` Jinja global, never overridden
-   anywhere, and `sweatmeter` is imported exactly once, only as a presence probe for a VRAM-preflight
-   capability flag — never to read a `TelemetrySnapshot`. The three "D" cells below are trivially true
-   (the widget is unconditionally hidden, machine state or not) but there is no conditional behaviour
-   for a test to exercise: spec §16's "optional telemetry display degrades" is unbuilt, not merely
-   untested. Left `untested` in §2.1 rather than proved with a test that would really be asserting
-   this paragraph back at itself (ADR-0042).
 
 | Condition | FreeWeight | LoadCoach | IdeaPress | PromptCadence | Signal |
 |---|---|---|---|---|---|
-| **No GPU present** | D — GPU/VRAM/energy metrics `U`; quality benchmarks run normally; memory-slope benchmark skipped with reason | D — admission control uses RAM only; VRAM constraints not applied | D — telemetry widget hidden⁴ | n/a¹ | Health: `gpu: unavailable`; run record notes skipped tests |
-| **`nvidia-smi` missing or failing** | D — same as above, distinguished as "tool unavailable" not "no GPU" | D | D⁴ | n/a¹ | Health component `gpu_telemetry: unavailable (nvidia-smi not found)` |
-| **GPU sensor unavailable** (temp/power/fan/clock) | U per field; energy metrics become `U` when power is `U` | Ignored by admission control | Blank in widget⁴ | n/a¹ | `—` in UI; NULL + `reason` in DB |
+| **No GPU present** | D — GPU/VRAM/energy metrics `U`; quality benchmarks run normally; memory-slope benchmark skipped with reason | D — admission control uses RAM only; VRAM constraints not applied | n/a — ADR-0115 | n/a¹ | Health: `gpu: unavailable`; run record notes skipped tests |
+| **`nvidia-smi` missing or failing** | D — same as above, distinguished as "tool unavailable" not "no GPU" | D | n/a — ADR-0115 | n/a¹ | Health component `gpu_telemetry: unavailable (nvidia-smi not found)` |
+| **GPU sensor unavailable** (temp/power/fan/clock) | U per field; energy metrics become `U` when power is `U` | Ignored by admission control | n/a — ADR-0115 | n/a¹ | `—` in UI; NULL + `reason` in DB |
 | **Ollama not running** | E on any run start (`PROVIDER_UNAVAILABLE`); discovery returns the last known models marked stale; UI and CLI still work | E on execute; jobs stay `queued` with `waiting_for_provider` up to their max wait, then `failed` | E on the stage; workflow pauses at the failed stage, project intact | E — LoadCoach's `PROVIDER_UNAVAILABLE`; the turn is repeated on the same tier under the same intent up to `[execution] step_retries`, then halts naming the last cause and **every** attempt. It does not wait and does not back off | Health: `provider: unavailable`; explicit banner |
 | **Provider returns malformed JSON** | E for that sample; run continues; sample stored with `error_text` and the raw body as an artifact | E for that attempt; retry policy applies; then fallback candidate | E for the stage; retry per stage policy | E — `PROVIDER_PROTOCOL_ERROR`, same repeat ladder; surfaced as `LOADCOACH_ERROR` with the original code in `details`, never `INTERNAL_ERROR` | `PROVIDER_PROTOCOL_ERROR` |
 | **Provider timeout** | Sample marked `timeout`; never counted as a score of 0 | Attempt fails; retry/fallback; job records each attempt | Stage retry then pause | E — `PROVIDER_TIMEOUT`, same repeat ladder. The client's *own* read timeout first cancels the job the request may have started, then repeats (`reason = client_timeout`) | `PROVIDER_TIMEOUT` |
@@ -108,9 +100,9 @@ disproved behaviour; it is an unproved one.
 
 | Condition | FreeWeight | LoadCoach | IdeaPress | PromptCadence |
 |---|---|---|---|---|
-| No GPU present | `unit/test_telemetry_service.py::test_gpu_telemetry_component_is_degraded_with_no_gpu_and_overall_health_degrades` | `unit/test_telemetry_stream.py::test_payload_names_why_there_is_no_gpu`; `unit/test_routing_constraints.py` | `untested — behaviour not implemented, see L8 handoff` (§2 footnote ⁴) | n/a¹ |
-| `nvidia-smi` missing or failing | `unit/test_telemetry_service.py::test_degrades_to_null_host_reader_when_platform_unsupported` | `unit/test_telemetry_stream.py::test_a_collector_that_cannot_read_produces_no_frame` | `untested — behaviour not implemented, see L8 handoff` (§2 footnote ⁴) | n/a¹ |
-| GPU sensor unavailable | `unit/test_telemetry_service.py::test_unsupported_measurement_renders_as_the_fixed_string`; `unit/test_energy_integration.py` | `unit/test_telemetry_stream.py::test_payload_carries_numbers_and_unsupported_never_zero` | `untested — behaviour not implemented, see L8 handoff` (§2 footnote ⁴) | n/a¹ |
+| No GPU present | `unit/test_telemetry_service.py::test_gpu_telemetry_component_is_degraded_with_no_gpu_and_overall_health_degrades` | `unit/test_telemetry_stream.py::test_payload_names_why_there_is_no_gpu`; `unit/test_routing_constraints.py` | n/a — ADR-0115 | n/a¹ |
+| `nvidia-smi` missing or failing | `unit/test_telemetry_service.py::test_degrades_to_null_host_reader_when_platform_unsupported` | `unit/test_telemetry_stream.py::test_a_collector_that_cannot_read_produces_no_frame` | n/a — ADR-0115 | n/a¹ |
+| GPU sensor unavailable | `unit/test_telemetry_service.py::test_unsupported_measurement_renders_as_the_fixed_string`; `unit/test_energy_integration.py` | `unit/test_telemetry_stream.py::test_payload_carries_numbers_and_unsupported_never_zero` | n/a — ADR-0115 | n/a¹ |
 | Ollama not running | `e2e/test_models_flow.py::test_http_models_page_survives_a_provider_that_cannot_be_reached`, `::test_cli_show_falling_back_to_an_unreachable_provider_exits_4` | `unit/test_health.py::test_unreachable_provider_degrades_but_never_makes_overall_unavailable`; `e2e/test_server_boot.py::test_health_reports_degraded_with_no_provider` | `integration/test_loadcoach_degradation.py::test_an_unreachable_loadcoach_raises_backend_unavailable` | `unit/test_loadcoach_client.py::test_a_transport_failure_is_unavailable_and_a_timeout_is_an_error` |
 | Provider returns malformed JSON | untested *(provider-level; `unit/test_external_output_parsing.py` covers the external-framework parser, not a provider body)* | `unit/test_retry_policy.py::test_protocol_error_retries_exactly_once`; `simulation/test_scheduling_properties.py::test_a_connection_error_falls_back_at_once_and_a_protocol_error_retries_once` | untested | `unit/test_loadcoach_client.py` (`PROVIDER_PROTOCOL_ERROR` in the code map); `fakes/loadcoach_app.py` scripts it |
 | Provider timeout | untested *(the sandbox/external-tool hang is covered by `integration/test_sandbox_tiers.py::test_a_hang_is_killed_at_the_timeout`; the provider timeout is not)* | `integration/test_generate.py::test_a_timeout_is_recorded_as_a_provider_error_and_falls_back`; `unit/test_retry_policy.py::test_timeout_retries_the_same_model_up_to_the_limit_then_falls_back` | `integration/test_loadcoach_degradation.py::test_a_stalled_loadcoach_raises_provider_timeout` | `integration/test_step_retry.py::test_a_step_that_fails_twice_completes_on_its_third_attempt`, `::test_the_budget_is_spent_and_the_halt_names_the_last_cause_and_every_attempt` |
@@ -141,16 +133,21 @@ disproved behaviour; it is an unproved one.
 
 **What this index shows, updated 2026-09-07 (row L8).** **Disk full** is now proved in all four
 applications, **database locked** in the three that lacked it (FreeWeight already had one), and
-**database migration failure** in the two newest applications. Two rows stay `untested`, and both
-turned out to be a documented behaviour that was never built rather than a missing test: LoadCoach's
-half of **incompatible API major version** (`FreeWeightClient` never reads a version from
-FreeWeight's response, §2's corrected cell) and IdeaPress's three machine-condition rows (**No GPU
-present**, **`nvidia-smi` missing or failing**, **GPU sensor unavailable** — `show_telemetry_bar` is
-a hardcoded `False`, never wired to a `TelemetrySnapshot` anywhere, §2 footnote ⁴). Per row L8's own
+**database migration failure** in the two newest applications. One row stays `untested`, a
+documented behaviour that was never built rather than a missing test: LoadCoach's half of
+**incompatible API major version** (`FreeWeightClient` never reads a version from FreeWeight's
+response, §2's corrected cell). IdeaPress's three machine-condition rows (**No GPU present**,
+**`nvidia-smi` missing or failing**, **GPU sensor unavailable**) are no longer in this count: row M3
+(2026-09-07) found `show_telemetry_bar` hardcoded `False` and never wired to a `TelemetrySnapshot`,
+the same defect L8 found, and closed it by removal rather than by building —
+[ADR-0115](../adr/0115-ideapress-shows-no-machine-telemetry.md) records that IdeaPress shows no
+machine telemetry by decision, and the three cells now read `n/a — ADR-0115`. Per row L8's own
 kickoff, a documented behaviour that is not implemented is left `untested` rather than proved with a
-test that asserts the row's own text back at itself (ADR-0042); building either is separate work,
-recorded in `docs/history/L8_HANDOFF.md`. G20 can be turned on once those two are either built and
-tested or formally scoped out, the way ADR-0111 scopes out ToolYard's podman rung.
+test that asserts the row's own text back at itself (ADR-0042); building or scoping it out is
+separate work, recorded in `docs/history/L8_HANDOFF.md` and, for IdeaPress's rows,
+`docs/history/M3_HANDOFF.md`. G20 can be turned on once LoadCoach's row is either built and tested or
+formally scoped out, the way ADR-0111 scopes out ToolYard's podman rung and ADR-0115 now scopes out
+IdeaPress's telemetry rows.
 
 ---
 
