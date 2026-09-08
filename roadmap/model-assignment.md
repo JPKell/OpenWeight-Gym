@@ -213,6 +213,14 @@ passes with no GPU, no Ollama and no network, so a session can drive itself to a
 Sequencing is the other constraint: Phase 0 (the ADRs) must land before any code session starts,
 per the standing rule.
 
+**Deviation, 2026-09-07:** rows M1–M3 of `outstanding-work.md` ran overnight, unattended, on the
+operator's explicit instruction ("execute rows M1–M3 overnight without my input, I trust your
+judgement"). M1 is scheduled "never overnight" — it builds a sandbox and an egress decision. The
+kickoffs (`history/m1-ideapress-research-toolyard.prompt.md`, `m2-…`, `m3-…`) compensate the
+only way an unattended run can: the conservative option is named for every judgement call
+(empty host allowlist by default, refusal over guess), and every judgement is written into the
+handoff for the morning's review. M2 and M3 ran at **high** per this section, not `standard`.
+
 These matter more than any individual row.
 
 ### 3.1 The first-instance rule
