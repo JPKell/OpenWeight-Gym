@@ -296,7 +296,7 @@ referenced from its specification and does not duplicate it.
 five of the fourteen components existed and before 92 of the 114 ADRs were written — and its counts
 ("all nine development plans", "all three specs", "21 ADRs", "the 74 phases", "M1–M9") had stopped
 describing the set. This run covers **fourteen development plans (92 phases), four application
-specs, three application API documents, 114 ADRs, and milestones M1–M13 plus LA0–LA3.** Each check
+specs, four application API documents, 114 ADRs, and milestones M1–M13 plus LA0–LA3.** Each check
 states how it was verified, not merely that it was, and every mechanical check below was executed
 rather than recalled.
 

@@ -69,10 +69,9 @@ peer-application clients; `python-multipart` because Starlette's form parser req
 them (`pydantic`, `sqlalchemy`, `alembic`) are also reachable transitively through `setspec` and
 `weightsdb`; declaring what you import is required, not a breach.
 
-**Declared but unapproved — owed removal:** all four applications also declare
-`pydantic-settings`, and none of them imports it. Each `config.py` performs its own layered merge so
-that `config show` can report which layer produced every leaf value. The name leaves each
-`pyproject.toml` at that application's next release.
+`pydantic-settings` was declared by all four applications and imported by none; each `config.py`
+performs its own layered merge so that `config show` can report which layer produced every leaf
+value. Removed from all four `dependencies` (ADR-0114 decision 4).
 
 Adding a name to any set requires an ADR. Removing one requires only a release; a version-range
 change is neither. The gate is a test comparing each `pyproject.toml`'s `dependencies` against this

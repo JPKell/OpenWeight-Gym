@@ -265,7 +265,7 @@ GPU sessions never share the machine with FreeWeight benchmark runs.
 
 | Milestone | Rows | Declared when |
 |---|---|---|
-| **M9** — Suite 1.0 (pre-arc) | §1.1 — audit + gap sessions, any time | Master-roadmap §7 checklist complete over the nine existing components |
+| **M9** — Suite 1.0 (pre-arc) | §1.1 — audit + gap sessions, any time | Master-roadmap §7 checklist complete over the fourteen components |
 | **M10** — foundations | A1–F2 package rows (A1, A2, B1–B3, C1–C3, C5, C6, D1, E1–E3) | All four packages at 0.1.0, clean-venv acceptance scripts pass |
 | **M11** — beta | B4, C4, D2, E4, F1, F2, G1 | **Declared 2026-09-07 (ADR-0111):** the planned-vs-bypassed demo on real LoadCoach (G1) and the container rung exercised on the reference machine's runtime (docker, E4). The former condition — **`pytest -m isolation -rs` green on a real podman host** (see §4 — podman is first in ToolYard's ladder and has never been exercised; the reference machine has docker only, and E4 ran the container rung through docker); `0.9.0b0` — **cut 2026-09-04 (G1); the podman condition remains open** |
 | **LA1/LA2/LA3** | D3, F3, H1 / H2, H3 / B5, H4, H5 | Adapter-roadmap §3 exit conditions |
