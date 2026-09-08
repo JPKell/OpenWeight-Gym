@@ -276,12 +276,15 @@ None of this is a defect. Do not file it as one.
       demo_modelrack.py` · `py/SweatMeter/.venv/bin/python demo_sweatmeter.py`
 * [ ] **Four journeys**: FreeWeight's benchmark run on the fake provider; LoadCoach's `doctor` then a
       fake-provider `generate`; IdeaPress's draft-to-commit; PromptCadence's `run --bypass-planning`
-      against that fake-provider LoadCoach.
+      against that fake-provider LoadCoach. All four ran exactly as written above on 2026-09-08
+      (isolated `XDG_*` roots, no GPU, no Ollama): `native.echo` completed 5/5 on `fake-model`,
+      `route explain` reported `evidence: none` + `low_evidence`, and the bypass trajectory reached
+      `completed` in nine events.
 * [ ] **Three compositions**: evidence import changes a routing explanation; IdeaPress reaches a
       model through LoadCoach; `promptcadence tiers check` passes against it.
-* [ ] **The co-install from PyPI in a clean venv** — verified 2026-09-07, and it took
-      `ideapress 1.3.1` to make it resolve again. Expect `1.1.1`, `1.1.4`, `1.3.1`, `1.3.1`; each
-      repository is one patch ahead, prepared and unpublished.
+* [ ] **The co-install from PyPI in a clean venv** — verified 2026-09-08 at `freeweight 1.1.2`,
+      `loadcoach 1.1.6`, `ideapress 1.3.3`, `promptcadence 1.3.2`, and the compatibility matrix
+      (docs repository, run `34187778093`) proved both ends of every declared range the same day.
 
       ```bash
       python -m venv /tmp/suite-coinstall
