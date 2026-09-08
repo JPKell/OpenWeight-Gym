@@ -94,6 +94,25 @@ compatibility matrix); the declaration itself is a human step. Note for the A1 s
 roadmap §9's "current state" is frozen at end-of-M7 and should be corrected to the true state
 (all nine components tagged and published) in the same pass that adds the M10–M13 pointer row.
 
+**M9 declared 2026-09-08.** The professional delivery checklist
+([master-roadmap §7](master-roadmap.md), restated over fourteen components on 2026-09-07 by row
+L2) is complete: all 32 boxes are met, save the package-level cells of
+[`performance-results.md`](../architecture/performance-results.md), which are blank until a
+nightly `performance` job has fired in the ten repositories that gained a schedule at row L4 —
+the document's §5 states plainly that a blank cell means "not yet measured", and no session can
+close it — and ToolYard's podman rung, waived by
+[ADR-0111](../adr/0111-the-container-rung-is-proved-on-docker-and-podman-is-not-an-exit-condition.md).
+Two degradation-matrix cells whose documented behaviour is not implemented are scheduled rather
+than counted (rows M2 and M3). Suite 1.0 is declared over **fourteen components at the versions
+they hold**: the four applications at `1.x` on ten `0.x` packages, deliberately and pinned, per
+[ADR-0113](../adr/0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md) — M9 bumps no
+package to 1.0, and each package earns its own on the criteria that record sets. The evidence is
+rows L1–L8 and their handoffs, the audits `M9_AUDIT.md` and `M9_REAUDIT.md` (workspace root),
+and the first fully green run of the cross-repository compatibility matrix (docs repository,
+run `34187778093`, 2026-09-08), which proves every application's declared range for every suite
+package resolves and passes its contract and e2e suites at **both** ends, and that the four
+applications co-install: freeweight 1.1.2, loadcoach 1.1.6, ideapress 1.3.3, promptcadence 1.3.2.
+
 ## 2. The standing preamble for every kickoff prompt
 
 Every session's prompt, regardless of row, should state:
@@ -267,7 +286,7 @@ GPU sessions never share the machine with FreeWeight benchmark runs.
 
 | Milestone | Rows | Declared when |
 |---|---|---|
-| **M9** — Suite 1.0 (pre-arc) | §1.1 — audit + gap sessions, any time | Master-roadmap §7 checklist complete over the fourteen components |
+| **M9** — Suite 1.0 (fourteen components) | §1.1 — audit (`M9_AUDIT.md`), rows L1–L8, re-audit (`M9_REAUDIT.md`) | **Declared 2026-09-08:** master-roadmap §7's 32 boxes met over fourteen components and four applications; podman waived (ADR-0111), packages stay 0.x (ADR-0113), package performance cells blank until the first nightly; compatibility matrix run `34187778093` green at both ends of every range |
 | **M10** — foundations | A1–F2 package rows (A1, A2, B1–B3, C1–C3, C5, C6, D1, E1–E3) | All four packages at 0.1.0, clean-venv acceptance scripts pass |
 | **M11** — beta | B4, C4, D2, E4, F1, F2, G1 | **Declared 2026-09-07 (ADR-0111):** the planned-vs-bypassed demo on real LoadCoach (G1) and the container rung exercised on the reference machine's runtime (docker, E4). The former condition — **`pytest -m isolation -rs` green on a real podman host** (see §4 — podman is first in ToolYard's ladder and has never been exercised; the reference machine has docker only, and E4 ran the container rung through docker); `0.9.0b0` — **cut 2026-09-04 (G1); the podman condition remains open** |
 | **LA1/LA2/LA3** | D3, F3, H1 / H2, H3 / B5, H4, H5 | Adapter-roadmap §3 exit conditions |
