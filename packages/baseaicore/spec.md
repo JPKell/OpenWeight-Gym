@@ -237,6 +237,8 @@ parse_id(value) -> UlidParts             # frozen (timestamp: datetime, randomne
 utc_now() -> datetime                    # timezone-aware UTC
 to_rfc3339(dt) -> str                    # millisecond precision, trailing Z
 from_rfc3339(text) -> datetime           # rejects naive input
+require_aware(dt, *, field_name) -> None  # raises ValidationError on a naive datetime; the one
+                                         # check every stored, hashed or compared timestamp makes
 Clock = Callable[[], datetime]           # the injectable clock type used suite-wide
 monotonic_ns() -> int                    # perf_counter_ns; a duration never comes from a clock
 elapsed_ms(start_ns, end_ns=None) -> float   # milliseconds between two monotonic_ns readings
