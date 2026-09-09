@@ -5,22 +5,33 @@ include_external_packages = True
 [importlinter:contract:layers]
 name = WeightRoomGym internal layering
 type = layers
-# Parenthesised = optional: the empty package has none of these yet. W1 removes the parentheses
-# as each layer appears, so a missing layer becomes a failure again once it has been written.
 layers =
-    (web)
-    (cli)
-    (services)
-    (domain)
+    web
+    cli
+    services
+    domain
 containers = weightroom
 
-# W1 adds the sibling repositories' `web-cli-independence` contract (type = independence over
-# weightroom.web and weightroom.cli) the moment both modules exist; an independence contract
-# over absent modules is an error rather than a pass, so it cannot be declared ahead of them.
+[importlinter:contract:web-cli-independence]
+name = Web and CLI never import each other
+type = independence
+modules =
+    weightroom.web
+    weightroom.cli
 
-# W1 also adds `domain-purity` (type = forbidden, source weightroom.domain, forbidding fastapi,
-# starlette, sqlalchemy, typer, httpx, jinja2, tomlkit and cryptography) once weightroom.domain
-# exists — the same reason as above: a contract over an absent source module is an error.
+[importlinter:contract:domain-purity]
+name = Domain imports no frameworks
+type = forbidden
+source_modules = weightroom.domain
+forbidden_modules =
+    fastapi
+    starlette
+    sqlalchemy
+    typer
+    httpx
+    jinja2
+    tomlkit
+    cryptography
 
 [importlinter:contract:no-application-imports]
 name = WeightRoomGym reaches the four applications only over HTTP, their CLIs and their databases (ADR-0123 rule 3) — never by import

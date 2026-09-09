@@ -1,0 +1,743 @@
+{
+  "application": "weightroom",
+  "config_only": [
+    "chat.default_classification",
+    "chat.max_attachment_bytes",
+    "docs.root",
+    "jobs.lease_seconds",
+    "jobs.output_cap_bytes",
+    "logging.format",
+    "logging.include_content",
+    "logging.level",
+    "storage.auto_migrate",
+    "storage.backup_retention",
+    "storage.database_url"
+  ],
+  "config_path": "<config_path>",
+  "env_prefix": "WEIGHTROOM_",
+  "json_schema": {
+    "$defs": {
+      "AlertsSettings": {
+        "additionalProperties": false,
+        "description": "The alert evaluator (spec \u00a77.10).",
+        "properties": {
+          "gpu_temperature_c": {
+            "default": 85,
+            "description": "GPU temperature that opens a gpu_thermal alert. Runtime-changeable.",
+            "examples": [
+              85
+            ],
+            "maximum": 120,
+            "minimum": 40,
+            "title": "Gpu Temperature C",
+            "type": "integer"
+          },
+          "interval_seconds": {
+            "default": 30,
+            "description": "How often the five sources are evaluated. Runtime-changeable.",
+            "examples": [
+              30
+            ],
+            "maximum": 3600,
+            "minimum": 5,
+            "title": "Interval Seconds",
+            "type": "integer"
+          }
+        },
+        "title": "AlertsSettings",
+        "type": "object"
+      },
+      "AppSettings": {
+        "additionalProperties": false,
+        "description": "How WeightRoomGym reaches one application: its executable, its API, its token file.",
+        "properties": {
+          "api_key_file": {
+            "default": "",
+            "description": "A file holding the bearer token the wizard created for WeightRoomGym, mode 0600 (ADR-0126 rule 8). Never the value itself. Empty for an application without tokens.",
+            "examples": [
+              "/home/op/.config/wr-gym/secrets/loadcoach.token"
+            ],
+            "title": "Api Key File",
+            "type": "string"
+          },
+          "base_url": {
+            "default": "",
+            "description": "The application's own HTTP API, loopback (ADR-0126 rule 1).",
+            "examples": [
+              "http://127.0.0.1:8766"
+            ],
+            "title": "Base Url",
+            "type": "string"
+          },
+          "executable": {
+            "default": "",
+            "description": "The application's CLI. Empty means shutil.which(<app>) at startup.",
+            "examples": [
+              "/home/op/.local/bin/loadcoach"
+            ],
+            "title": "Executable",
+            "type": "string"
+          }
+        },
+        "title": "AppSettings",
+        "type": "object"
+      },
+      "AppsSettings": {
+        "additionalProperties": false,
+        "description": "One block per application, ``[apps.<name>]``.",
+        "properties": {
+          "freeweight": {
+            "$ref": "#/$defs/AppSettings"
+          },
+          "ideapress": {
+            "$ref": "#/$defs/AppSettings"
+          },
+          "loadcoach": {
+            "$ref": "#/$defs/AppSettings"
+          },
+          "promptcadence": {
+            "$ref": "#/$defs/AppSettings"
+          }
+        },
+        "title": "AppsSettings",
+        "type": "object"
+      },
+      "AuthSettings": {
+        "additionalProperties": false,
+        "description": "Session lifetimes and the re-authentication window (ADR-0126 rule 4, ADR-0127 rule 6).",
+        "properties": {
+          "reauth_window_minutes": {
+            "default": 5,
+            "description": "How long a successful POST /reauth authorises a security action.",
+            "examples": [
+              5
+            ],
+            "minimum": 1,
+            "title": "Reauth Window Minutes",
+            "type": "integer"
+          },
+          "session_idle_hours": {
+            "default": 12,
+            "description": "A session ends this long after its last request.",
+            "examples": [
+              12
+            ],
+            "minimum": 1,
+            "title": "Session Idle Hours",
+            "type": "integer"
+          },
+          "session_max_days": {
+            "default": 7,
+            "description": "A session ends this long after login, whatever happens.",
+            "examples": [
+              7
+            ],
+            "minimum": 1,
+            "title": "Session Max Days",
+            "type": "integer"
+          }
+        },
+        "title": "AuthSettings",
+        "type": "object"
+      },
+      "ChatSettings": {
+        "additionalProperties": false,
+        "description": "Chat defaults and the attachment cap (spec \u00a77.6).",
+        "properties": {
+          "default_classification": {
+            "default": "confidential",
+            "description": "The PromptCadence classification a new conversation starts with.",
+            "enum": [
+              "public",
+              "internal",
+              "confidential"
+            ],
+            "examples": [
+              "confidential"
+            ],
+            "title": "Default Classification",
+            "type": "string"
+          },
+          "default_task_profile": {
+            "default": "general.chat",
+            "description": "The LoadCoach task profile a new chat starts with. Runtime-changeable.",
+            "examples": [
+              "general.chat"
+            ],
+            "title": "Default Task Profile",
+            "type": "string"
+          },
+          "max_attachment_bytes": {
+            "default": 262144,
+            "description": "The largest text or markdown attachment accepted.",
+            "examples": [
+              262144
+            ],
+            "minimum": 1024,
+            "title": "Max Attachment Bytes",
+            "type": "integer"
+          }
+        },
+        "title": "ChatSettings",
+        "type": "object"
+      },
+      "DocsSettings": {
+        "additionalProperties": false,
+        "description": "The documentation tree the viewer renders (spec \u00a77.5).",
+        "properties": {
+          "root": {
+            "default": "",
+            "description": "The docs/ directory. Empty means the docs/ beside this checkout when one exists, else the viewer refuses by name.",
+            "examples": [
+              "/home/op/ai/suite/WeightRoom/docs"
+            ],
+            "title": "Root",
+            "type": "string"
+          }
+        },
+        "title": "DocsSettings",
+        "type": "object"
+      },
+      "HostSettings": {
+        "additionalProperties": false,
+        "description": "The host: the unit-level memory cap, Ollama's unit, the GGUF drop-in directory.",
+        "properties": {
+          "llamacpp_model_directory": {
+            "default": "",
+            "description": "Where a GGUF drop-in lands. Empty means the directory the applications' configs name.",
+            "examples": [
+              "/home/op/ai/models/gguf"
+            ],
+            "title": "Llamacpp Model Directory",
+            "type": "string"
+          },
+          "memory_high": {
+            "default": "22G",
+            "description": "MemoryHigh written into the application units (ADR-0119, ADR-0125).",
+            "examples": [
+              "22G"
+            ],
+            "title": "Memory High",
+            "type": "string"
+          },
+          "memory_max": {
+            "default": "24G",
+            "description": "MemoryMax written into the application units (ADR-0119, ADR-0125).",
+            "examples": [
+              "24G"
+            ],
+            "title": "Memory Max",
+            "type": "string"
+          },
+          "ollama_base_url": {
+            "default": "http://127.0.0.1:11434",
+            "description": "Ollama's API, for residency and pulls.",
+            "examples": [
+              "http://127.0.0.1:11434"
+            ],
+            "title": "Ollama Base Url",
+            "type": "string"
+          },
+          "ollama_unit": {
+            "default": "ollama.service",
+            "description": "Ollama's system unit name.",
+            "examples": [
+              "ollama.service"
+            ],
+            "title": "Ollama Unit",
+            "type": "string"
+          }
+        },
+        "title": "HostSettings",
+        "type": "object"
+      },
+      "JobsSettings": {
+        "additionalProperties": false,
+        "description": "The database-backed queue (spec \u00a77.10, ADR-0029 shape).",
+        "properties": {
+          "lease_seconds": {
+            "default": 60,
+            "description": "A claimed job's lease.",
+            "examples": [
+              60
+            ],
+            "minimum": 5,
+            "title": "Lease Seconds",
+            "type": "integer"
+          },
+          "output_cap_bytes": {
+            "default": 1048576,
+            "description": "Captured stdout/stderr kept per job.",
+            "examples": [
+              1048576
+            ],
+            "minimum": 1024,
+            "title": "Output Cap Bytes",
+            "type": "integer"
+          },
+          "poll_interval_ms": {
+            "default": 1000,
+            "description": "How often the worker looks for work. Runtime-changeable.",
+            "examples": [
+              1000
+            ],
+            "maximum": 60000,
+            "minimum": 100,
+            "title": "Poll Interval Ms",
+            "type": "integer"
+          }
+        },
+        "title": "JobsSettings",
+        "type": "object"
+      },
+      "LoggingSettings": {
+        "additionalProperties": false,
+        "description": "Log level and content policy.",
+        "properties": {
+          "format": {
+            "default": "auto",
+            "description": "text on a TTY, json otherwise, unless forced.",
+            "enum": [
+              "auto",
+              "text",
+              "json"
+            ],
+            "examples": [
+              "auto"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "include_content": {
+            "default": false,
+            "description": "Log chat text and attachment bodies. Off by default; config-only.",
+            "examples": [
+              false
+            ],
+            "title": "Include Content",
+            "type": "boolean"
+          },
+          "level": {
+            "default": "INFO",
+            "description": "Root log level.",
+            "enum": [
+              "DEBUG",
+              "INFO",
+              "WARNING",
+              "ERROR"
+            ],
+            "examples": [
+              "INFO"
+            ],
+            "title": "Level",
+            "type": "string"
+          }
+        },
+        "title": "LoggingSettings",
+        "type": "object"
+      },
+      "ServerSettings": {
+        "additionalProperties": false,
+        "description": "Bind address, the two ports and the HTTP-level limits.",
+        "properties": {
+          "allow_lan_exposure": {
+            "default": false,
+            "description": "Acknowledges a deliberate bind to every interface (0.0.0.0). Without it such a bind refuses to start.",
+            "examples": [
+              false
+            ],
+            "title": "Allow Lan Exposure",
+            "type": "boolean"
+          },
+          "allowed_hosts": {
+            "default": [],
+            "description": "Host header values accepted on a non-loopback bind, against DNS rebinding (ADR-0026 \u00a71). The wizard fills it from the host's names and addresses. Comma-separated in the environment.",
+            "examples": [
+              [
+                "jordan-main",
+                "jordan-main.local",
+                "10.77.10.84"
+              ]
+            ],
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Hosts",
+            "type": "array"
+          },
+          "failed_login_per_minute": {
+            "default": 5,
+            "description": "Login attempts one address may make per minute before it is refused with 429 for the rest of the minute (ADR-0126 rule 4). 0 disables.",
+            "examples": [
+              5
+            ],
+            "minimum": 0,
+            "title": "Failed Login Per Minute",
+            "type": "integer"
+          },
+          "host": {
+            "default": "127.0.0.1",
+            "description": "Interface to bind. Loopback by default; anything else requires a valid tls/ directory, an operator account and allowed_hosts (ADR-0126 rule 6).",
+            "examples": [
+              "127.0.0.1"
+            ],
+            "title": "Host",
+            "type": "string"
+          },
+          "max_body_bytes": {
+            "default": 67108864,
+            "description": "The largest request body accepted, refused with 413 before buffering. 64 MiB admits a GGUF drop-in by upload (spec \u00a712).",
+            "examples": [
+              67108864
+            ],
+            "minimum": 1024,
+            "title": "Max Body Bytes",
+            "type": "integer"
+          },
+          "port": {
+            "default": 8769,
+            "description": "TCP port for the HTTPS console. Plain HTTP is never served on it.",
+            "examples": [
+              8769
+            ],
+            "maximum": 65535,
+            "minimum": 1,
+            "title": "Port",
+            "type": "integer"
+          },
+          "rate_limit_burst": {
+            "default": 100,
+            "description": "How many requests one address may make at once before the rate applies.",
+            "examples": [
+              100
+            ],
+            "minimum": 1,
+            "title": "Rate Limit Burst",
+            "type": "integer"
+          },
+          "rate_limit_per_minute": {
+            "default": 600,
+            "description": "Requests per minute one address may make to /api/v1, sustained. A token bucket: rate_limit_burst may arrive at once, then this rate. 0 disables. At the limit a caller gets 429 RATE_LIMITED with Retry-After.",
+            "examples": [
+              600
+            ],
+            "minimum": 0,
+            "title": "Rate Limit Per Minute",
+            "type": "integer"
+          },
+          "trust_port": {
+            "default": 8770,
+            "description": "The plain-HTTP trust listener: serves /root.crt and the trust page, nothing else (ADR-0126 rule 3).",
+            "examples": [
+              8770
+            ],
+            "maximum": 65535,
+            "minimum": 1,
+            "title": "Trust Port",
+            "type": "integer"
+          }
+        },
+        "title": "ServerSettings",
+        "type": "object"
+      },
+      "StorageSettings": {
+        "additionalProperties": false,
+        "description": "Database location, resolved through WeightsDB (ADR-0006).",
+        "properties": {
+          "auto_migrate": {
+            "default": true,
+            "description": "Migrate on startup. Unset means true on SQLite and false on PostgreSQL, where a failed migration cannot be rolled back automatically (database standards \u00a75.1).",
+            "examples": [
+              true
+            ],
+            "title": "Auto Migrate",
+            "type": "boolean"
+          },
+          "backup_retention": {
+            "default": 5,
+            "description": "Automatic pre-migration backups kept before the oldest is rotated away.",
+            "examples": [
+              5
+            ],
+            "minimum": 0,
+            "title": "Backup Retention",
+            "type": "integer"
+          },
+          "database_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "SQLAlchemy URL. Unset resolves to a SQLite file under the XDG data directory; PostgreSQL is the other supported dialect (ADR-0006).",
+            "examples": [
+              "sqlite:////var/lib/wr-gym/weightroom.sqlite3"
+            ],
+            "title": "Database Url"
+          }
+        },
+        "title": "StorageSettings",
+        "type": "object"
+      },
+      "TelemetrySettings": {
+        "additionalProperties": false,
+        "description": "The in-process sweatmeter sampler (spec \u00a77.7).",
+        "properties": {
+          "history_hours": {
+            "default": 72,
+            "description": "How long telemetry_samples are kept. Runtime-changeable.",
+            "examples": [
+              72
+            ],
+            "maximum": 720,
+            "minimum": 1,
+            "title": "History Hours",
+            "type": "integer"
+          },
+          "interval_ms": {
+            "default": 1000,
+            "description": "Sampling interval. Runtime-changeable.",
+            "examples": [
+              1000
+            ],
+            "maximum": 60000,
+            "minimum": 100,
+            "title": "Interval Ms",
+            "type": "integer"
+          }
+        },
+        "title": "TelemetrySettings",
+        "type": "object"
+      },
+      "TlsSettings": {
+        "additionalProperties": false,
+        "description": "The certificate authority and the leaf it signs (ADR-0126 rule 2).",
+        "properties": {
+          "ca_years": {
+            "default": 10,
+            "description": "The root's lifetime.",
+            "examples": [
+              10
+            ],
+            "maximum": 30,
+            "minimum": 1,
+            "title": "Ca Years",
+            "type": "integer"
+          },
+          "directory": {
+            "default": "",
+            "description": "Where ca.key, ca.crt, server.key and server.crt live. Empty means <config>/tls.",
+            "examples": [
+              "/home/op/.config/wr-gym/tls"
+            ],
+            "title": "Directory",
+            "type": "string"
+          },
+          "leaf_days": {
+            "default": 398,
+            "description": "The leaf certificate's lifetime; 398 days is the browser ceiling.",
+            "examples": [
+              398
+            ],
+            "maximum": 825,
+            "minimum": 1,
+            "title": "Leaf Days",
+            "type": "integer"
+          },
+          "renew_before_days": {
+            "default": 30,
+            "description": "Serve renews the leaf at startup when fewer days than this remain.",
+            "examples": [
+              30
+            ],
+            "minimum": 1,
+            "title": "Renew Before Days",
+            "type": "integer"
+          }
+        },
+        "title": "TlsSettings",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "The complete, validated WeightRoomGym configuration (spec \u00a712).\n\nConstructed only by :func:`load_settings`, which resolves the precedence chain first \u2014 never\ncall ``Settings(**raw_dict)`` directly on unmerged input, or the file/env/CLI layering in\nconfiguration standards \u00a71 is bypassed.",
+    "properties": {
+      "alerts": {
+        "$ref": "#/$defs/AlertsSettings"
+      },
+      "apps": {
+        "$ref": "#/$defs/AppsSettings"
+      },
+      "auth": {
+        "$ref": "#/$defs/AuthSettings"
+      },
+      "chat": {
+        "$ref": "#/$defs/ChatSettings"
+      },
+      "docs": {
+        "$ref": "#/$defs/DocsSettings"
+      },
+      "host": {
+        "$ref": "#/$defs/HostSettings"
+      },
+      "jobs": {
+        "$ref": "#/$defs/JobsSettings"
+      },
+      "logging": {
+        "$ref": "#/$defs/LoggingSettings"
+      },
+      "server": {
+        "$ref": "#/$defs/ServerSettings"
+      },
+      "storage": {
+        "$ref": "#/$defs/StorageSettings"
+      },
+      "telemetry": {
+        "$ref": "#/$defs/TelemetrySettings"
+      },
+      "tls": {
+        "$ref": "#/$defs/TlsSettings"
+      }
+    },
+    "title": "Settings",
+    "type": "object"
+  },
+  "problems": [],
+  "runtime_changeable": [
+    {
+      "description": "Telemetry sampling interval.",
+      "key": "telemetry.interval_ms",
+      "kind": "int",
+      "maximum": 60000,
+      "minimum": 100
+    },
+    {
+      "description": "Telemetry retention.",
+      "key": "telemetry.history_hours",
+      "kind": "int",
+      "maximum": 720,
+      "minimum": 1
+    },
+    {
+      "description": "Alert evaluation interval.",
+      "key": "alerts.interval_seconds",
+      "kind": "int",
+      "maximum": 3600,
+      "minimum": 5
+    },
+    {
+      "description": "GPU thermal alert threshold.",
+      "key": "alerts.gpu_temperature_c",
+      "kind": "int",
+      "maximum": 120,
+      "minimum": 40
+    },
+    {
+      "description": "Job worker poll interval.",
+      "key": "jobs.poll_interval_ms",
+      "kind": "int",
+      "maximum": 60000,
+      "minimum": 100
+    },
+    {
+      "description": "The LoadCoach task profile a new chat starts with.",
+      "key": "chat.default_task_profile",
+      "kind": "str",
+      "maximum": null,
+      "minimum": null
+    }
+  ],
+  "schema_version": "1.0",
+  "security_keys": [
+    "apps.freeweight.api_key_file",
+    "apps.freeweight.base_url",
+    "apps.freeweight.executable",
+    "apps.ideapress.api_key_file",
+    "apps.ideapress.base_url",
+    "apps.ideapress.executable",
+    "apps.loadcoach.api_key_file",
+    "apps.loadcoach.base_url",
+    "apps.loadcoach.executable",
+    "apps.promptcadence.api_key_file",
+    "apps.promptcadence.base_url",
+    "apps.promptcadence.executable",
+    "auth.reauth_window_minutes",
+    "auth.session_idle_hours",
+    "auth.session_max_days",
+    "host.llamacpp_model_directory",
+    "host.memory_high",
+    "host.memory_max",
+    "host.ollama_base_url",
+    "host.ollama_unit",
+    "server.allow_lan_exposure",
+    "server.allowed_hosts",
+    "server.failed_login_per_minute",
+    "server.host",
+    "server.max_body_bytes",
+    "server.port",
+    "server.rate_limit_burst",
+    "server.rate_limit_per_minute",
+    "server.trust_port",
+    "tls.ca_years",
+    "tls.directory",
+    "tls.leaf_days",
+    "tls.renew_before_days"
+  ],
+  "sources": {
+    "alerts.gpu_temperature_c": "default",
+    "alerts.interval_seconds": "default",
+    "apps.freeweight.api_key_file": "default",
+    "apps.freeweight.base_url": "default",
+    "apps.freeweight.executable": "default",
+    "apps.ideapress.api_key_file": "default",
+    "apps.ideapress.base_url": "default",
+    "apps.ideapress.executable": "default",
+    "apps.loadcoach.api_key_file": "default",
+    "apps.loadcoach.base_url": "default",
+    "apps.loadcoach.executable": "default",
+    "apps.promptcadence.api_key_file": "default",
+    "apps.promptcadence.base_url": "default",
+    "apps.promptcadence.executable": "default",
+    "auth.reauth_window_minutes": "default",
+    "auth.session_idle_hours": "default",
+    "auth.session_max_days": "default",
+    "chat.default_classification": "default",
+    "chat.default_task_profile": "default",
+    "chat.max_attachment_bytes": "default",
+    "docs.root": "default",
+    "host.llamacpp_model_directory": "default",
+    "host.memory_high": "default",
+    "host.memory_max": "default",
+    "host.ollama_base_url": "default",
+    "host.ollama_unit": "default",
+    "jobs.lease_seconds": "default",
+    "jobs.output_cap_bytes": "default",
+    "jobs.poll_interval_ms": "default",
+    "logging.format": "default",
+    "logging.include_content": "default",
+    "logging.level": "default",
+    "server.allow_lan_exposure": "default",
+    "server.allowed_hosts": "default",
+    "server.failed_login_per_minute": "default",
+    "server.host": "default",
+    "server.max_body_bytes": "default",
+    "server.port": "default",
+    "server.rate_limit_burst": "default",
+    "server.rate_limit_per_minute": "default",
+    "server.trust_port": "default",
+    "storage.auto_migrate": "default",
+    "storage.backup_retention": "default",
+    "storage.database_url": "default",
+    "telemetry.history_hours": "default",
+    "telemetry.interval_ms": "default",
+    "tls.ca_years": "default",
+    "tls.directory": "default",
+    "tls.leaf_days": "default",
+    "tls.renew_before_days": "default"
+  },
+  "version": "<version>"
+}
