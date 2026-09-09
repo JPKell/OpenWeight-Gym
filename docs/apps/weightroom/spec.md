@@ -127,7 +127,9 @@ admits 0.2.2 until then), `sweatmeter`, `modelrack` (read-only provider calls),
 **Host:** Linux with systemd (`systemctl`, `journalctl`, `loginctl`) for process pages and units;
 `ollama` on `PATH` for pulls; `sqlite3`/`pg_dump` through `weightsdb`. Without systemd the
 process pages degrade by name and everything else works.
-**Vendored assets:** MirrorWall's; ECharts through MirrorWall's chart container; **mermaid**
+**Vendored assets:** MirrorWall's, including **htmx** and its SSE extension from 0.3
+([ADR-0128](../../adr/0128-mirrorwall-vendors-htmx-and-applications-may-adopt-it.md)) for every
+fragment swap and SSE-driven region; ECharts through MirrorWall's chart container; **mermaid**
 (≈ 2.5 MB, offline, loaded only on a docs page that contains a diagram — the one exception to
 the per-page JS budget, declared in §15).
 

@@ -2,7 +2,7 @@
 
 **Row:** W0 of [`roadmap/weightroom-work.md`](../roadmap/weightroom-work.md) (Fable 5.1 · attended).
 **Date:** 2026-09-09. **Kickoff:** [`w0-weightroom-phase-0.prompt.md`](w0-weightroom-phase-0.prompt.md).
-**Ships:** no code. Five ADRs, six `apps/weightroom/` documents, the repository move and
+**Ships:** no code. Six ADRs (0123–0128), six `apps/weightroom/` documents, the repository move and
 skeleton, the architecture amendments, the arc's work file, fifteen kickoff prompts.
 
 ## 1. What was built, by commit
@@ -32,9 +32,10 @@ settle on top:
   and data roots `wr-gym`, checkout `~/ai/suite/WeightRoom`, GitHub remote still
   `OpenWeight-Gym`. The row had proposed `openweight-gym` (free on PyPI; `weightroom` is taken by
   an unrelated `0.0.1`); the operator chose otherwise after the §5 incident.
-* **"htmx" → the patterns, not the library** (ADR-0123 rule 7). ADR-0020 explicitly rejected
-  htmx as a dependency; the interview said "ADR-0020 kept". Flagged in the ops checklist for the
-  operator to confirm or supersede.
+* **"htmx" — decided at the close of the row: the library.** The row first read D2 as the
+  patterns only (ADR-0020 had rejected htmx as a dependency); the operator, given the trade-offs,
+  chose adoption. ADR-0128: MirrorWall 0.3 vendors htmx and its SSE extension, opt-in per page,
+  behaviour still in modules; ADR-0020 and ADR-0123 rule 7 carry *Amended by* notes.
 * **`modelrack` is imported** (read-only: residency, discovery) despite the kickoff §1 listing
   five packages: the gold standard "one Ollama client in the suite" outranks a sixth-package
   omission in a prompt; `generate` is never called and a grep test says so. `loadledger[sql]`
@@ -126,8 +127,7 @@ tree a run holds).
 
 1. ~~The distribution name.~~ **Decided** (§2): WeightRoomGym / `wr-gym` / `weightroom`; applied in
    the row's closing commit across the five repositories.
-2. **"htmx"**: patterns via MirrorWall's modules (as written), or the library (an ADR superseding
-   ADR-0020's rejection, before W3).
+2. ~~"htmx"~~ **Decided**: adopted (ADR-0128).
 3. Apply `MEMORY_SAFETY.md` §2.1 on the host; decide whether Ollama stays on `0.0.0.0`.
 4. Reserve the PyPI name before W1 publishes anything.
 

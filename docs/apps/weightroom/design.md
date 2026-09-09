@@ -105,6 +105,12 @@ vocabulary for runs and jobs is unchanged and sits beside it.
 | **Guard dialog** | the five-condition checklist with live verdicts and the typed-name field | **WeightRoomGym** |
 | **Re-auth prompt** | the password re-entry modal for security actions | **WeightRoomGym** — until a second application needs one |
 
+Swaps and SSE regions in every component above are **htmx** attributes (`hx-get`, `hx-swap`,
+`sse-connect`, `sse-swap`), vendored by MirrorWall 0.3 and opt-in per page
+([ADR-0128](../../adr/0128-mirrorwall-vendors-htmx-and-applications-may-adopt-it.md)); what is
+*behaviour* — the log pane's bounded buffer, the thinking collapse, code copy, the guard's typed
+name — stays a small ES module on a `data-` element.
+
 The rule for the split is [ADR-0011](../../adr/0011-shared-package-boundaries.md)'s: two
 consumers or a clearly generic primitive go to MirrorWall; one consumer stays here and is written
 package-shaped so a move is a move.

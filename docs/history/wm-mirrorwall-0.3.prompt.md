@@ -33,8 +33,15 @@ pages — proven by rendering the four applications' template suites against the
   re-auth prompt stay in WeightRoomGym.
 * Every dot has a word; every meter is `role="meter"` with a text value; contrast asserted for
   every new pair in both themes (brief §7).
-* No dependency is added (MirrorWall's budget is `jinja2`, `starlette`, `anyio`); the font is a
-  vendored asset, not a fetch.
+* No Python dependency is added (MirrorWall's budget is `jinja2`, `starlette`, `anyio`); the font
+  is a vendored asset, not a fetch.
+* **htmx is vendored** ([ADR-0128](../adr/0128-mirrorwall-vendors-htmx-and-applications-may-adopt-it.md)):
+  `static/js/vendor/htmx.min.js` and `htmx-ext-sse.js`, one pinned version named in the
+  CHANGELOG, together under 20 KB gzipped, included by `base.html` only when the context sets
+  `mirrorwall.htmx = true`; the CSRF token set once through `hx-headers`; `hx-boost` and `hx-on`
+  unused. The seven components use `hx-*`/`sse-*` for swaps and regions and ES modules for
+  behaviour (rule 3 and 6); the existing swap/SSE modules stay and are marked deprecated (rule 7).
+  A page that does not opt in renders byte-identically to 0.2.2 — that is the gold-standard test.
 
 ## Gates
 

@@ -9,5 +9,5 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ### Added
 - Row W0 (2026-09-09): the repository. `OpenWeight-Gym`, formerly the suite's documentation
   repository, becomes the WeightRoomGym repository; the documentation tree moves under `docs/` and
-  stays the suite's canonical copy. The package is empty at `0.0.0`; ADRs 0123–0127 and
+  stays the suite's canonical copy. The package is empty at `0.0.0`; ADRs 0123–0128 and
   `docs/apps/weightroom/` specify what rows W1–W10 build.

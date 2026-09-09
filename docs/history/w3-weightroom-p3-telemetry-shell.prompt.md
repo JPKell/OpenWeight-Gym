@@ -28,7 +28,7 @@ ADR-0016; ADR-0021; ADR-0123 rule 3 (the revision check the Overview's database 
   with its `source`.
 * Every page renders inside the shell; a stopped application's Overview renders from its database
   at a known revision with the source in the footer; an unknown revision degrades by name.
-* The htmx *patterns* through MirrorWall's ES modules; no htmx library (ADR-0123 rule 7).
+* htmx for every swap and SSE region, through MirrorWall 0.3's vendored copy with `mirrorwall.htmx = true` (ADR-0128); behaviour stays in ES modules; `hx-boost` off.
 
 ## Gates
 

@@ -1,6 +1,7 @@
 # ADR-0020 — UI rendering strategy
 
 **Status:** Accepted (2026-08-21)
+**Amended by:** [ADR-0128](0128-mirrorwall-vendors-htmx-and-applications-may-adopt-it.md) — the *Alternatives considered* rejection of htmx as a dependency is withdrawn: MirrorWall 0.3 vendors htmx and its SSE extension, opt-in per page, with behaviour still in Python and small ES modules. Every other rule here is unchanged.
 
 ## Context
 

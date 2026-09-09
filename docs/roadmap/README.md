@@ -21,5 +21,5 @@ prompt per row under `docs/history/`. A person opening this directory sees the a
 | [`adapter-roadmap.md`](adapter-roadmap.md) | LA0–LA3: hot-swappable LoRA serving — decisions A-1…A-10 (ADRs 0058–0067) |
 | [`model-assignment.md`](model-assignment.md) | Which model and effort per phase, what makes a phase hard, the one-model rule (§3.5), the overnight rules (§2.12) |
 
-The WeightRoomGym arc has no separate roadmap document: its rationale is ADRs 0123–0127 and
+The WeightRoomGym arc has no separate roadmap document: its rationale is ADRs 0123–0128 and
 [`apps/weightroom/`](../apps/weightroom/spec.md), and its work file's preamble says so.

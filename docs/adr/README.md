@@ -162,6 +162,7 @@ an ADR is superseded rather than edited.
 | [0125](0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md) | WeightRoomGym drives the applications through `systemd --user` units it writes; Ollama is read, and restarted only through a polkit rule | Accepted |
 | [0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) | WeightRoomGym is the only service on the LAN, and it terminates TLS with its own CA behind a session login | Accepted |
 | [0127](0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) | Every application publishes its settings schema, and WeightRoomGym generates the settings form from it | Accepted |
+| [0128](0128-mirrorwall-vendors-htmx-and-applications-may-adopt-it.md) | MirrorWall vendors htmx, and an application may adopt it | Accepted |
 
 ## Writing a new ADR
 
@@ -189,6 +190,10 @@ amends [ADR-0014](0014-authentication-strategy.md) for one component (a session 
 ADR-0014 chose bearer tokens, because WeightRoomGym is the proxy ADR-0014 assumed in front) and
 withdraws [ADR-0026](0026-local-http-hardening.md)'s JSON-API CSRF exemption for the same one
 component, whose API is cookie-authenticated; both carry an *Amended by* note.
+[ADR-0128](0128-mirrorwall-vendors-htmx-and-applications-may-adopt-it.md) (the same day, on the
+operator's decision) withdraws [ADR-0020](0020-ui-rendering-strategy.md)'s rejection of htmx as a
+dependency — MirrorWall 0.3 vendors it, opt-in per page — and supersedes the one sentence of
+ADR-0123 rule 7 that repeated that rejection; both carry the note.
 
 ADR-0033 was added on 2026-08-27, during FreeWeight Phase 7, to record a decision the phase forced
 and the documentation did not contain: how a benchmark drives more than one provider call per

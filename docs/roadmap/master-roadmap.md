@@ -380,7 +380,7 @@ and it needs a look before the M9 release boxes can be ticked.
 | LoadCoach | 1.1.3 | **1.0.0** | P1–P9 plus LC-E1, the adapter work (LA2) and the settings-precedence fix (row I8). `v1.1.0`, `v1.1.2` and `v1.1.3` tagged and pushed; **no release run fired for any of them** |
 | IdeaPress | 1.3.0 *(prepared)* | 1.2.0 | P1–P9 (M8), the per-stage adapter pins, and the M13 adoption phases; `1.2.0` tagged 2026-09-07 and published by CI, `1.3.0` committed and untagged (row K3) |
 | PromptCadence | 1.2.0 | 1.2.0 | P1–P9 complete (M12), plus runtime settings and the `settings` verb; tagged 2026-09-07 and published by CI |
-| WeightRoomGym | 0.0.0 | — | **Specified 2026-09-09** (row W0; ADRs 0123–0127; `apps/weightroom/*`); the fifth application, unbuilt; rows W1–W10 in [`weightroom-work.md`](weightroom-work.md); distribution `wr-gym` |
+| WeightRoomGym | 0.0.0 | — | **Specified 2026-09-09** (row W0; ADRs 0123–0128; `apps/weightroom/*`); the fifth application, unbuilt; rows W1–W10 in [`weightroom-work.md`](weightroom-work.md); distribution `wr-gym` |
 
 **What remains, in two independent tracks.**
 

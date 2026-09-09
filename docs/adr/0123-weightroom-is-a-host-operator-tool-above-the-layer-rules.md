@@ -1,6 +1,7 @@
 # ADR-0123 — WeightRoomGym is a fifth application, and it is a host operator tool above the layer rules
 
 **Status:** Accepted (2026-09-09)
+**Amended by:** [ADR-0128](0128-mirrorwall-vendors-htmx-and-applications-may-adopt-it.md) — rule 7's sentence that the htmx library is not a dependency is superseded: MirrorWall 0.3 vendors htmx and WeightRoomGym uses it for swaps and SSE regions; the rest of rule 7 (ADR-0020's server-rendered model, islands for behaviour, SSE) stands.
 **Extends:** [Master Architecture §1.1, §2, §3, §8 and §11](../architecture/master-architecture.md)
 (the component table, the dependency graph, ownership, deployment, the forbidden list), following the
 [ADR-0038](0038-one-model-at-a-time-per-gpu.md) precedent: the frozen document is changed only by a
