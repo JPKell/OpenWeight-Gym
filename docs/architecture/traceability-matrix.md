@@ -107,6 +107,11 @@ resolved.
 | Adapter selection, the evidence gate and pins | **LoadCoach** | IdeaPress, PromptCadence | HTTP v1 | [ADR-0064](../adr/0064-adapters-are-selected-through-the-capability-vocabulary.md) |
 | Two-level residency and the base-switch penalty | **LoadCoach** | Internal | Internal | [ADR-0066](../adr/0066-residency-is-two-level.md) |
 | Adapter panels and the serving-mode A/B | **FreeWeight** | LoadCoach (as evidence) | SetSpec `capability.evidence` v1.1 | [ADR-0059](../adr/0059-adapter-evidence-is-measured-never-inherited.md) · [ADR-0060](../adr/0060-selection-lives-in-the-subject-serving-mode-in-the-profile.md) |
+| The operator's console: LAN edge, TLS, login, audit trail | **WeightRoom** | Operator | HTTPS (session) | [ADR-0126](../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) · [WeightRoom §14](../apps/weightroom/spec.md) |
+| Process control and the unified log | **WeightRoom** (reads/drives all four) | Operator | `systemd --user`, journal | [ADR-0125](../adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md) |
+| Settings forms over each application's schema | **WeightRoom** (each app publishes `config schema`) | Operator | CLI JSON document + in-place TOML | [ADR-0127](../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) |
+| Guarded writes into another application's database | **WeightRoom** (reads FreeWeight, LoadCoach, IdeaPress, PromptCadence) | Operator | read-only DB; the five-part guard | [ADR-0124](../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md) |
+| Chat through the governed paths, catalog, costs, backups, jobs, alerts, prompts | **WeightRoom** (over LoadCoach's and PromptCadence's APIs) | Operator | HTTP v1 of each application | [WeightRoom §7](../apps/weightroom/spec.md) |
 
 ## 5. Cross-cutting requirements
 

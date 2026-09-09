@@ -1,8 +1,9 @@
 # Executive Summary
 
 **Suite:** a local-first toolkit for operating open-weight AI models.
-**Components:** four applications (FreeWeight, LoadCoach, IdeaPress, PromptCadence) and ten shared
-Python packages.
+**Components:** four applications (FreeWeight, LoadCoach, IdeaPress, PromptCadence), ten shared
+Python packages, and — specified 2026-09-09, unbuilt — a fifth application above them, WeightRoom,
+the host operator's console ([ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)).
 **Status:** architecture frozen 2026-08-21, audited and corrected the same day
 ([final architecture audit](../reviews/final_architecture_audit.md), ADR-0022 – ADR-0029).
 All fourteen components are built and tagged; the
@@ -50,6 +51,7 @@ faster, cheaper and more reliable — without a single line of workflow code cha
 | **LoadCoach** | "Given this task and this machine right now, which model should run it, and how?" | Task profiles, routing, queue, execution, validation, retries/fallback, routing explanations, production feedback | 8766 |
 | **IdeaPress** | "How do I turn this idea into finished content?" | Workflow definitions, projects, stages, drafts, validation gates, exports | 8767 |
 | **PromptCadence** | "How do I let an agent loop run tools and models under a plan, a budget and a policy?" | Trajectories, tiers, plans and approvals, the `ExecutionIntent`, the agent loop, transcripts, deviations, the composed explanation | 8768 |
+| **WeightRoom** *(specified, unbuilt)* | "How do I run this machine — from another room?" | The one LAN-facing HTTPS console: process control, unified logs and audit, settings forms over each application's schema, the docs viewer, chat through LoadCoach and PromptCadence, the guarded database viewer, the model catalog, costs, backups, jobs, alerts, prompts | 8769 |
 
 ### Shared packages
 
@@ -77,6 +79,7 @@ graph TD
     LC[LoadCoach]:::app
     IP[IdeaPress]:::app
     PC[PromptCadence]:::app
+    WR[WeightRoom]:::ops
 
     MR[ModelRack]:::pkg
     SM[SweatMeter]:::pkg
@@ -106,13 +109,20 @@ graph TD
     IP -. "optional, HTTP" .-> LC
     FW -. "evidence export, HTTP or file" .-> LC
     PC -. "required, HTTP" .-> LC
+    WR --> MR & SM & SS & WD & MW & LL & BC
+    WR -. "operates: HTTP · CLI · config · units · DB read" .-> FW & LC & IP & PC
 
     classDef app fill:#2F80ED,stroke:#1D6FDB,color:#fff
+    classDef ops fill:#0E1823,stroke:#6BA6F5,color:#fff
     classDef pkg fill:#EEF2F7,stroke:#D8E0E8,color:#0E1823
 ```
 
 Solid arrows are Python imports. Dotted arrows are **optional** connections over versioned HTTP
-contracts, never imports and never shared databases.
+contracts, never imports and never shared databases — with one named exception: WeightRoom, the
+operator's tool, also reads the four databases (read-only, or under a guard) and their
+configuration files, and drives their units, because the operator already could
+([ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)). It never
+imports an application.
 
 ## 5. Independent deployment
 
@@ -128,11 +138,15 @@ Every application is independently installable, independently versioned, and ind
 | PromptCadence + LoadCoach | Yes | A governed agent loop; PromptCadence reaches models **only** through LoadCoach ([ADR-0045](../adr/0045-promptcadence-reaches-models-only-through-loadcoach.md)), so LoadCoach is its one required peer |
 | All four | Yes | Measured → managed → applied and harnessed, end to end |
 | IdeaPress + FreeWeight, no LoadCoach | Yes | They simply do not interact; IdeaPress never requires FreeWeight |
+| WeightRoom over any subset | Yes | One HTTPS console on the LAN; an application that is absent shows as *not installed*, one that is stopped shows as *stopped* with a start button; nothing requires it and it requires nothing to start |
 
 Three rules make this hold, and CI enforces them:
 1. No application imports another application's Python modules.
 2. No application reads or writes another application's database.
 3. All cross-application traffic uses a versioned public API or a versioned exported file.
+
+WeightRoom is the one component excepted from rules 2 and 3 — by an enumerated list, read-only
+by default, audited, and never from rule 1 ([ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)).
 
 ## 6. Major benefits
 
@@ -182,6 +196,8 @@ and what can proceed in parallel; the [PromptCadence](../roadmap/promptcadence-r
 * Not a model training, fine-tuning or quantization tool.
 * Not a multi-tenant hosted service, and not a cluster scheduler. Single-machine first; a second
   machine is an explicit future extension, not a hidden assumption.
+* Not a hosted control plane. WeightRoom operates *this* host for *this* operator; it is not a
+  fleet manager and not a multi-user portal.
 * Not a general agent framework. IdeaPress runs *bounded* model tasks inside Python-owned control
   flow, and PromptCadence is a governed harness over LoadCoach — an application you run, not a
   library you embed.

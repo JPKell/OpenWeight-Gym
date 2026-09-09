@@ -40,6 +40,7 @@ capability layer.
 | `loadledger` | stdlib, `baseaicore`, and `sqlalchemy` under the `[sql]` extra |
 | `commissioner` | stdlib, `baseaicore`, `setspec`, and `sqlalchemy` under the `[sql]` extra |
 | `freeweight`, `loadcoach`, `ideapress`, `promptcadence` | any package above, plus their own declared dependencies |
+| `weightroom` | `baseaicore`, `setspec`, `weightsdb`, `mirrorwall`, `sweatmeter`, `modelrack` (read-only provider calls), `loadledger[sql]`, plus its declared dependencies; **never** an application and never `toolyard`, `cutctx` or `commissioner` ([ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) rules 3–4) |
 
 `setspec` is permitted in `mirrorwall` solely for the event and error envelope models, which are
 cross-application payloads by definition, and in `commissioner` for the same reason — it owns the
@@ -113,6 +114,19 @@ Every cross-application connection is optional and degrades explicitly:
 | Any → provider (Ollama) | Health endpoint reports degraded; operations that need inference fail with `PROVIDER_UNAVAILABLE`; the rest of the app works |
 
 A cross-application dependency that is required to *start* is a design error.
+
+### 3.2 The one component above these rules
+
+**WeightRoom** ([ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md))
+is the host operator's console and is excepted from this section's channel list by enumeration:
+it may open another application's database (read-only; a write passes
+[ADR-0124](../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)'s
+guard), read and edit another application's configuration file in place, run its CLI, drive its
+`systemd --user` unit, and call its HTTP API. It is **not** excepted from §1: it never imports an
+application, and its `.importlinter` forbids the four names exactly as a package's does. The
+exception exists because the operator already holds every one of those rights at a shell; it
+grants WeightRoom nothing the machine did not already grant, and it is audited. Nothing else in
+the suite may claim it.
 
 ---
 
