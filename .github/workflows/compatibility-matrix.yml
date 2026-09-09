@@ -2,7 +2,7 @@ name: Compatibility Matrix
 
 # Packaging and release standards §7: a nightly job that installs the current release of each
 # application against the lowest and highest supported version of every suite package it declares,
-# and runs the contract and e2e suites. This lives in the WeightRoom repository -- whose `docs/` is
+# and runs the contract and e2e suites. This lives in the WeightRoomGym repository -- whose `docs/` is
 # the suite's canonical documentation tree, the one every component mirrors from (row W0 moved the
 # documentation repository under it) -- because the matrix is about the *suite's* published
 # releases, not any one repository's source. `docs/scripts/compatibility_matrix.py` is the script.

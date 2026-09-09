@@ -1,8 +1,8 @@
-# Kickoff — W6: WeightRoom Phase 6 — chat: LoadCoach, then PromptCadence, thinking collapse
+# Kickoff — W6: WeightRoomGym Phase 6 — chat: LoadCoach, then PromptCadence, thinking collapse
 
 **Row:** W6 (Opus 5 · high · **never overnight**) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W4.
-**Ships:** `openweight-gym 0.6.0` prepared: conversations through LoadCoach and PromptCadence,
+**Ships:** `wr-gym 0.6.0` prepared: conversations through LoadCoach and PromptCadence,
 streamed markdown, collapsible thinking, the routing decision and cost under every reply,
 PromptCadence's plan/steps/tools/egress/approvals inline, attachments.
 **Component:** `~/ai/suite/WeightRoom`. LoadCoach ≥ 1.3 and PromptCadence ≥ 1.3 on the

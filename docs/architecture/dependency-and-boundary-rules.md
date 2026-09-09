@@ -117,7 +117,7 @@ A cross-application dependency that is required to *start* is a design error.
 
 ### 3.2 The one component above these rules
 
-**WeightRoom** ([ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md))
+**WeightRoomGym** ([ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md))
 is the host operator's console and is excepted from this section's channel list by enumeration:
 it may open another application's database (read-only; a write passes
 [ADR-0124](../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)'s
@@ -125,7 +125,7 @@ guard), read and edit another application's configuration file in place, run its
 `systemd --user` unit, and call its HTTP API. It is **not** excepted from §1: it never imports an
 application, and its `.importlinter` forbids the four names exactly as a package's does. The
 exception exists because the operator already holds every one of those rights at a shell; it
-grants WeightRoom nothing the machine did not already grant, and it is audited. Nothing else in
+grants WeightRoomGym nothing the machine did not already grant, and it is audited. Nothing else in
 the suite may claim it.
 
 ---

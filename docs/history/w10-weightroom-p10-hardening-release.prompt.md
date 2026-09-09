@@ -1,8 +1,8 @@
-# Kickoff — W10: WeightRoom Phase 10 — hardening, performance, documentation, `1.0.0`
+# Kickoff — W10: WeightRoomGym Phase 10 — hardening, performance, documentation, `1.0.0`
 
 **Row:** W10 (Opus 5 · xhigh · **never overnight**) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W9; the last row of the arc's `1.0.0`.
-**Ships:** `openweight-gym 1.0.0` prepared (the tag and the `pypi` approval are the operator's);
+**Ships:** `wr-gym 1.0.0` prepared (the tag and the `pypi` approval are the operator's);
 the operator documentation set; the OpenAPI snapshot; the workspace `docs` symlink removed;
 the kickoff prompt for WM2.
 **Component:** `~/ai/suite/WeightRoom`; the workspace root for the symlink and `CLAUDE.md`
@@ -15,7 +15,7 @@ the kickoff prompt for WM2.
 **Read first:** [`spec.md`](../apps/weightroom/spec.md) §§14–20 in full; [`development-plan.md`](../apps/weightroom/development-plan.md)
 Phase 10; `standards/security-standards.md` §14; `standards/testing-standards.md`;
 `standards/packaging-and-release-standards.md` §4–§6, §10; `standards/gold-standards.md` §2
-WeightRoom and §4; `history/M7_HANDOFF.md` and `history/m7-verification.prompt.md` (the
+WeightRoomGym and §4; `history/M7_HANDOFF.md` and `history/m7-verification.prompt.md` (the
 verification precedent: an independent run with permission to say *not ready*); every
 `W*_HANDOFF.md` and `WS*_HANDOFF.md` (what each row deferred); `history/W0_HANDOFF.md` §"The
 symlink" (what still resolves through `~/ai/suite/docs`).
@@ -58,5 +58,5 @@ line in `weightroom-work.md`. Commit.
 ## Finish line
 
 Gate green, coverage held, `pip-audit` and `gitleaks` clean, `pipx install dist/*.whl &&
-weightroom --version`, one commit per gate, `docs/history/W10_HANDOFF.md`, the row marked done,
+wr-gym --version`, one commit per gate, `docs/history/W10_HANDOFF.md`, the row marked done,
 `roadmap/README.md` and `outstanding-work.md` §1.2 updated with the arc's status. Never overnight.

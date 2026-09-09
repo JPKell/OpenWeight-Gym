@@ -1,8 +1,8 @@
-# Kickoff — W2: WeightRoom Phase 2 — process control, unified logs, audit page
+# Kickoff — W2: WeightRoomGym Phase 2 — process control, unified logs, audit page
 
 **Row:** W2 (Opus 5 · high; reviewed same day) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W1.
-**Ships:** `weightroom 0.2.0` prepared: the five `systemd --user` units written and driven
+**Ships:** `wr-gym 0.2.0` prepared: the five `systemd --user` units written and driven
 from the console, the journal live per application and unified, Ollama's pane, the Audit page.
 **Component:** `~/ai/suite/WeightRoom`.
 
@@ -42,7 +42,7 @@ application's own `/health` proxied with `source`), the start/stop/restart route
 id), version negotiation per application with the five-minute recheck and
 `APP_VERSION_MISMATCH`; `services/journal.py` history (`-o json`, cursor paging, 5 000-row cap)
 and follow as SSE with MirrorWall's bounded queues and the *dropped N lines* frame; the unified
-stream; `weightroom apps status`, `weightroom logs`. Commit.
+stream; `wr-gym apps status`, `wr-gym logs`. Commit.
 
 **Gate C — Ollama and the Audit page.** `GET /ollama` with the §2.1 checklist as findings (the
 reference machine's current override — `OLLAMA_CONTEXT_LENGTH=112000`, no cap — is the failing

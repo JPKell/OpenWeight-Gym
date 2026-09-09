@@ -1,8 +1,8 @@
-# Kickoff — W8: WeightRoom Phase 8 — model catalog, costs, backups and migrations
+# Kickoff — W8: WeightRoomGym Phase 8 — model catalog, costs, backups and migrations
 
 **Row:** W8 (Sonnet 5 · high; overnight allowed) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W7.
-**Ships:** `openweight-gym 0.8.0` prepared: the catalog with pull, drop-in, enable/disable and
+**Ships:** `wr-gym 0.8.0` prepared: the catalog with pull, drop-in, enable/disable and
 delete-with-cleanup; the cost dashboard; the backups and migrations pages.
 **Component:** `~/ai/suite/WeightRoom`.
 
@@ -34,7 +34,7 @@ digest file, ADR-0071); `standards/database-standards.md` §7–§8; `apps/freew
   tables (read-only), never a hand-written `select`; ceilings are edited on the application's
   settings page (W4's path), never through a `ceiling_raise` approval.
 * Backups and migrations are curated calls to each application's own `db` verbs; restore requires
-  the unit stopped and a typed name; WeightRoom's own database gets the same four verbs.
+  the unit stopped and a typed name; WeightRoomGym's own database gets the same four verbs.
 
 ## Gates
 
@@ -46,7 +46,7 @@ delete with preview and cleanup; the Catalog page. Commit.
 counts and ceiling verdicts; the Costs page with `—` where nothing is priced. Commit.
 
 **Gate C — backups and migrations.** The curated `db` routes and pages per application and for
-WeightRoom; the backup listing from each application's `backups/`; `CHANGELOG.md`; `0.8.0`. Commit.
+WeightRoomGym; the backup listing from each application's `backups/`; `CHANGELOG.md`; `0.8.0`. Commit.
 
 ## Demonstrate
 

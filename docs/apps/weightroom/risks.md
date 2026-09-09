@@ -1,6 +1,6 @@
-# WeightRoom — Risk and Failure Analysis
+# WeightRoomGym — Risk and Failure Analysis
 
-Suite-wide risks: [Risk Register](../../architecture/risk-register.md). WeightRoom adds a class
+Suite-wide risks: [Risk Register](../../architecture/risk-register.md). WeightRoomGym adds a class
 the register did not have — a component whose *purpose* is to cross the boundaries the register
 defends — and this document is where that class is priced.
 
@@ -10,9 +10,9 @@ defends — and this document is where that class is priced.
 
 | # | Risk | L | I | Mitigation | Early signal |
 |---|---|---|---|---|---|
-| T1 | **Schema drift** — an application migrates and WeightRoom's direct reads return wrong columns or crash | High | Medium | Every direct read is keyed to `known_revisions`; an unknown `alembic_version` degrades that application's database pages by name ([ADR-0123](../../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) rule 3); fixture databases at each known revision in the test suite | `SCHEMA_UNKNOWN` on a fresh application release |
+| T1 | **Schema drift** — an application migrates and WeightRoomGym's direct reads return wrong columns or crash | High | Medium | Every direct read is keyed to `known_revisions`; an unknown `alembic_version` degrades that application's database pages by name ([ADR-0123](../../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) rule 3); fixture databases at each known revision in the test suite | `SCHEMA_UNKNOWN` on a fresh application release |
 | T2 | **A guarded write corrupts an application** — the statement was right, the assumption behind it was not | Low | High | Condition 1 (stopped), 2 (backup on disk first), the never-writable list, DML only, one statement; restore is a curated verb ([ADR-0124](../../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)) | An application failing its own migration or integrity check after a guarded write |
-| T3 | **A unit-file regeneration removes an operator's hand edit** | Medium | Low | The file says it is generated; `units sync` reports diffs before writing; overrides go in WeightRoom's configuration ([ADR-0125](../../adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md) rule 1) | A sync diff the operator did not expect |
+| T3 | **A unit-file regeneration removes an operator's hand edit** | Medium | Low | The file says it is generated; `units sync` reports diffs before writing; overrides go in WeightRoomGym's configuration ([ADR-0125](../../adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md) rule 1) | A sync diff the operator did not expect |
 | T4 | **The console dies with the login session** | Low | Medium | Linger enabled by the wizard, refused to proceed without it | `weightroom.service` inactive after logout |
 | T5 | **Config edit race** — the file changed under the form | Medium | Medium | `base_mtime` on every write; `CONFIG_CHANGED_ON_DISK`; `.bak` beside every write ([ADR-0127](../../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) rule 3) | The refusal appearing in the audit log |
 | T6 | **The jobs worker and the alert evaluator share one thread and one stalls the other** | Medium | Low | Separate threads, both leased; a job's subprocess has a timeout; the recovery pass at startup requeues expired leases | A job `running` past its lease |
@@ -24,7 +24,7 @@ defends — and this document is where that class is priced.
 
 | # | Risk | L | I | Mitigation |
 |---|---|---|---|---|
-| I1 | An application's API version outside WeightRoom's range | Medium | Medium | `GET /version` on first contact and every five minutes; `APP_VERSION_MISMATCH` names both; database-sourced pages still render at a known revision |
+| I1 | An application's API version outside WeightRoomGym's range | Medium | Medium | `GET /version` on first contact and every five minutes; `APP_VERSION_MISMATCH` names both; database-sourced pages still render at a known revision |
 | I2 | An application stopped while a page needs its API | High | Low | Every page has a database-sourced fallback or a *stopped* state with a start button (spec §7.3) |
 | I3 | The schema verbs (`config schema`, `config validate --file`) not yet in an installed application | High at first | Medium | `APP_NOT_INSTALLED`-class degradation naming the verb and the application version that has it; rows WS1–WS4 land before W4 |
 | I4 | PromptCadence's `approve` scope not granted to the wizard's token | Low | Medium | The wizard creates `write,approve`; chat renders a pending approval with *no approve scope* when the token lacks it |
@@ -44,7 +44,7 @@ defends — and this document is where that class is priced.
 | S7 | **Subprocess injection through a model name, a table name, a path** | Low | High | Explicit argv, never a shell; identifiers validated; containment on every path; the SQL console's statement is parsed for kind before it runs |
 | S8 | **Model output reaching the DOM** | Low | Medium | Sanitising markdown (no raw HTML), autoescape, no `| safe`; the injection corpus PromptCadence ships is reused against chat rendering |
 | S9 | **Secrets in the audit log** | Medium | Medium | Redaction before the row is written; a test feeds a token through every audited action and greps the table |
-| S10 | **WeightRoom's own settings page moves its own bind** | Low | High | Its `[server]`, `[tls]`, `[auth]` keys are security keys: re-authenticated, audited, and the change takes effect only on restart with the ADR-0126 rule 6 refusal still standing |
+| S10 | **WeightRoomGym's own settings page moves its own bind** | Low | High | Its `[server]`, `[tls]`, `[auth]` keys are security keys: re-authenticated, audited, and the change takes effect only on restart with the ADR-0126 rule 6 refusal still standing |
 
 ## 4. Portability risks
 

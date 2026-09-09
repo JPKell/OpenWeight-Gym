@@ -1,7 +1,7 @@
 # ADR-0014 — Authentication strategy
 
 **Status:** Accepted (2026-08-21)
-**Amended by:** [ADR-0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) — for one component, WeightRoom, a username, a scrypt-hashed password and a server-side session replace bearer tokens for the human at the browser, because WeightRoom is the TLS-terminating proxy this record assumed in front of the applications; the four applications keep every rule here unchanged.
+**Amended by:** [ADR-0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) — for one component, WeightRoomGym, a username, a scrypt-hashed password and a server-side session replace bearer tokens for the human at the browser, because WeightRoomGym is the TLS-terminating proxy this record assumed in front of the applications; the four applications keep every rule here unchanged.
 
 ## Context
 

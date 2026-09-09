@@ -1,4 +1,4 @@
-# Kickoff — WM: MirrorWall 0.3 — the WeightRoom design brief's tokens and generic components
+# Kickoff — WM: MirrorWall 0.3 — the WeightRoomGym design brief's tokens and generic components
 
 **Row:** WM (Sonnet 5 · high) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W0; **before W3**.
@@ -30,7 +30,7 @@ pages — proven by rendering the four applications' template suites against the
 * The seven generic components: `app_tab`, `status_dot`, meters in `telemetry_bar`, `figure_card`,
   `table(density=…)`, `log_pane` (+ its ES module: bounded, pausable, level-coloured, *dropped N
   lines*), `side_nav` (brief §5). The DB grid, chat thread, markdown article, guard dialog and
-  re-auth prompt stay in WeightRoom.
+  re-auth prompt stay in WeightRoomGym.
 * Every dot has a word; every meter is `role="meter"` with a text value; contrast asserted for
   every new pair in both themes (brief §7).
 * No dependency is added (MirrorWall's budget is `jinja2`, `starlette`, `anyio`); the font is a

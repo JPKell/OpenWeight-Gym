@@ -1,7 +1,7 @@
-# WeightRoom — Specification
+# WeightRoomGym — Specification
 
-**Type:** Application (host operator tool) · **Import name / CLI:** `weightroom` · **Distribution:**
-`openweight-gym` · **Default port:** 8769 (HTTPS) · **Env prefix:** `WEIGHTROOM_`
+**Type:** Application (host operator tool) · **Import name:** `weightroom` · **CLI and distribution:**
+`wr-gym` · **Default port:** 8769 (HTTPS) · **Env prefix:** `WEIGHTROOM_`
 **Status:** Specified 2026-09-09 (row W0, from the operator interview of the same day); not
 implemented. Rows W1–W10 in [`roadmap/weightroom-work.md`](../../roadmap/weightroom-work.md).
 **Decisions:** [ADR-0123](../../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
@@ -17,7 +17,7 @@ implemented. Rows W1–W10 in [`roadmap/weightroom-work.md`](../../roadmap/weigh
 
 ## 1. Purpose
 
-Give the person who runs the machine **one place** to run it from. WeightRoom is the host
+Give the person who runs the machine **one place** to run it from. WeightRoomGym is the host
 operator's console over the four applications: it shows what the machine is doing, starts and
 stops the applications, edits their configuration, reads their databases, backs them up, keeps
 their logs and its own audit trail in one view, and lets the operator talk to LoadCoach and
@@ -36,11 +36,11 @@ phases that are gated ([development plan](development-plan.md)):
 * **Shell:** top bar with the four applications as tabs and a status dot each, a 34 px telemetry
   strip on every page, a left menu per application, the console's own pages (Chat, Docs,
   Database, Jobs, Alerts), dense dark by default with a light toggle ([design brief](design.md)).
-* **Setup wizard and doctor:** `weightroom setup` — the CA, the operator account, the units,
-  the application tokens, linger; `weightroom doctor` and the Doctor page — a cross-application
+* **Setup wizard and doctor:** `wr-gym setup` — the CA, the operator account, the units,
+  the application tokens, linger; `wr-gym doctor` and the Doctor page — a cross-application
   health and configuration check with `MEMORY_SAFETY.md` §2 and `LAN_ACCESS.md` as its rubric.
 * **Process control and logs:** start/stop/restart per application through `systemd --user`,
-  the unified live log (every application's journal plus WeightRoom's own, filterable), and the
+  the unified live log (every application's journal plus WeightRoomGym's own, filterable), and the
   audit trail of every action the console took.
 * **Telemetry:** `sweatmeter` in process at 1 s over SSE; resident models from Ollama's `/api/ps`
   and LoadCoach's residency; clicking any figure opens its history page.
@@ -54,7 +54,7 @@ phases that are gated ([development plan](development-plan.md)):
 * **Chat:** to LoadCoach (a task profile, a job, a routing decision with cost) and to
   PromptCadence (a trajectory, its plan, tool calls, egress decisions and approvals inline);
   streamed markdown with code blocks; thinking streams while thinking and then collapses;
-  text and markdown attachments as context; conversations kept in WeightRoom's database.
+  text and markdown attachments as context; conversations kept in WeightRoomGym's database.
 * **Database viewer:** read of every application's database — tables, rows, a SQL console;
   curated maintenance operations first; raw writes behind the ADR-0124 guard.
 * **Model catalog and downloads:** every model every application knows, `ollama pull` with
@@ -65,7 +65,7 @@ phases that are gated ([development plan](development-plan.md)):
   their ceilings; ceilings editable through the settings path.
 * **Backups and migrations:** every application's `db backup`, `db status`, `db upgrade`, the
   backup listing, restore as a curated operation.
-* **Scheduled jobs:** WeightRoom's own database-backed queue with leases; kinds: FreeWeight
+* **Scheduled jobs:** WeightRoomGym's own database-backed queue with leases; kinds: FreeWeight
   suite run, retention trim, backup, model refresh.
 * **Prompt library editor:** every application's shipped prompt pack and its user overrides,
   diffed, edited as [ADR-0012](../../adr/0012-prompt-storage-format.md) records.
@@ -99,7 +99,7 @@ phases that are gated ([development plan](development-plan.md)):
 | Shell | Top bar, tabs with status dots, telemetry strip, left menus, theme, the console's own navigation |
 | Setup and doctor | The wizard; the cross-application check against the host-protection and exposure rubrics; printed commands for anything root-owned |
 | Processes | Unit files written and synced; start/stop/restart/enable; Ollama status and the polkit-gated restart ([ADR-0125](../../adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md)) |
-| Logs and audit | Journal streaming and history per application; WeightRoom's `audit_log` of every action it took |
+| Logs and audit | Journal streaming and history per application; WeightRoomGym's `audit_log` of every action it took |
 | Telemetry | The strip, the per-figure history pages, resident models |
 | Control surfaces | One native page set per application over that application's API, CLI and (read) database (§7.3) |
 | Settings | Schema-driven forms; in-place file edits; runtime keys through the application; restart offers; security-key re-authentication ([ADR-0127](../../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md)) |
@@ -131,13 +131,13 @@ process pages degrade by name and everything else works.
 (≈ 2.5 MB, offline, loaded only on a docs page that contains a diagram — the one exception to
 the per-page JS budget, declared in §15).
 
-**Required at startup:** none of the four applications. WeightRoom starts, serves the shell,
+**Required at startup:** none of the four applications. WeightRoomGym starts, serves the shell,
 the docs, the doctor, the audit log and its own settings with every application stopped; each
 application's pages show *stopped* with a start button.
 
 ## 6. Consumers
 
-The operator, through a browser on the LAN and the `weightroom` CLI on the host. WeightRoom's
+The operator, through a browser on the LAN and the `weightroom` CLI on the host. WeightRoomGym's
 HTTP API exists for its own pages; it is not designed as a service other applications call, and
 none does.
 
@@ -188,29 +188,29 @@ rule 3). Every state-changing route passes the CSRF and same-origin checks of AD
 ### 7.2 CLI
 
 ```text
-weightroom serve | health | doctor | version
-weightroom setup                                   # the wizard: CA, account, units, tokens, linger
-weightroom config show|validate|init|path|reference|schema
-weightroom db upgrade|status|backup|restore
-weightroom tls init|renew|rotate|show              weightroom trust
-weightroom operator create|password
-weightroom units sync|status|start|stop|restart <app>|all
-weightroom logs <app> [--follow] [--since …]
-weightroom apps status                             # all four + Ollama, one table
-weightroom backup <app>|all                        # curated: the app's own `db backup`
-weightroom jobs list|show|run|cancel|schedule
-weightroom alerts list|ack
-weightroom audit list|show
-weightroom docs index                              # rebuild the search index
-weightroom settings list|get|set                   # WeightRoom's own runtime-changeable keys
+wr-gym serve | health | doctor | version
+wr-gym setup                                   # the wizard: CA, account, units, tokens, linger
+wr-gym config show|validate|init|path|reference|schema
+wr-gym db upgrade|status|backup|restore
+wr-gym tls init|renew|rotate|show              wr-gym trust
+wr-gym operator create|password
+wr-gym units sync|status|start|stop|restart <app>|all
+wr-gym logs <app> [--follow] [--since …]
+wr-gym apps status                             # all four + Ollama, one table
+wr-gym backup <app>|all                        # curated: the app's own `db backup`
+wr-gym jobs list|show|run|cancel|schedule
+wr-gym alerts list|ack
+wr-gym audit list|show
+wr-gym docs index                              # rebuild the search index
+wr-gym settings list|get|set                   # WeightRoomGym's own runtime-changeable keys
 ```
 
-`weightroom config schema --json` exists here too: WeightRoom's own settings page is generated
+`wr-gym config schema --json` exists here too: WeightRoomGym's own settings page is generated
 the same way as the applications' ([ADR-0127](../../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md)).
 
 ### 7.3 The control surfaces, per application
 
-Each application's tab opens a left menu whose pages are WeightRoom's own templates over that
+Each application's tab opens a left menu whose pages are WeightRoomGym's own templates over that
 application's `/api/v1`, its CLI and — where the API has no view — a read of its database.
 Every page names its source (*from the API*, *from the database at revision 0015*) in the
 footer, and a stopped application's pages render from the database with the API-only actions
@@ -245,7 +245,7 @@ same validate-before-write and the same re-authentication for security keys.
 Renders `WeightRoom/docs/` — the suite's canonical tree — from a configured root
 (`[docs] root`, default: the `docs/` beside the installed package's repository if present, else
 the operator's path). Tree navigation, an ADR index built from `adr/README.md`'s table, a
-full-text search over an FTS5 index in WeightRoom's own database (rebuilt by `weightroom docs
+full-text search over an FTS5 index in WeightRoomGym's own database (rebuilt by `wr-gym docs
 index` and on a schedule), mermaid fences rendered client-side, relative links rewritten to
 viewer routes and links outside the root rendered as text. Read-only: no route writes a document.
 
@@ -254,7 +254,7 @@ viewer routes and links outside the root rendered as text. Read-only: no route w
 A conversation names its **backend** — LoadCoach (with a task profile and an optional model
 override, exactly the `POST /generate/stream` body) or PromptCadence (a trajectory, with the
 classification, an optional tier pin and the tool allowlist) — and its messages, attachments and
-every reply's metadata live in WeightRoom's database. Replies stream as markdown with code
+every reply's metadata live in WeightRoomGym's database. Replies stream as markdown with code
 blocks and a copy button; under each reply, the routing decision (model, candidates count,
 rejections) and the cost (tokens by class; money where priced, `—` where local). For
 PromptCadence, the plan, each step, each tool call with its result, and each egress decision
@@ -279,7 +279,7 @@ window. Resident models are `/api/ps` (through ModelRack's Ollama client) and Lo
 ### 7.8 Database viewer
 
 Per application: the table list with row counts and the application's `alembic_version`
-against WeightRoom's known-revision map ([ADR-0123](../../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
+against WeightRoomGym's known-revision map ([ADR-0123](../../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
 rule 3); a paginated, sortable, filterable row grid per table; a SQL console that runs
 `SELECT`s on a read-only connection with a 30 s timeout and a 10 000-row cap. **Curated
 operations** are listed first on every table that has one — FreeWeight's delete-by-model,
@@ -314,7 +314,7 @@ rule 6, and never through a `ceiling_raise` approval, which stays PromptCadence'
 backup` into that application's own `backups/` (a curated call to its CLI; the listing reads
 that directory), `db upgrade` with the pre-migration backup the application takes itself,
 `db restore <file>` as a curated operation that requires the application stopped and confirms
-by typed name. WeightRoom's own database gets the same four verbs.
+by typed name. WeightRoomGym's own database gets the same four verbs.
 
 ### 7.10 Jobs, alerts, prompts
 
@@ -352,13 +352,13 @@ the documentation tree; chat attachments (text, markdown); GGUF files.
 ## 9. Outputs
 
 Rendered pages and SSE streams; unit files under `~/.config/systemd/user/`; configuration files
-written in place (with `.bak`); backups under WeightRoom's data root (guarded writes) or the
-application's (curated); prompt override files; WeightRoom's own database (§10); the CA and leaf
+written in place (with `.bak`); backups under WeightRoomGym's data root (guarded writes) or the
+application's (curated); prompt override files; WeightRoomGym's own database (§10); the CA and leaf
 certificates; printed commands for anything root-owned; structured logs.
 
 ## 10. Data ownership
 
-WeightRoom owns `weightroom.sqlite3` (or a PostgreSQL database) and nothing in any other
+WeightRoomGym owns `weightroom.sqlite3` (or a PostgreSQL database) and nothing in any other
 application's database ([data model](data-model.md)): `operators`, `sessions`, `audit_log`,
 `conversations`, `messages`, `attachments`, `jobs`, `job_schedules`, `alerts`,
 `telemetry_samples`, `docs_index` (FTS5), `settings`, `known_revisions` (seeded, per
@@ -368,7 +368,7 @@ records in its own `audit_log`. It never mounts a package table of its own.
 
 ## 11. Public contracts
 
-1. **The exception is the list.** WeightRoom's reach into another application is exactly
+1. **The exception is the list.** WeightRoomGym's reach into another application is exactly
    [ADR-0123](../../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
    rule 2, and `.importlinter` asserts the two things it may not do (import an application; import
    `toolyard`, `cutctx`, `commissioner`).
@@ -379,18 +379,18 @@ records in its own `audit_log`. It never mounts a package table of its own.
    the state-changing routes and asserts each writes one.
 3. **A raw write passes the five-part guard or does not happen**, and the never-writable
    tables are refused by name ([ADR-0124](../../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)).
-4. **A schema WeightRoom does not know degrades by name.** Each application's
+4. **A schema WeightRoomGym does not know degrades by name.** Each application's
    `alembic_version` is compared against `known_revisions`; a mismatch renders that
-   application's database-sourced pages as *schema at revision X is not known to WeightRoom
+   application's database-sourced pages as *schema at revision X is not known to WeightRoomGym
    1.y* with the API-sourced pages unaffected.
-5. **Settings forms come from the application's schema document**, and WeightRoom hardcodes no
+5. **Settings forms come from the application's schema document**, and WeightRoomGym hardcodes no
    key ([ADR-0127](../../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md)).
    A key absent from the document renders raw.
 6. **Chat has no provider path.** A conversation's backend is `loadcoach` or `promptcadence`;
    there is no third value, and `modelrack.generate` is never called (a grep test).
 7. **The console is the only LAN service**, HTTPS only on 8769, and the trust listener serves
    two routes ([ADR-0126](../../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md)).
-8. **Unit files are generated whole** from one template and WeightRoom's configuration
+8. **Unit files are generated whole** from one template and WeightRoomGym's configuration
    ([ADR-0125](../../adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md));
    `units sync` is idempotent and reports which files changed.
 9. **Unavailable is `—`.** No telemetry, cost or count is rendered as zero when it is
@@ -398,7 +398,7 @@ records in its own `audit_log`. It never mounts a package table of its own.
 
 ## 12. Configuration
 
-`~/.config/weightroom/config.toml`, `WEIGHTROOM_*` environment variables, CLI flags, per
+`~/.config/wr-gym/config.toml`, `WEIGHTROOM_*` environment variables, CLI flags, per
 [Configuration Standards](../../standards/configuration-standards.md). Principal sections:
 
 ```toml
@@ -436,7 +436,7 @@ test — re-read by the running process, no security surface): `telemetry.interv
 Standards §7 (a stored row is shadowed by the environment and says so). Everything in
 `[server]`, `[tls]`, `[auth]`, `[storage]`, `[apps.*]`, `[host]`, `[docs]` and
 `logging.include_content` is config-only, and the `[server]`/`[tls]`/`[auth]`/`[apps.*]`/`[host]`
-keys are WeightRoom's own `security_keys` — editable on its own settings page only after
+keys are WeightRoomGym's own `security_keys` — editable on its own settings page only after
 re-authentication, exactly as it treats the four applications'.
 
 The generated `docs/configuration.md` in the repository is the field-level authority
@@ -497,7 +497,7 @@ codes follow [CLI Standards §4](../../standards/cli-standards.md); `INSECURE_BI
 
 ## 15. Performance considerations
 
-Four applications' worth of pages over HTTP calls and database reads; WeightRoom's own
+Four applications' worth of pages over HTTP calls and database reads; WeightRoomGym's own
 overhead is what is budgeted:
 
 | Measure | Target |
@@ -513,7 +513,7 @@ overhead is what is budgeted:
 | Chat first token after LoadCoach's first chunk | ≤ 30 ms added latency |
 | JS per page | ≤ 60 KB excluding ECharts and mermaid, which load only on pages that use them |
 
-`sweatmeter`'s sampling overhead stays under its own 1 % budget; WeightRoom adds no second
+`sweatmeter`'s sampling overhead stays under its own 1 % budget; WeightRoomGym adds no second
 sampler.
 
 ## 16. Cross-platform considerations
@@ -538,7 +538,7 @@ what the console did; the alert history is the record of what the machine did.
 | Layer | Coverage |
 |---|---|
 | Unit | The guard's state machine with every condition failed alone; the never-writable list; unit-file rendering; the schema-to-form generator over each application's golden document; the CA/leaf issuer (SANs, lifetimes, renewal decision); password hashing and session expiry; thinking-chunk collapse logic; alert evaluation per source; the known-revision comparison |
-| Contract | Each application's API consumed through recorded responses at its pinned version; each application's schema document golden; `setspec.prompts` record validation; the OpenAPI snapshot of WeightRoom's own API |
+| Contract | Each application's API consumed through recorded responses at its pinned version; each application's schema document golden; `setspec.prompts` record validation; the OpenAPI snapshot of WeightRoomGym's own API |
 | Integration | A fake `systemctl`/`journalctl` on `PATH`; four fixture databases at their known revisions (SQLite; PostgreSQL in the db-matrix job); tomlkit round-trips over each application's example config; the jobs queue with lease expiry and recovery; migrations both dialects |
 | E2E | Setup → login → start an application → change a setting → guarded write → chat, over HTTPS against fake applications |
 | Security | Standards §14 plus §14's own rows above; the trust listener; the same-origin checks; redaction |
@@ -550,20 +550,20 @@ The full suite passes with no application installed, no systemd, no GPU and no n
 
 ## 19. Compatibility and versioning
 
-* Application semver; API `v1`. WeightRoom `1.x` names, per application, the range of
+* Application semver; API `v1`. WeightRoomGym `1.x` names, per application, the range of
   versions it speaks to (`GET /api/v1/version` on first contact, re-checked every five minutes,
   [ADR-0013](../../adr/0013-api-versioning.md)) and the `alembic_version`s it reads
   (`known_revisions`). An application outside either range is *degraded by name*, never
   guessed at.
-* The schema document is `schema_version 1.0`; a minor adds fields, a major is a new WeightRoom
+* The schema document is `schema_version 1.0`; a minor adds fields, a major is a new WeightRoomGym
   minor.
-* Unit files carry a header comment naming the WeightRoom version that wrote them; `units sync`
+* Unit files carry a header comment naming the WeightRoomGym version that wrote them; `units sync`
   rewrites on version change.
 * The CA is independent of every version; `tls rotate` is the only thing that changes it.
 
 ## 20. Acceptance criteria
 
-1. `pip install openweight-gym && weightroom setup && weightroom serve` on the reference machine
+1. `pip install wr-gym && wr-gym setup && wr-gym serve` on the reference machine
    yields an HTTPS console on the LAN with a trusted certificate on one client device, a login,
    and all four applications running as units — with no other component changed.
 2. Every state-changing action in the console writes an `audit_log` row, proven by a test that
@@ -586,13 +586,13 @@ The full suite passes with no application installed, no systemd, no GPU and no n
 9. The trust listener serves `/root.crt` and the instructions page and nothing else; the console
    port serves no plain HTTP.
 10. The full test suite passes with no application, no systemd, no GPU and no network.
-11. All WeightRoom gold standards in [Gold Standards §2](../../standards/gold-standards.md) are met.
+11. All WeightRoomGym gold standards in [Gold Standards §2](../../standards/gold-standards.md) are met.
 
 ## 21. Future extensions
 
 * A second operator with a role (viewer, approver) and per-person audit attribution.
-* An API token for automation against WeightRoom itself.
+* An API token for automation against WeightRoomGym itself.
 * Outbound alerts (mail, webhook) — once there is a channel the operator trusts.
-* A second host: WeightRoom reading remote applications over their APIs only.
+* A second host: WeightRoomGym reading remote applications over their APIs only.
 * Editing documentation in the browser, with the repository as the store.
 * An application read-only serving mode, which would widen the guard's condition 1.

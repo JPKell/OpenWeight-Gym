@@ -59,7 +59,7 @@ the component that declares it. Suite packages are unbudgeted; so are `dev` and 
 | LoadCoach | the same, without `python-multipart` | 9 |
 | IdeaPress | the same as FreeWeight, without `tomlkit` | 9 |
 | PromptCadence | the same, without `python-multipart` or `tomlkit` | 8 |
-| WeightRoom | FreeWeight's ten, plus `cryptography` (the certificate authority, [ADR-0126](../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md)) and `mistune` (markdown for the docs viewer and chat) | 12 |
+| WeightRoomGym | FreeWeight's ten, plus `cryptography` (the certificate authority, [ADR-0126](../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md)) and `mistune` (markdown for the docs viewer and chat) | 12 |
 
 Why each application name is there: `pydantic` for the wire models; `sqlalchemy` and `alembic`
 because an application owns its own migration history and a package never may
@@ -186,7 +186,7 @@ table — present in `BaseAiCore`, `CutCtx` and `ToolYard`, owed by the other el
 * A project survives an interrupted stage: committed units intact, the failed stage resumable.
 * Every generated artifact records the model, prompt version and validation results that produced it.
 
-### WeightRoom
+### WeightRoomGym
 * **The exception is the list.** Its reach into the four applications is exactly
   [ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) rule 2;
   `.importlinter` asserts it imports no application and none of `toolyard`, `cutctx`,
@@ -197,12 +197,12 @@ table — present in `BaseAiCore`, `CutCtx` and `ToolYard`, owed by the other el
   happen**, each condition failed alone by a test, and every never-writable table refused by name
   ([ADR-0124](../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)).
 * **An unknown schema degrades by name**: an `alembic_version` outside `known_revisions` renders
-  that application's database-sourced pages as *not known to this WeightRoom* and nothing else.
+  that application's database-sourced pages as *not known to this WeightRoomGym* and nothing else.
 * **The settings forms contain no hardcoded key** — adding a field to an application's schema
   document makes it appear ([ADR-0127](../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md)).
 * **Chat has no provider path**: a conversation's backend is `loadcoach` or `promptcadence`, and
   a network-isolation test proves no other host is contacted.
-* **Only WeightRoom leaves loopback**, HTTPS only, own CA, session login with idle and absolute
+* **Only WeightRoomGym leaves loopback**, HTTPS only, own CA, session login with idle and absolute
   expiry, CSRF on forms and same-origin on JSON writes; the trust listener serves two routes
   ([ADR-0126](../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md)).
 * **It never runs `sudo`**: a grep test; every root-owned change is printed as a command.

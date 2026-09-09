@@ -1,10 +1,10 @@
-# ADR-0125 — WeightRoom drives the applications through `systemd --user` units it writes; Ollama is read, and restarted only through a polkit rule the operator installs
+# ADR-0125 — WeightRoomGym drives the applications through `systemd --user` units it writes; Ollama is read, and restarted only through a polkit rule the operator installs
 
 **Status:** Accepted (2026-09-09)
 **Relates to:** [ADR-0123](0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) rule 2
 (process control is in the exception), [ADR-0119](0119-model-servers-run-under-a-host-memory-cap.md)
 (the memory cap the units carry; its decision 4's parent-scope wrapper becomes the unit),
-[`MEMORY_SAFETY.md`](../MEMORY_SAFETY.md) §2 (the host protections WeightRoom checks and, where it
+[`MEMORY_SAFETY.md`](../MEMORY_SAFETY.md) §2 (the host protections WeightRoomGym checks and, where it
 can, applies), [Cross-platform Standards §3](../standards/cross-platform-standards.md) (service
 management is "systemd user unit" on Linux and documentation elsewhere),
 [Security Standards §1](../standards/security-standards.md) (the OS user boundary).
@@ -20,7 +20,7 @@ operator's session lingers (`Linger=yes`), and Ollama runs as a **system** unit 
 `OLLAMA_CONTEXT_LENGTH=112000` and no memory cap — the configuration
 [`MEMORY_SAFETY.md`](../MEMORY_SAFETY.md) §1 names as the cause of the 2026-09-09 reset.
 
-WeightRoom needs to start, stop, restart and tail each application, know whether one is running
+WeightRoomGym needs to start, stop, restart and tail each application, know whether one is running
 (the [ADR-0124](0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)
 guard depends on it), and show and — where it can — restart Ollama. It runs as the operator's
 user and is never root. Two facts follow: it can own everything under `systemd --user` outright,
@@ -28,12 +28,12 @@ and it can do nothing to a system unit without a grant a root user writes.
 
 ## Decision
 
-**The four applications and WeightRoom itself run as `systemd --user` units that WeightRoom
+**The four applications and WeightRoomGym itself run as `systemd --user` units that WeightRoomGym
 writes and drives. Ollama's system unit is read through `systemctl show` and Ollama's own API;
 it is restarted from the console only when a polkit rule the operator has installed permits
 exactly that, and otherwise the restart is shown as the command to run.**
 
-1. **Units are written by `weightroom setup` and refreshed by `weightroom units sync`**, at
+1. **Units are written by `wr-gym setup` and refreshed by `wr-gym units sync`**, at
    `~/.config/systemd/user/<app>.service` for `freeweight`, `loadcoach`, `ideapress`,
    `promptcadence` and `weightroom`. The content is deliberately small and the file is
    regenerated whole — an operator's hand edit is overwritten on the next sync and the console
@@ -41,7 +41,7 @@ exactly that, and otherwise the restart is shown as the command to run.**
 
    ```ini
    [Unit]
-   Description=<App> (Local AI Suite; loopback, fronted by WeightRoom)
+   Description=<App> (Local AI Suite; loopback, fronted by WeightRoomGym)
    After=network.target
 
    [Service]
@@ -59,12 +59,12 @@ exactly that, and otherwise the restart is shown as the command to run.**
    ```
 
    The three `Memory*` lines are written for `freeweight` and `loadcoach` only, with values from
-   WeightRoom's `[host] memory_high`/`memory_max` (defaults `RAM − 8 GB` / `RAM − 6 GB`, the
+   WeightRoomGym's `[host] memory_high`/`memory_max` (defaults `RAM − 8 GB` / `RAM − 6 GB`, the
    `MEMORY_SAFETY.md` §2.1 rule), and are what ADR-0119 decision 4 called "until decision 2
    ships": now that the launcher cap exists, the unit cap is the outer belt for the parent
    process and anything it spawns, and the launcher cap the inner one for `llama-server`.
    `<venv>` is the interpreter that owns the installed `<app>` (`shutil.which` on the
-   operator's PATH, or `[apps.<app>] executable` in WeightRoom's configuration); an application
+   operator's PATH, or `[apps.<app>] executable` in WeightRoomGym's configuration); an application
    that is not installed has no unit and is shown as *not installed*, not *stopped*.
 
 2. **Lingering is required and the wizard enables it.** `loginctl enable-linger` for the
@@ -82,7 +82,7 @@ exactly that, and otherwise the restart is shown as the command to run.**
    this host*, by name ([Cross-platform Standards §3](../standards/cross-platform-standards.md)),
    and the rest of the console works.
 
-4. **Ollama is a system unit and stays one.** WeightRoom reads `systemctl show ollama.service`
+4. **Ollama is a system unit and stays one.** WeightRoomGym reads `systemctl show ollama.service`
    (readable by any user: `ActiveState`, `MemoryMax`, `MemorySwapMax`, `ManagedOOMMemoryPressure`,
    the `Environment=` lines), reads `/api/ps` and `/api/tags` through ModelRack's Ollama client,
    and reads `journalctl -u ollama` where the operator's group permits it (`systemd-journal` or
@@ -93,7 +93,7 @@ exactly that, and otherwise the restart is shown as the command to run.**
    **printed**, never run.
 
 5. **Restarting Ollama needs a grant, and the grant is a polkit rule.** The wizard prints the
-   rule and the install command; WeightRoom never runs `sudo`:
+   rule and the install command; WeightRoomGym never runs `sudo`:
 
    ```javascript
    // /etc/polkit-1/rules.d/50-weightroom-ollama.rules
@@ -113,18 +113,18 @@ exactly that, and otherwise the restart is shown as the command to run.**
    ```
 
    With the rule present, `systemctl restart ollama.service` (no `sudo`) succeeds for the
-   operator and the console offers the button; WeightRoom detects the grant by attempting
+   operator and the console offers the button; WeightRoomGym detects the grant by attempting
    `systemctl --dry-run`-equivalent — `busctl call … GetUnit` is always allowed, so the probe is
    the rule file's presence plus a recorded outcome of the last attempt — and, without it,
    renders the restart as the command to run. A sudoers line was rejected: it grants a command,
    polkit grants a unit and a verb, and the narrower grant is the right one for a console that
    is reachable from the LAN.
 
-6. **WeightRoom is itself a unit, and may restart itself.** `weightroom.service` is written,
+6. **WeightRoomGym is itself a unit, and may restart itself.** `weightroom.service` is written,
    enabled and started by the wizard so the console outlives the login that installed it.
-   *Restart WeightRoom* from the console is `systemctl --user restart weightroom.service`;
+   *Restart WeightRoomGym* from the console is `systemctl --user restart weightroom.service`;
    the page reconnects its SSE streams when the server returns. The unit carries no memory cap:
-   WeightRoom serves no model.
+   WeightRoomGym serves no model.
 
 7. **Linux with systemd is the supported host for 1.0.** On any other host every process page,
    the unit sync and the Ollama pane report *unsupported on this host* with the reason, the
@@ -141,8 +141,8 @@ unit-managed applications and kept for ad-hoc runs (`pytest -m live`, a one-off 
 start` from a shell).
 
 *Negative.* Unit files are generated, so an operator who wants a different `ExecStart` sets it in
-WeightRoom's configuration rather than editing the unit. That is one more place configuration
-lives, and it is the price of a file WeightRoom can regenerate safely.
+WeightRoomGym's configuration rather than editing the unit. That is one more place configuration
+lives, and it is the price of a file WeightRoomGym can regenerate safely.
 
 *Negative.* Ollama's restart is a second-class action until a root user installs the rule. The
 console says so, in the words of the command; nothing pretends to have restarted a daemon it
@@ -153,7 +153,7 @@ processes in a terminal; it is not the operator path any more.
 
 ## Alternatives considered
 
-* **Supervise the applications as WeightRoom's own child processes.** Rejected: the console
+* **Supervise the applications as WeightRoomGym's own child processes.** Rejected: the console
   would then be the thing whose restart stops every application, and the memory cap would need
   re-implementing that systemd already provides.
 * **Run Ollama as a user unit too**, so no grant is needed. Rejected: Ollama's installer writes a

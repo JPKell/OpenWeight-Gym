@@ -1,9 +1,9 @@
-# WeightRoom — Development Plan
+# WeightRoomGym — Development Plan
 
-**Sequence position:** the WeightRoom arc, rows W1–W10 of
+**Sequence position:** the WeightRoomGym arc, rows W1–W10 of
 [`roadmap/weightroom-work.md`](../../roadmap/weightroom-work.md), plus the four schema rows
 (WS1–WS4) and the MirrorWall 0.3 row (WM) that sit between them.
-**Target:** `openweight-gym 1.0.0` at the end of Phase 10 — one release (interview decision
+**Target:** `wr-gym 1.0.0` at the end of Phase 10 — one release (interview decision
 D15); every phase below is still gated, and a gate is a commit.
 **Reached:** nothing yet. Phase 0 is row W0 (2026-09-09): this document, its five siblings, ADRs
 0123–0127, the repository move and the empty skeleton at `0.0.0`.
@@ -24,7 +24,7 @@ check .`, `mypy src tests`, `lint-imports`, `pytest -m "not live and not perform
 
 ADRs 0123–0127 accepted and indexed; `apps/weightroom/{spec,api,data-model,design,risks}.md`
 and this plan; master architecture, executive summary, `MEMORY_SAFETY.md`, `LAN_ACCESS.md`
-amended; `expose_on_lan.sh` deleted; the documentation repository becomes the WeightRoom
+amended; `expose_on_lan.sh` deleted; the documentation repository becomes the WeightRoomGym
 repository with the tree under `docs/`; the skeleton at `0.0.0` with the gate green; the arc's
 roadmap file and its kickoff prompts. Handoff: `docs/history/W0_HANDOFF.md`.
 
@@ -32,7 +32,7 @@ roadmap file and its kickoff prompts. Handoff: `docs/history/W0_HANDOFF.md`.
 
 ## Phase 1 — Skeleton, configuration, database, TLS, login, `setup` (row W1)
 
-**Goal:** `weightroom setup && weightroom serve` gives an HTTPS console with a login on the LAN
+**Goal:** `wr-gym setup && wr-gym serve` gives an HTTPS console with a login on the LAN
 and nothing behind the login yet but a shell that says so.
 
 **Prerequisites:** Phase 0.
@@ -47,13 +47,13 @@ and nothing behind the login yet but a shell that says so.
 * WeightsDB wiring; Alembic `0001`: `operators`, `sessions`, `audit_log`, `settings`,
   `known_revisions` (seeded with today's four `alembic_version`s).
 * `domain/tls.py` + `services/tls.py`: the CA and leaf issuer ([ADR-0126](../../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md)
-  rule 2), renewal decision, `tls init|renew|rotate|show`, `weightroom trust`; uvicorn HTTPS; the
+  rule 2), renewal decision, `tls init|renew|rotate|show`, `wr-gym trust`; uvicorn HTTPS; the
   trust listener on `server.trust_port` serving two routes.
 * `domain/auth.py` + `services/auth.py`: scrypt hashing, sessions, the cookie, idle/absolute
   expiry, the login rate limit, `POST /login|logout|reauth`, `operator create|password`;
   MirrorWall's CSRF middleware and the same-origin check on JSON writes.
 * The audit service and `GET /audit`; every state-changing route from here on writes a row.
-* `weightroom setup`: TLS, the operator account, `allowed_hosts` from the host's names and
+* `wr-gym setup`: TLS, the operator account, `allowed_hosts` from the host's names and
   addresses, `server.host` chosen by the operator (loopback or the LAN interface), the
   application tokens (rule 8 — created only for an installed application, stored by file
   reference), linger. Units are Phase 2; the wizard prints that it will return for them.
@@ -72,12 +72,12 @@ and nothing behind the login yet but a shell that says so.
 * Audit: a test enumerates every state-changing route and asserts one row each.
 
 **Acceptance criteria**
-1. On the reference machine: `weightroom setup` (answering the prompts), `weightroom serve`;
+1. On the reference machine: `wr-gym setup` (answering the prompts), `wr-gym serve`;
    on a phone on the LAN, open `http://<host>:8770/trust`, install the root, open
    `https://<host>.local:8769`, see the padlock and the login, log in, see the shell.
 2. `curl http://<host>:8769/` connects to nothing; `curl -k https://<host>:8769/api/v1/version`
    answers without a cookie; `/api/v1/health` answers `401`.
-3. `weightroom tls show` prints the fingerprint that the phone's certificate details show.
+3. `wr-gym tls show` prints the fingerprint that the phone's certificate details show.
 4. Gate clean; CI green.
 
 **Known risks:** the CA on Android (the *CA certificate* store, not the VPN one) — documented in
@@ -90,7 +90,7 @@ variant.
 
 ## Phase 2 — Process control, unified logs, audit (row W2)
 
-**Goal:** the four applications and WeightRoom run as units the console wrote; the console
+**Goal:** the four applications and WeightRoomGym run as units the console wrote; the console
 starts, stops and tails them, and the audit log shows it did.
 
 **Prerequisites:** Phase 1.
@@ -99,13 +99,13 @@ starts, stops and tails them, and the audit log shows it did.
 * `domain/units.py`: the unit-file template ([ADR-0125](../../adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md)
   rule 1), rendering from configuration, the diff. `services/processes.py`: a `SystemdController`
   port with the real subprocess implementation and a fake; `units sync|status|start|stop|restart`;
-  `weightroom setup` gains the units step and linger.
+  `wr-gym setup` gains the units step and linger.
 * `services/journal.py`: `journalctl --user -o json` history and follow; the SSE line stream with
-  MirrorWall's bounded queues; the unified stream across applications plus WeightRoom's own log.
+  MirrorWall's bounded queues; the unified stream across applications plus WeightRoomGym's own log.
 * Ollama: `systemctl show`, the `MEMORY_SAFETY.md` §2.1 checklist, the polkit rule text and
   install command, restart when permitted (rule 5).
 * `GET /apps`, `/apps/{app}`, `/apps/{app}/health`, the start/stop/restart routes, the logs
-  routes, `GET /ollama`, `POST /ollama/restart`; `weightroom apps status`, `weightroom logs`.
+  routes, `GET /ollama`, `POST /ollama/restart`; `wr-gym apps status`, `wr-gym logs`.
 * The Audit page.
 * Application version negotiation: `GET /api/v1/version` per application with the five-minute
   recheck; `APP_VERSION_MISMATCH`.
@@ -122,7 +122,7 @@ starts, stops and tails them, and the audit log shows it did.
 * Every action audited.
 
 **Acceptance criteria**
-1. `weightroom units sync` writes five units; the LoadCoach tab's Overview shows *stopped*, its
+1. `wr-gym units sync` writes five units; the LoadCoach tab's Overview shows *stopped*, its
    start button starts it, the pill turns `ok · 0 h 0 m`, the log pane fills live, and the audit
    page shows `unit.start loadcoach` with the operator's name.
 2. Stopping LoadCoach from the console and refreshing shows *stopped* again, with every page
@@ -197,7 +197,7 @@ the raw editor with the reason.
 * Runtime keys through each application's `PUT /settings`; *pending restart* state; the restart
   button. Provider registrations through the existing ADR-0117 forms where the application has
   them.
-* WeightRoom's own settings page, from its own schema verb.
+* WeightRoomGym's own settings page, from its own schema verb.
 * The doctor: findings per rule with severity and the printed command — `MEMORY_SAFETY.md` §2.1
   and §2.2, `LAN_ACCESS.md` (an application off loopback; Ollama on `0.0.0.0` as a notice),
   application versions and revisions in range, TLS expiry, linger, the polkit rule, disk space
@@ -221,7 +221,7 @@ the raw editor with the reason.
    restart*, the restart button applies it, and the audit row says *security key*.
 3. Add a field to a fixture schema document in a test and watch it appear in the rendered form
    with no code change.
-4. `weightroom doctor` on the reference machine lists the memory-safety gaps and the
+4. `wr-gym doctor` on the reference machine lists the memory-safety gaps and the
    `OLLAMA_HOST` notice with the commands to run.
 
 **Known risks:** a schema document that names a key the file uses a different spelling for
@@ -242,7 +242,7 @@ the raw editor with the reason.
   renderer (no raw HTML), heading ids and an outline, relative-link rewriting to viewer routes,
   outside-root links to text, mermaid fences left as `<pre class="mermaid">` for the vendored
   client renderer loaded only on pages that have one.
-* The FTS5 index (`docs_index`), `weightroom docs index`, the `docs_index` job kind, search with
+* The FTS5 index (`docs_index`), `wr-gym docs index`, the `docs_index` job kind, search with
   snippets; the ADR index parsed from `adr/README.md`; the *degraded* LIKE fallback.
 * Pages: tree, page, search, ADR index.
 
@@ -340,8 +340,8 @@ the raw editor with the reason.
 2. Try `DELETE FROM samples WHERE run_id = '…'` with FreeWeight running: the dialog shows
    condition 1 red and refuses. Stop FreeWeight, retry: backup taken (path shown), dry run
    `412 rows`, statement echoed, type `samples`, password, run — the audit row shows all of it and
-   `ls ~/.local/share/weightroom/backups/freeweight/` shows the file.
-3. Try `UPDATE routing_decisions …`: refused, *never writable from WeightRoom (ADR-0124)*.
+   `ls ~/.local/share/wr-gym/backups/freeweight/` shows the file.
+3. Try `UPDATE routing_decisions …`: refused, *never writable from WeightRoomGym (ADR-0124)*.
 
 **Known risks:** T2 in [risks](risks.md).
 **Gold standards:** database standards §8 held from outside the owning application.
@@ -364,7 +364,7 @@ the raw editor with the reason.
 * `services/costs.py`: `loadledger.sql` reads from PromptCadence's and IdeaPress's databases,
   balances per window against configured ceilings, unpriced counts everywhere.
 * Backups and migrations pages: `db status|backup|upgrade|restore` per application as curated
-  calls; the backup listing; WeightRoom's own.
+  calls; the backup listing; WeightRoomGym's own.
 * Pages: Catalog, Costs, Backups.
 
 **Tests**
@@ -452,7 +452,7 @@ and edits prompts as records.
 **Acceptance criteria**
 1. Every spec §20 criterion passes; a verification run on an independent device with explicit
    permission to say *not ready* (the M7/M8 precedent).
-2. `openweight-gym 1.0.0` prepared; `pipx install openweight-gym && weightroom --version`.
+2. `wr-gym 1.0.0` prepared; `pipx install wr-gym && wr-gym --version`.
 
 **Known risks:** the verification finding a control surface the recorded fixtures never showed.
 **Gold standards:** all of them.

@@ -1,8 +1,8 @@
-# Kickoff — W4: WeightRoom Phase 4 — settings forms over the schema verbs, the doctor, tokens
+# Kickoff — W4: WeightRoomGym Phase 4 — settings forms over the schema verbs, the doctor, tokens
 
 **Row:** W4 (Opus 5 · high) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W3 and **WS1–WS4** (hard).
-**Ships:** `weightroom 0.4.0` prepared: every application's settings editable from the
+**Ships:** `wr-gym 0.4.0` prepared: every application's settings editable from the
 console through its own schema and validation; the doctor; per-application token pages.
 **Component:** `~/ai/suite/WeightRoom`. The four applications must carry `config schema --json`
 and `config validate --file` (rows WS1–WS4 done, each prepared as a patch release); pin each as an
@@ -29,7 +29,7 @@ implementation: `tomlkit`, validate, write-beside, `fsync`, rename, `.bak`).
   through `tomlkit` with validate-before-write via `config validate --file`, `.bak`, `base_mtime`
   (rule 3); *pending restart* until the restart happens (rule 5).
 * Security keys are editable after `POST /reauth` within the window, and audited as such
-  (rule 6) — WeightRoom's own security keys included.
+  (rule 6) — WeightRoomGym's own security keys included.
 * The doctor **prints** root-owned fixes; it never runs them.
 
 ## Gates
@@ -42,11 +42,11 @@ over the four documents. Commit.
 **Gate B — the write paths.** `services/config_files.py` (round-trip, validate, atomic replace,
 `.bak`, the race); runtime keys via the application API; `PUT /apps/{app}/settings` with per-key
 outcomes; `POST /reauth` and `REAUTH_REQUIRED`; *pending restart* state and the restart button;
-the raw TOML editor under the same rules; WeightRoom's own settings page from its own verb. Every
+the raw TOML editor under the same rules; WeightRoomGym's own settings page from its own verb. Every
 application's `EXAMPLE_CONFIG_TOML` round-tripped one key at a time, byte-identical elsewhere.
 Commit.
 
-**Gate C — doctor and tokens.** `weightroom doctor` and the Doctor page: one finding per rule with
+**Gate C — doctor and tokens.** `wr-gym doctor` and the Doctor page: one finding per rule with
 severity, evidence and the printed command — `MEMORY_SAFETY.md` §2.1 and §2.2, an application off
 loopback, Ollama on `0.0.0.0` (a notice), versions and revisions in range, TLS expiry, linger, the
 polkit rule, disk space under each data root, stray `[server]` blocks from the retired Caddy script;

@@ -1,8 +1,8 @@
-# Kickoff — W3: WeightRoom Phase 3 — telemetry strip and the shell
+# Kickoff — W3: WeightRoomGym Phase 3 — telemetry strip and the shell
 
 **Row:** W3 (Sonnet 5 · high) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W2 and WM.
-**Ships:** `weightroom 0.3.0` prepared: the design brief's shell, live, with each
+**Ships:** `wr-gym 0.3.0` prepared: the design brief's shell, live, with each
 application's Overview page; the telemetry strip and history pages; resident models.
 **Component:** `~/ai/suite/WeightRoom`. If `mirrorwall 0.3.0` is prepared but unpublished, pin it
 as an editable path install with a `TODO: re-pin on publish` and say so in the handoff.
@@ -12,7 +12,7 @@ as an editable path install with a `TODO: re-pin on publish` and say so in the h
 [`outstanding-work.md` §2](../roadmap/outstanding-work.md) and [`weightroom-work.md` §2](../roadmap/weightroom-work.md).
 
 **Read first:** [`spec.md`](../apps/weightroom/spec.md) §7.3, §7.7, §15, §16; [`design.md`](../apps/weightroom/design.md)
-§3–§4 (the shell, line by line) and §5 (what came from MirrorWall 0.3 and what is WeightRoom's);
+§3–§4 (the shell, line by line) and §5 (what came from MirrorWall 0.3 and what is WeightRoomGym's);
 [`development-plan.md`](../apps/weightroom/development-plan.md) Phase 3; [`api.md`](../apps/weightroom/api.md)
 §1 (`/system/*`); [`data-model.md`](../apps/weightroom/data-model.md) (`telemetry_samples`);
 ADR-0016; ADR-0021; ADR-0123 rule 3 (the revision check the Overview's database fallback uses);

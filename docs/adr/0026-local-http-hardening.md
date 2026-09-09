@@ -1,7 +1,7 @@
 # ADR-0026 — Local HTTP hardening: Host validation, CSRF and outbound fetch
 
 **Status:** Accepted (2026-08-21)
-**Amended by:** [ADR-0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) rule 5 — §2's JSON-API exemption is withdrawn for WeightRoom alone, whose API is cookie-authenticated: its state-changing JSON routes require `application/json`, a same-origin `Sec-Fetch-Site` and a matching `Origin`. §1 and §3 apply to WeightRoom unchanged; nothing changes for the four applications.
+**Amended by:** [ADR-0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) rule 5 — §2's JSON-API exemption is withdrawn for WeightRoomGym alone, whose API is cookie-authenticated: its state-changing JSON routes require `application/json`, a same-origin `Sec-Fetch-Site` and a matching `Origin`. §1 and §3 apply to WeightRoomGym unchanged; nothing changes for the four applications.
 **Extends:** [ADR-0014](0014-authentication-strategy.md), [Security Standards](../standards/security-standards.md).
 
 ## Context

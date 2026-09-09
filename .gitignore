@@ -31,7 +31,7 @@ venv/
 # --require-hashes (Packaging and Release Standards §4, Security Standards §11).
 
 # ---- Suite runtime state (this component's local data) ----
-# WeightRoom writes to XDG paths at runtime (Master Architecture §1.2), never inside the
+# WeightRoomGym writes to XDG paths at runtime (Master Architecture §1.2), never inside the
 # repository. These guard against a developer pointing XDG_* at the checkout.
 .local/
 .config/
@@ -45,7 +45,7 @@ venv/
 
 # ---- Secrets ----
 # Per Security Standards §8: secrets are never committed. The CA and leaf keys live under
-# ~/.config/weightroom/tls/ (ADR-0126), never here.
+# ~/.config/wr-gym/tls/ (ADR-0126), never here.
 .env
 .env.*
 *.key

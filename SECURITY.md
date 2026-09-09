@@ -1,6 +1,6 @@
 # Security Policy
 
-WeightRoom is the one component of the Local AI Suite built to face a network: it terminates TLS
+WeightRoomGym is the one component of the Local AI Suite built to face a network: it terminates TLS
 with a certificate authority it mints for the operator, asks for a password, and then reads,
 writes and restarts the four applications on the operator's behalf. Every other application keeps
 its loopback bind behind it. The design is `docs/adr/0126-*.md` (exposure, TLS, login),

@@ -157,11 +157,11 @@ an ADR is superseded rather than edited.
 | [0120](0120-kv-cache-precision-and-flash-attention-are-per-model-llamacpp-settings.md) | KV-cache precision and flash attention are per-model llama.cpp settings, and Ollama refuses them | Accepted |
 | [0121](0121-freeweight-launches-llama-server-with-fit-off-and-caps-the-max-fit-ladder.md) | FreeWeight launches llama-server with `--fit off` and caps the max-fit ladder; LoadCoach keeps `--fit on` | Accepted |
 | [0122](0122-an-empty-fetch-allowlist-means-loopback-and-no-host-is-not-registering.md) | An empty `http_fetch` allowlist means loopback, deliberately; "no host at all" is not registering the tool | Accepted |
-| [0123](0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) | WeightRoom is a fifth application, and it is a host operator tool above the layer rules | Accepted |
+| [0123](0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) | WeightRoomGym is a fifth application, and it is a host operator tool above the layer rules | Accepted |
 | [0124](0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md) | A raw write into another application's database passes a five-part guard, and some tables are never written | Accepted |
-| [0125](0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md) | WeightRoom drives the applications through `systemd --user` units it writes; Ollama is read, and restarted only through a polkit rule | Accepted |
-| [0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) | WeightRoom is the only service on the LAN, and it terminates TLS with its own CA behind a session login | Accepted |
-| [0127](0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) | Every application publishes its settings schema, and WeightRoom generates the settings form from it | Accepted |
+| [0125](0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md) | WeightRoomGym drives the applications through `systemd --user` units it writes; Ollama is read, and restarted only through a polkit rule | Accepted |
+| [0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) | WeightRoomGym is the only service on the LAN, and it terminates TLS with its own CA behind a session login | Accepted |
+| [0127](0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) | Every application publishes its settings schema, and WeightRoomGym generates the settings form from it | Accepted |
 
 ## Writing a new ADR
 
@@ -178,7 +178,7 @@ decision, the earlier ADR carries an **Amended by** note at its head and the ame
 it changes. No earlier decision was reversed; each was found to be under-specified at a boundary
 rather than wrong.
 
-**ADRs 0123–0127 were added on 2026-09-09** (row W0) for the fifth application, WeightRoom — the
+**ADRs 0123–0127 were added on 2026-09-09** (row W0) for the fifth application, WeightRoomGym — the
 host operator's console, decided at the interview of the same day. They follow the ADR-0038
 precedent for amending the frozen master architecture: the fifth application is additive, and
 the one thing it reverses — for itself alone — is the rule that no application reads another's
@@ -186,7 +186,7 @@ database, which [ADR-0123](0123-weightroom-is-a-host-operator-tool-above-the-lay
 scopes by enumeration and [ADR-0124](0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)
 prices. [ADR-0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md)
 amends [ADR-0014](0014-authentication-strategy.md) for one component (a session login where
-ADR-0014 chose bearer tokens, because WeightRoom is the proxy ADR-0014 assumed in front) and
+ADR-0014 chose bearer tokens, because WeightRoomGym is the proxy ADR-0014 assumed in front) and
 withdraws [ADR-0026](0026-local-http-hardening.md)'s JSON-API CSRF exemption for the same one
 component, whose API is cookie-authenticated; both carry an *Amended by* note.
 

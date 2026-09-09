@@ -1,8 +1,8 @@
-# Kickoff — W9: WeightRoom Phase 9 — jobs, alerts, prompt editor
+# Kickoff — W9: WeightRoomGym Phase 9 — jobs, alerts, prompt editor
 
 **Row:** W9 (Opus 5 · high) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W8.
-**Ships:** `openweight-gym 0.9.0` prepared: the database-backed job queue with leases and
+**Ships:** `wr-gym 0.9.0` prepared: the database-backed job queue with leases and
 schedules, the alert evaluator with five sources and the banner, the prompt override editor.
 **Component:** `~/ai/suite/WeightRoom`.
 

@@ -13,7 +13,7 @@ row is the state change's witness), [ADR-0017](0017-benchmark-confidence-and-fre
 
 ## Context
 
-WeightRoom reads every application's database ([ADR-0123](0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
+WeightRoomGym reads every application's database ([ADR-0123](0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
 rule 2). A read is safe by construction: a `SELECT` through a read-only connection cannot corrupt
 a schema, break a foreign key, or race a running application's writer. A write is none of those
 things. The applications are built on the assumption — held by every migration, every lease
@@ -26,7 +26,7 @@ project name, a test run that should not be in the history. Each application alr
 curated answer to some of these (`freeweight db delete --model`, retention settings, `queue
 drain`), and none of them offers a general one.
 
-The question is therefore not *whether* WeightRoom may write, but under what conditions a write
+The question is therefore not *whether* WeightRoomGym may write, but under what conditions a write
 is as safe as the operator opening `sqlite3` by hand with a backup beside them — and which tables
 no condition makes safe.
 
@@ -34,17 +34,17 @@ no condition makes safe.
 
 **A curated, application-owned operation is always offered first. A raw write — a SQL statement,
 a row edit, a row delete — is executed only when all five conditions below hold, and a named set
-of tables is never written from WeightRoom at all.**
+of tables is never written from WeightRoomGym at all.**
 
 ### The five conditions
 
-1. **The owning application is stopped.** WeightRoom asks `systemctl --user is-active
+1. **The owning application is stopped.** WeightRoomGym asks `systemctl --user is-active
    <app>.service` and, for an application that has no unit, checks the port; a checkbox saying
    "I stopped it" is not evidence. No application in the suite has a read-only serving mode
    today, so *stopped* is the only state this rule accepts; if one gains such a mode, it is
    added here by a superseding record, not assumed.
 2. **An automatic backup of that database was taken first**, through `weightsdb.backup` (the
-   SQLite backup API or `pg_dump`), into WeightRoom's own data root at
+   SQLite backup API or `pg_dump`), into WeightRoomGym's own data root at
    `<data>/backups/<app>/<utc timestamp>-guarded-write.sqlite3` (or `.dump`), mode `0600`, and
    the path is written on the audit row before the statement runs. A backup that fails aborts
    the write.
@@ -54,7 +54,7 @@ of tables is never written from WeightRoom at all.**
    error, not a warning.
 4. **The operator typed the table name.** For a statement that touches more than one table, every
    table. The name must match exactly; a typed name that is not in the statement refuses.
-5. **An `audit_log` row in WeightRoom's own database records** who (the operator account),
+5. **An `audit_log` row in WeightRoomGym's own database records** who (the operator account),
    when, which application and database URL (redacted of any credential), the statement, the
    dry-run count, the actual count, the backup path, and the outcome. The audit row is written
    with the outcome *pending* before the statement and updated after, so a crash mid-write leaves
@@ -62,7 +62,7 @@ of tables is never written from WeightRoom at all.**
 
 ### Mechanics that make the conditions mean what they say
 
-* **Read is the default mode.** Every connection WeightRoom opens to another application's
+* **Read is the default mode.** Every connection WeightRoomGym opens to another application's
   database is read-only — `?mode=ro` for SQLite, `default_transaction_read_only = on` for
   PostgreSQL — and a guarded write opens a **separate**, short-lived read-write connection for
   the one statement, closed afterwards. There is no long-lived writable handle to reach for.
@@ -76,18 +76,18 @@ of tables is never written from WeightRoom at all.**
   hold a lock indefinitely.
 * **The connection string is the application's own effective `storage.database_url`**, read from
   its configuration through [ADR-0127](0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md)'s
-  document. It is never typed into WeightRoom, so there is no second place for it to be wrong.
+  document. It is never typed into WeightRoomGym, so there is no second place for it to be wrong.
 
-### Tables that are never written from WeightRoom
+### Tables that are never written from WeightRoomGym
 
 By name, per application. A curated operation of the owning application may touch them; a raw
-write from WeightRoom is refused with the table named and this record cited.
+write from WeightRoomGym is refused with the table named and this record cited.
 
 | Class | Why never | FreeWeight | LoadCoach | IdeaPress | PromptCadence |
 |---|---|---|---|---|---|
 | Migration state | The application's migration history owns it | `alembic_version` | `alembic_version` | `alembic_version` | `alembic_version` |
 | Credentials | `token create`/`revoke` are the only writers; a hand-inserted hash is an unaudited credential | `api_tokens` | `api_tokens` | `api_tokens` | `api_tokens` |
-| Runtime settings rows | The application's `PUT /settings` is the audited path ([ADR-0100](0100-promptcadences-runtime-changeable-set-is-five-tuning-numbers.md)); WeightRoom uses it | `settings` | `settings` | `settings` | `settings` |
+| Runtime settings rows | The application's `PUT /settings` is the audited path ([ADR-0100](0100-promptcadences-runtime-changeable-set-is-five-tuning-numbers.md)); WeightRoomGym uses it | `settings` | `settings` | `settings` | `settings` |
 | Subject identity, hashed | A row hashed into a fingerprint or subject ([ADR-0017](0017-benchmark-confidence-and-freshness.md), [ADR-0023](0023-runtime-profile-resolution.md), [ADR-0058](0058-the-execution-subject-gains-an-adapter-axis.md)) that is edited becomes a lie about every result that cites it | `machines`, `models`, `model_descriptors`, `runtime_profiles`, `adapters` | `models`, `runtime_profiles`, `adapters` | — | — |
 | Queue and lease state | The worker's recovery pass reasons about these rows; a hand edit is a state the state machine never produced | — | `jobs`, `job_attempts`, `residency` | `stage_runs` | `trajectories`, `threads`, `turns` |
 | Governance and decision records | Approved and denied alike are the record ([ADR-0054](0054-commissioner-records-egress-it-does-not-enforce-it.md), [ADR-0056](0056-every-turn-executes-under-one-execution-intent.md), [ADR-0049](0049-approval-is-a-mode-with-its-own-scope.md)); an edited record is not a record | — | `routing_decisions`, `routing_candidates` | `egress_decisions` (mounted) | `execution_intents`, `plan_approvals`, `approval_requests`, `deviations`, `egress_decisions` (mounted) |
@@ -104,7 +104,7 @@ operator asked for; rewriting a routing decision is exactly the sort no maintena
 *Positive.* The operator can fix a database from the console with the same safety a careful
 person has at a shell — backup, dry run, look, confirm — and better attribution, because the shell
 keeps no audit log. The never-writable list makes the suite's evidence, governance and money
-records tamper-evident by construction: WeightRoom cannot alter them, and anything else that did
+records tamper-evident by construction: WeightRoomGym cannot alter them, and anything else that did
 would be outside the audited path.
 
 *Negative.* The guard is slow on purpose: stop the application, take a backup, run twice, type
@@ -113,7 +113,7 @@ That is the intended friction; a faster path belongs in the owning application a
 verb, which is where `freeweight db delete --model` came from.
 
 *Negative.* Condition 1 makes a write impossible while an application serves, so an emergency
-edit to a running LoadCoach is not a thing WeightRoom offers. It is also not a thing the suite's
+edit to a running LoadCoach is not a thing WeightRoomGym offers. It is also not a thing the suite's
 data model makes safe, which is why.
 
 *Neutral.* The mounted tables (`ledger_*`, `egress_decisions`) are named twice, once per

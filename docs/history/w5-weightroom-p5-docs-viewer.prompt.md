@@ -1,8 +1,8 @@
-# Kickoff — W5: WeightRoom Phase 5 — docs viewer
+# Kickoff — W5: WeightRoomGym Phase 5 — docs viewer
 
 **Row:** W5 (Sonnet 5 · high; overnight allowed) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W3; the one flexible row (any time after W3).
-**Ships:** `openweight-gym 0.5.0` prepared: the suite's documentation tree rendered, searchable,
+**Ships:** `wr-gym 0.5.0` prepared: the suite's documentation tree rendered, searchable,
 with mermaid; read-only.
 **Component:** `~/ai/suite/WeightRoom`.
 
@@ -24,7 +24,7 @@ ToolYard's `PathContainment` tests as the containment vector set (read, do not i
   **only** on a page that contains one (spec §5, §15).
 * Relative links rewrite to viewer routes; links outside `[docs] root` render as text; every
   served path is resolved and contained; a symlink out of the root is refused.
-* FTS5 in WeightRoom's own database, rebuilt by `weightroom docs index` and the `docs_index` job
+* FTS5 in WeightRoomGym's own database, rebuilt by `wr-gym docs index` and the `docs_index` job
   kind (the job runner is W9's; stub the kind as a callable now); a LIKE fallback labelled
   *degraded* when FTS5 is absent (risks T9).
 * The ADR index is parsed from `adr/README.md`'s table, not from the filenames.
@@ -38,7 +38,7 @@ ids and an outline, link rewriting, the mermaid mount; goldens for a table, a fe
 block, a footnote, a relative and an outside link; the sanitiser against `<script>` and `{{ }}`.
 Commit.
 
-**Gate B — search and index.** `docs_index`, the indexer, `weightroom docs index`, search with
+**Gate B — search and index.** `docs_index`, the indexer, `wr-gym docs index`, search with
 snippets, the FTS5 probe and fallback, the ADR index page. Commit.
 
 **Gate C — pages and budget.** Tree, page, search, ADR index pages in the shell; the JS budget

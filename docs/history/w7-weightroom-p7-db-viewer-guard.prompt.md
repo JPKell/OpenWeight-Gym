@@ -1,8 +1,8 @@
-# Kickoff — W7: WeightRoom Phase 7 — database viewer and the guard
+# Kickoff — W7: WeightRoomGym Phase 7 — database viewer and the guard
 
 **Row:** W7 (Opus 5 · xhigh · **never overnight**) — [`docs/roadmap/weightroom-work.md`](../roadmap/weightroom-work.md).
 Runs after W4.
-**Ships:** `openweight-gym 0.7.0` prepared: every application's database readable; a raw write
+**Ships:** `wr-gym 0.7.0` prepared: every application's database readable; a raw write
 only under the five conditions; curated operations first.
 **Component:** `~/ai/suite/WeightRoom`.
 
@@ -24,7 +24,7 @@ columns; [`development-plan.md`](../apps/weightroom/development-plan.md) Phase 7
 * Every connection to another application's database is **read-only**; a guarded write opens
   its own connection for one statement and closes it (ADR-0124 mechanics).
 * The five conditions, in order: the unit is inactive (checked, not attested); a backup through
-  `weightsdb.backup` into WeightRoom's `<data>/backups/<app>/` with its path on the audit row
+  `weightsdb.backup` into WeightRoomGym's `<data>/backups/<app>/` with its path on the audit row
   before the statement; a rolled-back dry run with its count shown beside the statement; every
   table in the statement typed exactly; the audit row `pending` before and completed after.
 * One DML statement; DDL, `PRAGMA`, `VACUUM`, multi-statement refused by name; 30 s timeout;

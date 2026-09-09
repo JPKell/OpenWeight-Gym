@@ -1,4 +1,4 @@
-# WeightRoom — Public API
+# WeightRoomGym — Public API
 
 **Base path:** `/api/v1` · **Conventions:** [API and Contract Standards](../../standards/api-and-contract-standards.md)
 **Authentication:** the session cookie of [ADR-0126](../../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md);
@@ -18,7 +18,7 @@ value is `404 APP_UNKNOWN`.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /health` | MirrorWall's standard health payload: `database`, `tls` (days to expiry, `degraded` under 30), `units` (systemd reachable, `unsupported` without it), and one component per application named `app:<name>` with `ok`/`degraded`/`stopped`/`unknown`. `200` when WeightRoom's own database and TLS are fine — a stopped application never drops it below 200 |
+| `GET /health` | MirrorWall's standard health payload: `database`, `tls` (days to expiry, `degraded` under 30), `units` (systemd reachable, `unsupported` without it), and one component per application named `app:<name>` with `ok`/`degraded`/`stopped`/`unknown`. `200` when WeightRoomGym's own database and TLS are fine — a stopped application never drops it below 200 |
 | `GET /version` | `{"application": "weightroom", "version": "…", "api_version": "v1", "schema_version": "1"}`. Never authenticated ([ADR-0026 §5](../../adr/0026-local-http-hardening.md)) |
 | `GET /system/status` | The machine view (spec §17): per application `state`, `version`, `api_version`, `db_revision`, `known`; `ollama` (unit state, cap lines found, residency); `telemetry` (the last snapshot); `costs_today`; `alerts_open`; `jobs_running`; `doctor_last` |
 | `GET /system/telemetry/stream` | SSE, one `telemetry.sample` per interval, `—` for unavailable readings; replay from `Last-Event-ID` within the retained window |
@@ -34,7 +34,7 @@ value is `404 APP_UNKNOWN`.
 | `GET /apps/{app}` · `GET /apps/{app}/health` | One application; its own `/api/v1/health` proxied verbatim with `source: "api"` or `{"state": "stopped"}` |
 | `POST /apps/{app}/start` · `/stop` · `/restart` | `systemctl --user <verb> <app>.service`; `202` with the audit id, then the unit state; `UNIT_UNSUPPORTED` without systemd, `UNIT_ACTION_FAILED` with systemd's message |
 | `GET /apps/{app}/logs?since=&until=&level=&q=` | Journal history, JSON lines, capped at 5 000 rows per page with a cursor |
-| `GET /apps/{app}/logs/stream` · `GET /logs/stream?apps=` | SSE of journal lines, one application or several; WeightRoom's own log under `weightroom` |
+| `GET /apps/{app}/logs/stream` · `GET /logs/stream?apps=` | SSE of journal lines, one application or several; WeightRoomGym's own log under `weightroom` |
 | `GET /apps/{app}/config` | The raw `config.toml` text and its mtime (the editor's base) |
 | `GET /apps/{app}/settings/schema` | The application's schema document ([ADR-0127](../../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) rule 1), cached for 60 s; `APP_NOT_INSTALLED` when the executable is absent |
 | `GET /apps/{app}/settings` | Effective values with per-key `source` and `shadowed_by`, the runtime-changeable set, the security set |
@@ -45,7 +45,7 @@ value is `404 APP_UNKNOWN`.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /apps/{app}/db/revision` | `alembic_version`, whether WeightRoom knows it, and the range it knows |
+| `GET /apps/{app}/db/revision` | `alembic_version`, whether WeightRoomGym knows it, and the range it knows |
 | `GET /apps/{app}/db/tables` | Tables with row counts, `writable` (false for the [ADR-0124](../../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md) list, with `reason`), and the curated operations available per table |
 | `GET /apps/{app}/db/tables/{t}?page=&sort=&filter=` | A page of rows, columns typed |
 | `POST /apps/{app}/db/query` | `{"sql": "SELECT …"}` on a read-only connection, 30 s, 10 000 rows; anything but a single `SELECT`/`WITH` is `GUARD_STATEMENT_REFUSED` |
@@ -113,7 +113,7 @@ value is `404 APP_UNKNOWN`.
 | `POST /logout` | Deletes the session row and clears the cookie |
 | `POST /reauth` | Password again → a short-lived re-authentication token for security keys and guarded writes ([ADR-0127](../../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) rule 6) |
 | `GET /trust` · `GET /trust/root.crt` | The fingerprint, the certificate, the per-OS steps; also served unauthenticated on the trust port and **only** there |
-| `GET /settings` · `PUT /settings` | WeightRoom's own runtime-changeable keys, ADR-0100's shape |
+| `GET /settings` · `PUT /settings` | WeightRoomGym's own runtime-changeable keys, ADR-0100's shape |
 
 ## 10. Errors
 
@@ -125,7 +125,7 @@ Spec §13's codes in MirrorWall's envelope: `{"error": {"code", "message", "deta
 ## 11. Client guidance
 
 The API is for the console's own pages. A script that wants to operate an application should
-call that application's API directly; a script that wants what only WeightRoom knows (the audit
+call that application's API directly; a script that wants what only WeightRoomGym knows (the audit
 trail, the alert history, the machine view) uses a browser session's cookie and the CSRF token
-for writes, which is deliberately awkward — automation against WeightRoom is a future extension
+for writes, which is deliberately awkward — automation against WeightRoomGym is a future extension
 with its own token (spec §21).

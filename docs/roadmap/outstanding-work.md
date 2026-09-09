@@ -10,7 +10,7 @@ this document is the schedule view that answers "what do I run next, on which mo
 
 **Since 2026-09-09 (row W0), a new arc starts a new `roadmap/<arc>-work.md`** in this file's
 shape, and this file keeps only the pre-existing rows and, in §1.2, the index of arc files;
-[`roadmap/README.md`](README.md) lists every work file with its status. The WeightRoom arc is the
+[`roadmap/README.md`](README.md) lists every work file with its status. The WeightRoomGym arc is the
 first: [`weightroom-work.md`](weightroom-work.md).
 
 **How to use a row.** Copy the row into an Opus session and ask it to draft the kickoff prompt for
@@ -19,7 +19,7 @@ should additionally include the standing preamble in §2 below. Batch letters gr
 adjacent *and* on the same model, so consecutive rows with one letter can be run back-to-back in
 one sitting; letters are dependency-ordered, and §3 lists which orderings are load-bearing versus
 merely convenient. All paths are relative to `~/ai/suite/WeightRoom/docs/` (the documentation
-repository became the WeightRoom repository at row W0; `~/ai/suite/docs` is a symlink to it for
+repository became the WeightRoomGym repository at row W0; `~/ai/suite/docs` is a symlink to it for
 one transition).
 
 ## 1. The master table
@@ -95,7 +95,7 @@ one transition).
 
 ### 1.2 Arcs with their own file
 
-* **WeightRoom** → [`roadmap/weightroom-work.md`](weightroom-work.md) (rows W0–W10, WS1–WS4, WM,
+* **WeightRoomGym** → [`roadmap/weightroom-work.md`](weightroom-work.md) (rows W0–W10, WS1–WS4, WM,
   WM2; started 2026-09-09; W0 done the same day, `history/W0_HANDOFF.md`).
 
 ### 1.1 M9 — Suite 1.0, outside the arcs

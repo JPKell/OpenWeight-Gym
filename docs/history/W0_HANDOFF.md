@@ -1,4 +1,4 @@
-# W0 Handoff — WeightRoom Phase 0: the ADRs, the spec, the plan, the repository
+# W0 Handoff — WeightRoomGym Phase 0: the ADRs, the spec, the plan, the repository
 
 **Row:** W0 of [`roadmap/weightroom-work.md`](../roadmap/weightroom-work.md) (Fable 5.1 · attended).
 **Date:** 2026-09-09. **Kickoff:** [`w0-weightroom-phase-0.prompt.md`](w0-weightroom-phase-0.prompt.md).
@@ -9,7 +9,7 @@ skeleton, the architecture amendments, the arc's work file, fifteen kickoff prom
 
 | Repository | Commit | What |
 |---|---|---|
-| `WeightRoom` (was `docs`) | `5af4603` | `git mv` of every top-level file and directory into `docs/`; checkout renamed `~/ai/suite/WeightRoom`; `~/ai/suite/docs → WeightRoom/docs` symlink; skeleton (`pyproject.toml` dist `openweight-gym`, `src/weightroom/__about__.py` `0.0.0`, one test, `.importlinter`, CI, `release.lock`, README, CHANGELOG, SECURITY, CONTRIBUTING, LICENSE); `compatibility-matrix.yml` and `finish_n_rows.sh` follow the new depth |
+| `WeightRoomGym` (was `docs`) | `5af4603` | `git mv` of every top-level file and directory into `docs/`; checkout renamed `~/ai/suite/WeightRoom`; `~/ai/suite/docs → WeightRoom/docs` symlink; skeleton (`pyproject.toml` dist `wr-gym`, `src/weightroom/__about__.py` `0.0.0`, one test, `.importlinter`, CI, `release.lock`, README, CHANGELOG, SECURITY, CONTRIBUTING, LICENSE); `compatibility-matrix.yml` and `finish_n_rows.sh` follow the new depth |
 | | `7aa5da2` | ADRs 0123–0127; index; *Amended by* notes on ADR-0014 and ADR-0026 |
 | | `6a46772` | `apps/weightroom/{spec,api,data-model,design,risks,development-plan}.md` |
 | | `031d283` | Master architecture (§1.1, §2, §3, §8.2.2, §11 items 22–24), executive summary, boundary rules §3.2, gold standards (§1.1 row, §2 section), traceability matrix, risk register (S14, S15), master roadmap §9, docs README; `MEMORY_SAFETY.md` §2.2; `LAN_ACCESS.md` rewritten; `scripts/expose_on_lan.sh` deleted |
@@ -27,8 +27,11 @@ green on **Python 3.14.4** (`WeightRoom/.venv`); `pip-audit` on `release.lock` c
 The interview's D1–D16 landed where the kickoff §2 table said. What the spec and ADRs had to
 settle on top:
 
-* **Distribution name `openweight-gym`** — `pip index versions` on 2026-09-09: `weightroom` is
-  taken (`0.0.1`), `openweight-gym` is free. **See §6: this is now an open question.**
+* **Names, decided by the operator at the close of the row:** product **WeightRoomGym**,
+  distribution and CLI **`wr-gym`**, import name `weightroom`, env prefix `WEIGHTROOM_`, config
+  and data roots `wr-gym`, checkout `~/ai/suite/WeightRoom`, GitHub remote still
+  `OpenWeight-Gym`. The row had proposed `openweight-gym` (free on PyPI; `weightroom` is taken by
+  an unrelated `0.0.1`); the operator chose otherwise after the §5 incident.
 * **"htmx" → the patterns, not the library** (ADR-0123 rule 7). ADR-0020 explicitly rejected
   htmx as a dependency; the interview said "ADR-0020 kept". Flagged in the ops checklist for the
   operator to confirm or supersede.
@@ -43,18 +46,18 @@ settle on top:
 * **Auth:** one account, scrypt (`n=2**15, r=8, p=1`, params stored), server-side sessions,
   `__Host-` cookie `Strict`, 12 h idle / 7 d absolute, 5 logins/min/address, `POST /reauth`
   with a 5-minute window for security keys and guarded writes; **no bearer tokens, no roles**.
-* **CA:** `$XDG_CONFIG_HOME/weightroom/tls/`, ECDSA P-256, root 10 y, leaf 398 d renewed under
+* **CA:** `$XDG_CONFIG_HOME/wr-gym/tls/`, ECDSA P-256, root 10 y, leaf 398 d renewed under
   30 d, SANs = hostname/.local/LAN IPs/localhost; **no plain HTTP on 8769**; a trust listener on
   **8770** serving exactly `/root.crt` and `/trust`; `tls init|renew|rotate|show`, `trust`.
 * **Ollama restart = polkit rule**, printed by the wizard, installed by the operator with
-  `sudo`; WeightRoom never runs `sudo`; without the rule the restart is the printed command.
+  `sudo`; WeightRoomGym never runs `sudo`; without the rule the restart is the printed command.
   Sudoers rejected (grants a command; polkit grants a unit + verb).
 * **Unit files carry the memory cap** for `freeweight` and `loadcoach` (ADR-0125 rule 1);
   `MEMORY_SAFETY.md` §2.2's `systemd-run` wrapper stays for shell runs.
 * **App tokens:** `write` on LoadCoach, `write,approve` on PromptCadence (approvals are their own
   scope, ADR-0049), stored under `<config>/secrets/` by file reference.
 * **Schema document** (ADR-0127): `config schema --json` + `config validate --file`;
-  `security_keys` editable from WeightRoom after re-authentication (ADR-0117's "browser session
+  `security_keys` editable from WeightRoomGym after re-authentication (ADR-0117's "browser session
   cannot move the boundary" is kept for the applications and consciously not for the operator's
   console — rule 6 says why).
 * **Never-writable tables**, by name per application (ADR-0124's table): migration state,
@@ -64,7 +67,7 @@ settle on top:
   per subject, no outbound channel; **DB viewer:** SQLite and PostgreSQL from each application's
   own `storage.database_url` read out of its schema document.
 * **Out of scope for 1.0:** multiple users, internet exposure, in-browser docs editing, providers
-  for chat, replacing any app's UI, a second host, a WeightRoom API token for automation.
+  for chat, replacing any app's UI, a second host, a WeightRoomGym API token for automation.
 * **Row models:** W1/W6/W7/W10 Opus and never overnight; W2/W4/W9 Opus; W3/W5/W8/WM/WS1–4
   Sonnet high.
 
@@ -106,24 +109,23 @@ no longer need it. The root `install_local.sh`/`launch.sh` never referenced it.
 
 ## 5. The working tree at 15:14
 
-While this session was writing the kickoff prompts, twelve files in `WeightRoom` and one or two
+While this session was writing the kickoff prompts, twelve files in `WeightRoomGym` and one or two
 in each of the four application repositories were modified in place at **15:14:16 PDT** — a
 mechanical substitution `openweight-gym → weightroom` and `OpenWeight-Gym → weightroom` (it
 produces "`weightroom` because `weightroom` is taken on PyPI" in ADR-0123 rule 1, and rewrites a
 historical GitHub URL in `IdeaPress/CHANGELOG.md` to `JPKell/weightroom`). The journal shows a
 VS Code event at 15:14:15 and a Codex code-mode host running inside VS Code; it was not this
-session. The changes were **neither committed nor reverted**: the patch is saved at
-`<scratchpad>/stray-rename-weightroom-2026-09-09T1514.patch`, and §6 asks the operator which
-name is intended. This is the third recorded instance of the pattern the workspace `CLAUDE.md`
-describes (interactive activity on a tree a run holds).
+session. Files written before 15:14 and committed after it (`weightroom-work.md`, the first nine
+prompts) carried the substitution into commit `5dd75ee`; the rest was reverted with
+`git checkout --` in all five repositories once the operator had decided the names (§2), and the
+patch is kept at `<scratchpad>/stray-rename-weightroom-2026-09-09T1514.patch`. This is the third
+recorded instance of the pattern the workspace `CLAUDE.md` describes (interactive activity on a
+tree a run holds).
 
 ## 6. Open for the operator
 
-1. **The distribution name.** If the 15:14 edit was yours and `weightroom` on PyPI is yours, say
-   so: the consistent change is ADR-0123 rule 1's parenthesis, `pyproject.toml` (`name`, URLs —
-   the GitHub remote is still `OpenWeight-Gym`), the CHANGELOG/README lines, the kickoff prompts'
-   `pip install` lines and `weightroom-work.md` §4's first item — then one commit. If it was not
-   yours, `git checkout --` the listed files in the five repositories and the patch is the record.
+1. ~~The distribution name.~~ **Decided** (§2): WeightRoomGym / `wr-gym` / `weightroom`; applied in
+   the row's closing commit across the five repositories.
 2. **"htmx"**: patterns via MirrorWall's modules (as written), or the library (an ADR superseding
    ADR-0020's rejection, before W3).
 3. Apply `MEMORY_SAFETY.md` §2.1 on the host; decide whether Ollama stays on `0.0.0.0`.

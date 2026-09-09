@@ -15,7 +15,7 @@ rows J1/J2 ADRs, `toolyard` by [ADR-0116](../adr/0116-research-runs-under-toolya
 and every application's arrows match its `pyproject.toml` runtime set ([ADR-0114](../adr/0114-the-dependency-budget-is-the-enumerated-set-a-component-declares.md)).
 **Amended 2026-09-09** (row W0) by [ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
 – [ADR-0127](../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md):
-a **fifth application, WeightRoom**, the host operator's console. It is the one component that
+a **fifth application, WeightRoomGym**, the host operator's console. It is the one component that
 sits **above** the layer rules — by an exception scoped exactly as ADR-0123 rule 2 enumerates —
 and §1.1, §2, §3, §8.5 and §11 gain it additively; nothing about the four applications changes.
 **Audience:** every implementation agent working on any part of the suite.
@@ -39,7 +39,7 @@ Fixed for the life of the suite. Use these exact spellings everywhere — code, 
 | LoadCoach | Application | `loadcoach` | `loadcoach` | `loadcoach` | 8766 | `LOADCOACH_` |
 | IdeaPress | Application | `ideapress` | `ideapress` | `ideapress` | 8767 | `IDEAPRESS_` |
 | PromptCadence | Application | `promptcadence` | `promptcadence` | `promptcadence` | 8768 | `PROMPTCADENCE_` |
-| WeightRoom | Application (host operator tool) | `weightroom` | `openweight-gym` | `weightroom` | 8769 (HTTPS) | `WEIGHTROOM_` |
+| WeightRoomGym | Application (host operator tool) | `weightroom` | `wr-gym` | `wr-gym` | 8769 (HTTPS) | `WEIGHTROOM_` |
 | BaseAiCore | Package | `baseaicore` | `baseaicore` | — | — | — |
 | SetSpec | Package | `setspec` | `setspec` | — | — | — |
 | ModelRack | Package | `modelrack` | `modelrack` | — | — | — |
@@ -58,12 +58,13 @@ PromptCadence and the last four packages are added by
 [ADR-0053](../adr/0053-a-refused-tool-call-is-a-result-not-an-exception.md) and
 [ADR-0054](../adr/0054-commissioner-records-egress-it-does-not-enforce-it.md).
 
-WeightRoom is added by [ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md);
-its distribution name is the one exception to the identity rule below, because `weightroom` was
-already taken on PyPI when the name was chosen.
+WeightRoomGym is added by [ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md);
+its distribution and CLI name `wr-gym` is the one exception to the identity rule below (the
+operator's choice of 2026-09-09; `weightroom` was already taken on PyPI), and its config, data and
+state roots are `wr-gym` to match the command.
 
 Product names are CamelCase in prose and UI. Import and distribution names are lowercase and
-identical to each other (WeightRoom's `openweight-gym` excepted, as above). Distribution-name availability on PyPI is verified before first publish;
+identical to each other (WeightRoomGym's `wr-gym` distribution and CLI excepted, as above). Distribution-name availability on PyPI is verified before first publish;
 the documented fallback is `aisuite-<name>` (see [Packaging Standards](../standards/packaging-and-release-standards.md)).
 
 ### 1.2 Filesystem conventions
@@ -163,7 +164,7 @@ findings. A review of writing and a review of code are different routing intents
 
 ## 2. Layering and dependency direction
 
-Four layers. Every import must point downward. **One component stands above them:** WeightRoom,
+Four layers. Every import must point downward. **One component stands above them:** WeightRoomGym,
 the host operator's console, reaches the four applications not by import but through their HTTP
 APIs, their CLIs, their configuration files, their `systemd --user` units and — read-only unless
 the [ADR-0124](../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)
@@ -180,7 +181,7 @@ graph TD
         PC[PromptCadence]
     end
     subgraph L5["Above the layers — the operator's tool (ADR-0123)"]
-        WR[WeightRoom]
+        WR[WeightRoomGym]
     end
     subgraph L3["Layer 3 — Capability packages"]
         MR[ModelRack]
@@ -239,7 +240,7 @@ MirrorWall is — it owns the Python form of a cross-application payload
 6. Within an application: `web` and `cli` may import `services`; `services` may import `domain`
    and `infrastructure`; `domain` imports neither `web` nor `infrastructure` concretions. Web and
    CLI never import each other.
-7. **WeightRoom** imports `baseaicore`, `setspec`, `weightsdb`, `mirrorwall`, `sweatmeter`,
+7. **WeightRoomGym** imports `baseaicore`, `setspec`, `weightsdb`, `mirrorwall`, `sweatmeter`,
    `modelrack` (read-only provider calls) and `loadledger[sql]`; it imports **no** application
    (rule 5 applies to it unchanged) and none of `toolyard`, `cutctx`, `commissioner` — it runs no
    tool and makes no egress decision of its own. Its reach into the applications is the
@@ -271,7 +272,7 @@ Each row states what a component owns and — as importantly — what it must ne
 | **ToolYard** | Tool declarations, the registry, argument validation, path containment, tiered isolation, egress-checked fetching, structured refusals, the call record shape | An agent loop, model access, persistence, dynamic loading of tool code, retry policy |
 | **LoadLedger** | Ceilings, debits, running balances, per-ceiling verdicts, entry history, the mountable table shapes | Pricing acquisition, currency conversion, halt/pause policy, forecasting, engine or migration ownership |
 | **Commissioner** | The egress request/decision values, the ordered classification policy, the append-only decision ledger, the payload's Python form | Enforcement, network inspection, application policy, any classification vocabulary of its own |
-| **WeightRoom** | The operator's console: the TLS edge and the login, process control through `systemd --user`, the unified log and the audit trail, settings forms over each application's schema, the docs viewer, chat through LoadCoach and PromptCadence, the guarded database viewer, the model catalog, the cost dashboard, backups, scheduled jobs, alerts, the prompt editor | Measurement, routing, content workflows, planning; any provider client for chat; tool execution; a model decision of its own; an import of any application; any table of another application's schema |
+| **WeightRoomGym** | The operator's console: the TLS edge and the login, process control through `systemd --user`, the unified log and the audit trail, settings forms over each application's schema, the docs viewer, chat through LoadCoach and PromptCadence, the guarded database viewer, the model catalog, the cost dashboard, backups, scheduled jobs, alerts, the prompt editor | Measurement, routing, content workflows, planning; any provider client for chat; tool execution; a model decision of its own; an import of any application; any table of another application's schema |
 
 ---
 
@@ -544,7 +545,7 @@ ships; against a LoadCoach that registers no remote provider they refuse with
 `loadcoach_has_no_remote_provider`, naming the unmet precondition, which is specified behaviour
 rather than a defect ([ADR-0098](../adr/0098-promptcadence-1-0-ships-with-remote-tiers-refusing-honestly.md)).
 
-### 8.2.2 The operated host (WeightRoom)
+### 8.2.2 The operated host (WeightRoomGym)
 
 ```mermaid
 graph LR
@@ -552,7 +553,7 @@ graph LR
         B["Browser on a phone or laptop"]
     end
     subgraph "Workstation"
-        WR["WeightRoom :8769 (HTTPS, own CA, login) · :8770 trust page"]
+        WR["WeightRoomGym :8769 (HTTPS, own CA, login) · :8770 trust page"]
         FW["FreeWeight :8765 (loopback)"]
         LC["LoadCoach :8766 (loopback)"]
         IP["IdeaPress :8767 (loopback)"]
@@ -567,7 +568,7 @@ graph LR
     WR -.->|status · /api/ps · polkit-gated restart| OL
 ```
 
-**WeightRoom is the only service on the LAN** ([ADR-0126](../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md)).
+**WeightRoomGym is the only service on the LAN** ([ADR-0126](../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md)).
 It terminates TLS under a certificate authority it creates, asks for a password, and operates the
 four applications — which keep §8.1's loopback posture unchanged — through the channels
 [ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) rule 2 lists.
@@ -718,7 +719,7 @@ A quick-reference list. Each has a corresponding automated or review check.
 
 1. An application importing another application. *(import-linter)*
 2. A package importing an application. *(import-linter)*
-3. Cross-application database access. *(review + spec; no connection string for another app's DB is ever constructed)* **One stated exception:** WeightRoom, the operator's tool, reads every application's database through that application's own configured URL, read-only, and writes only under [ADR-0124](../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)'s five-part guard with the never-writable tables refused by name *(import-linter for "no application import"; the guard's tests; [ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md))*.
+3. Cross-application database access. *(review + spec; no connection string for another app's DB is ever constructed)* **One stated exception:** WeightRoomGym, the operator's tool, reads every application's database through that application's own configured URL, read-only, and writes only under [ADR-0124](../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)'s five-part guard with the never-writable tables refused by name *(import-linter for "no application import"; the guard's tests; [ADR-0123](../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md))*.
 4. Business logic inside a route handler or CLI command. *(review; handler length + import checks)*
 5. Provider-specific JSON shapes above ModelRack. *(review; `raw` payloads are diagnostics only)*
 6. Prompts embedded in Python source. *(test: prompt-lint scans for multi-line prompt literals)*
@@ -746,12 +747,12 @@ A quick-reference list. Each has a corresponding automated or review check.
     adapter subject has **no** evidence, and `require_adapter_evidence` filters it with a named
     rejection. *(test; [ADR-0059](../adr/0059-adapter-evidence-is-measured-never-inherited.md), [ADR-0064](../adr/0064-adapters-are-selected-through-the-capability-vocabulary.md))*
 22. A second component reaching another application's database, configuration file or unit. The
-    exception is WeightRoom alone, by the enumerated list in ADR-0123 rule 2; a package or an
+    exception is WeightRoomGym alone, by the enumerated list in ADR-0123 rule 2; a package or an
     application that does any of it is a defect. *(review; import-linter for the import half)*
-23. Any suite service other than WeightRoom bound to a non-loopback address on the operated host,
-    and WeightRoom serving plain HTTP on its console port. *(`weightroom doctor`; startup
+23. Any suite service other than WeightRoomGym bound to a non-loopback address on the operated host,
+    and WeightRoomGym serving plain HTTP on its console port. *(`wr-gym doctor`; startup
     refusal; [ADR-0126](../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md))*
-24. A raw write from WeightRoom into another application's database outside the five-part guard,
+24. A raw write from WeightRoomGym into another application's database outside the five-part guard,
     or into a never-writable table. *(the guard's tests; [ADR-0124](../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md))*
 
 ---

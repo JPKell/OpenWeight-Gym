@@ -19,5 +19,5 @@ pip-compile --generate-hashes --extra dev --extra postgres -o requirements/ci.lo
 pip-compile --generate-hashes -o requirements/release.lock requirements/release.in
 ```
 
-They do **not** define what a consumer installs: `pip install openweight-gym` resolves the ranges in
+They do **not** define what a consumer installs: `pip install wr-gym` resolves the ranges in
 `pyproject.toml`.

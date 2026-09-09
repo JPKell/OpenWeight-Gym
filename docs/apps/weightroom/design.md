@@ -1,4 +1,4 @@
-# WeightRoom — Design brief, and the MirrorWall 0.3 system it needs
+# WeightRoomGym — Design brief, and the MirrorWall 0.3 system it needs
 
 **Source:** the operator's choice of the **dense dark console** artboard on the 2026-09-09 canvas
 (*WeightRoom Shell*, artboard *Dense dark admin console*, 1440 × 900; the light spacious sibling
@@ -8,7 +8,7 @@ can carry the generic parts and the four applications can adopt them in later ro
 (shell), §4 (components), §4.1 (status vocabulary), §7 (accessibility), §9 (theme);
 [ADR-0020](../../adr/0020-ui-rendering-strategy.md) (server-rendered, islands, SSE).
 **One page.** Numbers are the artboard's; where the artboard and `tokens.css` disagree, the
-artboard wins for WeightRoom and the delta below is what MirrorWall 0.3 adds.
+artboard wins for WeightRoomGym and the delta below is what MirrorWall 0.3 adds.
 
 ---
 
@@ -62,7 +62,7 @@ vocabulary for runs and jobs is unchanged and sits beside it.
 ## 4. Shell
 
 ```text
-┌ 48 px ─ WeightRoom ─ [● FreeWeight] [● LoadCoach] [● IdeaPress] [● PromptCadence] … Chat Docs Database Jobs ⚠1 │ JK jordan ┐
+┌ 48 px ─ WeightRoomGym ─ [● FreeWeight] [● LoadCoach] [● IdeaPress] [● PromptCadence] … Chat Docs Database Jobs ⚠1 │ JK jordan ┐
 ├ 34 px ─ GPU ▮▮▮▮▯ 61%  VRAM ▮▮▮▮▮▯ 11.2 / 16.0 GB  TEMP 63°C  POWER 148 W  RAM ▮▮▯ 9.4 / 30 GB  RESIDENT ollama/… ctx 8192  QUEUE 2 active · 0 waiting … 1 s ┤
 ├ 200 px left menu ─┬───────────────────────────────────────────────────────────────────────────────────────────────┤
 │ LOADCOACH         │ Overview  [● running · 2 h 14 m]                     [Refresh models] [Restart] [Route explain…] │
@@ -88,7 +88,7 @@ vocabulary for runs and jobs is unchanged and sits beside it.
 * **Main pane:** 20 px/24 px padding, 16 px gaps, an `h1` at 18 px/600 with the status pill and a
   right-aligned action group (ghost, ghost, primary).
 
-## 5. Components WeightRoom needs that MirrorWall 0.2.2 lacks
+## 5. Components WeightRoomGym needs that MirrorWall 0.2.2 lacks
 
 | Component | What it is | Lives in |
 |---|---|---|
@@ -99,11 +99,11 @@ vocabulary for runs and jobs is unchanged and sits beside it.
 | **Dense table** | `table` at `--mw-row-h` 32 px with the uppercase header style and mono data columns by `data-kind` | **MirrorWall 0.3** (a `density="dense"` argument on `table`) |
 | **Log pane** | a bounded, auto-scrolling, mono list fed by SSE with level colouring, pause, and a *dropped N lines* frame | **MirrorWall 0.3** — LoadCoach's and FreeWeight's run pages want the same |
 | **Left menu** | the 200 px sectioned menu with selected state and footer | **MirrorWall 0.3** (a `side_nav` macro; applications with one section use it too) |
-| **DB grid** | paginated/sortable/filterable grid with typed columns, row selection and a locked-table treatment | **WeightRoom** — the guard vocabulary is WeightRoom's |
-| **Chat thread** | messages, streamed markdown with copy, the collapsible thinking block, inline plan/step/tool/egress/approval cards | **WeightRoom** — one consumer |
-| **Markdown article** | rendered docs with a heading outline, rewritten links, mermaid mount | **WeightRoom** — one consumer |
-| **Guard dialog** | the five-condition checklist with live verdicts and the typed-name field | **WeightRoom** |
-| **Re-auth prompt** | the password re-entry modal for security actions | **WeightRoom** — until a second application needs one |
+| **DB grid** | paginated/sortable/filterable grid with typed columns, row selection and a locked-table treatment | **WeightRoomGym** — the guard vocabulary is WeightRoomGym's |
+| **Chat thread** | messages, streamed markdown with copy, the collapsible thinking block, inline plan/step/tool/egress/approval cards | **WeightRoomGym** — one consumer |
+| **Markdown article** | rendered docs with a heading outline, rewritten links, mermaid mount | **WeightRoomGym** — one consumer |
+| **Guard dialog** | the five-condition checklist with live verdicts and the typed-name field | **WeightRoomGym** |
+| **Re-auth prompt** | the password re-entry modal for security actions | **WeightRoomGym** — until a second application needs one |
 
 The rule for the split is [ADR-0011](../../adr/0011-shared-package-boundaries.md)'s: two
 consumers or a clearly generic primitive go to MirrorWall; one consumer stays here and is written
@@ -113,7 +113,7 @@ package-shaped so a move is a move.
 
 Rows after this arc: the 13 px scale and 32 px rows behind `data-density`, the status dot on their
 health pages, the meters in their telemetry bars, the log pane on run/job pages, the top-bar tab
-strip linking to WeightRoom and to each other. Nothing in MirrorWall 0.3 changes an application's
+strip linking to WeightRoomGym and to each other. Nothing in MirrorWall 0.3 changes an application's
 rendering until it opts in — the new tokens are additive and `--mw-row-h` keeps its value under a
 `data-density="comfortable"` root attribute that 0.3 sets by default for a page that does not
 declare dense.

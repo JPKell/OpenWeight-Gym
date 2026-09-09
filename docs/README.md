@@ -3,13 +3,13 @@
 **Status:** Architecture frozen 2026-08-21, audited and corrected the same day. Implementation is
 done: all fourteen components hold working software, are tagged, and are published or release-ready,
 and [the roadmap's §9](roadmap/master-roadmap.md#9-current-state-and-immediate-next-steps) is the one
-place that records where each of them stands. **A fifteenth — WeightRoom, the host operator's
+place that records where each of them stands. **A fifteenth — WeightRoomGym, the host operator's
 console — was specified on 2026-09-09** ([ADR-0123](adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
 – [0127](adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md),
 [`apps/weightroom/`](apps/weightroom/spec.md)) and is built by rows W1–W10 of
 [`roadmap/weightroom-work.md`](roadmap/weightroom-work.md).
 **Where this tree lives:** this `docs/` directory is the canonical documentation of the whole suite,
-and since row W0 it lives inside the **WeightRoom repository** (`OpenWeight-Gym`, checked out at
+and since row W0 it lives inside the **WeightRoomGym repository** (`OpenWeight-Gym`, checked out at
 `~/ai/suite/WeightRoom`); the former documentation repository *became* that repository, history
 intact. Every other repository mirrors the documents that concern it. Read the
 [final architecture audit](reviews/final_architecture_audit.md) before starting a phase: it added
@@ -47,7 +47,7 @@ PromptCadence    + CutCtx · ToolYard · LoadLedger · Commissioner
 
 ```text
 Operate AI
-WeightRoom       the host operator's console: the one LAN-facing HTTPS service, with a login,
+WeightRoomGym       the host operator's console: the one LAN-facing HTTPS service, with a login,
                  that runs, watches, configures, backs up, inspects and talks to the four
 ```
 
@@ -189,7 +189,7 @@ closing a question the code raised:
 | [Development Plan](apps/ideapress/development-plan.md) | 9 phases, standalone first, LoadCoach last |
 | [Risks](apps/ideapress/risks.md) | Risks, trade-offs, traps |
 
-### [WeightRoom](apps/weightroom/spec.md) — operate
+### [WeightRoomGym](apps/weightroom/spec.md) — operate
 
 | Document | Contents |
 |---|---|
@@ -240,7 +240,7 @@ exception and still has one: PromptCadence is its only consumer.
 | [Master Roadmap](roadmap/master-roadmap.md) | Milestones M1–M9, dependency graph, work streams, parallelism rules, integration milestones, stabilization phases, version trajectory, the professional-delivery checklist, immediate next steps |
 | [Roadmap index](roadmap/README.md) | Every work file with its status and start date — the arcs first |
 | [Outstanding Work](roadmap/outstanding-work.md) | The schedule of the two post-1.0 arcs and M9: every row in execution order, one row per model session, with its model and effort; since 2026-09-09 each new arc has its own file, indexed in its §1.2 |
-| [WeightRoom Work](roadmap/weightroom-work.md) | The WeightRoom arc: rows W0–W10, WS1–WS4 and WM, in the same master-table shape |
+| [WeightRoomGym Work](roadmap/weightroom-work.md) | The WeightRoomGym arc: rows W0–W10, WS1–WS4 and WM, in the same master-table shape |
 | [PromptCadence Arc](roadmap/promptcadence-roadmap.md) | M10–M13: the harness and its four packages — decisions D-1…D-13 (now ADRs 0045–0057), milestones, work streams, integration verifications, risks |
 | [Adapter Arc](roadmap/adapter-roadmap.md) | LA0–LA3: hot-swappable LoRA serving — decisions A-1…A-10 (now ADRs 0058–0067), checkpoints, per-component work, sequencing against the harness arc |
 | [Model Assignment Guide](roadmap/model-assignment.md) | Advisory: which model and reasoning effort to point at each phase, what makes a phase hard for a model, the first-instance rule, and where never to economize |
@@ -254,7 +254,7 @@ exception and still has one: PromptCadence is its only consumer.
 The structure follows the recommended layout, with one addition:
 
 ```text
-WeightRoom/              the WeightRoom repository (OpenWeight-Gym) — src/, tests/, pyproject.toml …
+WeightRoom/              the WeightRoomGym repository (OpenWeight-Gym) — src/, tests/, pyproject.toml …
 └── docs/                this tree: the suite's canonical documentation (moved here at row W0)
     ├── README.md            this index
     ├── architecture/        suite-level architecture and analysis

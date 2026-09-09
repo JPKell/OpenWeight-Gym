@@ -1,10 +1,10 @@
-# ADR-0126 — WeightRoom is the only service on the LAN, and it terminates TLS with its own certificate authority behind a session login
+# ADR-0126 — WeightRoomGym is the only service on the LAN, and it terminates TLS with its own certificate authority behind a session login
 
 **Status:** Accepted (2026-09-09)
 **Amends, for one component:** [ADR-0014](0014-authentication-strategy.md) — its "session cookies
 + a login page" rejection, whose stated reason was that sessions imply accounts and password
 storage "for a product whose deployment model is one user, or a few users behind a proxy that
-already knows who they are". WeightRoom **is** the proxy that knows who they are. The four
+already knows who they are". WeightRoomGym **is** the proxy that knows who they are. The four
 applications keep ADR-0014 unchanged.
 **Relates to:** [ADR-0026](0026-local-http-hardening.md) (the Host allowlist and CSRF, both
 kept; its JSON-API exemption, which cookie authentication withdraws here),
@@ -34,26 +34,26 @@ the case ADR-0014 said it was not deciding.
 
 ## Decision
 
-**WeightRoom is the only suite service bound to a non-loopback address. It serves HTTPS itself,
+**WeightRoomGym is the only suite service bound to a non-loopback address. It serves HTTPS itself,
 under a certificate authority it creates and the operator trusts once per device, and it
 authenticates a person with a username, a password and a server-side session. The four
 applications stay on loopback with their own posture untouched.**
 
-1. **Only WeightRoom leaves loopback.** `freeweight`, `loadcoach`, `ideapress` and
-   `promptcadence` keep `server.host = "127.0.0.1"`; `weightroom doctor` reports any of them
+1. **Only WeightRoomGym leaves loopback.** `freeweight`, `loadcoach`, `ideapress` and
+   `promptcadence` keep `server.host = "127.0.0.1"`; `wr-gym doctor` reports any of them
    bound elsewhere as a finding, and reports Ollama's `OLLAMA_HOST=0.0.0.0` (the reference
    machine's current override) as a *notice* — Ollama is the operator's daemon, not the suite's,
    and `LAN_ACCESS.md` recommends `127.0.0.1` unless a LAN client needs it. The Caddy design and
    `expose_on_lan.sh` are retired.
 
-2. **TLS is built in.** `weightroom setup` (or `weightroom tls init`) creates, under
-   `$XDG_CONFIG_HOME/weightroom/tls/` (directory `0700`):
-   * `ca.key` (`0600`) and `ca.crt` — an ECDSA P-256 root, `CN=WeightRoom CA <hostname>`,
+2. **TLS is built in.** `wr-gym setup` (or `wr-gym tls init`) creates, under
+   `$XDG_CONFIG_HOME/wr-gym/tls/` (directory `0700`):
+   * `ca.key` (`0600`) and `ca.crt` — an ECDSA P-256 root, `CN=WeightRoomGym CA <hostname>`,
      lifetime **10 years**, `pathlen:0`, key usage certificate signing only;
    * `server.key` (`0600`) and `server.crt` — an ECDSA P-256 leaf signed by the root, lifetime
      **398 days**, SANs: the hostname, `<hostname>.local`, every non-loopback IPv4/IPv6 address
      the host holds at issue time, `localhost`, `127.0.0.1` and `::1`.
-   `weightroom serve` renews the leaf at startup when fewer than 30 days remain or the host's
+   `wr-gym serve` renews the leaf at startup when fewer than 30 days remain or the host's
    addresses have changed, and refuses to start when the CA is missing on a non-loopback bind
    (rule 6). `uvicorn` serves HTTPS directly (`ssl_certfile`/`ssl_keyfile`); **plain HTTP on the
    console port is never served**. `cryptography` joins the dependency set for the issuing;
@@ -64,17 +64,17 @@ applications stay on loopback with their own posture untouched.**
    `LAN_ACCESS.md` §3 carried. A second, plain-HTTP listener on `server.trust_port` (default
    **8770**) serves **only** `/root.crt` and the same instructions page — no cookies, no login,
    no other route — because a phone cannot fetch the certificate over a TLS session it does not
-   yet trust; the root certificate is public by definition. `weightroom trust` prints the
+   yet trust; the root certificate is public by definition. `wr-gym trust` prints the
    fingerprint, the file path, both URLs and the steps, so the operator verifies the fingerprint
    on the device against the one on the server before trusting anything.
 
-4. **One operator account, a password, a session.** `weightroom setup` creates the account:
+4. **One operator account, a password, a session.** `wr-gym setup` creates the account:
    username, and a password hashed with the standard library's `hashlib.scrypt` (`n=2**15`,
    `r=8`, `p=1`, a 16-byte random salt, parameters stored beside the hash so they can rise).
    A password is a low-entropy secret and gets the KDF ADR-0014 said a password would need. Login
    issues a server-side session row (`sessions`: id, operator, created, last seen, expires,
    address) and the cookie `__Host-weightroom_session` — `HttpOnly`, `Secure`, `SameSite=Strict`,
-   `Path=/`; **12 hours idle, 7 days absolute**; logout deletes the row; `weightroom operator
+   `Path=/`; **12 hours idle, 7 days absolute**; logout deletes the row; `wr-gym operator
    password` resets the password from a shell and revokes every session. Login attempts are
    limited to **5 per minute per address**, the comparison is constant-time, and a failed attempt
    is logged with the address and the request ID, never the password.
@@ -96,22 +96,22 @@ applications stay on loopback with their own posture untouched.**
    loopback (ADR-0014 rule 1), and the Host check still runs.
 
 7. **No bearer tokens and no roles in 1.0.** Scripts talk to the four applications directly;
-   WeightRoom's API exists for its own pages. A second operator, an API token for automation, or
+   WeightRoomGym's API exists for its own pages. A second operator, an API token for automation, or
    a read-only viewer each want a record of their own, and the session table is shaped so that
    adding a principal is a column, not a redesign.
 
 8. **Application tokens are created anyway, and kept by reference.** While the four applications
-   bind loopback, WeightRoom needs no credential to call them. The wizard nevertheless runs
+   bind loopback, WeightRoomGym needs no credential to call them. The wizard nevertheless runs
    `loadcoach token create weightroom --scope write` and `promptcadence token create weightroom
    --scope write,approve` (approval is its own scope, [ADR-0049](0049-approval-is-a-mode-with-its-own-scope.md);
-   chat approves egress inline), writes each secret to `$XDG_CONFIG_HOME/weightroom/secrets/<app>.token`
-   (`0600`) and records `[apps.<app>] api_key_file` in WeightRoom's configuration — never the
+   chat approves egress inline), writes each secret to `$XDG_CONFIG_HOME/wr-gym/secrets/<app>.token`
+   (`0600`) and records `[apps.<app>] api_key_file` in WeightRoomGym's configuration — never the
    value ([Configuration Standards §6](../standards/configuration-standards.md)). Chat keeps
-   working the day an application is moved off loopback, and WeightRoom is the only holder of
+   working the day an application is moved off loopback, and WeightRoomGym is the only holder of
    those secrets, which is one place to revoke.
 
-9. **Rotation.** `weightroom tls renew` reissues the leaf under the same root (no re-trust);
-   `weightroom tls rotate` replaces the root and the leaf, revokes every session, and prints the
+9. **Rotation.** `wr-gym tls renew` reissues the leaf under the same root (no re-trust);
+   `wr-gym tls rotate` replaces the root and the leaf, revokes every session, and prints the
    re-trust steps — the action for a device the operator no longer controls.
 
 10. **Not the internet.** No router port is opened, the CA is not publicly trusted, and nothing
@@ -126,7 +126,7 @@ IdeaPress finally has a login in front of it, and PromptCadence's console ceilin
 ([ADR-0094](0094-the-console-authenticates-as-the-api-does.md)) is answered by the component that
 was always going to answer it.
 
-*Negative.* WeightRoom carries a password store, a session store, a certificate authority and a
+*Negative.* WeightRoomGym carries a password store, a session store, a certificate authority and a
 rate limiter — the whole subsystem ADR-0014 declined for the applications. It is built once, in
 the component whose job it is, and tested under Security Standards §14 plus the rows this record
 adds (session fixation, idle and absolute expiry, logout, the `Sec-Fetch-Site` check, the
@@ -143,8 +143,8 @@ notes a non-loopback `allowed_hosts` on a loopback bind as informational.
 
 ## Alternatives considered
 
-* **Keep Caddy and put WeightRoom behind it too.** Rejected: a second CA, a second login
-  (basic auth) in front of the real one, and a `sudo`-owned Caddyfile that WeightRoom cannot
+* **Keep Caddy and put WeightRoomGym behind it too.** Rejected: a second CA, a second login
+  (basic auth) in front of the real one, and a `sudo`-owned Caddyfile that WeightRoomGym cannot
   manage without root. The one thing on the LAN should own its own edge.
 * **Bearer tokens for the console, as the four applications do.** Rejected: a browser cannot
   attach one to a navigation, and LoadCoach's answer (a token pasted into a cookie) is a session
@@ -165,6 +165,6 @@ notes a non-loopback `allowed_hosts` on a loopback bind as informational.
   attribution.
 * **The console must be reachable from outside the LAN.** Rule 10; a public name, a public CA
   and a second factor.
-* **An application gains a browser-usable off-loopback console of its own.** The "only WeightRoom
+* **An application gains a browser-usable off-loopback console of its own.** The "only WeightRoomGym
   leaves loopback" rule and that application's ADR-0094-class decision would then contradict, and
   one of them has to give.

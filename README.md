@@ -1,9 +1,9 @@
-# WeightRoom
+# WeightRoomGym
 
 **The host operator's console for the Local AI Suite** — and the repository that holds the suite's
 canonical documentation under [`docs/`](docs/README.md).
 
-WeightRoom (`pip install openweight-gym`, CLI `weightroom`, port 8769) is the fifth application: a
+WeightRoomGym (`pip install wr-gym`, CLI `wr-gym`, import `weightroom`, port 8769) is the fifth application: a
 host operator tool that sits **above** the suite's layer rules. It is the one service exposed on the
 LAN — with its own certificate authority, HTTPS and a login — and from it an operator runs, watches,
 configures, backs up, inspects and talks to FreeWeight, LoadCoach, IdeaPress and PromptCadence,

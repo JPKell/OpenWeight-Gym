@@ -3,7 +3,7 @@ root_package = weightroom
 include_external_packages = True
 
 [importlinter:contract:layers]
-name = WeightRoom internal layering
+name = WeightRoomGym internal layering
 type = layers
 # Parenthesised = optional: the empty package has none of these yet. W1 removes the parentheses
 # as each layer appears, so a missing layer becomes a failure again once it has been written.
@@ -23,7 +23,7 @@ containers = weightroom
 # exists — the same reason as above: a contract over an absent source module is an error.
 
 [importlinter:contract:no-application-imports]
-name = WeightRoom reaches the four applications only over HTTP, their CLIs and their databases (ADR-0123 rule 3) — never by import
+name = WeightRoomGym reaches the four applications only over HTTP, their CLIs and their databases (ADR-0123 rule 3) — never by import
 type = forbidden
 source_modules = weightroom
 forbidden_modules =
@@ -33,7 +33,7 @@ forbidden_modules =
     promptcadence
 
 [importlinter:contract:no-agent-packages]
-name = WeightRoom runs no tools and compacts no transcripts of its own (ADR-0123 rule 4)
+name = WeightRoomGym runs no tools and compacts no transcripts of its own (ADR-0123 rule 4)
 type = forbidden
 source_modules = weightroom
 forbidden_modules =

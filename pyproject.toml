@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-# The distribution is `openweight-gym` because `weightroom` is taken on PyPI by an unrelated 0.0.1
-# (checked 2026-09-09); the import name and the CLI stay `weightroom` (ADR-0123, spec §1).
-name = "openweight-gym"
+# Product WeightRoomGym; distribution and CLI `wr-gym` (operator decision 2026-09-09 — `weightroom`
+# is taken on PyPI by an unrelated 0.0.1); the import name stays `weightroom` (ADR-0123, spec §1).
+name = "wr-gym"
 description = "The host operator's console for the Local AI Suite: one LAN-facing, TLS-terminated place to run, watch, configure, back up and talk to FreeWeight, LoadCoach, IdeaPress and PromptCadence."
 readme = "README.md"
 license = "Apache-2.0"
@@ -25,7 +25,7 @@ classifiers = [
 # imported by this component (ADR-0114). Suite packages are unbudgeted. The set was decided at row
 # W0 (spec §5); a row that needs a new name writes the ADR first.
 #
-# `toolyard`, `cutctx` and `commissioner` are deliberately absent: WeightRoom runs no tools, holds
+# `toolyard`, `cutctx` and `commissioner` are deliberately absent: WeightRoomGym runs no tools, holds
 # no transcript it compacts and makes no egress decision of its own — chat goes through LoadCoach
 # and PromptCadence, which do (ADR-0123 rule 4). `.importlinter` asserts the absence.
 dependencies = [
@@ -83,7 +83,7 @@ Documentation = "https://github.com/JPKell/OpenWeight-Gym/tree/main/docs"
 Changelog = "https://github.com/JPKell/OpenWeight-Gym/blob/main/CHANGELOG.md"
 
 [project.scripts]
-weightroom = "weightroom.cli.main:app"
+wr-gym = "weightroom.cli.main:app"
 
 [tool.hatch.version]
 path = "src/weightroom/__about__.py"

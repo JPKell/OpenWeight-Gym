@@ -1,6 +1,6 @@
-# WeightRoom — Data Model
+# WeightRoomGym — Data Model
 
-**Database:** `weightroom.sqlite3` (or PostgreSQL), owned exclusively by WeightRoom. One Alembic
+**Database:** `weightroom.sqlite3` (or PostgreSQL), owned exclusively by WeightRoomGym. One Alembic
 history; no package table is mounted. **Every other application's database is read, never
 owned** — the read side is §4.
 **Conventions:** [Database Standards](../../standards/database-standards.md).
@@ -157,7 +157,7 @@ never 0), `gpu_index`, `resident_json`. Retained `telemetry.history_hours`; rows
 hour are downsampled to one per minute by the sweep. Index `(at)`.
 
 ### `docs_index`
-An FTS5 virtual table: `path`, `title`, `body`, tokenised; rebuilt by `weightroom docs index`
+An FTS5 virtual table: `path`, `title`, `body`, tokenised; rebuilt by `wr-gym docs index`
 and the `docs_index` job. On PostgreSQL a `tsvector` column on a plain table with the same
 columns; the search service hides the difference.
 
@@ -177,7 +177,7 @@ Runtime-changeable rows, `key`/`value`/`updated_at`, ADR-0100's shape.
 * `jobs`: completed rows kept 90 days, then the row goes and the audit row stays.
 * `alert_history`: kept for ever.
 
-## 4. What WeightRoom reads elsewhere, and how
+## 4. What WeightRoomGym reads elsewhere, and how
 
 | Application | Read through | Tables read directly (read-only) | Writes |
 |---|---|---|---|

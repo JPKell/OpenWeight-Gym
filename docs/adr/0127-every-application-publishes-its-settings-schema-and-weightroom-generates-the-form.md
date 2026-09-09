@@ -1,4 +1,4 @@
-# ADR-0127 — Every application publishes its settings schema, and WeightRoom generates the settings form from it
+# ADR-0127 — Every application publishes its settings schema, and WeightRoomGym generates the settings form from it
 
 **Status:** Accepted (2026-09-09)
 **Amends:** each application's `config` CLI group ([FreeWeight spec §7.2](../apps/freeweight/spec.md),
@@ -26,16 +26,16 @@ and the reference all read ([ADR-0100](0100-promptcadences-runtime-changeable-se
 Everything a settings form needs already exists in each application, and none of it is reachable
 from outside the application's process.
 
-WeightRoom wants to render a settings form for each application, write the file in place with
+WeightRoomGym wants to render a settings form for each application, write the file in place with
 comments kept, use the application's own validation, and change runtime-changeable keys without a
-restart. Hard-coding the four key sets into WeightRoom would be a fifth copy of each application's
+restart. Hard-coding the four key sets into WeightRoomGym would be a fifth copy of each application's
 configuration surface, wrong the week after any of them adds a key — the precise drift the
 generated reference was built to prevent.
 
 ## Decision
 
 **Each application publishes its settings schema as a versioned JSON document from its own CLI,
-and validates a candidate file on request. WeightRoom generates its settings forms from that
+and validates a candidate file on request. WeightRoomGym generates its settings forms from that
 document and hardcodes no key.**
 
 1. **`<app> config schema --json`** prints one document, `schema_version = "1.0"`, from the
@@ -63,7 +63,7 @@ document and hardcodes no key.**
    `docs/configuration.md` is generated from. `runtime_changeable` is the registry, verbatim.
    `security_keys` is the set `PUT /settings` refuses as `403 FORBIDDEN` by name. `config_only`
    is every other non-runtime key. `sources` is `config show`'s per-leaf layer, so a value pinned
-   by the environment is reported as such and WeightRoom can mark the field *shadowed* rather
+   by the environment is reported as such and WeightRoomGym can mark the field *shadowed* rather
    than let an edit that will not take effect look like it did. An unknown key path in the
    application's own file is reported under `problems`, never dropped.
 
@@ -73,7 +73,7 @@ document and hardcodes no key.**
    verb keeps its present meaning. This is [ADR-0117](0117-provider-registrations-are-edited-in-place-in-the-config-file.md)
    rule 4's check, made callable by another process.
 
-3. **WeightRoom renders the form from the document and edits the file in place.** Field type,
+3. **WeightRoomGym renders the form from the document and edits the file in place.** Field type,
    bounds, description, default and current value come from `json_schema` and `sources`; sections
    follow the model's nesting. A key the document does not describe is shown raw, as TOML, never
    invented. A write is `tomlkit`'s round-trip (comments, order and formatting of every untouched
@@ -95,7 +95,7 @@ document and hardcodes no key.**
    happens, so a configured-but-not-running value is never mistaken for an applied one.
 
 6. **Security keys are editable, re-authenticated and audited.** ADR-0117 rule 3 kept the egress
-   boundary config-only *for a browser session on the application*; WeightRoom's session is the
+   boundary config-only *for a browser session on the application*; WeightRoomGym's session is the
    operator's, with a shell's reach ([ADR-0123](0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
    rule 2). A change to any key in `security_keys` — the bind, the exposure flag, `allow_remote`,
    the database URL, the data roots, content retention — requires the operator's password again
@@ -106,16 +106,16 @@ document and hardcodes no key.**
 
 7. **The four rows that add the verbs are WS1–WS4** in
    [`roadmap/weightroom-work.md`](../roadmap/weightroom-work.md), one per application, each with a
-   golden test of the document and a contract test that WeightRoom's form generator renders it.
+   golden test of the document and a contract test that WeightRoomGym's form generator renders it.
    The document is a SetSpec-shaped payload in spirit — versioned, additive minors — but it is
-   application-local and not a `setspec` schema: only WeightRoom reads it, and a fifth consumer is
+   application-local and not a `setspec` schema: only WeightRoomGym reads it, and a fifth consumer is
    the trigger for promotion.
 
 ## Consequences
 
-*Positive.* WeightRoom's settings forms cannot drift from the applications, because there is
-nothing in WeightRoom to drift: a key added to an application appears in the form on the next
-schema read. The applications' own validation runs on every write, so a file WeightRoom writes
+*Positive.* WeightRoomGym's settings forms cannot drift from the applications, because there is
+nothing in WeightRoomGym to drift: a key added to an application appears in the form on the next
+schema read. The applications' own validation runs on every write, so a file WeightRoomGym writes
 is a file the application would have accepted from `$EDITOR`.
 
 *Negative.* Four applications gain two CLI verbs and a document to keep stable. The document is
@@ -127,17 +127,17 @@ human display; a format change there is now a minor bump of the document.
 
 *Neutral.* PromptCadence's precedence fix ([ADR-0100](0100-promptcadences-runtime-changeable-set-is-five-tuning-numbers.md)
 decision 5) and LoadCoach's (row I8) mean both report a shadowed row the same way; the document
-carries what each application says, and WeightRoom shows it without reconciling.
+carries what each application says, and WeightRoomGym shows it without reconciling.
 
 ## Alternatives considered
 
-* **Hardcode the four key sets in WeightRoom**, from the specs. Rejected: a fifth copy that the
+* **Hardcode the four key sets in WeightRoomGym**, from the specs. Rejected: a fifth copy that the
   generated reference exists to prevent.
 * **Read each application's `docs/configuration.md`** and parse the table. Rejected: a document
   for people, generated from the model; ask the model.
 * **Import each application's `Settings` class.** The most direct source, and forbidden:
   ADR-0123 rule 3, and the reason it gives — an import binds to the version.
-* **Refuse security keys from WeightRoom as the applications do.** Rejected by rule 6's
+* **Refuse security keys from WeightRoomGym as the applications do.** Rejected by rule 6's
   reasoning: the operator would edit the file in a shell instead, unaudited, which is worse.
 
 ## Revisit when

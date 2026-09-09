@@ -1,4 +1,4 @@
-# Contributing to WeightRoom
+# Contributing to WeightRoomGym
 
 This repository is one component of the Local AI Suite — and the home of the suite's documentation:
 `docs/` here is the **canonical** tree every other repository mirrors from (see the workspace
@@ -16,7 +16,7 @@ pre-commit install
 
 ## Rules that apply to every change here
 
-* WeightRoom is a host operator tool **above** the layer rules, and that exception is exactly as
+* WeightRoomGym is a host operator tool **above** the layer rules, and that exception is exactly as
   wide as ADR-0123 says: it may read every application's database, edit every `config.toml`,
   drive `systemd --user` and call every application's HTTP API and CLI. It may **not** import an
   application (`.importlinter` asserts it), run a tool, or reach a model provider for chat.

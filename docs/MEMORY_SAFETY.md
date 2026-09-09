@@ -103,10 +103,10 @@ KV-cache quantization is a llama.cpp feature in this suite.
 `llama-server` is a child of the application that launched it (ADR-0062) and inherits its cgroup.
 Two layers now cover the parent:
 
-* **Unit-managed applications (the operator path since row W0).** WeightRoom writes the
+* **Unit-managed applications (the operator path since row W0).** WeightRoomGym writes the
   `systemd --user` units for the four applications, and the `freeweight` and `loadcoach` units
   carry the cap themselves ([ADR-0125](adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md)
-  rule 1; values from WeightRoom's `[host] memory_high` / `memory_max`, defaulting to
+  rule 1; values from WeightRoomGym's `[host] memory_high` / `memory_max`, defaulting to
   RAM − 8 GB / RAM − 6 GB):
 
   ```ini
@@ -116,8 +116,8 @@ Two layers now cover the parent:
   MemorySwapMax=0
   ```
 
-  `weightroom units sync` writes them; `weightroom doctor` reports a unit missing them. Until
-  WeightRoom's row W2 ships, write the same three lines by hand into
+  `wr-gym units sync` writes them; `wr-gym doctor` reports a unit missing them. Until
+  WeightRoomGym's row W2 ships, write the same three lines by hand into
   `~/.config/systemd/user/<app>.service` (`systemctl --user daemon-reload && systemctl --user
   restart <app>`), or use the wrapper below.
 * **Ad-hoc runs from a shell** — a one-off `freeweight run start`, `pytest -m live`, a developer
@@ -309,13 +309,13 @@ through `provider_options = { "--fit" = "on" }` / `"off"`.
 
 **Today, on the host (§2)** — `docs/scripts/apply_memory_safety.sh` does all four (`--fire` runs
 §2.3); `MEMORY_MAX_G`, `MEMORY_HIGH_G`, `CONTEXT_TOKENS` in the environment change the sizes.
-`weightroom doctor` (row W4) checks every line of §2.1 and §2.2 and prints this script's
+`wr-gym doctor` (row W4) checks every line of §2.1 and §2.2 and prints this script's
 invocation for whatever is missing; it never runs it, because §2.1 needs root:
 
 - [ ] `override.conf` rewritten as in §2.1; `daemon-reload`; `restart ollama`; `oomctl` shows the unit
 - [ ] `~/.config/freeweight/config.toml` has `runtime.context_size = 8192` (or your chosen size) —
       never unset
-- [ ] The `freeweight` and `loadcoach` units carry the three `Memory*` lines of §2.2 (WeightRoom
+- [ ] The `freeweight` and `loadcoach` units carry the three `Memory*` lines of §2.2 (WeightRoomGym
       writes them; by hand until row W2), and shell runs use the `systemd-run --user --scope` wrapper
 - [ ] The guard fired once on purpose (§2.3) and the desktop survived
 
