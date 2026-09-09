@@ -55,17 +55,21 @@ the component that declares it. Suite packages are unbudgeted; so are `dev` and 
 | ToolYard | `jsonschema`, `httpx` | 2 |
 | LoadLedger | *(none; `sqlalchemy` under the `sql` extra)* | 0 |
 | Commissioner | *(none; `sqlalchemy` under the `sql` extra)* | 0 |
-| FreeWeight | `fastapi`, `uvicorn[standard]`, `typer`, `pydantic`, `sqlalchemy`, `alembic`, `jinja2`, `httpx`, `python-multipart` | 9 |
-| LoadCoach | the same, without `python-multipart` | 8 |
-| IdeaPress | the same as FreeWeight | 9 |
-| PromptCadence | the same, without `python-multipart` | 8 |
+| FreeWeight | `fastapi`, `uvicorn[standard]`, `typer`, `pydantic`, `sqlalchemy`, `alembic`, `jinja2`, `httpx`, `python-multipart`, `tomlkit` | 10 |
+| LoadCoach | the same, without `python-multipart` | 9 |
+| IdeaPress | the same as FreeWeight, without `tomlkit` | 9 |
+| PromptCadence | the same, without `python-multipart` or `tomlkit` | 8 |
 
 Why each application name is there: `pydantic` for the wire models; `sqlalchemy` and `alembic`
 because an application owns its own migration history and a package never may
 ([ADR-0050](../adr/0050-a-package-may-ship-tables-never-a-migration-history.md)); `jinja2` for
 server-rendered HTML ([ADR-0020](../adr/0020-ui-rendering-strategy.md)); `httpx` for the CLI and the
 peer-application clients; `python-multipart` because Starlette's form parser requires it for the
-`Form(...)`/`UploadFile` routes FreeWeight and IdeaPress have and the other two do not. Three of
+`Form(...)`/`UploadFile` routes FreeWeight and IdeaPress have and the other two do not;
+`tomlkit` because FreeWeight's and LoadCoach's provider admin edits `config.toml` in place and the
+operator's comments and formatting must survive the write
+([ADR-0117](../adr/0117-provider-registrations-are-edited-in-place-in-the-config-file.md)), which
+`tomllib` cannot do — it reads only. Three of
 them (`pydantic`, `sqlalchemy`, `alembic`) are also reachable transitively through `setspec` and
 `weightsdb`; declaring what you import is required, not a breach.
 

@@ -150,6 +150,9 @@ an ADR is superseded rather than edited.
 | [0113](0113-packages-stay-0x-at-m9-and-1-0-is-earned-per-package.md) | Packages stay `0.x` at M9; a `1.0` is earned per package | Accepted |
 | [0114](0114-the-dependency-budget-is-the-enumerated-set-a-component-declares.md) | The runtime dependency budget is an enumerated set, not a count | Accepted |
 | [0115](0115-ideapress-shows-no-machine-telemetry.md) | IdeaPress shows no machine telemetry | Accepted |
+| [0116](0116-research-runs-under-toolyard-and-fetches-only-a-named-host.md) | IdeaPress's `research` stage runs under ToolYard, and fetches only a host the operator named | Accepted |
+| [0117](0117-provider-registrations-are-edited-in-place-in-the-config-file.md) | Provider registrations are edited in place in the config file | Accepted |
+| [0118](0118-a-discovered-model-can-be-disabled.md) | A discovered model can be disabled | Accepted |
 
 ## Writing a new ADR
 
