@@ -153,6 +153,9 @@ an ADR is superseded rather than edited.
 | [0116](0116-research-runs-under-toolyard-and-fetches-only-a-named-host.md) | IdeaPress's `research` stage runs under ToolYard, and fetches only a host the operator named | Accepted |
 | [0117](0117-provider-registrations-are-edited-in-place-in-the-config-file.md) | Provider registrations are edited in place in the config file | Accepted |
 | [0118](0118-a-discovered-model-can-be-disabled.md) | A discovered model can be disabled | Accepted |
+| [0119](0119-model-servers-run-under-a-host-memory-cap.md) | Model servers run under a host-memory cap | Accepted |
+| [0120](0120-kv-cache-precision-and-flash-attention-are-per-model-llamacpp-settings.md) | KV-cache precision and flash attention are per-model llama.cpp settings, and Ollama refuses them | Accepted |
+| [0121](0121-freeweight-launches-llama-server-with-fit-off-and-caps-the-max-fit-ladder.md) | FreeWeight launches llama-server with `--fit off` and caps the max-fit ladder; LoadCoach keeps `--fit on` | Accepted |
 
 ## Writing a new ADR
 
