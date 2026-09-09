@@ -156,6 +156,7 @@ an ADR is superseded rather than edited.
 | [0119](0119-model-servers-run-under-a-host-memory-cap.md) | Model servers run under a host-memory cap | Accepted |
 | [0120](0120-kv-cache-precision-and-flash-attention-are-per-model-llamacpp-settings.md) | KV-cache precision and flash attention are per-model llama.cpp settings, and Ollama refuses them | Accepted |
 | [0121](0121-freeweight-launches-llama-server-with-fit-off-and-caps-the-max-fit-ladder.md) | FreeWeight launches llama-server with `--fit off` and caps the max-fit ladder; LoadCoach keeps `--fit on` | Accepted |
+| [0122](0122-an-empty-fetch-allowlist-means-loopback-and-no-host-is-not-registering.md) | An empty `http_fetch` allowlist means loopback, deliberately; "no host at all" is not registering the tool | Accepted |
 
 ## Writing a new ADR
 
