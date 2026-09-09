@@ -1,0 +1,244 @@
+"""weightroom.web.app — the FastAPI application factory for the HTTPS console.
+
+``create_app`` is a pure function of :class:`~weightroom.config.Settings` (plus the certificate
+status the runtime established), so tests build an app without touching environment variables
+or the filesystem — the database handle is created by the lifespan, which runs only when the
+application is actually served.
+
+Middleware, outermost first (ADR-0126 rule 5, ADR-0026 §1): request ID, the Host allowlist, the
+rate limiter and login brake, the body cap, MirrorWall's double-submit CSRF on forms, the
+same-origin check on JSON writes. The session is a route dependency
+(:mod:`weightroom.web.session`) and therefore runs after all of them.
+"""
+
+from __future__ import annotations
+
+import logging
+from collections.abc import AsyncIterator, Mapping
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+from urllib.parse import quote
+
+from baseaicore import SuiteError, new_id
+from fastapi import FastAPI, Request, Response, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, RedirectResponse
+from mirrorwall import (
+    CsrfMiddleware,
+    HostValidationMiddleware,
+    RequestIdMiddleware,
+    error_body,
+    mount_static,
+)
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from weightroom.__about__ import __version__
+from weightroom.config import LOOPBACK_HOSTS, Settings, resolve_config_path
+from weightroom.services.database import Database
+from weightroom.web.csrf import render_form_page
+from weightroom.web.hosts import resolve_allowed_hosts
+from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, SameOriginMiddleware
+from weightroom.web.rendering import templates
+from weightroom.web.routes import system as system_routes
+
+if TYPE_CHECKING:
+    from weightroom.services.tls import TlsStatus
+
+__all__ = ["STATUS_BY_CODE", "create_app"]
+
+logger = logging.getLogger(__name__)
+
+STATUS_BY_CODE: dict[str, int] = {
+    "VALIDATION_ERROR": status.HTTP_400_BAD_REQUEST,
+    "UNAUTHORIZED": status.HTTP_401_UNAUTHORIZED,
+    "FORBIDDEN": status.HTTP_403_FORBIDDEN,
+    "CSRF_FAILED": status.HTTP_403_FORBIDDEN,
+    "REAUTH_REQUIRED": status.HTTP_403_FORBIDDEN,
+    "RATE_LIMITED": status.HTTP_429_TOO_MANY_REQUESTS,
+    "NOT_FOUND": status.HTTP_404_NOT_FOUND,
+    "AUDIT_NOT_FOUND": status.HTTP_404_NOT_FOUND,
+    "SETTING_CONFIG_ONLY": status.HTTP_403_FORBIDDEN,
+    "SETTING_UNKNOWN": status.HTTP_400_BAD_REQUEST,
+    "MISDIRECTED_REQUEST": 421,
+    "PAYLOAD_TOO_LARGE": status.HTTP_413_CONTENT_TOO_LARGE,
+    "CONFIGURATION_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
+    "INSECURE_BINDING": status.HTTP_500_INTERNAL_SERVER_ERROR,
+    "TLS_MISSING": status.HTTP_500_INTERNAL_SERVER_ERROR,
+    "DATABASE_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
+    "DATABASE_UNAVAILABLE": status.HTTP_503_SERVICE_UNAVAILABLE,
+    "INTERNAL_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
+}
+"""Spec §13's codes to HTTP statuses, for the ones Phase 1 raises."""
+
+_CODE_BY_HTTP_STATUS: dict[int, str] = {
+    404: "NOT_FOUND",
+    405: "METHOD_NOT_ALLOWED",
+    413: "PAYLOAD_TOO_LARGE",
+    415: "UNSUPPORTED_MEDIA_TYPE",
+    421: "MISDIRECTED_REQUEST",
+}
+
+
+def _request_id_of(request: Request) -> str:
+    state_id = getattr(request.state, "request_id", None)
+    return state_id if isinstance(state_id, str) and state_id else new_id()
+
+
+def _wants_html(request: Request) -> bool:
+    if request.url.path.startswith("/api/"):
+        return False
+    return "text/html" in request.headers.get("accept", "")
+
+
+def _error_response(
+    *,
+    request: Request,
+    code: str,
+    message: str,
+    status_code: int,
+    details: Mapping[str, Any] | None = None,
+) -> Response:
+    request_id = _request_id_of(request)
+    if _wants_html(request):
+        if status_code == status.HTTP_401_UNAUTHORIZED:
+            target = "/login?next=" + quote(request.url.path, safe="/")
+            return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+        response = render_form_page(
+            request,
+            "error.html",
+            page=None,
+            code=code,
+            message=message,
+            status_code=status_code,
+            request_id=request_id,
+            details=dict(details or {}),
+            path=request.url.path,
+        )
+        response.status_code = status_code
+        response.headers["X-Request-ID"] = request_id
+        return response
+    return JSONResponse(
+        status_code=status_code,
+        content=error_body(code=code, message=message, request_id=request_id, details=details),
+        headers={"X-Request-ID": request_id},
+    )
+
+
+def register_exception_handlers(app: FastAPI) -> None:
+    """Register the handlers that translate every exception type into the standard envelope."""
+
+    @app.exception_handler(SuiteError)
+    async def _suite_error_handler(request: Request, exc: SuiteError) -> Response:
+        status_code = STATUS_BY_CODE.get(exc.code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if status_code >= status.HTTP_500_INTERNAL_SERVER_ERROR:
+            logger.error("request.failed", extra={"code": exc.code}, exc_info=exc)
+        else:
+            logger.warning("request.rejected", extra={"code": exc.code})
+        return _error_response(
+            request=request,
+            code=exc.code,
+            message=exc.message,
+            status_code=status_code,
+            details=exc.details,
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def _validation_error_handler(request: Request, exc: RequestValidationError) -> Response:
+        fields = [
+            {
+                "path": ".".join(str(part) for part in error["loc"] if part != "body"),
+                "problem": error["msg"],
+            }
+            for error in exc.errors()
+        ]
+        return _error_response(
+            request=request,
+            code="VALIDATION_ERROR",
+            message="Request body failed validation.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details={"fields": fields},
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def _http_exception_handler(request: Request, exc: StarletteHTTPException) -> Response:
+        code = _CODE_BY_HTTP_STATUS.get(exc.status_code, "HTTP_ERROR")
+        message = exc.detail if isinstance(exc.detail, str) and exc.detail else "Request failed."
+        return _error_response(
+            request=request, code=code, message=message, status_code=exc.status_code
+        )
+
+    @app.exception_handler(Exception)
+    async def _unhandled_exception_handler(request: Request, exc: Exception) -> Response:
+        logger.error("request.unhandled_error", exc_info=exc)
+        return _error_response(
+            request=request,
+            code="INTERNAL_ERROR",
+            message="An unexpected error occurred.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Own one database handle for as long as the server serves."""
+    settings: Settings = app.state.settings
+    database_url = settings.storage.database_url
+    if database_url is None:  # pragma: no cover — StorageSettings always fills this in
+        message = "no database_url configured"
+        raise RuntimeError(message)
+    database = Database.from_url(database_url)
+    app.state.database = database
+    try:
+        yield
+    finally:
+        database.close()
+        app.state.database = None
+
+
+def create_app(
+    settings: Settings, *, tls: TlsStatus | None = None, config_path: Path | None = None
+) -> FastAPI:
+    """Build the FastAPI application for the given settings.
+
+    Args:
+        settings: The validated configuration.
+        tls: The certificate status the runtime established, for ``/health`` and ``/trust``;
+            ``None`` in tests that never serve TLS.
+        config_path: The file the settings came from.
+
+    Returns:
+        The app. Pure: opens nothing; the database handle is created by the lifespan.
+    """
+    app = FastAPI(
+        title="WeightRoomGym",
+        version=__version__,
+        docs_url="/api/v1/docs" if settings.server.host in LOOPBACK_HOSTS else None,
+        openapi_url="/api/v1/openapi.json" if settings.server.host in LOOPBACK_HOSTS else None,
+        lifespan=_lifespan,
+    )
+    app.state.settings = settings
+    app.state.tls = tls
+    app.state.config_path = config_path if config_path is not None else resolve_config_path()
+    app.state.database = None
+
+    # Starlette wraps in reverse order of these calls; the stack from the outside in is the
+    # module docstring's order.
+    app.add_middleware(SameOriginMiddleware)
+    app.add_middleware(CsrfMiddleware)
+    app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.server.max_body_bytes)
+    app.add_middleware(
+        RateLimitMiddleware,
+        per_minute=settings.server.rate_limit_per_minute,
+        burst=settings.server.rate_limit_burst,
+        login_per_minute=settings.server.failed_login_per_minute,
+    )
+    app.add_middleware(HostValidationMiddleware, allowed_hosts=resolve_allowed_hosts(settings))
+    app.add_middleware(RequestIdMiddleware)
+
+    register_exception_handlers(app)
+
+    app.include_router(system_routes.router, prefix="/api/v1")
+
+    mount_static(app, environment=templates())
+    return app

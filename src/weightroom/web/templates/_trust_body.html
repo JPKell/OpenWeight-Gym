@@ -1,0 +1,26 @@
+<h2>Trust this console's certificate authority</h2>
+<p>WeightRoomGym signs its own HTTPS certificate with a root only this machine knows. Trust the root
+<strong>once per device</strong>; do not click through a browser warning — an untrusted origin never
+stores the login cookie.</p>
+<h3>1. Verify the fingerprint</h3>
+<p>On the server, <code>wr-gym trust</code> prints this value. The device must show the same one
+before you trust anything.</p>
+<p class="mono" style="word-break: break-all"><strong>SHA-256</strong> {{ fingerprint }}</p>
+<p class="muted">{{ ca_subject }} · valid until {{ ca_not_after }} · <code>{{ ca_file }}</code></p>
+<h3>2. Download the root</h3>
+<ul>
+{% for url in root_urls %}<li><a href="{{ url }}">{{ url }}</a></li>
+{% endfor %}</ul>
+<h3>3. Install it</h3>
+{% for platform, text in steps %}
+<details{% if loop.first %} open{% endif %}>
+  <summary>{{ platform }}</summary>
+  <pre>{{ text }}</pre>
+</details>
+{% endfor %}
+<h3>4. Open the console</h3>
+<ul>
+{% for url in console_urls %}<li><a href="{{ url }}">{{ url }}</a></li>
+{% endfor %}</ul>
+<p class="muted">A padlock and the login page mean the root is trusted. The address bar must say
+<code>https</code>; the console never answers plain HTTP on its own port.</p>
