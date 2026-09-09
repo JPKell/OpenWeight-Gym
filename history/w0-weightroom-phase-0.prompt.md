@@ -1,11 +1,12 @@
 # Kickoff — W0: WeightRoom Phase 0 — the ADRs, the spec, the plan, the repo
 
-**Row:** W0 (Fable 5.1 · attended) of [`docs/roadmap/outstanding-work.md`](../roadmap/outstanding-work.md)
-§1 — the fifth application. Interview of 2026-09-09; every decision below is the operator's and is
+**Row:** W0 (Fable 5.1 · attended) — indexed from [`docs/roadmap/outstanding-work.md`](../roadmap/outstanding-work.md)
+§1 today, and the first row of `docs/roadmap/weightroom-work.md`, the arc's own file this row
+creates (§7.1) — the fifth application. Interview of 2026-09-09; every decision below is the operator's and is
 not re-opened here. Rows W1+ (agentic, unattended allowed) build what W0's plan says.
 **Ships:** no code. ADRs 0123+, `apps/weightroom/{spec,development-plan,api,data-model,risks}.md`,
 the restructured repository, updated references, a MirrorWall 0.3 design brief, and the W1+ rows
-written into `outstanding-work.md` with their kickoff prompts.
+written into `roadmap/weightroom-work.md` with their kickoff prompts.
 **Component:** the repository at `~/ai/suite/docs` (remote `JPKell/OpenWeight-Gym`), which this
 row turns into `~/ai/suite/WeightRoom` with the documentation under `WeightRoom/docs/`.
 
