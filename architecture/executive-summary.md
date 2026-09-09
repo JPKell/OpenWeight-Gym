@@ -91,7 +91,7 @@ graph TD
 
     FW --> MR & SM & SS & WD & MW & BC
     LC --> MR & SM & SS & WD & MW & BC
-    IP --> MR & SS & WD & MW & CC & LL & CM & BC
+    IP --> MR & SS & WD & MW & CC & TY & LL & CM & BC
     PC --> SS & WD & MW & CC & TY & LL & CM & BC
     MR --> BC
     SM --> BC

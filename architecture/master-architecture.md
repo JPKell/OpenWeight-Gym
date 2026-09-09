@@ -9,6 +9,10 @@ optional adapter axis on the execution subject. The amendments follow the
 [ADR-0038](../adr/0038-one-model-at-a-time-per-gpu.md) precedent: the document is frozen and is
 changed only through records that declare what they extend. Every change below is **additive**; no
 earlier decision is reversed.
+**Reconciled 2026-09-09** (row N1): §2's graph now shows IdeaPress's four harness-package
+dependencies, each declared by its own record — `cutctx`, `loadledger` and `commissioner` by the
+rows J1/J2 ADRs, `toolyard` by [ADR-0116](../adr/0116-research-runs-under-toolyard-and-fetches-only-a-named-host.md) —
+and every application's arrows match its `pyproject.toml` runtime set ([ADR-0114](../adr/0114-the-dependency-budget-is-the-enumerated-set-a-component-declares.md)).
 **Audience:** every implementation agent working on any part of the suite.
 
 This document defines the suite's structure, boundaries, dependency direction, runtime model,
@@ -178,7 +182,7 @@ graph TD
 
     FW --> MR & SM & WD & MW & SS
     LC --> MR & SM & WD & MW & SS
-    IP --> MR & WD & MW & SS
+    IP --> MR & WD & MW & SS & CC & LL & SC & TY
     PC --> WD & MW & SS & CC & TY & LL & SC
     MR --> BC
     SM --> BC
