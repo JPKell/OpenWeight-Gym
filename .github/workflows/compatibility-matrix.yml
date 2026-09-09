@@ -2,11 +2,12 @@ name: Compatibility Matrix
 
 # Packaging and release standards §7: a nightly job that installs the current release of each
 # application against the lowest and highest supported version of every suite package it declares,
-# and runs the contract and e2e suites. This lives in the docs repo -- the one repository every
-# component mirrors from, and the only one with no CI of its own competing for the schedule slot --
-# because the matrix is about the *suite's* published releases, not any one repository's source.
+# and runs the contract and e2e suites. This lives in the WeightRoom repository -- whose `docs/` is
+# the suite's canonical documentation tree, the one every component mirrors from (row W0 moved the
+# documentation repository under it) -- because the matrix is about the *suite's* published
+# releases, not any one repository's source. `docs/scripts/compatibility_matrix.py` is the script.
 #
-# Pins are derived from each application's published sdist on PyPI (scripts/compatibility_matrix.py:
+# Pins are derived from each application's published sdist on PyPI (docs/scripts/compatibility_matrix.py:
 # `pip download --no-deps --no-binary :all: <app>==<version>` then read `pyproject.toml`), never
 # from a checkout, so this tests exactly what a `pip install` hands a real consumer.
 #
@@ -42,7 +43,7 @@ jobs:
           echo "| App | Bound | Result | Detail |" >> "$GITHUB_STEP_SUMMARY"
           echo "|---|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
 
-      # scripts/compatibility_matrix.py resolves the pins from the PyPI sdist, builds a clean
+      # docs/scripts/compatibility_matrix.py resolves the pins from the PyPI sdist, builds a clean
       # venv, installs `<app>==<latest>` plus every suite package at this cell's bound, runs
       # `<app> --version`, and -- if tests/contract or tests/e2e ship in the sdist -- runs
       # `pytest -m "contract or e2e"` against the installed wheel from the extracted sdist. Today
@@ -51,7 +52,7 @@ jobs:
       # stops shipping tests/, this step's exit code still reflects install-only success, and the
       # script's report names the gap rather than passing silently.
       - name: Run compatibility cell
-        run: python scripts/compatibility_matrix.py ${{ matrix.app }} ${{ matrix.bound }}
+        run: python docs/scripts/compatibility_matrix.py ${{ matrix.app }} ${{ matrix.bound }}
 
   co-install:
     name: co-install (all four latest, no suite-package pins)

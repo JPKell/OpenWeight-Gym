@@ -1,3 +1,58 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---- Testing / coverage ----
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.hypothesis/
+
+# ---- Type checking / linting ----
+.mypy_cache/
+.ruff_cache/
+# `lint-imports` writes this on every gate run; it is a cache, never an input.
+.import_linter_cache/
+
+# ---- Virtual environments ----
+.venv/
+venv/
+
+# ---- Distribution / dependency locking ----
+# requirements/*.lock is deliberately NOT ignored: CI and release install from the locks with
+# --require-hashes (Packaging and Release Standards §4, Security Standards §11).
+
+# ---- Suite runtime state (this component's local data) ----
+# WeightRoom writes to XDG paths at runtime (Master Architecture §1.2), never inside the
+# repository. These guard against a developer pointing XDG_* at the checkout.
+.local/
+.config/
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+/data/
+/logs/
+/backups/
+
+# ---- Secrets ----
+# Per Security Standards §8: secrets are never committed. The CA and leaf keys live under
+# ~/.config/weightroom/tls/ (ADR-0126), never here.
+.env
+.env.*
+*.key
+*.pem
+*.crt
+secrets.toml
+
 # ---- Agent / editor tooling (local state, never a build input) ----
 .agents/
 .obsidian/
@@ -5,24 +60,10 @@
 .claude/settings.local.json
 .vscode/
 .idea/
-
-# ---- Tool caches ----
-.ruff_cache/
-.mypy_cache/
-.pytest_cache/
-.import_linter_cache/
-__pycache__/
-*.py[cod]
+skills-lock.json
 
 # ---- Editors / OS ----
 *.swp
 *.swo
 .DS_Store
 Thumbs.db
-
-# ---- Secrets ----
-# Per Security Standards §8: secrets are never committed.
-.env
-.env.*
-*.key
-*.pem

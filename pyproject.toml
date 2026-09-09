@@ -1,0 +1,141 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+# The distribution is `openweight-gym` because `weightroom` is taken on PyPI by an unrelated 0.0.1
+# (checked 2026-09-09); the import name and the CLI stay `weightroom` (ADR-0123, spec §1).
+name = "openweight-gym"
+description = "The host operator's console for the Local AI Suite: one LAN-facing, TLS-terminated place to run, watch, configure, back up and talk to FreeWeight, LoadCoach, IdeaPress and PromptCadence."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+dynamic = ["version"]
+authors = [{ name = "Local AI Suite contributors" }]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+# Gold Standards §1.1: the runtime set is the enumerated one below and nothing else; every name is
+# imported by this component (ADR-0114). Suite packages are unbudgeted. The set was decided at row
+# W0 (spec §5); a row that needs a new name writes the ADR first.
+#
+# `toolyard`, `cutctx` and `commissioner` are deliberately absent: WeightRoom runs no tools, holds
+# no transcript it compacts and makes no egress decision of its own — chat goes through LoadCoach
+# and PromptCadence, which do (ADR-0123 rule 4). `.importlinter` asserts the absence.
+dependencies = [
+    "baseaicore>=0.4.2,<0.5",
+    "setspec>=0.6,<0.7",
+    "weightsdb>=0.2.1,<0.3",
+    # 0.3 is the MirrorWall release the design brief (docs/apps/weightroom/design.md) asks for; the
+    # range admits 0.2.2 so the skeleton resolves today and W3 raises the floor when 0.3 publishes.
+    "mirrorwall>=0.2.2,<0.4",
+    "sweatmeter>=0.4,<0.5",
+    # Read-only provider calls only — residency (`/api/ps`) and discovery — through the suite's one
+    # provider client rather than a second Ollama client in this repository (ADR-0123 rule 5).
+    "modelrack>=0.7,<0.9",
+    # The mounted ledger tables' shapes, for reading balances out of the owning applications'
+    # databases (spec §7.9); the `[sql]` half, as PromptCadence and IdeaPress mount it.
+    "loadledger[sql]>=0.2,<0.4",
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.30,<1",
+    "pydantic>=2.9,<3",
+    "sqlalchemy>=2.0.30,<3",
+    "alembic>=1.13,<2",
+    "typer>=0.12,<1",
+    "jinja2>=3.1,<4",
+    "httpx>=0.27,<1",
+    # Form posts with files: chat attachments and the GGUF drop-in (spec §7).
+    "python-multipart>=0.0.9,<1",
+    # In-place, comment-preserving edits of every application's config.toml (ADR-0117 applied
+    # here; spec §7.4).
+    "tomlkit>=0.13,<1",
+    # The built-in certificate authority and leaf certificates (ADR-0126). The standard library
+    # can serve TLS but cannot mint an X.509 certificate.
+    "cryptography>=43,<46",
+    # Markdown rendering for the docs viewer (spec §7.5). One dependency, tables and fenced code
+    # built in; mermaid renders client-side from the fence it leaves alone.
+    "mistune>=3.0,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3,<10",
+    "pytest-cov>=5,<6",
+    "pytest-randomly>=3,<4",
+    "mypy>=1.11,<2",
+    "ruff>=0.6,<1",
+    "import-linter>=2.0,<3",
+    "respx>=0.21,<1",
+]
+postgres = [
+    "psycopg[binary]>=3.2,<4",
+]
+
+[project.urls]
+Homepage = "https://github.com/JPKell/OpenWeight-Gym"
+Documentation = "https://github.com/JPKell/OpenWeight-Gym/tree/main/docs"
+Changelog = "https://github.com/JPKell/OpenWeight-Gym/blob/main/CHANGELOG.md"
+
+[project.scripts]
+weightroom = "weightroom.cli.main:app"
+
+[tool.hatch.version]
+path = "src/weightroom/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/weightroom"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+# docs/ is the suite's canonical documentation tree, which every other repository mirrors
+# byte-identically; ruff formats fenced Python inside Markdown and would change the bytes the
+# mirrors are compared against. Workspace CLAUDE.md states this exclusion as the rule.
+extend-exclude = ["docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "T20", "DTZ", "PTH", "D1", "BLE"]
+ignore = ["D100", "D104"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "D1"]
+"src/weightroom/infrastructure/db/migrations/versions/*.py" = ["D1"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+mypy_path = "src"
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+addopts = "-m 'not live and not performance'"
+pythonpath = ["."]
+markers = [
+    "live: needs the real host — systemd units, Ollama, a GPU; never in default CI",
+    "performance: performance budget assertions, excluded by default",
+    "contract: public API/schema conformance in both directions",
+    "integration: needs a real PostgreSQL server; the db-matrix CI job selects these with -m",
+]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["weightroom"]
+branch = true
+
+[tool.coverage.paths]
+source = ["src/weightroom", "*/site-packages/weightroom"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true

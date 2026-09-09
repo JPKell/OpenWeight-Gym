@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Finish rows N1–N6 (docs/history/N*_HANDOFF.md): everything the model session was not allowed to
+# Finish rows N1–N6 (WeightRoom/docs/history/N*_HANDOFF.md): everything the model session was not allowed to
 # do — push, tag, publish, relock — in the order the dependencies force.
 #
-#   docs/scripts/finish_n_rows.sh                # run every step from the start
-#   docs/scripts/finish_n_rows.sh --from locks   # resume at a step (see STEPS below)
-#   docs/scripts/finish_n_rows.sh --host         # also apply MEMORY_SAFETY.md §2 first (sudo)
-#   docs/scripts/finish_n_rows.sh --ideapress-release 1.5.0   # also cut IdeaPress (row N2)
+#   WeightRoom/docs/scripts/finish_n_rows.sh                # run every step from the start
+#   WeightRoom/docs/scripts/finish_n_rows.sh --from locks   # resume at a step (see STEPS below)
+#   WeightRoom/docs/scripts/finish_n_rows.sh --host         # also apply MEMORY_SAFETY.md §2 first (sudo)
+#   WeightRoom/docs/scripts/finish_n_rows.sh --ideapress-release 1.5.0   # also cut IdeaPress (row N2)
 #
 # STEPS, in order:
 #   host            apply_memory_safety.sh (only with --host)
@@ -13,7 +13,7 @@
 #   locks           regenerate ci.lock in FreeWeight, LoadCoach, IdeaPress on python3.13 against
 #                   the published modelrack 0.8.0 (IdeaPress's pin widened to >=0.7,<0.9 first),
 #                   commit
-#   push-apps       push main in docs, ToolYard, FreeWeight, LoadCoach, IdeaPress, PromptCadence;
+#   push-apps       push main in WeightRoom (the docs tree), ToolYard, FreeWeight, LoadCoach, IdeaPress, PromptCadence;
 #                   wait for each CI run
 #   tag-apps        tag freeweight v1.2.0, loadcoach v1.3.0 (and IdeaPress if asked); push tags;
 #                   wait for PyPI
@@ -24,7 +24,7 @@
 # a click in GitHub Actions the script cannot make — it tells you where and keeps polling.
 set -euo pipefail
 
-SUITE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SUITE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"   # WeightRoom/docs/scripts -> the workspace
 STEPS=(host push-modelrack locks push-apps tag-apps verify)
 FROM=""; HOST=0; IDEAPRESS_VERSION=""
 while (($#)); do
@@ -109,7 +109,7 @@ LC_VERSION="$(version_of "$SUITE/LoadCoach/src/loadcoach/__about__.py")"
 # ---- host --------------------------------------------------------------------------------------
 if step_enabled host && (( HOST )); then
     say "host: MEMORY_SAFETY.md §2"
-    "$SUITE/docs/scripts/apply_memory_safety.sh"
+    "$SUITE/WeightRoom/docs/scripts/apply_memory_safety.sh"
 fi
 
 # ---- push-modelrack ----------------------------------------------------------------------------
@@ -149,7 +149,7 @@ fi
 # ---- push-apps ---------------------------------------------------------------------------------
 if step_enabled push-apps; then
     say "push-apps"
-    push_main "$SUITE/docs"
+    push_main "$SUITE/WeightRoom"
     push_main "$SUITE/py/ToolYard"
     push_main "$SUITE/PromptCadence"
     for repo in FreeWeight LoadCoach IdeaPress; do push_main "$SUITE/$repo"; done
