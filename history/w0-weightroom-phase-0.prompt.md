@@ -152,10 +152,31 @@ the schema verbs + doctor · 5. docs viewer · 6. chat (LoadCoach, then PromptCa
 collapse) · 7. DB viewer + guard · 8. model catalog + costs + backups/migrations · 9. jobs +
 alerts + prompt editor · 10. hardening, performance, docs, `1.0.0`.
 
-Then write rows **W1–W10** into `outstanding-work.md` §1 (model · effort, runs-after, work
-overview, reading list) and one kickoff prompt per row under `docs/history/w<N>-….prompt.md`,
-plus the four `config schema --json` rows and the MirrorWall 0.3 row, ordered so W4 has the
-schemas it needs.
+Then write rows **W1–W10** — plus the four `config schema --json` rows and the MirrorWall 0.3
+row, ordered so W4 has the schemas it needs — into **a new roadmap file of their own**,
+`docs/roadmap/weightroom-work.md` (§7.1), and one kickoff prompt per row under
+`docs/history/w<N>-….prompt.md`.
+
+### 7.1 One outstanding-work file per arc — a new convention, started here
+
+`outstanding-work.md` has carried every row since A1 and is now ~300 lines of mixed arcs. From
+this row on, **each arc the operator starts gets its own file**, same master-table shape:
+
+* Create `docs/roadmap/weightroom-work.md` with the same section skeleton as
+  `outstanding-work.md` (§1 master table, §2 standing preamble — link to the original's rather
+  than copying it, §3 load-bearing orderings, §4 the human/ops checklist, §5 milestone map) and
+  the columns `# | Phase → ships | Model · effort | Runs after | Work overview — and required
+  reading | Why this model`. Row W0 moves there from `outstanding-work.md` (marked done with its
+  handoff when this row finishes); W1+ are written there and nowhere else.
+* In `outstanding-work.md`: replace the W0 row with one line under a new §1.2 "Arcs with their
+  own file" — `**WeightRoom** → roadmap/weightroom-work.md (rows W0–W10; started 2026-09-09)` —
+  and add the convention sentence to its preamble: a new arc starts a new
+  `roadmap/<arc>-work.md`; `outstanding-work.md` keeps only the pre-existing rows and the index of
+  arc files.
+* `docs/roadmap/README.md` (create if absent) lists every work file with its status line and the
+  date it started, so a person opening `roadmap/` sees the arcs first.
+* Status marks, handoff links and the `docs/history/<ROW>_HANDOFF.md` rule are identical in the
+  new file; a kickoff prompt's **Row:** line names the file it lives in.
 
 ## 8. Finish line for this row
 
@@ -166,5 +187,7 @@ schemas it needs.
   `expose_on_lan.sh` deleted; `CLAUDE.md` at the workspace root updated for the new paths.
 * The repository moved, skeleton in place, `ruff`/`mypy`/`lint-imports` green on the empty
   package, CI workflow present.
+* `docs/roadmap/weightroom-work.md` exists with W0 (done) and W1+ (open); `outstanding-work.md`
+  §1.2 indexes it; `docs/roadmap/README.md` lists the arc files.
 * `docs/history/W0_HANDOFF.md`: decisions taken, the PyPI-name confirmation, the symlink, what
   the interview left open and how it was closed.
