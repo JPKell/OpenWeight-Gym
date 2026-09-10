@@ -57,7 +57,7 @@ dependencies = [
     "tomlkit>=0.13,<1",
     # The built-in certificate authority and leaf certificates (ADR-0126). The standard library
     # can serve TLS but cannot mint an X.509 certificate.
-    "cryptography>=43,<46",
+    "cryptography>=50,<51",
     # Markdown rendering for the docs viewer (spec §7.5). One dependency, tables and fenced code
     # built in; mermaid renders client-side from the fence it leaves alone.
     "mistune>=3.0,<4",

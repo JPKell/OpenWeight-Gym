@@ -5,12 +5,9 @@ on:
     branches: [main]
   pull_request:
 
-# The fourteen-repository gate, in the same job shape as every sibling. One deliberate difference
-# until row W1: the package is installed from its ranges (`pip install -e ".[dev]"`) rather than
-# from `requirements/ci.lock` with `--require-hashes`, because the lock is cut when the first
-# dependency is actually imported (W1, Packaging Standards §4). W1 switches every `pip install`
-# line below to the sibling form and adds the `db-matrix`, `contracts`, `build` and `install-check`
-# jobs the empty package cannot yet satisfy.
+# The fourteen-repository gate, in the sibling shape (Packaging and Release Standards §5). Every
+# job that installs this package does so from requirements/ci.lock with --require-hashes (row W1
+# cut the lock on 3.13), then installs the package itself without dependencies.
 
 jobs:
   format:
@@ -37,7 +34,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install -e ".[dev]"
+      - run: pip install --require-hashes -r requirements/ci.lock
+      - run: pip install . --no-deps
       - run: mypy src tests
 
   boundaries:
@@ -46,7 +44,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install -e ".[dev]"
+      - run: pip install --require-hashes -r requirements/ci.lock
+      - run: pip install . --no-deps
       - run: lint-imports
 
   tests:
@@ -58,7 +57,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "${{ matrix.python-version }}" }
-      - run: pip install -e ".[dev]"
+      - run: pip install --require-hashes -r requirements/ci.lock
+      - run: pip install . --no-deps
       - run: pytest -m "not live and not performance" --cov --cov-report=xml
 
   tests-314-early-warning:
@@ -68,18 +68,122 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.14" }
+      # Deliberately unpinned: ci.lock is resolved on 3.13, and pinning a version that has no
+      # 3.14 wheels would defeat the purpose of an early warning.
       - run: pip install -e ".[dev]"
       - run: pytest -m "not live and not performance"
 
-  security:
+  db-matrix:
+    name: tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weightsdb
+          POSTGRES_PASSWORD: weightsdb
+          POSTGRES_DB: weightsdb_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U weightsdb -d weightsdb_test" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install --require-hashes -r requirements/ci.lock
+      - run: pip install . --no-deps
+      - run: pytest -m "not live and not performance" tests/integration
+        env:
+          WEIGHTSDB_REQUIRE_POSTGRES: "1"
+          WEIGHTSDB_POSTGRES_URL: postgresql+psycopg://weightsdb:weightsdb@localhost:5432/weightsdb_test
+
+  coverage:
+    needs: [tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
+      - run: pip install --require-hashes -r requirements/ci.lock
+      - run: pip install . --no-deps
+      - run: pytest -m "not live and not performance" --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=85
+      - run: pip install diff-cover
+      - name: diff-cover
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            diff-cover coverage.xml --compare-branch=origin/main --fail-under=90
+          elif git rev-parse HEAD~1 >/dev/null 2>&1; then
+            diff-cover coverage.xml --compare-branch=HEAD~1 --fail-under=90
+          else
+            echo "No previous commit to diff against; skipping diff-cover."
+          fi
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install --require-hashes -r requirements/ci.lock
+      - run: pip install . --no-deps
+      - run: pytest -m contract
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        # gitleaks scans history; a depth-1 clone cannot resolve the pushed range's parent.
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
       - run: pip install pip-audit
+      - run: pip-audit --require-hashes -r requirements/ci.lock
       - run: pip-audit --require-hashes -r requirements/release.lock
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install --require-hashes -r requirements/ci.lock
+      - run: pip install . --no-deps
+      - run: wr-gym config reference --check
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install --require-hashes -r requirements/release.lock
+      - run: python -m build --no-isolation
+      - run: twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with: { name: dist, path: dist/ }
+
+  install-check:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist/ }
+      - run: pip install dist/*.whl
+      - run: python -c "import weightroom"
+      - run: wr-gym --version
+      - run: python -m weightroom --version
+      # ADR-0123 rule 3 and rule 4, proven on the installed wheel: no application and no
+      # agent package rides in on the base install.
+      - run: |
+          python - <<'EOF'
+          import importlib.util, sys
+          bad = [n for n in ("freeweight", "loadcoach", "ideapress", "promptcadence", "toolyard", "cutctx", "commissioner") if importlib.util.find_spec(n)]
+          sys.exit(f"forbidden packages installed: {bad}" if bad else 0)
+          EOF

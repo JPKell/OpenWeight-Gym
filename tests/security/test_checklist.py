@@ -186,13 +186,14 @@ def test_json_writes_need_same_origin_and_a_matching_origin(console: Console) ->
     assert same.status_code == 201
 
 
-# §14: /version answers without a credential while /health does not (health lands at gate D;
-# /audit stands in for the session-required side until then)
+# §14: /version answers without a credential while /health does not
 
 
-def test_version_is_open_and_the_rest_is_not(console: Console) -> None:
+def test_version_is_open_and_health_is_not(console: Console) -> None:
     assert console.client.get("/api/v1/version").status_code == 200
-    assert console.client.get("/api/v1/audit").status_code == 401
+    assert console.client.get("/api/v1/health").status_code == 401
+    console.login()
+    assert console.client.get("/api/v1/health").status_code == 200
 
 
 # spec §14's own rows: fixation, expiry, logout, Sec-Fetch-Site, the trust listener — held by

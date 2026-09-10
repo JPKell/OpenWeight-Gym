@@ -10,7 +10,7 @@ from typing import Annotated
 
 import typer
 
-__all__ = ["print_version", "serve", "version"]
+__all__ = ["health", "print_version", "serve", "version"]
 
 API_VERSION = "v1"
 SCHEMA_VERSION = "1"
@@ -118,3 +118,27 @@ def serve(
     finally:
         trust_server.should_exit = True
         trust_thread.join(timeout=5)
+
+
+def health(
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Print JSON instead of a table.")
+    ] = False,
+    config: Annotated[
+        str | None, typer.Option("--config", help="Path to a config.toml file.")
+    ] = None,
+) -> None:
+    """Report component health. Mode: local. Exit 0 (ok/degraded) or 4 (unavailable)."""
+    from weightroom.cli._backend import load_settings_or_exit
+    from weightroom.services.health import health_report
+
+    loaded = load_settings_or_exit(config)
+    report = health_report(loaded.settings, database=None, tls=None)
+    if json_output:
+        typer.echo(json.dumps(report))
+    else:
+        typer.echo(f"status: {report['status']}")
+        for component in report["components"]:
+            typer.echo(f"  {component['name']}: {component['status']} — {component['detail']}")
+    if report["status"] == "unavailable":
+        raise typer.Exit(4)

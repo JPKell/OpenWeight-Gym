@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 from typing import Annotated
@@ -85,7 +86,7 @@ def status(
         except DatabaseError as exc:
             raise fail(exc) from exc
     if json_output:
-        typer.echo(json.dumps(report.__dict__))
+        typer.echo(json.dumps(dataclasses.asdict(report)))
         return
     typer.echo(f"dialect:    {report.dialect}")
     typer.echo(

@@ -15,7 +15,7 @@ from mirrorwall import CSRF_COOKIE_NAME
 from weightroom.config import Settings, load_settings
 from weightroom.services.auth import create_operator
 from weightroom.services.database import Database, ensure_ready
-from weightroom.services.tls import HostIdentity, init_tls
+from weightroom.services.tls import HostIdentity, TlsStatus, init_tls
 from weightroom.web.app import create_app
 
 IDENTITY = HostIdentity("jordan-main", ("10.77.10.84",))
@@ -31,6 +31,7 @@ class Console:
     settings: Settings
     database: Database
     client: TestClient
+    tls: TlsStatus | None = None
     now: datetime = field(default_factory=lambda: datetime(2026, 9, 9, 12, 0, tzinfo=UTC))
 
     def advance(self, **delta: float) -> None:
@@ -88,7 +89,7 @@ def build_console(
     app = create_app(settings, tls=tls, identity=IDENTITY, config_path=file)
     # The lifespan would open its own handle; tests share this one and never enter the lifespan.
     app.state.database = database
-    console = Console(settings=settings, database=database, client=TestClient(app))
+    console = Console(settings=settings, database=database, client=TestClient(app), tls=tls)
     app.state.clock = lambda: console.now
     console.client = TestClient(app, base_url="https://localhost", follow_redirects=False)
     return console

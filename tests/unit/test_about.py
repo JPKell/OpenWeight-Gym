@@ -1,10 +1,10 @@
-"""The one test the empty package carries: its version is the one the skeleton declares."""
+"""The version the package declares is the one this row ships."""
 
 from __future__ import annotations
 
 import weightroom
 
 
-def test_version_is_the_unreleased_zero() -> None:
-    """Row W0 ships no application code; ``0.0.0`` says so until W1 starts the count."""
-    assert weightroom.__version__ == "0.0.0"
+def test_version_is_the_phase_1_release() -> None:
+    """Row W1 prepares ``0.1.0`` (unpublished)."""
+    assert weightroom.__version__ == "0.1.0"

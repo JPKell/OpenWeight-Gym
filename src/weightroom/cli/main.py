@@ -15,6 +15,7 @@ from weightroom.cli.commands import audit as audit_commands
 from weightroom.cli.commands import config as config_commands
 from weightroom.cli.commands import db as db_commands
 from weightroom.cli.commands import operator as operator_commands
+from weightroom.cli.commands import setup as setup_commands
 from weightroom.cli.commands import system as system_commands
 from weightroom.cli.commands import tls as tls_commands
 
@@ -53,7 +54,11 @@ def _root(
 app.command(name="serve", help="Start the HTTPS console (also the default with no subcommand).")(
     system_commands.serve
 )
+app.command(name="health", help="Report component health.")(system_commands.health)
 app.command(name="version", help="Print the application and API versions.")(system_commands.version)
+app.command(name="setup", help="The wizard: TLS, the operator account, the bind, the tokens.")(
+    setup_commands.setup
+)
 app.command(name="trust", help="Print the root's fingerprint, paths, URLs and trust steps.")(
     tls_commands.trust
 )

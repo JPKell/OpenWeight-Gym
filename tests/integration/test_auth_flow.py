@@ -170,3 +170,14 @@ def test_a_lan_bind_with_no_account_is_never_open(tmp_path: Path) -> None:
     console = build_console(tmp_path, account=False, host="10.77.10.84")
     response = console.client.get("/api/v1/audit", headers={"Host": "jordan-main.local"})
     assert response.status_code == 401
+
+
+def test_the_console_trust_page_and_download_need_a_session(console: Console) -> None:
+    assert console.client.get("/trust", headers={"Accept": "text/html"}).status_code == 303
+    assert console.client.get("/trust/root.crt").status_code == 401
+    console.login()
+    page = console.client.get("/trust", headers={"Accept": "text/html"})
+    assert page.status_code == 200 and "SHA-256" in page.text and "/trust/root.crt" in page.text
+    download = console.client.get("/trust/root.crt")
+    assert download.status_code == 200
+    assert download.content.startswith(b"-----BEGIN CERTIFICATE-----")
