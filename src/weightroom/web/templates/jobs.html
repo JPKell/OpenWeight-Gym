@@ -1,0 +1,119 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state %}
+{% block title %}Jobs — WeightRoom{% endblock %}
+{% block extra_head %}
+<style>
+  .schedule { padding: var(--mw-space-3, 12px) 0; border-top: 1px solid var(--mw-border); }
+  .schedule h4 { margin: 0 0 var(--mw-space-1, 4px); }
+  .schedule form { display: flex; flex-wrap: wrap; gap: var(--mw-space-2, 8px); align-items: flex-end; }
+  .schedule textarea, .enqueue textarea { min-width: min(420px, 100%); }
+</style>
+{% endblock %}
+{% block page_content %}
+{% set tones = {"completed": "success", "running": "warning", "queued": "neutral", "failed": "danger", "cancelled": "neutral"} %}
+<h2>Jobs</h2>
+<p class="muted">WeightRoomGym's own queue (spec §7.10): one worker, every job under a lease, every
+run an audit row. Schedules are five-field cron expressions in <strong>UTC</strong>; a slot missed
+while the console was down runs once when it comes back. <a href="/api/v1/jobs">JSON</a></p>
+{% if error %}<p class="notice" role="alert"><strong><code>{{ error.code }}</code></strong> {{ error.message }}</p>{% endif %}
+{% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+
+<h3>Running and queued</h3>
+{% if active %}
+<table data-density="dense">
+  <thead><tr><th scope="col">Job</th><th scope="col">Kind</th><th scope="col">State</th><th scope="col">Attempt</th><th scope="col">Queued</th><th scope="col">Started</th></tr></thead>
+  <tbody>
+  {% for job in active %}
+  <tr>
+    <th scope="row"><a href="/jobs/{{ job.id }}"><code>{{ job.id }}</code></a></th>
+    <td>{{ job.kind }}</td>
+    <td>{{ badge(job.state, tone=tones.get(job.state, "neutral")) }}{% if job.cancel_requested_at %} <span class="muted">cancel requested</span>{% endif %}</td>
+    <td>{{ job.attempt }}</td>
+    <td>{{ job.queued_at | timestamp }}</td>
+    <td>{{ (job.started_at | timestamp) if job.started_at else "—" }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">Nothing is running or queued.</p>
+{% endif %}
+
+<h3>Schedules <span class="muted">(UTC)</span></h3>
+{% for schedule in schedules %}
+<section class="schedule">
+  <h4>{{ schedule.kind }} {{ badge("enabled" if schedule.enabled else "disabled", tone="success" if schedule.enabled else "neutral") }}</h4>
+  <p class="muted">Next run {{ (schedule.next_run_at | timestamp) if schedule.next_run_at else "—" }} ·
+    last run {{ (schedule.last_run_at | timestamp) if schedule.last_run_at else "—" }}{% if schedule.last_job_id %}
+    (<a href="/jobs/{{ schedule.last_job_id }}">its job</a>){% endif %}</p>
+  {% if schedule.problem %}<p class="notice">It cannot be enabled yet: {{ schedule.problem }}</p>{% endif %}
+  {% if schedule.kind == "freeweight_suite_run" %}
+  <p class="muted">FreeWeight refuses a benchmark run whose prompt an override replaces unless
+    <code>allow_prompt_override</code> is <code>true</code>, and then records the override on the run
+    (prompt standards §6). The console passes FreeWeight's flag only when this parameter says so.</p>
+  {% elif schedule.kind == "retention_trim" %}
+  <p class="muted">Setting <code>freeweight_older_than_days</code> makes this job delete FreeWeight's
+    stored results through FreeWeight's own API, so it needs your password.</p>
+  {% endif %}
+  <form method="post" action="/jobs/schedules/{{ schedule.id }}">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <label class="field">Cron <input name="cron" value="{{ schedule.cron }}" required></label>
+    <label class="field">Parameters (JSON) <textarea name="params" rows="3" class="mono">{{ schedule.params | json_pretty }}</textarea></label>
+    <label class="field"><span><input type="checkbox" name="enabled" value="true"{% if schedule.enabled %} checked{% endif %}> Enabled</span></label>
+    {% if schedule.kind == "retention_trim" %}
+    <label class="field">Password <input type="password" name="password" autocomplete="current-password"></label>
+    {% endif %}
+    <button type="submit">Save</button>
+  </form>
+  <form method="post" action="/jobs/enqueue">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="schedule_id" value="{{ schedule.id }}">
+    {% if schedule.kind == "retention_trim" %}
+    <label class="field">Password <input type="password" name="password" autocomplete="current-password"></label>
+    {% endif %}
+    <button type="submit"{% if schedule.problem %} disabled{% endif %}>Run now</button>
+  </form>
+</section>
+{% endfor %}
+
+<h3>Queue a job</h3>
+<form method="post" action="/jobs/enqueue" class="enqueue">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <label class="field">Kind
+    <select name="kind">{% for kind in kinds %}<option value="{{ kind }}">{{ kind }}</option>{% endfor %}</select>
+  </label>
+  <label class="field">Parameters (JSON) <textarea name="params" rows="3" class="mono" placeholder='{"name": "gemma3:1b"}'></textarea></label>
+  <details>
+    <summary>Restoring WeightRoomGym's own database</summary>
+    <p class="muted"><code>self_restore</code> with <code>{"file": "…"}</code> — one of the backups listed
+      on the <a href="/backups">Backups</a> page. The console stops, restores and starts again; every row
+      written since that backup moves to a <code>pre-restore</code> file beside it (ADR-0136).</p>
+    <label class="field">Type <code>{{ confirmation }}</code> <input name="name_typed" autocomplete="off"></label>
+  </details>
+  <label class="field">Password <span class="muted">(a restore, or a trim that deletes FreeWeight results)</span>
+    <input type="password" name="password" autocomplete="current-password"></label>
+  <button type="submit">Queue</button>
+</form>
+
+<h3>History</h3>
+{% if history %}
+<table data-density="dense">
+  <thead><tr><th scope="col">Job</th><th scope="col">Kind</th><th scope="col">State</th><th scope="col">Queued</th><th scope="col">Finished</th><th scope="col">Error</th></tr></thead>
+  <tbody>
+  {% for job in history %}
+  <tr>
+    <th scope="row"><a href="/jobs/{{ job.id }}"><code>{{ job.id }}</code></a></th>
+    <td>{{ job.kind }}</td>
+    <td>{{ badge(job.state, tone=tones.get(job.state, "neutral")) }}</td>
+    <td>{{ job.queued_at | timestamp }}</td>
+    <td>{{ (job.finished_at | timestamp) if job.finished_at else "—" }}</td>
+    <td>{{ job.error or "—" }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if history_more %}<p class="muted">Older jobs: <a href="/api/v1/jobs">the API pages further back</a>.</p>{% endif %}
+{% else %}
+{{ empty_state("No job has run yet.") }}
+{% endif %}
+{% endblock %}

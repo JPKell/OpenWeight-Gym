@@ -34,9 +34,26 @@ WeightRoomGym's own database has no other page to carry them, so its buttons are
   <button type="submit" name="verb" value="backup">db backup</button>
   <button type="submit" name="verb" value="upgrade">db upgrade</button>
 </form>
-<p class="muted">Restore has no button here: this page is served from the same database a
-restore would replace out from under itself. Run <code>wr-gym db restore &lt;file&gt;
---confirm</code> from a terminal with the <code>weightroom</code> unit stopped.</p>
+{% if row.own_backups %}
+<form method="post" action="/jobs/enqueue" class="filter-bar">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <input type="hidden" name="kind" value="self_restore">
+  <label class="field">Restore from
+    <select name="params">
+      {% for one in row.own_backups %}<option value='{{ {"file": one.path | string} | tojson }}'>{{ one.path.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="field">Type <code>weightroom</code> <input name="name_typed" autocomplete="off" required></label>
+  <label class="field">Password <input type="password" name="password" autocomplete="current-password" required></label>
+  <button type="submit">Restore…</button>
+</form>
+{% endif %}
+<p class="muted">A restore of this database is a job (ADR-0136): the console stops, restores, records
+the job in the restored database and starts again, and every row written since that backup is kept
+in a <code>pre-restore</code> backup beside the others. It needs the console to run as
+<code>weightroom.service</code>; otherwise stop it and run <code>wr-gym db restore &lt;file&gt;
+--confirm</code> from a terminal.</p>
 {% else %}
 {% if row.status.ok %}
 <pre class="mono">{{ row.status.output if row.status.output is string else (row.status.output | json_pretty) }}</pre>

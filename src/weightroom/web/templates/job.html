@@ -1,0 +1,37 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge %}
+{% block title %}Job {{ job.id }} — WeightRoom{% endblock %}
+{% block extra_head %}
+<style>
+  .job-output { max-height: 60vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+{% endblock %}
+{% block page_content %}
+{% set tones = {"completed": "success", "running": "warning", "queued": "neutral", "failed": "danger", "cancelled": "neutral"} %}
+<div class="page-head">
+  <h2>{{ job.kind }} <code>{{ job.id }}</code></h2>
+  {{ badge(job.state, tone=tones.get(job.state, "neutral")) }}
+  <div class="page-actions"><a href="/jobs">All jobs</a><a href="/api/v1/jobs/{{ job.id }}">JSON</a></div>
+</div>
+<table data-density="dense">
+  <tbody>
+    <tr><th scope="row">Parameters</th><td><pre class="mono">{{ job.params | json_pretty }}</pre></td></tr>
+    <tr><th scope="row">Attempt</th><td>{{ job.attempt }}</td></tr>
+    <tr><th scope="row">Queued</th><td>{{ job.queued_at | timestamp }}</td></tr>
+    <tr><th scope="row">Started</th><td>{{ (job.started_at | timestamp) if job.started_at else "—" }}</td></tr>
+    <tr><th scope="row">Finished</th><td>{{ (job.finished_at | timestamp) if job.finished_at else "—" }}</td></tr>
+    <tr><th scope="row">Lease until</th><td>{{ (job.lease_expires_at | timestamp) if job.lease_expires_at else "—" }}</td></tr>
+    <tr><th scope="row">Schedule</th><td>{{ job.schedule_id or "—" }}</td></tr>
+    <tr><th scope="row">Error</th><td>{{ job.error or "—" }}</td></tr>
+    <tr><th scope="row">Audit row</th><td>{% if job.audit_id %}<a href="/api/v1/audit/{{ job.audit_id }}"><code>{{ job.audit_id }}</code></a>{% else %}—{% endif %}</td></tr>
+  </tbody>
+</table>
+{% if not job.finished %}
+<form method="post" action="/jobs/{{ job.id }}/cancel">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit"{% if job.cancel_requested_at %} disabled{% endif %}>{{ "Cancel requested" if job.cancel_requested_at else "Cancel" }}</button>
+</form>
+{% endif %}
+<h3>Output</h3>
+{% include "_job_output.html" %}
+{% endblock %}

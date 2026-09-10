@@ -378,7 +378,7 @@ def test_pull_worker_parses_ndjson_progress_and_finishes_ok() -> None:
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
     job = PullJob(id="job1", name="gemma3:12b", started_at=datetime.now(UTC))
-    catalog._run_pull(
+    catalog.run_pull(
         job, client=client, base_url="http://127.0.0.1:11434", free_bytes=lambda: 999_999_999_999
     )
 
@@ -398,7 +398,7 @@ def test_pull_worker_stops_and_reports_ollamas_own_error() -> None:
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
     job = PullJob(id="job2", name="nonexistent", started_at=datetime.now(UTC))
-    catalog._run_pull(
+    catalog.run_pull(
         job, client=client, base_url="http://127.0.0.1:11434", free_bytes=lambda: 999_999_999_999
     )
 

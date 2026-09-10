@@ -193,7 +193,7 @@ rule 3). Every state-changing route passes the CSRF and same-origin checks of AD
 wr-gym serve | health | doctor | version
 wr-gym setup                                   # the wizard: CA, account, units, tokens, linger
 wr-gym config show|validate|init|path|reference|schema
-wr-gym db upgrade|status|backup|restore
+wr-gym db upgrade|status|backup|restore|restore-self
 wr-gym tls init|renew|rotate|show              wr-gym trust
 wr-gym operator create|password
 wr-gym units sync|status|start|stop|restart <app>|all
@@ -331,12 +331,26 @@ by typed name. WeightRoomGym's own database gets the same four verbs.
 
 **Jobs:** a `jobs` table with `state`, `lease_expires_at`, `attempt`, worked by one thread in
 the server process ([ADR-0010](../../adr/0010-queue-implementation.md), [ADR-0029](../../adr/0029-queue-mechanics.md)
-shape: lease, heartbeat, recovery pass at startup, ageing not needed for four kinds).
-Kinds in 1.0: `freeweight_suite_run` (calls `freeweight run start … --wait`), `retention_trim`
-(each application's retention or delete verb with the configured scope), `backup` (§7.9 per
-application), `model_refresh` (each application's `models refresh`, then the catalog join). A
-schedule is a row (`cron`-style expression, next run, last run, enabled); a job's output is its
-`audit_log` row plus a captured, capped stdout/stderr.
+shape: lease, heartbeat, recovery pass at startup, ageing not needed for four kinds). The claim is
+a compare-and-set on `state = 'queued'`; the lease is renewed every `lease_seconds / 3` by a lease
+keeper thread of its own, never by the worker; recovery runs at startup and on every worker tick,
+requeuing an idempotent kind whose lease expired and failing any other as `worker_lost` (row W9).
+Kinds in 1.0: `freeweight_suite_run` (`freeweight run start --model … --suite … --json`, which
+executes the run and exits with its outcome, launched inside `systemd-run --user --scope` under
+`[host] memory_high`/`memory_max` — ADR-0119's wrapper for a run started outside FreeWeight's unit,
+refused rather than run uncapped without `systemd-run` — and followed with `freeweight run wait`
+when another process holds FreeWeight's execution slot), `retention_trim` (WeightRoomGym's own
+retention — finished jobs after 90 days, guarded-write backups after `guarded_backup_days`,
+ADR-0134 rule 3 — and FreeWeight's own deletion of results older than
+`freeweight_older_than_days` when that is set; LoadCoach and PromptCadence retain inside their own
+processes and IdeaPress keeps everything), `backup` (§7.9 per application), `model_refresh` (each
+application's `models refresh`, then the catalog join), plus `catalog_pull` and `docs_index`, and
+`self_restore` — WeightRoomGym's own database restored by a job handed to a transient unit that
+stops the console, restores, carries the job forward and starts it again
+([ADR-0136](../../adr/0136-weightroom-restores-its-own-database-through-a-job-handed-to-a-transient-unit.md)).
+A schedule is a row (a five-field `cron` expression evaluated in UTC, next run, last run,
+enabled); a slot missed while the console was down runs once, never once per missed slot. A job's
+output is its `audit_log` row plus a captured, capped stdout/stderr.
 
 **Alerts:** evaluated by the same worker every `[alerts] interval_seconds` (30): an application
 unit inactive or its `/health` not `200`; the journal since the last check matching the

@@ -35,6 +35,8 @@ __all__ = [
     "AuditLog",
     "Base",
     "Conversation",
+    "Job",
+    "JobSchedule",
     "KnownRevision",
     "Message",
     "MessageEvent",
@@ -252,6 +254,65 @@ class MessageEvent(Base):
     kind: Mapped[str] = mapped_column(String, nullable=False)
     payload: Mapped[object] = mapped_column(PortableJSON, nullable=False)
     at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+
+
+class JobSchedule(Base):
+    """A kind, its parameters and a five-field cron evaluated in UTC (spec §7.10, row W9).
+
+    ``last_job_id`` names the job the schedule last enqueued without a foreign key: ``jobs`` already
+    points here through ``schedule_id``, and a cycle of keys would give SQLite's batch migrations a
+    table order with no answer.
+    """
+
+    __tablename__ = "job_schedules"
+    __table_args__ = (Index("ix_job_schedules_enabled_next_run_at", "enabled", "next_run_at"),)
+
+    id: Mapped[str] = ulid_primary_key()
+    kind: Mapped[str] = mapped_column(String, nullable=False)
+    params: Mapped[object] = mapped_column(PortableJSON, nullable=False)
+    cron: Mapped[str] = mapped_column(String, nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    next_run_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    last_run_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    last_job_id: Mapped[str | None] = mapped_column(String(26), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+
+
+class Job(Base):
+    """One unit of queued work, claimed under a lease (ADR-0010, ADR-0029 shape; data model §2).
+
+    ``cancel_requested_at`` is the flag a cancel sets on a job already running: its executor checks
+    it and stops (ADR-0010, "cancellation is a flag the executor checks"). A queued job is cancelled
+    outright instead, in the same statement.
+    """
+
+    __tablename__ = "jobs"
+    __table_args__ = (
+        CheckConstraint(
+            "state IN ('queued', 'running', 'completed', 'failed', 'cancelled')", name="state"
+        ),
+        Index("ix_jobs_state_lease_expires_at", "state", "lease_expires_at"),
+        Index("ix_jobs_kind_queued_at", "kind", "queued_at"),
+    )
+
+    id: Mapped[str] = ulid_primary_key()
+    kind: Mapped[str] = mapped_column(String, nullable=False)
+    params: Mapped[object] = mapped_column(PortableJSON, nullable=False)
+    state: Mapped[str] = mapped_column(String, nullable=False)
+    schedule_id: Mapped[str | None] = mapped_column(
+        String(26), ForeignKey("job_schedules.id", ondelete="SET NULL"), nullable=True
+    )
+    attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    queued_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+    started_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    output: Mapped[str | None] = mapped_column(String, nullable=True)
+    error: Mapped[str | None] = mapped_column(String, nullable=True)
+    audit_id: Mapped[str | None] = mapped_column(
+        String(26), ForeignKey("audit_log.id"), nullable=True
+    )
 
 
 class Attachment(Base):

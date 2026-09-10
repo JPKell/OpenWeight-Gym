@@ -7,6 +7,29 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **The job queue** (row W9, `domain/jobs.py`, `services/jobs.py`, `services/job_kinds.py`,
+  `/jobs`, `wr-gym jobs list|show|run|cancel|schedule`, migration `0006`): WeightRoomGym's own
+  database-backed queue in ADR-0010/0029's shape. The claim is a compare-and-set on
+  `state = 'queued'` and the only writer of `attempt`; a lease keeper thread — never the worker —
+  renews every `lease_seconds / 3`; recovery runs at startup and on every tick, requeuing an
+  idempotent kind whose lease expired and failing `freeweight_suite_run`/`self_restore` as
+  `worker_lost`. A cancel stops a queued job at once and flags a running one, whose executor stops
+  (`SIGINT` to a child). Schedules are five-field cron expressions in UTC, parsed with the standard
+  library; a slot missed during downtime runs once. Five schedules are seeded disabled. Kinds:
+  `freeweight_suite_run` (`freeweight run start`, inside `systemd-run --user --scope` under the host
+  memory cap, refused without `systemd-run`), `backup`, `model_refresh`, `retention_trim` (finished
+  jobs after 90 days; guarded-write backups after `guarded_backup_days`, which is ADR-0134 rule 3's
+  expiry, first implemented here; FreeWeight's own deletion only when `freeweight_older_than_days`
+  is set, re-authenticated), `docs_index`, `catalog_pull` — the pull W8 ran in a daemon thread is now
+  a queued job, its live progress still streamed — and `self_restore`. Each execution is one
+  `job.run` audit row, pending then completed, with its output captured to a capped tail and polled
+  live on the job's page.
+- **WeightRoomGym restores its own database from the console** (ADR-0136, `services/self_restore.py`,
+  `wr-gym db restore-self`): a `self_restore` job, re-authenticated and typed, hands itself to a
+  transient `systemd --user` unit that stops the console, takes a `pre-restore` backup, restores,
+  migrates, carries the job and its audit row into the restored database and starts the console
+  again — putting the database back if the restore fails. The Backups page offers it for
+  WeightRoomGym's own backups; a console not running as `weightroom.service` is refused by name.
 - **The model catalog** (row W8, `services/catalog.py`, `/catalog`): FreeWeight's and LoadCoach's
   models joined by canonical identity — the only two applications with a models table at all —
   with per-application enabled state (ADR-0118), evidence freshness (always FreeWeight's own),

@@ -559,6 +559,49 @@ def _catalog_dropin_form(console: Console) -> Any:  # noqa: ANN401
         return console.post_form("/catalog/dropin-form", {"path": str(source)})
 
 
+def _queued_job(console: Console) -> str:
+    """A queued job made without a route, so the exercise's own row is the only one counted."""
+    from weightroom.services.jobs import enqueue
+
+    return enqueue(console.database, kind="docs_index", params={}, now=console.now).id
+
+
+def _schedule_id(console: Console) -> str:
+    from weightroom.services.jobs import list_schedules
+
+    return next(one.id for one in list_schedules(console.database) if one.kind == "docs_index")
+
+
+def _jobs_enqueue_json(console: Console) -> Any:  # noqa: ANN401
+    return console.client.post("/api/v1/jobs", json={"kind": "docs_index"}, headers=JSON_HEADERS)
+
+
+def _jobs_cancel_json(console: Console) -> Any:  # noqa: ANN401
+    return console.client.post(f"/api/v1/jobs/{_queued_job(console)}/cancel", headers=JSON_HEADERS)
+
+
+def _jobs_schedule_json(console: Console) -> Any:  # noqa: ANN401
+    return console.client.put(
+        f"/api/v1/jobs/schedules/{_schedule_id(console)}",
+        json={"cron": "0 6 * * *"},
+        headers=JSON_HEADERS,
+    )
+
+
+def _jobs_enqueue_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/jobs/enqueue", {"kind": "docs_index", "params": "{}"})
+
+
+def _jobs_cancel_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form(f"/jobs/{_queued_job(console)}/cancel", {})
+
+
+def _jobs_schedule_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form(
+        f"/jobs/schedules/{_schedule_id(console)}", {"cron": "0 6 * * *", "params": "{}"}
+    )
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -615,6 +658,12 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/api/v1/db/backup"): _self_db_backup,
     ("POST", "/api/v1/db/upgrade"): _self_db_upgrade,
     ("POST", "/backups/self"): _self_backups_form,
+    ("POST", "/api/v1/jobs"): _jobs_enqueue_json,
+    ("POST", "/api/v1/jobs/{job_id}/cancel"): _jobs_cancel_json,
+    ("PUT", "/api/v1/jobs/schedules/{schedule_id}"): _jobs_schedule_json,
+    ("POST", "/jobs/enqueue"): _jobs_enqueue_form,
+    ("POST", "/jobs/{job_id}/cancel"): _jobs_cancel_form,
+    ("POST", "/jobs/schedules/{schedule_id}"): _jobs_schedule_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 

@@ -41,6 +41,7 @@ from weightroom.services.catalog import PullRegistry
 from weightroom.services.chat import ChatRunner, recover_interrupted
 from weightroom.services.database import Database
 from weightroom.services.db_reader import DatabaseUrlCache
+from weightroom.services.jobs import JobServices, JobWorker
 from weightroom.services.journal import JournalReader
 from weightroom.services.ollama import ollama_client
 from weightroom.services.processes import SubprocessSystemdController
@@ -59,6 +60,7 @@ from weightroom.web.routes import costs as costs_routes
 from weightroom.web.routes import databases as databases_routes
 from weightroom.web.routes import docs as docs_routes
 from weightroom.web.routes import doctor as doctor_routes
+from weightroom.web.routes import jobs as jobs_routes
 from weightroom.web.routes import ollama as ollama_routes
 from weightroom.web.routes import session as session_routes
 from weightroom.web.routes import settings as settings_routes
@@ -137,6 +139,9 @@ STATUS_BY_CODE: dict[str, int] = {
     "DOCS_ROOT_MISSING": status.HTTP_500_INTERNAL_SERVER_ERROR,
     # 404: the requested or linked document does not resolve to a file this viewer will serve.
     "DOCS_PAGE_OUTSIDE_ROOT": status.HTTP_404_NOT_FOUND,
+    # 404: no job or schedule by that id; 409: the job is fine and has already finished (api.md §7).
+    "JOB_NOT_FOUND": status.HTTP_404_NOT_FOUND,
+    "JOB_INVALID_STATE": status.HTTP_409_CONFLICT,
 }
 """Spec §13's codes to HTTP statuses, for the ones Phases 1 through 5 raise."""
 
@@ -270,9 +275,24 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         app_client=app.state.http,
     )
     app.state.telemetry.start()
+    # The queue's worker and lease keeper (spec §7.10): started after its own recovery pass.
+    app.state.jobs = JobWorker(
+        database,
+        settings,
+        JobServices(
+            controller=app.state.controller,
+            http=app.state.http,
+            pulls=app.state.catalog_pulls,
+            urls=app.state.database_urls,
+            ollama_http=app.state.ollama_http,
+            config_path=app.state.config_path,
+        ),
+    )
+    app.state.jobs.start()
     try:
         yield
     finally:
+        app.state.jobs.stop()
         app.state.telemetry.stop()
         app.state.chat.shutdown()
         database.close()
@@ -325,9 +345,10 @@ def create_app(
     # the data root with generated names (spec §14). Both overridable, so a test never writes to
     # the operator's home.
     app.state.chat = ChatRunner()
-    # A pull's progress lives only here, in this process, for its own lifetime (row W8; W9 hosts
-    # it as a real job). One registry, shared by every request.
+    # The live progress of the pulls this process executes as `catalog_pull` jobs (row W9); the
+    # job row is the durable answer. The worker is built by the lifespan, which tests never enter.
     app.state.catalog_pulls = PullRegistry()
+    app.state.jobs = None
     app.state.attachments_root = data_dir() / "attachments"
     # One schema document per application, re-read every 60 s (api.md §2). Each read launches
     # `<app> config schema --json`, so without it every element of a settings page would.
@@ -371,6 +392,7 @@ def create_app(
     app.include_router(catalog_routes.router, prefix="/api/v1")
     app.include_router(costs_routes.router, prefix="/api/v1")
     app.include_router(backups_routes.router, prefix="/api/v1")
+    app.include_router(jobs_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
@@ -387,6 +409,7 @@ def create_app(
     app.include_router(catalog_routes.ui_router)
     app.include_router(costs_routes.ui_router)
     app.include_router(backups_routes.ui_router)
+    app.include_router(jobs_routes.ui_router)
 
     mount_static(app, environment=templates(), extra_dirs={"/app-static": APP_STATIC_DIR})
     return app

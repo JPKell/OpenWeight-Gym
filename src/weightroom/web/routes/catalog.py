@@ -32,8 +32,6 @@ from weightroom.services.catalog import (
     CatalogEntry,
     CatalogRefused,
     DropinResult,
-    PullJob,
-    PullRegistry,
     catalog_delete_confirm,
     catalog_delete_preview,
     catalog_entries,
@@ -42,6 +40,7 @@ from weightroom.services.catalog import (
     perform_dropin_stream,
     set_enabled,
 )
+from weightroom.services.jobs import JobNotFound, JobView, enqueue, get_job
 from weightroom.web.routes.apps import render_shell_page
 from weightroom.web.session import CurrentOperator, now_of, reauthenticated
 
@@ -127,42 +126,65 @@ def get_catalog(request: Request, principal: CurrentOperator) -> JSONResponse:
     "/catalog/pull", status_code=status.HTTP_202_ACCEPTED, summary="Pull a model through Ollama"
 )
 def post_pull(request: Request, principal: CurrentOperator, body: PullBody) -> JSONResponse:
-    """Starts in a thread (module docstring); the job id opens ``…/pull/{id}/stream``."""
+    """Queues a ``catalog_pull`` job (row W9); its id opens ``…/pull/{id}/stream``."""
     job = _start_pull(request, principal, body.name)
-    return JSONResponse(content={"job_id": job.id, "name": job.name}, status_code=202)
+    return JSONResponse(content={"job_id": job.id, "name": body.name}, status_code=202)
 
 
-def _start_pull(request: Request, principal: Principal, name: str) -> PullJob:
-    """Starting a pull never fails here — Ollama's own answer arrives in the stream — so this
-    always audits ``ok``."""
+def _start_pull(request: Request, principal: Principal, name: str) -> JobView:
+    """Queue the pull as a job. A name the job refuses is a refusal here, audited as one; Ollama's
+    own answer arrives later, in the stream and on the job."""
     state = request.app.state
-    catalog_pulls: PullRegistry = state.catalog_pulls
-    job = catalog_pulls.start(
-        name, client=state.ollama_http, base_url=state.settings.host.ollama_base_url
-    )
+    try:
+        job = enqueue(
+            state.database, kind="catalog_pull", params={"name": name}, now=now_of(request)
+        )
+    except SuiteError as exc:
+        _audit(request, principal, "catalog.pull", name, outcome="refused", message=exc.message)
+        raise
     _audit(request, principal, "catalog.pull", name, params={"job_id": job.id})
+    worker = getattr(state, "jobs", None)
+    if worker is not None:
+        worker.wake()
     return job
 
 
 async def _pull_frames(request: Request, job_id: str, *, after: int) -> Any:
+    """The pull's live progress while this process executes it; the job row's answer otherwise —
+    ``queued`` until the worker takes it, and ``done`` once it has finished."""
     import asyncio
 
     from weightroom.services.chat import heartbeat_frame, sse_frame
 
-    job = request.app.state.catalog_pulls.get(job_id)
-    if job is None:
-        yield sse_frame(after + 1, "error", {"message": f"no pull job {job_id} in this process"})
-        return
+    state = request.app.state
     last = after
     next_heartbeat = time.monotonic() + _HEARTBEAT_SECONDS
+    announced = False
     while not await request.is_disconnected():
-        events = job.events_after(last)
+        pull = state.catalog_pulls.get(job_id)
+        events = pull.events_after(last) if pull is not None else []
+        if pull is None:
+            try:
+                job = get_job(state.database, job_id)
+            except JobNotFound:
+                job = None
+            if job is None or job.kind != "catalog_pull":
+                yield sse_frame(after + 1, "error", {"message": f"no pull job {job_id}"})
+                return
+            if job.finished:
+                yield sse_frame(
+                    last + 1, "done", {"ok": job.state == "completed", "error": job.error}
+                )
+                return
+            if not announced:
+                yield sse_frame(last, "queued", {"state": job.state})
+                announced = True
         for event in events:
             yield sse_frame(event.id, "pull", event.as_json())
             last = event.id
             next_heartbeat = time.monotonic() + _HEARTBEAT_SECONDS
-        if job.finished and last >= len(job.events):
-            yield sse_frame(last + 1, "done", {"ok": job.ok})
+        if pull is not None and pull.finished and last >= len(pull.events):
+            yield sse_frame(last + 1, "done", {"ok": pull.ok})
             return
         if not events:
             if time.monotonic() >= next_heartbeat:
@@ -364,8 +386,11 @@ def enable_from_page(
 def pull_from_page(
     request: Request, principal: CurrentOperator, name: Annotated[str, Form()]
 ) -> HTMLResponse:
-    job = _start_pull(request, principal, name)
-    return _page(request, principal, pull_job=job)
+    try:
+        job = _start_pull(request, principal, name)
+    except SuiteError as exc:
+        return _page(request, principal, catalog_error=exc)
+    return _page(request, principal, pull_job={"id": job.id, "name": name})
 
 
 @ui_router.post("/catalog/dropin-form", summary="Drop a GGUF file in from the page")

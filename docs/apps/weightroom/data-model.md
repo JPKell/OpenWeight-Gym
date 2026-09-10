@@ -60,7 +60,7 @@ Index `(expires_at)`.
 | `actor` | text | `operator` \| `job` \| `alerts` \| `cli` |
 | `at` | timestamp | |
 | `app` | text, null | `freeweight` … \| `weightroom` \| `ollama` \| `host` |
-| `action` | text | `unit.start`, `settings.write`, `db.guarded_write`, `db.dry_run`, `db.query`, `db.curated`, `catalog.pull`, `prompt.override`, `job.run`, `alert.ack`, `login`, `logout`, `tls.rotate`, … a closed vocabulary asserted by test |
+| `action` | text | `unit.start`, `settings.write`, `db.guarded_write`, `db.dry_run`, `db.query`, `db.curated`, `catalog.pull`, `prompt.override`, `job.run`, `job.enqueue`, `job.cancel`, `job.schedule`, `alert.ack`, `login`, `logout`, `tls.rotate`, … a closed vocabulary asserted by test |
 | `target` | text, null | the unit, key list, table, model ref, prompt id, job id |
 | `params` | json | redacted: tokens, passwords and URL credentials replaced before the row is written |
 | `outcome` | text | `pending` \| `ok` \| `failed` \| `refused` |
@@ -118,12 +118,13 @@ completion into `messages.text`/`thinking` and the delta rows dropped; the struc
 | Column | Type | Notes |
 |---|---|---|
 | `id` | ULID pk | |
-| `kind` | text | `freeweight_suite_run` \| `retention_trim` \| `backup` \| `model_refresh` \| `catalog_pull` \| `docs_index` |
-| `params` | json | |
-| `state` | text | `queued` \| `running` \| `completed` \| `failed` \| `cancelled` |
-| `schedule_id` | fk, null | |
-| `attempt` | int | |
-| `lease_expires_at` | timestamp, null | [ADR-0029](../../adr/0029-queue-mechanics.md) shape; the worker heartbeats every `lease_seconds / 3` |
+| `kind` | text | `freeweight_suite_run` \| `retention_trim` \| `backup` \| `model_refresh` \| `catalog_pull` \| `docs_index` \| `self_restore` ([ADR-0136](../../adr/0136-weightroom-restores-its-own-database-through-a-job-handed-to-a-transient-unit.md)) |
+| `params` | json | validated per kind, defaults filled in (`domain/jobs.validate_params`) |
+| `state` | text | `queued` \| `running` \| `completed` \| `failed` \| `cancelled` — a check constraint |
+| `schedule_id` | fk, null | `ON DELETE SET NULL` |
+| `attempt` | int | incremented by the claim, its only writer (no in-lease retry here, so ADR-0029 §2's collision cannot arise) |
+| `lease_expires_at` | timestamp, null | [ADR-0029](../../adr/0029-queue-mechanics.md) shape; a lease keeper thread — never the worker — renews it every `lease_seconds / 3` |
+| `cancel_requested_at` | timestamp, null | the flag a cancel sets on a running job; its executor stops on it (row W9). A queued job is cancelled outright |
 | `queued_at`, `started_at`, `finished_at` | timestamp | |
 | `output` | text, null | captured stdout/stderr, capped at `jobs.output_cap_bytes` |
 | `error` | text, null | |
@@ -132,8 +133,13 @@ completion into `messages.text`/`thinking` and the delta rows dropped; the struc
 Indexes `(state, lease_expires_at)`, `(kind, queued_at)`.
 
 ### `job_schedules`
-`id`, `kind`, `params` json, `cron` (five-field), `enabled`, `next_run_at`, `last_run_at`,
-`last_job_id`, `created_at`. The four shipped schedules are seeded disabled by the wizard.
+`id`, `kind`, `params` json, `cron` (five-field, evaluated in UTC), `enabled`, `next_run_at`,
+`last_run_at`, `last_job_id` (no foreign key — `jobs.schedule_id` already points here), `created_at`.
+Index `(enabled, next_run_at)`. Five schedules — `backup`, `retention_trim`, `model_refresh`,
+`freeweight_suite_run` (with no model, so it cannot be enabled until one is set) and `docs_index` —
+are seeded **disabled by migration `0006`**, not by the wizard, so an installation set up before
+row W9 has them too. A due schedule fires once however many slots it missed; disabling clears
+`next_run_at`, so a re-enabled schedule does not catch up on the time it was off.
 
 ### `alerts`
 | Column | Type | Notes |

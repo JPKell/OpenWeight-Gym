@@ -158,3 +158,40 @@ def restore(
         except DatabaseError as exc:
             raise fail(exc) from exc
     typer.echo(f"restored from {result.source}")
+
+
+@app.command("restore-self")
+def restore_self(
+    receipt: Annotated[
+        str, typer.Option("--receipt", help="The receipt a self_restore job wrote.")
+    ],
+    config: Annotated[
+        str | None, typer.Option("--config", help="Path to a config.toml file.")
+    ] = None,
+) -> None:
+    """Stop the console, restore its database from a job's receipt, start it again (ADR-0136).
+
+    Started by the transient unit a ``self_restore`` job launches, not by hand: it stops
+    ``weightroom.service``, backs the live database up as ``pre-restore-<job>``, restores the
+    receipt's file, migrates it, records the job in the restored database and starts the unit.
+    Exit 5 when the restore failed and the database was put back.
+
+    Example:
+        wr-gym db restore-self --receipt ~/.local/share/wr-gym/restores/01M….json
+    """
+    from weightroom.cli._backend import fail, load_settings_or_exit
+    from weightroom.services.processes import SubprocessSystemdController
+    from weightroom.services.self_restore import SelfRestoreRefused, perform
+
+    loaded = load_settings_or_exit(config)
+    try:
+        report = perform(
+            Path(receipt), settings=loaded.settings, controller=SubprocessSystemdController()
+        )
+    except SelfRestoreRefused as exc:
+        raise fail(exc, exit_code=2) from exc
+    typer.echo(report.message)
+    if not report.started:
+        typer.echo("Error: weightroom.service did not start again.", err=True)
+    if not report.ok:
+        raise typer.Exit(5)

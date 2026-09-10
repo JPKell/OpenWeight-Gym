@@ -16,12 +16,14 @@ knows and LoadCoach has never routed to) does an Ollama-kind row fall back to a 
 ``/api/ps``-style check through :func:`~weightroom.services.ollama.resident_models`, which is
 ModelRack's own client, never a second one (ADR-0125 rule 4's reasoning, applied here too).
 
-**The pull job is deliberately not durable.** ADR-0010's queue is row W9's; until it exists, a pull
-is a plain daemon thread and its progress a list held in memory (:class:`PullRegistry`), lost on a
-restart and unreachable from a second console process — exactly what the kickoff's "run in a
-thread until W9 hosts it" asks for, no more. Ollama's own HTTP API (``/api/pull``, streamed
-newline-delimited JSON) is used directly: pulling a model is not in ModelRack's scope (its spec's
-explicit non-goal list), so there is no client to reuse here as there is for residency.
+**A pull is a ``catalog_pull`` job** (row W9, ``services/job_kinds.py``): queued, leased, audited
+and recovered like every other job, its outcome and a summary of its progress on the job's row.
+The byte-by-byte progress an open Catalog page watches is held in memory (:class:`PullRegistry`),
+keyed by the job's id, for the life of the process executing it — progress lines at Ollama's rate
+do not belong in the database, and the job row answers once the process is gone. Ollama's own HTTP
+API (``/api/pull``, streamed newline-delimited JSON) is used directly: pulling a model is not in
+ModelRack's scope (its spec's explicit non-goal list), so there is no client to reuse here as there
+is for residency.
 """
 
 from __future__ import annotations
@@ -34,7 +36,6 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final
-from uuid import uuid4
 
 import httpx
 from baseaicore import SuiteError
@@ -839,12 +840,13 @@ def _home_free_bytes() -> int:
     return shutil.disk_usage(Path.home()).free
 
 
-def _run_pull(
+def run_pull(
     job: PullJob,
     *,
     client: httpx.Client,
     base_url: str,
     free_bytes: Callable[[], int] = _home_free_bytes,
+    cancelled: Callable[[], bool] = lambda: False,
 ) -> None:
     try:
         free = free_bytes()
@@ -862,6 +864,10 @@ def _run_pull(
         ) as response:
             response.raise_for_status()
             for line in response.iter_lines():
+                if cancelled():
+                    job._append("cancelled", error="cancelled by the operator")  # noqa: SLF001
+                    job._finish(ok=False)  # noqa: SLF001
+                    return
                 if not line:
                     continue
                 try:
@@ -892,33 +898,21 @@ def _run_pull(
 
 
 class PullRegistry:
-    """Every pull this process has started, since it started. Not persisted (module docstring)."""
+    """The live progress of every pull this process has executed, keyed by the job's id.
+
+    Not persisted (module docstring): the ``catalog_pull`` job's row is the durable record.
+    """
 
     def __init__(self) -> None:
         """An empty registry — one lives on ``app.state`` for the process's lifetime."""
         self._jobs: dict[str, PullJob] = {}
         self._lock = threading.Lock()
 
-    def start(
-        self,
-        name: str,
-        *,
-        client: httpx.Client,
-        base_url: str,
-        free_bytes: Callable[[], int] = _home_free_bytes,
-    ) -> PullJob:
-        """Start a pull of ``name`` in a daemon thread and return its job at once."""
-        job = PullJob(id=str(uuid4()), name=name, started_at=datetime.now(UTC))
+    def adopt(self, job_id: str, name: str) -> PullJob:
+        """Register the progress holder for the ``catalog_pull`` job ``job_id`` and return it."""
+        job = PullJob(id=job_id, name=name, started_at=datetime.now(UTC))
         with self._lock:
             self._jobs[job.id] = job
-        thread = threading.Thread(
-            target=_run_pull,
-            args=(job,),
-            kwargs={"client": client, "base_url": base_url, "free_bytes": free_bytes},
-            name=f"wr-gym-pull-{job.id[:8]}",
-            daemon=True,
-        )
-        thread.start()
         return job
 
     def get(self, job_id: str) -> PullJob | None:

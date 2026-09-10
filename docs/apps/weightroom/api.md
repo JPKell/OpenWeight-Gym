@@ -72,7 +72,7 @@ value is `404 APP_UNKNOWN`.
 | `GET /ollama/ps` | `/api/ps` through ModelRack |
 | `POST /ollama/restart` | `systemctl restart ollama.service` when permitted; otherwise `OLLAMA_RESTART_NOT_PERMITTED` with `command` and the rule text ([ADR-0125](../../adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md) rule 5) |
 | `GET /catalog` | Models across applications joined by canonical identity; per row `apps: {name: {enabled, evidence, resident}}` |
-| `POST /catalog/pull` | `{"name": "gemma4:12b-it-q8_0"}` → a job id; `GET /catalog/pull/{id}/stream` is its progress |
+| `POST /catalog/pull` | `{"name": "gemma4:12b-it-q8_0"}` → the id of a queued `catalog_pull` job (row W9); `GET /catalog/pull/{id}/stream` is its live progress while this process executes it, `queued` before, and the job's own `done` after |
 | `POST /catalog/dropin` | Multipart upload or `{"path": …}` on the host; validated GGUF; copied into the model directory; each llama.cpp-configured application's `models refresh` is run |
 | `POST /catalog/{ref}/enabled` | `{"app": …, "enabled": false}` → that application's `POST /models/{ref}/enabled` |
 | `DELETE /catalog/{ref}` | `{"preview": true}` first (what would be removed where), then `{"confirm": "<ref typed>"}` |
@@ -93,8 +93,8 @@ value is `404 APP_UNKNOWN`.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /jobs` · `POST /jobs` · `GET /jobs/{id}` · `POST /jobs/{id}/cancel` | The queue; `POST` takes `{"kind": "freeweight_suite_run"|"retention_trim"|"backup"|"model_refresh", "params": {…}}`; `JOB_INVALID_STATE` on cancelling a finished job |
-| `GET /jobs/schedules` · `PUT /jobs/schedules/{id}` | Cron-style schedules per kind, with `next_run_at`, `last_run_at`, `enabled` |
+| `GET /jobs` · `POST /jobs` · `GET /jobs/{id}` · `POST /jobs/{id}/cancel` | The queue, newest first, filtered by `state` and `kind`. `POST` takes `{"kind", "params"}` — `freeweight_suite_run` (`model`, `suite`, `allow_prompt_override`), `retention_trim` (`guarded_backup_days`, `freeweight_older_than_days`), `backup` (`apps`), `model_refresh` (`apps`), `catalog_pull` (`name`), `docs_index`, `self_restore` (`file`, plus `"name_typed": "weightroom"`) — or `{"schedule_id"}` to run a schedule now; `202` with the job. `self_restore`, and a `retention_trim` that sets `freeweight_older_than_days`, need a fresh `POST /reauth` (ADR-0136, ADR-0134 rule 2). A job carries its captured `output` (the tail, capped at `jobs.output_cap_bytes`), `error`, `attempt`, `lease_expires_at`, `cancel_requested_at` and `audit_id`. Cancelling a queued job cancels it; a running one gets `cancel_requested_at` and stops; a finished one is `409 JOB_INVALID_STATE`; an unknown id is `404 JOB_NOT_FOUND` |
+| `GET /jobs/schedules` · `PUT /jobs/schedules/{id}` | `{"timezone": "UTC", "schedules": […]}`, each with `cron`, `params`, `enabled`, `next_run_at`, `last_run_at`, `last_job_id` and `problem` (why it cannot be enabled). `PUT` takes any of `cron`, `enabled`, `params`; enabling validates the parameters, and a `retention_trim` whose parameters delete FreeWeight results needs a fresh re-authentication |
 | `GET /alerts` · `POST /alerts/{id}/acknowledge` · `GET /alerts/history` | Open alerts; acknowledge; the history |
 | `GET /audit?app=&action=&since=` · `GET /audit/{id}` | The trail; a row carries `operator`, `at`, `app`, `action`, `target`, `params` (redacted), `outcome`, `backup_path`, `dry_run_count`, `actual_count` |
 

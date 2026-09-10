@@ -1,0 +1,14 @@
+{# One job's captured output; the job page polls it every two seconds while the job runs, and the
+   finished fragment carries no trigger, so polling stops by itself. #}
+<div id="job-output"{% if not job.finished %} hx-get="/jobs/{{ job.id }}/output" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  {% if job.output %}
+  <pre class="mono job-output">{{ job.output }}</pre>
+  {% else %}
+  <p class="muted">{{ "It printed nothing." if job.finished else "No output yet." }}</p>
+  {% endif %}
+  {% if job.finished %}
+  <p class="muted">{{ job.state }}{% if job.error %}: {{ job.error }}{% endif %}</p>
+  {% else %}
+  <p class="muted">{{ job.state }} — refreshing every two seconds.</p>
+  {% endif %}
+</div>

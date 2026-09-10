@@ -144,7 +144,7 @@ def test_the_console_pages_are_named_and_inert_until_their_rows_land(tmp_path: P
     console = _console(tmp_path)
     console.login()
     page = console.client.get("/", headers={"Accept": "text/html"}).text
-    assert 'title="coming in phase W9">Jobs' in page
+    assert '<a href="/jobs">Jobs</a>' in page  # built at W9
     assert '<a href="/database">Database</a>' in page  # built at W7
     assert 'href="/chat"' in page  # Chat is built (W6)
     # Docs (row W5) is built: a real link, not a stub — tests/integration/test_docs_routes.py
