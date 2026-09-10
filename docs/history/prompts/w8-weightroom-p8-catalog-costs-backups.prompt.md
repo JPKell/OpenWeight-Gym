@@ -35,6 +35,16 @@ digest file, ADR-0071); `standards/database-standards.md` §7–§8; `apps/freew
   settings page (W4's path), never through a `ceiling_raise` approval.
 * Backups and migrations are curated calls to each application's own `db` verbs; restore requires
   the unit stopped and a typed name; WeightRoomGym's own database gets the same four verbs.
+* **Guarded-write backups expire** (operator, 2026-09-10; [ADR-0134](../../adr/0134-event-logs-go-with-their-deleted-parent-freeweight-deletes-its-own-results-and-guarded-write-backups-expire.md)
+  rule 3): the backups page's code removes a guarded-write backup older than a configured age,
+  **90 days by default**, `0` keeping them for ever; the key sits beside `storage.backup_retention`
+  in WeightRoomGym's settings and the generated configuration reference; the audit row keeps the
+  path whether or not the file survives. No scheduler: expiry runs when backups are listed or a
+  guarded write takes one.
+* **FreeWeight's "delete with cleanup" is its own API, already wired at W7** (ADR-0134 rule 2): the
+  catalog's delete calls `services/db_curated.delete_results` — FreeWeight's preview, the selector
+  typed, re-authentication, the preview's token. No application has a `db delete --model` verb;
+  where this prompt or the spec says one, read FreeWeight's API.
 
 ## Gates
 

@@ -36,6 +36,13 @@ symlink" (what still resolves through `~/ai/suite/docs`).
   decision; `promptcadence doctor` checks that LoadCoach answers and accepts the configured token,
   and WeightRoomGym's doctor shows that check on PromptCadence's card. These ride a PromptCadence
   minor released with the arc.
+* **The mirror rule is settled by this row** (operator, 2026-09-10; `history/handoffs/W7_HANDOFF.md`
+  §8). The workspace `CLAUDE.md` says a component's mirror is byte-identical to `WeightRoom/docs`
+  and names `FreeWeight/scripts/sync_docs.py --check` as the executable form of that rule; but
+  since 2026-08-28 the script rewrites links that leave FreeWeight's copy into plain text, so
+  byte-identical copies report *stale* (seven at W7, all `cmp`-identical). No CI job runs the
+  script and no other repository has one. While rewriting the `docs` references, pick one rule,
+  make the script and `CLAUDE.md` say the same thing, and leave every mirror passing it.
 
 ## Gates
 

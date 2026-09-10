@@ -39,8 +39,10 @@ it amends ADR-0124 additively and only in the stricter direction, and ADR-0124 n
    a project's units — reach nothing locked and stay writable.
 2. **`freeweight db delete --model` does not exist.** ADR-0123 rule 5, ADR-0124 and spec §7.3 all
    cite it; `freeweight db --help` lists `upgrade status backup restore vacuum` and nothing else.
-   The samples/run_tests/runs/metric_values pages say so above their guard ("not offered"). Until
-   FreeWeight grows it, a model's runs cannot be removed from the console at all.
+   *Corrected after the operator's review (§8):* the deletion exists as FreeWeight's HTTP API
+   (`POST /api/v1/database/delete-preview`, `DELETE /api/v1/database/results`, since its Phase 10);
+   this row looked only at the CLI. ADR-0134 rule 2 makes that API the curated path, and the
+   console now calls it.
 3. **The schema document carries no resolved database URL.** All four applications leave
    `storage.database_url` unset and resolve it at load; their documents' `sources` say `default`
    and the value is empty. W4's handoff §10 said the connection strings "come from the schema
@@ -92,7 +94,8 @@ it amends ADR-0124 additively and only in the stricter direction, and ADR-0124 n
   (`pending → ok|failed` on the same id, nothing else). A refusal before the pending row is one
   `refused` row; a failed backup is one `failed` row; a crash injected between the pending row and
   the statement leaves `pending` (a `BaseException` in the test — the handlers catch `Exception`).
-* **Guarded-write backups are never rotated** (`<data>/backups/<app>/<utc>-guarded-write.sqlite3`,
+* **Guarded-write backups were never rotated at W7** — *the operator's review set 90 days, from
+  row W8 (ADR-0134 rule 3)* — (`<data>/backups/<app>/<utc>-guarded-write.sqlite3`,
   `.dump` on PostgreSQL, mode 0600): each is the undo of one raw write. `GET …/db/backups` lists
   them, filtering to `.sqlite3`/`.dump` — a read of a backup leaves `-shm`/`-wal` beside it, which
   the first test run listed.
@@ -237,3 +240,45 @@ revision (`loadcoach-unknown-9999`); the curated verbs (a fake executable — no
 * **Any row that migrates an application** owes `known_revisions` a row and
   `tests/fixtures/databases/` a regenerated file (its README says how); the guard refuses an
   unknown revision before it reads a table.
+
+## 8. After the operator's review (same day)
+
+The operator was interviewed over §6 on 2026-09-10; the answers that bind code are
+[ADR-0134](../../adr/0134-event-logs-go-with-their-deleted-parent-freeweight-deletes-its-own-results-and-guarded-write-backups-expire.md).
+Built on `main` in `0.7.0`, which is still unreleased.
+
+1. **ADR-0133 rule 1 loosened for one case** (§6 item 2): a cascaded delete may remove an event
+   log's rows. `DELETE FROM runs` in FreeWeight passes the lock; `DELETE FROM projects` (IdeaPress,
+   through `stage_runs`) and `DELETE FROM plans` (PromptCadence, through `plan_approvals`) stay
+   refused. A cascade that edits an event row still refuses, and `reach` now reports a table by the
+   path that edits it when another path only deletes from it.
+2. **FreeWeight's deletion is its API, and the console calls it** (§6 item 3). The interview first
+   chose a new `freeweight db delete --model` verb; looking for where it would go found
+   `POST /api/v1/database/delete-preview` and `DELETE /api/v1/database/results` (FreeWeight Phase
+   10), and the operator chose the API. `services/db_curated.delete_results`;
+   `POST /api/v1/apps/{app}/db/delete-results` (the preview without `token`; with it, the selector
+   typed and a fresh re-authentication); a *Delete stored results* section on FreeWeight's database
+   page, which the four tables' operations link to. Each call is one `db.curated` row; the deletion's
+   is `security` and carries the run and row counts and FreeWeight's backup path. No FreeWeight
+   release.
+3. **Guarded-write backups expire after 90 days** (`0` for never). Built at W8; its kickoff says so.
+4. **WR-β waits for a pushed `main` and a green db-matrix job on GitHub** (§6 items 5 and 7); the
+   milestone map says so.
+5. **The mirror-rule conflict waits for W10** (§6 item 6). The seven FreeWeight mirrors are
+   `cmp`-identical to the canonical files; `sync_docs.py` turns links that leave FreeWeight's copy
+   into plain text, so exact copies report stale. W10's kickoff carries it.
+
+**Found while gating it:** `services/telemetry.history_rows` read `datetime.now(UTC)` while its tests
+wrote samples at a fixed `2026-09-09T12:00Z` and asked for the last 24 hours, so three telemetry
+tests began failing at 12:00 UTC on 2026-09-10 — a time bomb from row W3, not this change. The clock
+is injected now (`now=`, and `now_of(request)` in both routes).
+
+**The gate**, Python 3.14.4, the invocations of §1: ruff format and check clean, mypy clean (149
+files), 5 contracts kept, the configuration reference matches, **1176 passed**, coverage **91 %**,
+`domain/guard.py` **99 %**. The PostgreSQL leg against a throwaway `postgres:16`: **318 passed**;
+the container is removed.
+
+**Not demonstrated on the reference machine.** FreeWeight's deletion ran against a mocked FreeWeight
+only (the route test and the audit registry); the loosened reach ran against the fixture copy and
+the PostgreSQL leg. Showing it on the machine needs a FreeWeight serving a copy of its database, as
+§4's wrappers did for the CLI.
