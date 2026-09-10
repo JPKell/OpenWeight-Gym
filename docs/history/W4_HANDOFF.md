@@ -376,3 +376,21 @@ caught leak rather than a flag.
 * **W10** should decide whether `provider_form` and the `[provider]`/`[providers]` duplication is
   worth a note in the generated configuration reference, or whether ADR-0077's fold should finally
   happen in LoadCoach.
+
+## 11. Addendum — operator decisions after the row (2026-09-09, same session)
+
+An interview after the row settled four open items:
+
+* **ADR-0130 confirmed** as written; the re-issued `admin` tokens stand.
+* **The `MEMORY_SAFETY.md` §2.1 checklist item** in `weightroom-work.md` §4 is struck — the
+  doctor shows all seven lines passing (`a9fb1e3`).
+* **The two CLI JSON divergences of §6 were converged at the source, now**:
+  [ADR-0131](../adr/0131-cli-json-shapes-converge-on-values-and-items.md). IdeaPress `1.5.0`
+  prints `values` (was `settings`); LoadCoach `1.4.0` prints `{"items": …}` (was `tokens`); both
+  shapes are written into CLI Standards §9 and §11. Both are **renames shipped as minors** — an
+  operator exception to packaging and release standards §3.2, recorded in the ADR with its reason
+  (no users of either output yet). This console keeps reading the old names for one major.
+* **The merge** was to wait for W5. It was performed by another session at `c425489`, which
+  includes this branch through `a9fb1e3` but **not** this addendum, ADR-0131 or the CLI Standards
+  amendment — those are a second, small merge of this branch.
+

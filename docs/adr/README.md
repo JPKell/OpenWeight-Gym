@@ -165,6 +165,7 @@ an ADR is superseded rather than edited.
 | [0128](0128-mirrorwall-vendors-htmx-and-applications-may-adopt-it.md) | MirrorWall vendors htmx, and an application may adopt it | Accepted |
 | [0129](0129-weightroom-reads-both-version-payload-shapes.md) | WeightRoomGym reads both shapes of `GET /api/v1/version`, and the suite converges on one later | Accepted |
 | [0130](0130-weightroomgyms-application-tokens-carry-admin-scope.md) | WeightRoomGym's application tokens carry `admin` scope, because ADR-0127 rule 4 routes every runtime key through `PUT /settings` | Accepted |
+| [0131](0131-cli-json-shapes-converge-on-values-and-items.md) | Two CLI JSON shapes converge — `config show` says `values`, a listing says `items` — released as minors by operator exception | Accepted |
 
 ## Writing a new ADR
 
