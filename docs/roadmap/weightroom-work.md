@@ -88,7 +88,7 @@ linking there rather than copying it. Two additions for this arc:
   — **done by 2026-09-09**: `wr-gym doctor` at row W4 shows all seven §2.1 lines passing on the
   reference machine (the override no longer reads `OLLAMA_CONTEXT_LENGTH=112000`), and both §2.2
   units carry their caps. Struck at the operator's instruction.
-* Install the polkit rule W2 prints, if the Ollama restart button is wanted.
+* Install the polkit rule W2 prints, if the Ollama restart button is wanted — the generic form, for any operator account or a group, is [`OLLAMA_RESTART_POLKIT.md`](../OLLAMA_RESTART_POLKIT.md).
 * Decide whether Ollama stays on `0.0.0.0` (`LAN_ACCESS.md` §5).
 * Remove the `docs` symlink at the workspace root at W10 (the row does it; the operator confirms
   nothing else on the machine still resolves through it).
