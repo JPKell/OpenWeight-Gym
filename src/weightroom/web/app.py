@@ -40,10 +40,14 @@ from weightroom.web.csrf import render_form_page
 from weightroom.web.hosts import resolve_allowed_hosts
 from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, SameOriginMiddleware
 from weightroom.web.rendering import templates
+from weightroom.web.routes import audit as audit_routes
+from weightroom.web.routes import session as session_routes
+from weightroom.web.routes import shell as shell_routes
 from weightroom.web.routes import system as system_routes
+from weightroom.web.routes import trust as trust_routes
 
 if TYPE_CHECKING:
-    from weightroom.services.tls import TlsStatus
+    from weightroom.services.tls import HostIdentity, TlsStatus
 
 __all__ = ["STATUS_BY_CODE", "create_app"]
 
@@ -197,7 +201,11 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app(
-    settings: Settings, *, tls: TlsStatus | None = None, config_path: Path | None = None
+    settings: Settings,
+    *,
+    tls: TlsStatus | None = None,
+    identity: HostIdentity | None = None,
+    config_path: Path | None = None,
 ) -> FastAPI:
     """Build the FastAPI application for the given settings.
 
@@ -205,6 +213,7 @@ def create_app(
         settings: The validated configuration.
         tls: The certificate status the runtime established, for ``/health`` and ``/trust``;
             ``None`` in tests that never serve TLS.
+        identity: The host's names and addresses, for the trust page's URLs.
         config_path: The file the settings came from.
 
     Returns:
@@ -219,6 +228,7 @@ def create_app(
     )
     app.state.settings = settings
     app.state.tls = tls
+    app.state.identity = identity
     app.state.config_path = config_path if config_path is not None else resolve_config_path()
     app.state.database = None
 
@@ -239,6 +249,12 @@ def create_app(
     register_exception_handlers(app)
 
     app.include_router(system_routes.router, prefix="/api/v1")
+    app.include_router(session_routes.router, prefix="/api/v1")
+    app.include_router(audit_routes.router, prefix="/api/v1")
+    app.include_router(session_routes.ui_router)
+    app.include_router(shell_routes.ui_router)
+    app.include_router(trust_routes.ui_router)
+    app.include_router(audit_routes.ui_router)
 
     mount_static(app, environment=templates())
     return app

@@ -65,7 +65,12 @@ def bootstrap(*, now: datetime | None = None, identity: HostIdentity | None = No
     runtime = prepare(loaded, now=now, identity=identity)
     return Application(
         runtime=runtime,
-        app=create_app(loaded.settings, tls=runtime.tls, config_path=loaded.config_path),
+        app=create_app(
+            loaded.settings,
+            tls=runtime.tls,
+            identity=runtime.identity,
+            config_path=loaded.config_path,
+        ),
         trust_app=create_trust_app(loaded.settings, tls=runtime.tls, identity=runtime.identity),
     )
 

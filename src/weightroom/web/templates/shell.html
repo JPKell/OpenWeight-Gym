@@ -1,0 +1,31 @@
+{% extends "mirrorwall/base.html" %}
+{% from "mirrorwall/components.html" import badge, card %}
+{% block title %}Overview — WeightRoomGym{% endblock %}
+{% block header_extra %}
+{% if principal.source == "session" %}
+<form method="post" action="/logout" class="field" style="margin-left:auto">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <span class="muted">{{ principal.username }}</span>
+  <button type="submit">Log out</button>
+</form>
+{% else %}
+<span class="muted" title="No operator account: loopback is open until wr-gym setup runs">open loopback</span>
+{% endif %}
+{% endblock %}
+{% block content %}
+<h2>Overview</h2>
+<p class="muted">Phase 1: HTTPS, the login and the audit trail are here. Process control arrives at
+W2, the telemetry strip and the real shell at W3, settings and the doctor at W4.</p>
+<ul class="card-grid">
+  {{ card("Bind", bind_host, note="server.host") }}
+  {{ card("Certificate", (tls_days_left ~ " days") if tls_days_left is not none else "—", note="leaf days left; wr-gym tls show") }}
+  {{ card("Operator", principal.username, note=principal.source) }}
+</ul>
+<h3>Applications</h3>
+<ul>
+{% for app in applications %}
+  <li>{{ app }} {{ badge("unknown", tone="neutral", title="reported at W2") }}</li>
+{% endfor %}
+</ul>
+<p><a href="/audit">Audit trail</a> · <a href="/trust">Trust this CA on another device</a></p>
+{% endblock %}

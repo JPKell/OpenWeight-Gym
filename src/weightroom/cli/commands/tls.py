@@ -94,6 +94,8 @@ def rotate(
     from baseaicore import SuiteError
 
     from weightroom.cli._backend import fail, open_ready_database
+    from weightroom.services.audit import record_cli
+    from weightroom.services.auth import revoke_all_sessions
     from weightroom.services.tls import host_identity, now_utc, rotate_tls
 
     if not yes:
@@ -101,9 +103,22 @@ def rotate(
         raise typer.Exit(2)
     with open_ready_database(config) as (database, settings):
         try:
-            status = rotate_tls(settings, identity=host_identity(), now=now_utc())
+            status = rotate_tls(
+                settings,
+                identity=host_identity(),
+                now=now_utc(),
+                revoke_sessions=lambda: revoke_all_sessions(database),
+            )
         except SuiteError as exc:
+            record_cli(database, action="tls.rotate", outcome="failed", message=exc.message)
             raise fail(exc, exit_code=3) from exc
+        record_cli(
+            database,
+            action="tls.rotate",
+            outcome="ok",
+            target=str(status.paths.directory),
+            security=True,
+        )
     _print_status(status, json_output=json_output)
     typer.echo("Every device must trust the new root: run `wr-gym trust`.")
 

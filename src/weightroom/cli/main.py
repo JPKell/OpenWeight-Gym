@@ -11,8 +11,10 @@ from typing import Annotated
 
 import typer
 
+from weightroom.cli.commands import audit as audit_commands
 from weightroom.cli.commands import config as config_commands
 from weightroom.cli.commands import db as db_commands
+from weightroom.cli.commands import operator as operator_commands
 from weightroom.cli.commands import system as system_commands
 from weightroom.cli.commands import tls as tls_commands
 
@@ -58,3 +60,5 @@ app.command(name="trust", help="Print the root's fingerprint, paths, URLs and tr
 app.add_typer(config_commands.app, name="config", help="Configuration inspection and management.")
 app.add_typer(db_commands.app, name="db", help="Database migration and maintenance.")
 app.add_typer(tls_commands.app, name="tls", help="The certificate authority and the leaf.")
+app.add_typer(operator_commands.app, name="operator", help="The operator account.")
+app.add_typer(audit_commands.app, name="audit", help="The audit trail.")

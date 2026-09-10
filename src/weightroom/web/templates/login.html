@@ -1,0 +1,21 @@
+{% extends "mirrorwall/base.html" %}
+{% block title %}Log in — WeightRoomGym{% endblock %}
+{% block navigation %}{% endblock %}
+{% block content %}
+<h2>Log in</h2>
+{% if no_account %}
+<p class="notice">No operator account exists yet. On loopback the console is open — <a href="/">open the shell</a> —
+and <code>wr-gym setup</code> creates the account that a LAN bind requires (ADR-0126 rule 6).</p>
+{% endif %}
+{% if error %}<p class="error-state" role="alert">{{ error }}</p>{% endif %}
+<form method="post" action="/login" class="field" autocomplete="on">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <input type="hidden" name="next" value="{{ next }}">
+  <label for="username">Username</label>
+  <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+  <label for="password">Password</label>
+  <input type="password" id="password" name="password" autocomplete="current-password" required>
+  <p class="field-hint">Five attempts a minute per address; the session ends after 12 idle hours or 7 days.</p>
+  <button type="submit" data-variant="primary">Log in</button>
+</form>
+{% endblock %}
