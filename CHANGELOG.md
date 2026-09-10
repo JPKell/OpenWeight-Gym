@@ -18,6 +18,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   the GGUF file and FreeWeight's own stored results (Database Standards §8, ADR-0134 rule 2). A
   pull is Ollama's own streamed `/api/pull`, run in a daemon thread with its progress held in
   memory only (`PullRegistry`) until row W9 hosts it as a real job.
+- **The Costs page** (row W8, `services/costs.py`, `/costs`): LoadLedger balances for
+  PromptCadence and IdeaPress — the only two applications that mount its tables — read through a
+  `SqlLedger` bound to the same read-only engine every application's page already opens, never a
+  hand-written `select`. Today's `PER_DAY` window is populated by every debit regardless of
+  configured ceilings, so it answers for IdeaPress too, which declares none; PromptCadence's own
+  `daily_money_ceiling` is the one ceiling this page evaluates app-wide and carries a real verdict,
+  since its other ceilings and IdeaPress's own (`per_output_*`, `per_project_*`) are `PER_RUN`/
+  `PER_TAG` — meaningless without picking one run or project, and `position()` refuses `PER_RUN`
+  outright.
 - **FreeWeight `0010` is a known revision** (row WA1, ADR-0135). Migration `0005` adds it to
   `known_revisions`, beside `0009`, so a FreeWeight database carrying `0010` — whose
   `runtime_profiles` gains `adapters_registered` — is read rather than refused as unknown. `tests/fixtures/databases/`

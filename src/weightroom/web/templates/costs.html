@@ -1,0 +1,50 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state, kv_list %}
+{% block title %}Costs — WeightRoom{% endblock %}
+{% block page_content %}
+<h2>Costs</h2>
+<p class="muted">LoadLedger balances for PromptCadence and IdeaPress — the only two applications
+that mount its tables; FreeWeight and LoadCoach keep no ledger (spec §7.9).
+<a href="/api/v1/costs">JSON</a></p>
+
+{% for app, costs in apps %}
+<h3>{{ app | app_label }}</h3>
+{% if costs.unavailable %}
+<p class="notice" role="alert">{{ costs.unavailable }}</p>
+{% else %}
+{% set today = costs.today %}
+{{ kv_list([
+  {"label": "Window", "value": today.window_key},
+  {"label": "Tokens spent today", "value": today.tokens_spent},
+  {"label": "Money spent today", "value": (today.money_spent | map(attribute="text") | join(", ")) or "—"},
+  {"label": "Unpriced debits", "value": today.unpriced_debit_count},
+  {"label": "Untotalled debits", "value": today.untotalled_debit_count},
+  {"label": "Unmetered debits", "value": today.unmetered_debit_count},
+]) }}
+{% if costs.verdicts %}
+<h4>Ceilings</h4>
+<table id="costs-{{ app }}-ceilings" data-density="dense">
+  <thead><tr>
+    <th scope="col">Scope</th><th scope="col">Spent</th><th scope="col">Remaining</th>
+    <th scope="col">Verdict</th>
+  </tr></thead>
+  <tbody>
+  {% for v in costs.verdicts %}
+  <tr>
+    <td>{{ v.scope }}{{ " (" ~ v.tag ~ ")" if v.tag else "" }}</td>
+    <td>{{ v.money_spent or (v.tokens_spent ~ " tokens") }}</td>
+    <td>{{ v.money_remaining or (v.tokens_remaining ~ " tokens" if v.tokens_remaining is not none else "—") }}</td>
+    <td>{{ badge("exceeded", tone="danger") if v.exceeded else badge("within ceiling", tone="neutral") }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No ceiling applies app-wide here{{ " — " ~ (app | app_label) ~ "'s own are per-output and per-project, evaluable only against one" if app == "ideapress" else "" }}.</p>
+{% endif %}
+{% endif %}
+{% endfor %}
+{% if not apps %}
+{{ empty_state("No application mounts LoadLedger's tables.") }}
+{% endif %}
+{% endblock %}

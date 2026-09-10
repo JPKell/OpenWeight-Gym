@@ -54,6 +54,7 @@ from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
 from weightroom.web.routes import catalog as catalog_routes
 from weightroom.web.routes import chat as chat_routes
+from weightroom.web.routes import costs as costs_routes
 from weightroom.web.routes import databases as databases_routes
 from weightroom.web.routes import docs as docs_routes
 from weightroom.web.routes import doctor as doctor_routes
@@ -367,6 +368,7 @@ def create_app(
     app.include_router(docs_routes.router, prefix="/api/v1")
     app.include_router(databases_routes.router, prefix="/api/v1")
     app.include_router(catalog_routes.router, prefix="/api/v1")
+    app.include_router(costs_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
@@ -381,6 +383,7 @@ def create_app(
     app.include_router(docs_routes.ui_router)
     app.include_router(databases_routes.ui_router)
     app.include_router(catalog_routes.ui_router)
+    app.include_router(costs_routes.ui_router)
 
     mount_static(app, environment=templates(), extra_dirs={"/app-static": APP_STATIC_DIR})
     return app
