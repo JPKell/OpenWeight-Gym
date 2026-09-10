@@ -30,6 +30,18 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   migrates, carries the job and its audit row into the restored database and starts the console
   again — putting the database back if the restore fails. The Backups page offers it for
   WeightRoomGym's own backups; a console not running as `weightroom.service` is refused by name.
+- **Alerts** (row W9, ADR-0137, `domain/alerts.py`, `services/alerts.py`, `/alerts`,
+  `wr-gym alerts list|ack`, migration `0007`): an evaluator on its own thread reads five sources
+  every `alerts.interval_seconds` — `app_down` (a failed or self-restarting unit, or a running one
+  whose `/api/v1/health` is not `200`; an inactive unit is a choice, not an outage), `memory_cap`
+  (both journals grepped for ADR-0119's kill, kept where a line names `ollama.service` or an
+  application unit), `gpu_thermal`, `budget_ceiling` (LoadLedger verdicts at or over a ceiling) and
+  `breaker_open` (LoadCoach's `/reliability`). An alert is an episode: one active per
+  `(source, subject)`, held by a partial unique index; a condition clears itself, a kill waits for
+  its acknowledgement, and a source that could not be read clears nothing. Every shell page carries
+  the banner — the newest unacknowledged alert with its evidence and an acknowledge button, polled
+  every five seconds — and the top bar's ⚠ count links to the Alerts page and its history, which
+  is kept for ever. Nothing is sent anywhere.
 - **The model catalog** (row W8, `services/catalog.py`, `/catalog`): FreeWeight's and LoadCoach's
   models joined by canonical identity — the only two applications with a models table at all —
   with per-application enabled state (ADR-0118), evidence freshness (always FreeWeight's own),

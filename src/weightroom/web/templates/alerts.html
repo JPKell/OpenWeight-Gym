@@ -1,0 +1,74 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state %}
+{% block title %}Alerts — WeightRoom{% endblock %}
+{% block page_content %}
+<h2>Alerts</h2>
+<p class="muted">What the machine did (spec §7.10): an application down, the memory cap fired, the GPU
+over its threshold, a budget ceiling reached, a LoadCoach breaker open — evaluated every
+{{ interval_seconds }} s{% if not evaluating %} by the serving console (this process is not
+evaluating){% endif %}. A condition clears itself when it is over; a memory-cap kill waits for your
+acknowledgement (ADR-0137). Nothing is sent anywhere.
+<a href="/alerts/history">History</a> · <a href="/api/v1/alerts">JSON</a></p>
+{% if error %}<p class="notice" role="alert"><strong><code>{{ error.code }}</code></strong> {{ error.message }}</p>{% endif %}
+
+<h3>Active</h3>
+{% if active %}
+<table data-density="dense">
+  <thead><tr><th scope="col">Alert</th><th scope="col">Subject</th><th scope="col">Opened</th><th scope="col">Last seen</th><th scope="col">Evidence</th><th scope="col">Acknowledged</th></tr></thead>
+  <tbody>
+  {% for alert in active %}
+  <tr>
+    <th scope="row">{{ badge(alert.severity, tone="danger" if alert.severity == "critical" else "warning") }} {{ alert.label }}</th>
+    <td><code>{{ alert.subject }}</code></td>
+    <td>{{ alert.opened_at | timestamp }}</td>
+    <td>{{ alert.last_seen_at | timestamp }}</td>
+    <td><code>{{ alert.summary or "—" }}</code></td>
+    <td>
+      {% if alert.acknowledged_at %}
+      {{ alert.acknowledged_by }}, {{ alert.acknowledged_at | timestamp }}
+      {% else %}
+      <form method="post" action="/alerts/{{ alert.id }}/acknowledge">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+        <input type="hidden" name="next" value="/alerts">
+        <button type="submit">Acknowledge</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{{ empty_state("No alert is active.") }}
+{% endif %}
+
+{% if problems %}
+<h3>Sources the last evaluation could not read</h3>
+<p class="muted">A source that could not look clears nothing: its alerts stay as they were (ADR-0137 rule 4).</p>
+<ul>
+  {% for name, problem in problems.items() %}<li><code>{{ name }}</code> — {{ problem }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<h3>Recently closed</h3>
+{% if recent %}
+<table data-density="dense">
+  <thead><tr><th scope="col">Alert</th><th scope="col">Subject</th><th scope="col">Opened</th><th scope="col">Closed</th><th scope="col">How</th><th scope="col">Evidence</th></tr></thead>
+  <tbody>
+  {% for alert in recent %}
+  <tr>
+    <th scope="row">{{ alert.label }}</th>
+    <td><code>{{ alert.subject }}</code></td>
+    <td>{{ alert.opened_at | timestamp }}</td>
+    <td>{{ alert.closed_at | timestamp }}</td>
+    <td>{{ "cleared" if alert.cleared_at else "acknowledged by " ~ alert.acknowledged_by }}</td>
+    <td><code>{{ alert.summary or "—" }}</code></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">Nothing has closed yet.</p>
+{% endif %}
+{% endblock %}

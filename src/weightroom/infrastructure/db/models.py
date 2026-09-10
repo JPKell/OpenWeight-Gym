@@ -26,11 +26,14 @@ from sqlalchemy import (
     MetaData,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from weightsdb import PortableJSON, UtcDateTime, ulid_primary_key
 
 __all__ = [
+    "Alert",
+    "AlertHistory",
     "Attachment",
     "AuditLog",
     "Base",
@@ -313,6 +316,67 @@ class Job(Base):
     audit_id: Mapped[str | None] = mapped_column(
         String(26), ForeignKey("audit_log.id"), nullable=True
     )
+
+
+_ACTIVE_ALERT = text("closed_at IS NULL")
+
+
+class Alert(Base):
+    """One episode of one source on one subject (spec §7.10, ADR-0137).
+
+    ``closed_at`` is null while the episode is active; the partial unique index is "at most one
+    active alert per ``(source, subject)``" held by the database as well as by the evaluator. A
+    condition closes when it clears; an event closes when it is acknowledged. A row is never
+    deleted.
+    """
+
+    __tablename__ = "alerts"
+    __table_args__ = (
+        CheckConstraint(
+            "source IN ('app_down', 'memory_cap', 'gpu_thermal', 'budget_ceiling', 'breaker_open')",
+            name="source",
+        ),
+        CheckConstraint("severity IN ('warning', 'critical')", name="severity"),
+        Index(
+            "uq_alerts_source_subject_active",
+            "source",
+            "subject",
+            unique=True,
+            sqlite_where=_ACTIVE_ALERT,
+            postgresql_where=_ACTIVE_ALERT,
+        ),
+        Index("ix_alerts_opened_at", "opened_at"),
+    )
+
+    id: Mapped[str] = ulid_primary_key()
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    subject: Mapped[str] = mapped_column(String, nullable=False)
+    severity: Mapped[str] = mapped_column(String, nullable=False)
+    opened_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    acknowledged_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    cleared_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+    detail: Mapped[object] = mapped_column(PortableJSON, nullable=False)
+
+
+class AlertHistory(Base):
+    """What happened to an alert, kept for ever: ``opened``, ``seen``, ``acknowledged``,
+    ``cleared`` (data model §2, ADR-0137 rule 6)."""
+
+    __tablename__ = "alert_history"
+    __table_args__ = (
+        CheckConstraint("event IN ('opened', 'seen', 'acknowledged', 'cleared')", name="event"),
+        Index("ix_alert_history_alert_id_at", "alert_id", "at"),
+        Index("ix_alert_history_at", "at"),
+    )
+
+    id: Mapped[str] = ulid_primary_key()
+    alert_id: Mapped[str] = mapped_column(String(26), ForeignKey("alerts.id"), nullable=False)
+    event: Mapped[str] = mapped_column(String, nullable=False)
+    at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
+    detail: Mapped[object] = mapped_column(PortableJSON, nullable=False)
 
 
 class Attachment(Base):

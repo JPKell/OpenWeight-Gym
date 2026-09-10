@@ -148,14 +148,22 @@ row W9 has them too. A due schedule fires once however many slots it missed; dis
 | `source` | text | `app_down` \| `memory_cap` \| `gpu_thermal` \| `budget_ceiling` \| `breaker_open` |
 | `subject` | text | the unit, the GPU index, the ledger scope, the model ref |
 | `severity` | text | `warning` \| `critical` |
-| `opened_at`, `last_seen_at` | timestamp | |
-| `acknowledged_at`, `acknowledged_by` | null | |
+| `opened_at`, `last_seen_at` | timestamp | `last_seen_at` and `detail` move while a condition stays true |
+| `acknowledged_at`, `acknowledged_by` | null | the operator's username; `cli:<user>` from the terminal |
+| `cleared_at` | timestamp, null | a condition source found the subject right again |
+| `closed_at` | timestamp, null | null while the episode is **active**: set when a condition clears, or when an event (`memory_cap`) is acknowledged ([ADR-0137](../../adr/0137-an-alert-is-an-episode-a-condition-clears-itself-an-event-waits-for-acknowledgement.md)) |
 | `detail` | json | the evidence (journal line, temperature, balance and ceiling) |
 
-Unique `(source, subject)` while open; closing moves the row's state, not the row.
+At most one **active** alert per `(source, subject)`: the partial unique index
+`uq_alerts_source_subject_active` (`WHERE closed_at IS NULL`, both dialects). Closing sets
+`closed_at` on the row; a row is never deleted. An acknowledged condition stays active, off the
+banner, until it clears.
 
 ### `alert_history`
-`id`, `alert_id`, `event` (`opened` \| `seen` \| `acknowledged` \| `cleared`), `at`, `detail`.
+`id` (ULID), `alert_id` fk, `event` (`opened` \| `seen` \| `acknowledged` \| `cleared`, a check
+constraint), `at`, `detail`. Indexes `(alert_id, at)`, `(at)`. `seen` is written for an event
+source's further line only; a condition that stays true moves its alert's `last_seen_at` instead
+of writing a row every evaluation (ADR-0137 rule 6).
 
 ### `telemetry_samples`
 `at`, `interval_ms`, one column per figure the strip shows (nullable — NULL is unavailable,

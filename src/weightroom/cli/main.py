@@ -11,6 +11,7 @@ from typing import Annotated
 
 import typer
 
+from weightroom.cli.commands import alerts as alerts_commands
 from weightroom.cli.commands import apps as apps_commands
 from weightroom.cli.commands import audit as audit_commands
 from weightroom.cli.commands import config as config_commands
@@ -81,3 +82,4 @@ app.command(name="logs", help="Print or follow an application's journal.")(apps_
 app.add_typer(units_commands.app, name="units", help="The systemd --user units (ADR-0125).")
 app.add_typer(docs_commands.app, name="docs", help="The documentation viewer's search index.")
 app.add_typer(jobs_commands.app, name="jobs", help="WeightRoomGym's own job queue and schedules.")
+app.add_typer(alerts_commands.app, name="alerts", help="The alerts the console has raised.")

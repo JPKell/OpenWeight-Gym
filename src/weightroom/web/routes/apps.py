@@ -52,6 +52,8 @@ from weightroom.web.session import CurrentOperator
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping, Sequence
 
+    from weightroom.services.alerts import Banner
+
 __all__ = [
     "CONTROL_VERBS",
     "render_shell_page",
@@ -156,8 +158,25 @@ def render_shell_page(
         telemetry_stream_url="/api/v1/system/telemetry/stream",
         telemetry_meters=_telemetry_meters(request),
         telemetry_field_meters=("cpu", "ram", "gpu", "vram"),
+        alert_banner=_alert_banner(request),
+        current_path=request.url.path,
         **context,
     )
+
+
+def _alert_banner(request: Request) -> Banner | None:
+    """The banner's first paint (ADR-0137); ``None`` when the database cannot say — the banner
+    fragment polls again five seconds later."""
+    from weightroom.services.alerts import banner
+
+    database = getattr(request.app.state, "database", None)
+    if database is None:
+        return None
+    try:
+        return banner(database)
+    except Exception:  # noqa: BLE001 — a page never fails for want of its banner
+        logger.warning("alerts.banner_unreadable", exc_info=True)
+        return None
 
 
 def _view(request: Request, app: str, *, refresh: bool = False) -> AppView:

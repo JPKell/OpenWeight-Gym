@@ -352,13 +352,19 @@ A schedule is a row (a five-field `cron` expression evaluated in UTC, next run, 
 enabled); a slot missed while the console was down runs once, never once per missed slot. A job's
 output is its `audit_log` row plus a captured, capped stdout/stderr.
 
-**Alerts:** evaluated by the same worker every `[alerts] interval_seconds` (30): an application
-unit inactive or its `/health` not `200`; the journal since the last check matching the
-ADR-0119 kill (`oom-kill`, `MemoryMax`, `systemd-oomd` on `ollama.service` or an application
-unit); GPU temperature above `[alerts] gpu_temperature_c` (85); a LoadLedger balance at or over
-a ceiling; a LoadCoach breaker open (`/reliability`). Each source produces at most one open
-alert per subject; the banner shows the count and the newest; acknowledge closes it with the
-operator and time; history keeps every alert. No outbound channel.
+**Alerts:** evaluated on a thread of their own — not the job worker's, which spends hours inside
+one run — every `[alerts] interval_seconds` (30): an application unit `failed` or restarting
+itself, or running for a minute with its `/health` not `200` (an `inactive` unit is a stop the
+operator chose, not an outage); the system and user journal since the last check matching the
+ADR-0119 kill (`oom-kill`, the OOM killer, `MemoryMax`, `systemd-oomd`) on `ollama.service` or an
+application unit; GPU temperature above `[alerts] gpu_temperature_c` (85); a LoadLedger balance at
+or over a ceiling; a LoadCoach breaker open (`/reliability`). Each source produces at most one
+active alert per subject. A condition clears itself when a reading finds it over; a memory-cap
+kill stays until acknowledged; a source that could not be read clears nothing
+([ADR-0137](../../adr/0137-an-alert-is-an-episode-a-condition-clears-itself-an-event-waits-for-acknowledgement.md)).
+The banner, on every page and polled every five seconds, shows the newest unacknowledged alert
+(`memory cap fired · ollama.service` with its journal line) and how many more; acknowledge records
+the operator and time; history keeps every alert's events. No outbound channel.
 
 **Prompts:** each application's shipped pack read from its installed package (`<app> prompts
 list|show`) and its overrides under `$XDG_CONFIG_HOME/<app>/prompts/`

@@ -1,0 +1,28 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import empty_state %}
+{% block title %}Alert history — WeightRoom{% endblock %}
+{% block page_content %}
+<h2>Alert history</h2>
+<p class="muted">Every alert's events, kept for ever: opened, seen again (a further memory-cap line),
+acknowledged, cleared. A condition that stays true is one episode with its last-seen time, not a row
+every evaluation (ADR-0137 rule 6). <a href="/alerts">Alerts</a> · <a href="/api/v1/alerts/history">JSON</a></p>
+{% if rows %}
+<table data-density="dense">
+  <thead><tr><th scope="col">At</th><th scope="col">Event</th><th scope="col">Alert</th><th scope="col">Subject</th><th scope="col">Detail</th></tr></thead>
+  <tbody>
+  {% for row in rows %}
+  <tr>
+    <th scope="row">{{ row.at | timestamp }}</th>
+    <td>{{ row.event }}</td>
+    <td>{{ row.label }}</td>
+    <td><code>{{ row.subject }}</code></td>
+    <td>{% if row.detail %}<pre class="mono">{{ row.detail | json_pretty }}</pre>{% else %}—{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if has_more %}<p class="muted">Older events: <a href="/api/v1/alerts/history">the API pages further back</a>.</p>{% endif %}
+{% else %}
+{{ empty_state("No alert has been raised yet.") }}
+{% endif %}
+{% endblock %}

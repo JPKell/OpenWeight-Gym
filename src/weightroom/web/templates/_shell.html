@@ -78,6 +78,18 @@
   .console-alerts { color: var(--mw-text-subtle); white-space: nowrap; }
   .console-alerts[data-open="true"] { color: var(--mw-status-degraded); }
 
+  /* The alert banner (ADR-0137): one line under the top bar while an alert is unacknowledged. */
+  .alert-banner {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: var(--mw-space-2, 8px) var(--mw-space-3, 12px);
+    margin: var(--mw-space-3, 12px) 0 0; padding: var(--mw-space-2, 8px) var(--mw-space-3, 12px);
+    border: 1px solid var(--mw-status-degraded); border-radius: var(--mw-radius-md, 8px);
+    background: var(--mw-surface);
+  }
+  .alert-banner[data-severity="critical"] { border-color: var(--mw-status-down, var(--mw-status-degraded)); }
+  .alert-banner form { margin: 0; }
+  .alert-banner .alert-line { flex: 1 1 100%; overflow-wrap: anywhere; font-size: var(--mw-font-size-sm, 12px); }
+
   /* The two dropdowns. Menu holds whatever navigation has overflowed; the operator menu holds the
      theme control and log out, so the row itself carries no form control that could collide. */
   .masthead-end {
@@ -312,7 +324,7 @@
   <span class="console-page-stub" title="coming in phase {{ page.phase }}">{{ page.label }}</span>
   {% endif %}
   {% endfor %}
-  <span class="console-alerts" data-open="false" title="alerts arrive at row W9">⚠ —</span>
+  <a class="console-alerts" href="/alerts" data-open="{{ 'true' if alert_banner and alert_banner.count else 'false' }}" title="Alerts nobody has acknowledged">⚠ {{ alert_banner.count if alert_banner else "—" }}</a>
 {% endmacro %}
 
 {% block header_extra %}
@@ -372,6 +384,7 @@
 {% endblock %}
 
 {% block content %}
+{% include "_alert_banner.html" %}
 <div class="shell-body">
   <div class="shell-side">
     {# Open in the markup, so a narrow viewport with no JavaScript gets the whole menu rather than

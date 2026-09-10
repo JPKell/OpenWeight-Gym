@@ -1,0 +1,20 @@
+{# The alert banner (spec §7.10, ADR-0137): the newest active alert nobody has acknowledged, how
+   many more there are, and an acknowledge button. Every shell page renders it and polls this
+   fragment every five seconds, so an alert the evaluator opens reaches an open page without a
+   reload. It shows what the machine did; it sends nothing anywhere. #}
+<div id="alert-banner" hx-get="/alerts/banner" hx-trigger="every 5s" hx-swap="outerHTML">
+  {% if alert_banner and alert_banner.newest %}
+  {% set newest = alert_banner.newest %}
+  <div class="alert-banner" data-severity="{{ newest.severity }}" role="alert">
+    <strong>{{ newest.label }} · {{ newest.subject }}</strong>
+    {% if alert_banner.count > 1 %}<span class="muted">and {{ alert_banner.count - 1 }} more</span>{% endif %}
+    <form method="post" action="/alerts/{{ newest.id }}/acknowledge">
+      <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+      <input type="hidden" name="next" value="{{ current_path }}">
+      <button type="submit">Acknowledge</button>
+    </form>
+    <a href="/alerts">Alerts</a>
+    {% if newest.summary %}<code class="alert-line">{{ newest.summary }}</code>{% endif %}
+  </div>
+  {% endif %}
+</div>

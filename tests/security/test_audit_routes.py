@@ -602,6 +602,26 @@ def _jobs_schedule_form(console: Console) -> Any:  # noqa: ANN401
     )
 
 
+def _open_alert(console: Console) -> str:
+    """An active alert opened by the service, not a route, so only the exercise's row counts."""
+    from weightroom.domain.alerts import Firing, Reading
+    from weightroom.services.alerts import active_alerts, apply
+
+    firing = Firing("ollama.service", {"line": "oom-kill ollama.service", "cursor": "c"})
+    apply(console.database, Reading("memory_cap", (firing,)), now=console.now)
+    return active_alerts(console.database)[0].id
+
+
+def _alert_ack_json(console: Console) -> Any:  # noqa: ANN401
+    return console.client.post(
+        f"/api/v1/alerts/{_open_alert(console)}/acknowledge", headers=JSON_HEADERS
+    )
+
+
+def _alert_ack_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form(f"/alerts/{_open_alert(console)}/acknowledge", {"next": "/alerts"})
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -664,6 +684,8 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/jobs/enqueue"): _jobs_enqueue_form,
     ("POST", "/jobs/{job_id}/cancel"): _jobs_cancel_form,
     ("POST", "/jobs/schedules/{schedule_id}"): _jobs_schedule_form,
+    ("POST", "/api/v1/alerts/{alert_id}/acknowledge"): _alert_ack_json,
+    ("POST", "/alerts/{alert_id}/acknowledge"): _alert_ack_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 

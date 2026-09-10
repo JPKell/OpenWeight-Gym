@@ -36,6 +36,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from weightroom.__about__ import __version__
 from weightroom.config import LOOPBACK_HOSTS, Settings, data_dir, resolve_config_path
+from weightroom.services.alerts import AlertEvaluator, default_sources, sampler_temperature
 from weightroom.services.apps import VersionCache
 from weightroom.services.catalog import PullRegistry
 from weightroom.services.chat import ChatRunner, recover_interrupted
@@ -51,6 +52,7 @@ from weightroom.web.csrf import render_form_page
 from weightroom.web.hosts import resolve_allowed_hosts
 from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, SameOriginMiddleware
 from weightroom.web.rendering import templates
+from weightroom.web.routes import alerts as alerts_routes
 from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
 from weightroom.web.routes import backups as backups_routes
@@ -289,9 +291,24 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         ),
     )
     app.state.jobs.start()
+    # The alert evaluator (spec §7.10, ADR-0137): a thread of its own, never the job worker's.
+    app.state.alerts = AlertEvaluator(
+        database,
+        settings,
+        default_sources(
+            settings,
+            database,
+            controller=app.state.controller,
+            client=app.state.http,
+            urls=app.state.database_urls,
+            temperature=lambda: sampler_temperature(app.state.telemetry),
+        ),
+    )
+    app.state.alerts.start()
     try:
         yield
     finally:
+        app.state.alerts.stop()
         app.state.jobs.stop()
         app.state.telemetry.stop()
         app.state.chat.shutdown()
@@ -349,6 +366,7 @@ def create_app(
     # job row is the durable answer. The worker is built by the lifespan, which tests never enter.
     app.state.catalog_pulls = PullRegistry()
     app.state.jobs = None
+    app.state.alerts = None
     app.state.attachments_root = data_dir() / "attachments"
     # One schema document per application, re-read every 60 s (api.md §2). Each read launches
     # `<app> config schema --json`, so without it every element of a settings page would.
@@ -393,6 +411,7 @@ def create_app(
     app.include_router(costs_routes.router, prefix="/api/v1")
     app.include_router(backups_routes.router, prefix="/api/v1")
     app.include_router(jobs_routes.router, prefix="/api/v1")
+    app.include_router(alerts_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
@@ -410,6 +429,7 @@ def create_app(
     app.include_router(costs_routes.ui_router)
     app.include_router(backups_routes.ui_router)
     app.include_router(jobs_routes.ui_router)
+    app.include_router(alerts_routes.ui_router)
 
     mount_static(app, environment=templates(), extra_dirs={"/app-static": APP_STATIC_DIR})
     return app
