@@ -77,7 +77,7 @@ named and tested.**
 
 **Teach the frozen `RuntimeProfileFields.profile_hash` to include a preserved
 `adapters_registered` key.** It moves no artifact — a property is not in the JSON Schema — and a
-`1.0` reader from `setspec 0.7.0` would accept stated documents. Rejected on three counts. It
+`1.0` reader from the next `setspec` release would accept stated documents. Rejected on three counts. It
 changes the frozen class's behaviour, which ADR-0068 rule 1 forbids because that class *is* what
 `1.0` means. It cannot reach a reader already installed with `setspec 0.6` or earlier, so rule 2
 would still fail wherever it matters. And the frozen writer `BenchmarkRunSummaryOut` would then
@@ -100,14 +100,14 @@ defect, and it is how a consumer knows a profile and its hash belong together.
 
 ## Consequences
 
-* `setspec 0.7.0` publishes `benchmark.result` and `benchmark.run_summary` at `1.0` and `1.1`. The
-  `1.0` artifacts regenerate byte-identically. It requires `baseaicore>=0.4.2`, the first release
-  with the field.
+* SetSpec publishes `benchmark.result` and `benchmark.run_summary` at `1.0` and `1.1` from its next
+  release (versions are held until the W arc ends). The `1.0` artifacts regenerate
+  byte-identically. It requires `baseaicore>=0.4.2`, the first release with the field.
 * A reader of these payloads that may see documents from an adapter-capable FreeWeight uses the
   `V1_1In` names. Reading them through the bare names fails loudly, but with a hash-mismatch
   message rather than `SCHEMA_VERSION_UNSUPPORTED` — misleading, and fixed only by adopting the
   minor.
-* `freeweight 1.3.0` stores the field in `runtime_profiles` (migration `0010`, backfilled by
+* FreeWeight stores the field in `runtime_profiles` (migration `0010`, backfilled by
   recovering it from each stored hash), writes it into summaries when stated, and writes
   `freeweight.export` `1.1` only for exports that need it.
 * The same limit applies to any later minor that adds an input to a hash an older class
