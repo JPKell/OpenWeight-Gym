@@ -131,9 +131,9 @@ def test_the_console_pages_are_named_and_inert_until_their_rows_land(tmp_path: P
     console = _console(tmp_path)
     console.login()
     page = console.client.get("/", headers={"Accept": "text/html"}).text
-    for label, phase in (("Chat", "W6"), ("Database", "W7"), ("Jobs", "W9")):
+    for label, phase in (("Database", "W7"), ("Jobs", "W9")):
         assert f'title="coming in phase {phase}">{label}' in page
-    assert "/chat" not in page
+    assert 'href="/chat"' in page  # Chat is built (W6)
     # Docs (row W5) is built: a real link, not a stub — tests/integration/test_docs_routes.py
     # proves the page itself; this only guards the top-bar wiring.
     assert '<a href="/docs">Docs</a>' in page

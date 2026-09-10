@@ -35,8 +35,9 @@ from mirrorwall import (
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from weightroom.__about__ import __version__
-from weightroom.config import LOOPBACK_HOSTS, Settings, resolve_config_path
+from weightroom.config import LOOPBACK_HOSTS, Settings, data_dir, resolve_config_path
 from weightroom.services.apps import VersionCache
+from weightroom.services.chat import ChatRunner, recover_interrupted
 from weightroom.services.database import Database
 from weightroom.services.journal import JournalReader
 from weightroom.services.ollama import ollama_client
@@ -49,6 +50,7 @@ from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, 
 from weightroom.web.rendering import templates
 from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
+from weightroom.web.routes import chat as chat_routes
 from weightroom.web.routes import docs as docs_routes
 from weightroom.web.routes import doctor as doctor_routes
 from weightroom.web.routes import ollama as ollama_routes
@@ -99,6 +101,10 @@ STATUS_BY_CODE: dict[str, int] = {
     # 501: this host cannot do it at all, and no retry will help (ADR-0125 rule 7).
     "UNIT_UNSUPPORTED": status.HTTP_501_NOT_IMPLEMENTED,
     "OLLAMA_RESTART_NOT_PERMITTED": status.HTTP_403_FORBIDDEN,
+    # 409: the conversation is fine and still reads; its backend cannot take a message now.
+    "CHAT_BACKEND_UNAVAILABLE": status.HTTP_409_CONFLICT,
+    "ATTACHMENT_TOO_LARGE": status.HTTP_413_CONTENT_TOO_LARGE,
+    "ATTACHMENT_TYPE_REFUSED": status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
     "MISDIRECTED_REQUEST": 421,
     "PAYLOAD_TOO_LARGE": status.HTTP_413_CONTENT_TOO_LARGE,
     "CONFIGURATION_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -232,6 +238,11 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         raise RuntimeError(message)
     database = Database.from_url(database_url)
     app.state.database = database
+    from datetime import UTC, datetime
+
+    recovered = recover_interrupted(database, now=datetime.now(UTC))
+    if recovered:
+        logger.warning("chat.recovered_interrupted_replies", extra={"count": recovered})
     app.state.telemetry = TelemetryService(
         database,
         settings,
@@ -243,6 +254,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         app.state.telemetry.stop()
+        app.state.chat.shutdown()
         database.close()
         app.state.database = None
         app.state.http.close()
@@ -289,6 +301,11 @@ def create_app(
     app.state.controller = controller if controller is not None else SubprocessSystemdController()
     app.state.journal = journal if journal is not None else JournalReader()
     app.state.versions = VersionCache()
+    # Replies outlive the request that starts them (services/chat.py); attachment files live under
+    # the data root with generated names (spec §14). Both overridable, so a test never writes to
+    # the operator's home.
+    app.state.chat = ChatRunner()
+    app.state.attachments_root = data_dir() / "attachments"
     # One schema document per application, re-read every 60 s (api.md §2). Each read launches
     # `<app> config schema --json`, so without it every element of a settings page would.
     app.state.schemas = SchemaCache()
@@ -318,6 +335,7 @@ def create_app(
     app.include_router(session_routes.router, prefix="/api/v1")
     app.include_router(apps_routes.router, prefix="/api/v1")
     app.include_router(audit_routes.router, prefix="/api/v1")
+    app.include_router(chat_routes.router, prefix="/api/v1")
     app.include_router(settings_routes.router, prefix="/api/v1")
     app.include_router(tokens_routes.router, prefix="/api/v1")
     app.include_router(doctor_routes.router, prefix="/api/v1")
@@ -328,6 +346,7 @@ def create_app(
     app.include_router(trust_routes.ui_router)
     app.include_router(apps_routes.ui_router)
     app.include_router(audit_routes.ui_router)
+    app.include_router(chat_routes.ui_router)
     app.include_router(settings_routes.ui_router)
     app.include_router(tokens_routes.ui_router)
     app.include_router(doctor_routes.ui_router)

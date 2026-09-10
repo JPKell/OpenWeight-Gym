@@ -108,6 +108,7 @@ def build_console(
     )
     # The lifespan would open its own handle; tests share this one and never enter the lifespan.
     app.state.database = database
+    app.state.attachments_root = tmp_path / "attachments"
     console = Console(
         settings=settings,
         database=database,
@@ -200,3 +201,46 @@ def api_routes(app: Any) -> list[tuple[str, APIRoute]]:  # noqa: ANN401 — a Fa
             sub_prefix = prefix + str(getattr(context, "prefix", "") or "")
             pending.extend((sub_prefix, sub) for sub in inner.routes)
     return found
+
+
+CHAT_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "chat"
+LOADCOACH_URL = "http://127.0.0.1:8766"
+
+
+def mock_loadcoach(
+    router: Any,  # noqa: ANN401 — a respx router
+    *,
+    stream: bytes | str | Exception | None = None,
+    version: str = "1.5.0",
+) -> Any:  # noqa: ANN401 — the respx route for POST /generate/stream
+    """LoadCoach as the console sees it: a version probe, and one recorded stream replayed.
+
+    ``stream`` is a fixture file name under ``tests/fixtures/chat``, raw SSE bytes, or an
+    exception the transport raises. The recordings are the reference machine's own streams.
+    """
+    import httpx
+
+    router.get(f"{LOADCOACH_URL}/api/v1/version").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "application": {"name": "loadcoach", "version": version},
+                "api": {"current": "v1"},
+            },
+        )
+    )
+    route = router.post(f"{LOADCOACH_URL}/api/v1/generate/stream")
+    if isinstance(stream, Exception):
+        route.mock(side_effect=stream)
+    else:
+        body = stream if stream is not None else "loadcoach-1.5.0-gpt-oss-thinking.sse"
+        if isinstance(body, str) and body.endswith(".sse"):
+            body = (CHAT_FIXTURES / body).read_bytes()
+        route.mock(
+            return_value=httpx.Response(
+                200,
+                headers={"content-type": "text/event-stream"},
+                content=body if isinstance(body, bytes) else body.encode(),
+            )
+        )
+    return route

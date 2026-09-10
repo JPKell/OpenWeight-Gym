@@ -1,0 +1,39 @@
+{#- One message. Model text arrives here only as message.html (services/chat.py render_reply),
+    thinking and cards only as escaped text. No chat template marks anything safe. -#}
+<article class="chat-message chat-{{ message.role }}" id="m-{{ message.id }}" data-message-id="{{ message.id }}"
+         {%- if message.in_progress %} data-streaming="true"{% endif %}>
+  <header class="chat-role muted">{{ "You" if message.role == "user" else ("Reply" if message.role == "assistant" else message.role) }}</header>
+
+  {% if message.role == "user" %}
+  <div class="chat-user-text">{{ message.text }}</div>
+  {% elif message.in_progress %}
+  <details class="chat-thinking" hidden><summary>Thinking…</summary><div class="chat-thinking-body"></div></details>
+  <div class="chat-live" aria-live="polite"></div>
+  <p class="muted chat-waiting">Waiting for the reply… <noscript>Reload the page to see it.</noscript></p>
+  {% else %}
+  {% if message.thinking %}
+  <details class="chat-thinking"><summary>Thinking</summary><div class="chat-thinking-body">{{ message.thinking }}</div></details>
+  {% endif %}
+  {% for card in message.cards %}
+  <details class="chat-card chat-card-{{ card.kind }}"><summary>{{ card.kind | replace("_", " ") }}{% if card.title %} — {{ card.title }}{% endif %}</summary>
+    <pre>{{ card | tojson(indent=2) }}</pre></details>
+  {% endfor %}
+  <div class="chat-answer">{{ message.html }}</div>
+  {% if message.halt_message %}
+  <p class="notice" role="alert"><strong>Halted.</strong> {{ message.halt_message }}</p>
+  {% endif %}
+  {% if message.routing %}
+  <details class="chat-decision muted">
+    <summary>{{ message.routing.model or "—" }} · {{ message.routing.candidates or 0 }} candidates · {{ message.routing.rejected or 0 }} rejected
+      {%- set line = message.cost_line %}{% if line %} · {{ line.summary }}{% endif %}</summary>
+    {% if message.routing.rejections %}
+    <ul>{% for reason, count in message.routing.rejections.items() %}<li><code>{{ reason }}</code> × {{ count }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if line and line.unpriced_count %}<p>{{ line.unpriced_count }} unpriced</p>{% endif %}
+    <p>{% if message.routing.task_profile %}task <code>{{ message.routing.task_profile }}</code> · {% endif %}
+       {% if message.remote_job_id %}job <code>{{ message.remote_job_id }}</code>{% endif %}
+       {% if message.finish_reason %} · finish <code>{{ message.finish_reason }}</code>{% endif %}</p>
+  </details>
+  {% endif %}
+  {% endif %}
+</article>
