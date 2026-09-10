@@ -237,14 +237,16 @@ class TestReadSinceAndHistory:
                     at=now - timedelta(hours=48), interval_ms=1000, gpu_utilization_percent=10.0
                 )
             )
-        rows = history_rows(database, figure="gpu_utilization_percent", hours=24)
+        rows = history_rows(database, figure="gpu_utilization_percent", hours=24, now=now)
         assert len(rows) == 1
         assert rows[0][1] == 61.0
 
     def test_history_rows_refuses_an_unknown_figure(self, tmp_path_factory) -> None:  # type: ignore[no-untyped-def]
         database = _memory_db(tmp_path_factory)
         try:
-            history_rows(database, figure="not_a_figure", hours=24)
+            history_rows(
+                database, figure="not_a_figure", hours=24, now=datetime(2026, 9, 9, tzinfo=UTC)
+            )
         except ValueError as exc:
             assert "not_a_figure" in str(exc)
         else:

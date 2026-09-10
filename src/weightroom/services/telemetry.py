@@ -231,9 +231,12 @@ def read_since(
 
 
 def history_rows(
-    database: Database, *, figure: str, hours: float
+    database: Database, *, figure: str, hours: float, now: datetime
 ) -> list[tuple[datetime, float | int | None]]:
-    """``(at, value)`` pairs for one figure over the trailing ``hours`` — already sweep-downsampled.
+    """``(at, value)`` for one figure over the ``hours`` before ``now``, already downsampled.
+
+    ``now`` is injected: samples written at a fixed instant fall out of a window read off the real
+    clock once that instant is a day old.
 
     Raises:
         ValueError: ``figure`` is not one of :data:`FIGURE_COLUMNS`.
@@ -242,7 +245,7 @@ def history_rows(
         message = f"{figure!r} is not a telemetry figure; the names are {sorted(FIGURE_COLUMNS)}."
         raise ValueError(message)
     column = getattr(TelemetrySample, FIGURE_COLUMNS[figure])
-    cutoff = datetime.now(UTC) - timedelta(hours=max(0.0, hours))
+    cutoff = now - timedelta(hours=max(0.0, hours))
     with database.read() as session:
         rows = session.execute(
             select(TelemetrySample.at, column)

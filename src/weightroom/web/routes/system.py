@@ -193,7 +193,7 @@ async def telemetry_history(
                 "details": {"figures": sorted(FIGURE_COLUMNS)},
             },
         )
-    rows = history_rows(request.app.state.database, figure=figure, hours=hours)
+    rows = history_rows(request.app.state.database, figure=figure, hours=hours, now=now_of(request))
     return JSONResponse(
         content={
             "figure": figure,
@@ -263,7 +263,7 @@ def telemetry_history_page(
     eventual ECharts container — see that function's own docstring for why.
     """
     chosen = figure if figure in FIGURE_COLUMNS else "gpu_vram_used_bytes"
-    rows = history_rows(request.app.state.database, figure=chosen, hours=hours)
+    rows = history_rows(request.app.state.database, figure=chosen, hours=hours, now=now_of(request))
     return render_shell_page(
         request,
         "telemetry_history.html",
