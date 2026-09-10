@@ -7,6 +7,7 @@ run and must add exactly one row. Later rows inherit both halves.
 
 from __future__ import annotations
 
+import tempfile
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -22,9 +23,11 @@ from tests.support import (
     api_routes,
     build_console,
     fake_application,
+    fill_rows,
     fixture_database,
 )
 from weightroom.infrastructure.db.models import AuditLog
+from weightroom.services.db_reader import effective_database_url
 from weightroom.services.processes import FakeSystemdController
 
 STATE_CHANGING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
@@ -390,6 +393,160 @@ def _db_delete_results_json(console: Console) -> Any:  # noqa: ANN401
         )
 
 
+_CATALOG_CANONICAL_ID = "ollama/audit-exercise@sha256:deadbeef"
+_CATALOG_MODEL_ID = "01CATALOGEXERCISE000000001"
+
+
+def _seed_catalog_model(console: Console) -> str:
+    """One LoadCoach model row, on the same fixture copy the ``console`` fixture already built —
+    the catalog join has nothing to enable, drop in over or delete without one."""
+    from typing import cast
+
+    state = cast(Any, console.client.app).state
+    url, reason = effective_database_url(state.settings, "loadcoach")
+    assert url is not None, reason
+    fill_rows(
+        Path(url.removeprefix("sqlite:///")),
+        "models",
+        [
+            {
+                "id": _CATALOG_MODEL_ID,
+                "provider_kind": "ollama",
+                "provider_model_name": "audit-exercise",
+                "canonical_id": _CATALOG_CANONICAL_ID,
+                "identity_confidence": "digest",
+                "first_seen_at": "2026-01-01T00:00:00+00:00",
+                "last_seen_at": "2026-01-01T00:00:00+00:00",
+                "available": 1,
+                "enabled": 1,
+            }
+        ],
+    )
+    return _CATALOG_CANONICAL_ID
+
+
+def _catalog_pull_json(console: Console) -> Any:  # noqa: ANN401
+    """Starting a pull never fails here (services/catalog.py); the worker thread runs unmocked
+    and harmlessly fails in the background against a closed port."""
+    return console.client.post(
+        "/api/v1/catalog/pull", json={"name": "audit-exercise"}, headers=JSON_HEADERS
+    )
+
+
+def _catalog_pull_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/catalog/pull-form", {"name": "audit-exercise"})
+
+
+def _mock_ollama_ps(router: Any) -> None:  # noqa: ANN401 — a respx router
+    """``services/catalog.py``'s join always asks Ollama for residency; inside a respx context
+    that call needs an answer too, or respx refuses it as unmocked rather than letting it degrade
+    to a real, gracefully-handled connection error the way an un-mocked test run does."""
+    import httpx
+
+    router.get("http://127.0.0.1:11434/api/ps").mock(
+        return_value=httpx.Response(200, json={"models": []})
+    )
+
+
+def _catalog_enable_json(console: Console) -> Any:  # noqa: ANN401
+    import httpx
+    import respx
+
+    canonical_id = _seed_catalog_model(console)
+    with respx.mock(assert_all_mocked=False) as router:
+        _mock_ollama_ps(router)
+        router.post(f"http://127.0.0.1:8766/api/v1/models/{_CATALOG_MODEL_ID}/enabled").mock(
+            return_value=httpx.Response(200, json={"enabled": False})
+        )
+        return console.client.post(
+            f"/api/v1/catalog/{canonical_id}/enabled",
+            json={"app": "loadcoach", "enabled": False},
+            headers=JSON_HEADERS,
+        )
+
+
+def _catalog_enable_form(console: Console) -> Any:  # noqa: ANN401
+    import httpx
+    import respx
+
+    canonical_id = _seed_catalog_model(console)
+    with respx.mock(assert_all_mocked=False) as router:
+        _mock_ollama_ps(router)
+        router.post(f"http://127.0.0.1:8766/api/v1/models/{_CATALOG_MODEL_ID}/enabled").mock(
+            return_value=httpx.Response(200, json={"enabled": False})
+        )
+        return console.post_form(
+            "/catalog/enable", {"canonical_id": canonical_id, "app": "loadcoach"}
+        )
+
+
+def _catalog_delete_json(console: Console) -> Any:  # noqa: ANN401
+    """The preview half (Database Standards §8): FreeWeight and Ollama are both unreachable here
+    and degrade to ``None``/``False`` rather than an error (services/catalog.py)."""
+    canonical_id = _seed_catalog_model(console)
+    return console.client.request(
+        "DELETE", f"/api/v1/catalog/{canonical_id}", json={}, headers=JSON_HEADERS
+    )
+
+
+def _catalog_delete_form(console: Console) -> Any:  # noqa: ANN401
+    canonical_id = _seed_catalog_model(console)
+    return console.post_form("/catalog/delete", {"canonical_id": canonical_id})
+
+
+def _catalog_llamacpp_directory(router: Any) -> None:  # noqa: ANN401 — a respx router
+    """LoadCoach answers as llama.cpp; FreeWeight's own provider is mocked too (``ollama``, no
+    directory) so ``llamacpp_targets``' call to it is answered rather than refused by respx for
+    being unmocked — FreeWeight is not installed in this fixture and has nothing to contribute."""
+    import httpx
+
+    _mock_ollama_ps(router)
+    directory = tempfile.mkdtemp(prefix="wr-gym-audit-catalog-")
+    router.get("http://127.0.0.1:8765/api/v1/provider").mock(
+        return_value=httpx.Response(200, json={"provider": {"kind": "ollama"}})
+    )
+    router.get("http://127.0.0.1:8766/api/v1/providers").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "registrations": [
+                    {"name": "local", "kind": "llamacpp", "model_directory": directory}
+                ]
+            },
+        )
+    )
+    router.post("http://127.0.0.1:8766/api/v1/models/discover").mock(
+        return_value=httpx.Response(200, json={"added": 0})
+    )
+
+
+def _catalog_dropin_json(console: Console) -> Any:  # noqa: ANN401
+    """The JSON route answers with the drop-in result directly, never re-fetching the catalog
+    (unlike the page form below), so the ollama residency mock in the shared helper goes unused
+    here — ``assert_all_called=False`` for that reason alone."""
+    import respx
+
+    source = Path(tempfile.mkstemp(suffix=".gguf")[1])
+    source.write_bytes(b"GGUF" + b"\x00" * 2000)
+    with respx.mock(assert_all_mocked=False, assert_all_called=False) as router:
+        _catalog_llamacpp_directory(router)
+        return console.client.post(
+            "/api/v1/catalog/dropin",
+            data={"path": str(source), "csrf_token": console.csrf_token()},
+            headers={"Sec-Fetch-Site": "same-origin"},
+        )
+
+
+def _catalog_dropin_form(console: Console) -> Any:  # noqa: ANN401
+    import respx
+
+    source = Path(tempfile.mkstemp(suffix=".gguf")[1])
+    source.write_bytes(b"GGUF" + b"\x00" * 2000)
+    with respx.mock(assert_all_mocked=False) as router:
+        _catalog_llamacpp_directory(router)
+        return console.post_form("/catalog/dropin-form", {"path": str(source)})
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -435,6 +592,14 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/api/v1/apps/{app}/db/restore"): _db_restore_json,
     ("POST", "/api/v1/apps/{app}/db/delete-results"): _db_delete_results_json,
     ("POST", "/apps/{app}/database/curated"): _db_curated_form,
+    ("POST", "/api/v1/catalog/pull"): _catalog_pull_json,
+    ("POST", "/catalog/pull-form"): _catalog_pull_form,
+    ("POST", "/api/v1/catalog/{ref:path}/enabled"): _catalog_enable_json,
+    ("POST", "/catalog/enable"): _catalog_enable_form,
+    ("DELETE", "/api/v1/catalog/{ref:path}"): _catalog_delete_json,
+    ("POST", "/catalog/delete"): _catalog_delete_form,
+    ("POST", "/api/v1/catalog/dropin"): _catalog_dropin_json,
+    ("POST", "/catalog/dropin-form"): _catalog_dropin_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 

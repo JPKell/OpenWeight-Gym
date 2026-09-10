@@ -32,7 +32,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
 
-from sqlalchemy import MetaData, Table, func, select
+from sqlalchemy import func, select
 
 from weightroom.services.apps import bearer_token
 from weightroom.services.database import Database
@@ -41,6 +41,7 @@ from weightroom.services.db_reader import (
     known_revision,
     open_read_only,
     read_revision,
+    reflect_table,
 )
 
 if TYPE_CHECKING:
@@ -181,17 +182,10 @@ def _fetch_status(
     return body if isinstance(body, dict) else None
 
 
-def _reflect(engine: Any, name: str) -> Table | None:  # noqa: ANN401 — a SQLAlchemy Engine
-    try:
-        return Table(name, MetaData(), autoload_with=engine)
-    except Exception:  # noqa: BLE001 — an unknown or unreadable table renders "—", not a crash
-        return None
-
-
 def _figures_from_database(engine: Any, app: str) -> tuple[Figure, ...]:  # noqa: ANN401
     figures = []
     for name in _FIGURE_TABLES.get(app, ()):
-        table = _reflect(engine, name)
+        table = reflect_table(engine, name)
         count: int | None = None
         if table is not None:
             try:
@@ -207,7 +201,7 @@ def _figures_from_database(engine: Any, app: str) -> tuple[Figure, ...]:  # noqa
 
 def _table_from_database(engine: Any, app: str) -> OverviewTable:  # noqa: ANN401
     name = _PRIMARY_TABLE.get(app, app)
-    table = _reflect(engine, name)
+    table = reflect_table(engine, name)
     if table is None:
         return _empty_table(app, message=f"{name} is not a table this build knows how to read.")
     order_columns = list(table.primary_key.columns)

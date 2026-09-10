@@ -7,6 +7,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **The model catalog** (row W8, `services/catalog.py`, `/catalog`): FreeWeight's and LoadCoach's
+  models joined by canonical identity — the only two applications with a models table at all —
+  with per-application enabled state (ADR-0118), evidence freshness (always FreeWeight's own),
+  size, context and residency (LoadCoach's own `residency` table first, an Ollama `/api/ps` check
+  for a row it does not carry). Enable/disable proxies to that application's own
+  `POST /models/{id}/enabled`; a GGUF drop-in validates magic bytes, size and containment before
+  copying into the model directory every llama.cpp-configured application shares, then refreshes
+  each one; a catalog delete previews and, typed and re-authenticated, removes the Ollama tag or
+  the GGUF file and FreeWeight's own stored results (Database Standards §8, ADR-0134 rule 2). A
+  pull is Ollama's own streamed `/api/pull`, run in a daemon thread with its progress held in
+  memory only (`PullRegistry`) until row W9 hosts it as a real job.
 - **FreeWeight `0010` is a known revision** (row WA1, ADR-0135). Migration `0005` adds it to
   `known_revisions`, beside `0009`, so a FreeWeight database carrying `0010` — whose
   `runtime_profiles` gains `adapters_registered` — is read rather than refused as unknown. `tests/fixtures/databases/`

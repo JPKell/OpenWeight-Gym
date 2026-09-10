@@ -56,6 +56,9 @@ CONSOLE_PAGES: tuple[dict[str, str], ...] = (
     {"label": "Chat", "href": "/chat"},
     {"label": "Docs", "href": "/docs"},
     {"label": "Database", "href": "/database"},
+    {"label": "Catalog", "href": "/catalog"},
+    {"label": "Costs", "href": "/costs"},
+    {"label": "Backups", "href": "/backups"},
     {"label": "Jobs", "phase": "W9"},
 )
 """The console's own top-bar pages (design brief §4): a built one carries ``href``, an unbuilt

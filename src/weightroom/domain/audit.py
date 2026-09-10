@@ -56,6 +56,12 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "db.dry_run",
         "db.curated",
         "catalog.pull",
+        # W8. Every other catalog action: enabling or disabling a model on one application, a
+        # GGUF drop-in, and a catalog delete (the preview and the confirmed removal both — a
+        # preview changes nothing but is the row that shows what was about to happen).
+        "catalog.enabled",
+        "catalog.dropin",
+        "catalog.delete",
         "prompt.override",
         "job.run",
         "alert.ack",

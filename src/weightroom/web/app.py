@@ -37,6 +37,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from weightroom.__about__ import __version__
 from weightroom.config import LOOPBACK_HOSTS, Settings, data_dir, resolve_config_path
 from weightroom.services.apps import VersionCache
+from weightroom.services.catalog import PullRegistry
 from weightroom.services.chat import ChatRunner, recover_interrupted
 from weightroom.services.database import Database
 from weightroom.services.db_reader import DatabaseUrlCache
@@ -51,6 +52,7 @@ from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, 
 from weightroom.web.rendering import templates
 from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
+from weightroom.web.routes import catalog as catalog_routes
 from weightroom.web.routes import chat as chat_routes
 from weightroom.web.routes import databases as databases_routes
 from weightroom.web.routes import docs as docs_routes
@@ -321,6 +323,9 @@ def create_app(
     # the data root with generated names (spec §14). Both overridable, so a test never writes to
     # the operator's home.
     app.state.chat = ChatRunner()
+    # A pull's progress lives only here, in this process, for its own lifetime (row W8; W9 hosts
+    # it as a real job). One registry, shared by every request.
+    app.state.catalog_pulls = PullRegistry()
     app.state.attachments_root = data_dir() / "attachments"
     # One schema document per application, re-read every 60 s (api.md §2). Each read launches
     # `<app> config schema --json`, so without it every element of a settings page would.
@@ -361,6 +366,7 @@ def create_app(
     app.include_router(ollama_routes.router, prefix="/api/v1")
     app.include_router(docs_routes.router, prefix="/api/v1")
     app.include_router(databases_routes.router, prefix="/api/v1")
+    app.include_router(catalog_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
@@ -374,6 +380,7 @@ def create_app(
     app.include_router(system_routes.ui_router)
     app.include_router(docs_routes.ui_router)
     app.include_router(databases_routes.ui_router)
+    app.include_router(catalog_routes.ui_router)
 
     mount_static(app, environment=templates(), extra_dirs={"/app-static": APP_STATIC_DIR})
     return app

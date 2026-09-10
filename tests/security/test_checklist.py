@@ -121,14 +121,16 @@ def test_a_failed_login_logs_the_address_never_the_password(
     assert "the wrong secret" not in caplog.text
 
 
-# §14: archive handling — the only uploads are W6's chat attachments (text and markdown, capped,
-# never unpacked: tests/integration/test_chat_loadcoach.py refuses a .pdf, binary and oversize);
-# W8's GGUF drop-in joins this list when it lands, and nothing else may.
+# §14: archive handling — W6's chat attachments (text and markdown, capped, never unpacked:
+# tests/integration/test_chat_loadcoach.py refuses a .pdf, binary and oversize) and W8's GGUF
+# drop-in (magic bytes, size and containment checked — services/catalog.py), and nothing else.
 
 UPLOAD_ROUTES = frozenset(
     {
         "/api/v1/chat/conversations/{conversation_id}/attachments",
         "/chat/{conversation_id}/attachments",
+        "/api/v1/catalog/dropin",
+        "/catalog/dropin-form",
     }
 )
 

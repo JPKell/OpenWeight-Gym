@@ -33,7 +33,19 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final
 from urllib.parse import quote
 
 from baseaicore import SuiteError
-from sqlalchemy import String, cast, column, create_engine, func, inspect, select, table, text
+from sqlalchemy import (
+    MetaData,
+    String,
+    Table,
+    cast,
+    column,
+    create_engine,
+    func,
+    inspect,
+    select,
+    table,
+    text,
+)
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 from sqlalchemy.pool import NullPool
@@ -76,6 +88,7 @@ __all__ = [
     "open_app_database",
     "open_read_only",
     "read_revision",
+    "reflect_table",
     "revision_summary",
     "run_query",
     "statement_deadline",
@@ -280,6 +293,20 @@ def known_revisions(database: Database, app: str) -> tuple[str, ...]:
 def known_revision(database: Database, app: str, revision: str | None) -> bool:
     """Whether ``revision`` is one of :func:`known_revisions`."""
     return revision is not None and revision in known_revisions(database, app)
+
+
+def reflect_table(engine: Engine, name: str) -> Table | None:
+    """Reflect one table off ``engine``, or ``None`` when it does not exist or cannot be read.
+
+    Moved here from ``services/overview.py`` (row W8) now that ``services/catalog.py`` reads
+    tables no :class:`AppDatabase` view already covers (``model_descriptors``,
+    ``capability_evidence``, ``residency``) the same way the Overview table always has: a plain
+    reflection, never a second ORM.
+    """
+    try:
+        return Table(name, MetaData(), autoload_with=engine)
+    except Exception:  # noqa: BLE001 — an unknown or unreadable table renders "—", not a crash
+        return None
 
 
 # --- One application's database, for one request ----------------------------------------------
