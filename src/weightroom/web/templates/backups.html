@@ -1,0 +1,71 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state %}
+{% block title %}Backups — WeightRoom{% endblock %}
+{% block page_content %}
+<h2>Backups and migrations</h2>
+<p class="muted">Each application's own <code>db status</code>, its own <code>backups/</code> and
+the guarded-write undo copies WeightRoomGym has taken of it (spec §7.9). Backup, upgrade and
+restore themselves run from each application's own <a href="/database">Database</a> page; only
+WeightRoomGym's own database has no other page to carry them, so its buttons are here.
+<a href="/api/v1/backups">JSON</a></p>
+
+{% if curated_error %}
+<p class="notice" role="alert"><strong><code>{{ curated_error.code }}</code></strong> {{ curated_error.message }}</p>
+{% endif %}
+{% if curated %}
+<div class="notice" role="status">
+  <p><code>{{ curated.argv | join(" ") }}</code> — {{ "done." if curated.ok else "failed: " ~ curated.error }}</p>
+</div>
+{% endif %}
+
+{% for row in rows %}
+<h3>{{ row.app | app_label }}</h3>
+{% if row.app == "weightroom" %}
+{% set output = row.status.output %}
+{% if output %}
+<p class="muted">{{ output.dialect }} at revision {{ output.current_revision or "none" }}
+(head {{ output.head_revision }}){{ " — at head" if output.is_at_head else "" }};
+{{ output.size_bytes }} bytes; integrity {{ "ok" if output.integrity_ok else output.integrity_detail }}.</p>
+{% else %}
+<p class="notice" role="alert">{{ row.status.error }}</p>
+{% endif %}
+<form method="post" action="/backups/self" class="filter-bar">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit" name="verb" value="backup">db backup</button>
+  <button type="submit" name="verb" value="upgrade">db upgrade</button>
+</form>
+<p class="muted">Restore has no button here: this page is served from the same database a
+restore would replace out from under itself. Run <code>wr-gym db restore &lt;file&gt;
+--confirm</code> from a terminal with the <code>weightroom</code> unit stopped.</p>
+{% else %}
+{% if row.status.ok %}
+<pre class="mono">{{ row.status.output if row.status.output is string else (row.status.output | json_pretty) }}</pre>
+{% else %}
+<p class="notice" role="alert">{{ row.status.error }}</p>
+{% endif %}
+<p class="muted"><a href="/apps/{{ row.app }}/database">Backup, upgrade or restore from
+{{ row.app | app_label }}'s own database page.</a></p>
+{% endif %}
+
+{% if row.own_backups %}
+<h4>{{ row.app | app_label }}'s own backups</h4>
+<ul class="mono">
+  {% for one in row.own_backups %}<li>{{ one.path }} <span class="muted">{{ one.size_bytes }} bytes, {{ one.modified_at }}</span></li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="muted">No backups yet in {{ row.app | app_label }}'s own <code>backups/</code>.</p>
+{% endif %}
+
+{% if row.guarded_write_backups %}
+<h4>Guarded-write backups</h4>
+<ul class="mono">
+  {% for one in row.guarded_write_backups %}<li>{{ one.path }} <span class="muted">{{ one.size_bytes }} bytes, {{ one.modified_at }}</span></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endfor %}
+{% if not rows %}
+{{ empty_state("No application answered.") }}
+{% endif %}
+{% endblock %}

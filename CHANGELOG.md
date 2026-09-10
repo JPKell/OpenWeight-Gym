@@ -27,6 +27,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   since its other ceilings and IdeaPress's own (`per_output_*`, `per_project_*`) are `PER_RUN`/
   `PER_TAG` — meaningless without picking one run or project, and `position()` refuses `PER_RUN`
   outright.
+- **The Backups page** (row W8, `/backups`): each application's own `db status`, its own
+  `backups/` directory (`services/db_curated.application_backups`, never WeightRoomGym's
+  guarded-write directory, a different thing at a different path) and the guarded-write undo
+  copies already listed at `GET /apps/{app}/db/backups`. Backup, upgrade and restore themselves
+  stay on each application's own database page (W7); WeightRoomGym's own database, which has no
+  other page, gets `status`/`backup`/`upgrade` here, in-process (`services/db_curated.
+  run_self_curated`, `services/database.backup_directory`) — never a subprocess launch of itself.
+  **No self-restore route**: this page is served from the connection pool a live restore would
+  replace out from under itself, so restore stays `wr-gym db restore <file> --confirm` from a
+  terminal with the unit stopped, the way any other application's restore already requires. One
+  application not installed degrades to that row's own failure, never the whole page.
 - **FreeWeight `0010` is a known revision** (row WA1, ADR-0135). Migration `0005` adds it to
   `known_revisions`, beside `0009`, so a FreeWeight database carrying `0010` — whose
   `runtime_profiles` gains `adapters_registered` — is read rather than refused as unknown. `tests/fixtures/databases/`

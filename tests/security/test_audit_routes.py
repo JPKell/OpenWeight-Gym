@@ -393,6 +393,18 @@ def _db_delete_results_json(console: Console) -> Any:  # noqa: ANN401
         )
 
 
+def _self_db_backup(console: Console) -> Any:  # noqa: ANN401
+    return console.client.post("/api/v1/db/backup", headers=JSON_HEADERS)
+
+
+def _self_db_upgrade(console: Console) -> Any:  # noqa: ANN401
+    return console.client.post("/api/v1/db/upgrade", headers=JSON_HEADERS)
+
+
+def _self_backups_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/backups/self", {"verb": "backup"})
+
+
 _CATALOG_CANONICAL_ID = "ollama/audit-exercise@sha256:deadbeef"
 _CATALOG_MODEL_ID = "01CATALOGEXERCISE000000001"
 
@@ -600,6 +612,9 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/catalog/delete"): _catalog_delete_form,
     ("POST", "/api/v1/catalog/dropin"): _catalog_dropin_json,
     ("POST", "/catalog/dropin-form"): _catalog_dropin_form,
+    ("POST", "/api/v1/db/backup"): _self_db_backup,
+    ("POST", "/api/v1/db/upgrade"): _self_db_upgrade,
+    ("POST", "/backups/self"): _self_backups_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 

@@ -16,21 +16,28 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final
 
 import httpx
 from baseaicore import SuiteError
+from weightsdb import DatabaseError
 
 from weightroom.domain.guard import GuardAppRunning
+from weightroom.services import database as own_database
 from weightroom.services.apps import AppNotInstalled, bearer_token
-from weightroom.services.db_guard import observe
+from weightroom.services.db_guard import BackupFile, observe
+from weightroom.services.db_reader import effective_database_url
 from weightroom.services.processes import child_environment, executable_for, run_command
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from weightroom.config import Settings
+    from weightroom.services.database import Database
     from weightroom.services.db_guard import Connector
+    from weightroom.services.db_reader import DatabaseUrlCache
     from weightroom.services.processes import Runner, SystemdController
 
 __all__ = [
@@ -41,8 +48,11 @@ __all__ = [
     "CuratedRefused",
     "CuratedResult",
     "TableOperation",
+    "application_backups",
     "delete_results",
     "run_curated",
+    "run_self_curated",
+    "self_backups",
     "verbs_for",
 ]
 
@@ -347,4 +357,143 @@ def delete_results(
         ok=False,
         output=None,
         error=f"{app} refused: {message}" if message else f"{app} answered {response.status_code}.",
+    )
+
+
+def application_backups(
+    settings: Settings,
+    app: str,
+    *,
+    urls: DatabaseUrlCache,
+    monotonic: float,
+    runner: Runner = run_command,
+) -> tuple[BackupFile, ...]:
+    """Every file in the application's **own** ``backups/`` — where its own ``db backup``/``db
+    upgrade`` land, beside its database file (spec §7.9). Never WeightRoomGym's own guarded-write
+    directory (``services/db_guard.list_backups``), which is a different thing at a different path.
+
+    Returns:
+        Newest first; empty when the database cannot be located or the directory does not exist —
+        never raises (ADR-0016: an application never backed up yet is not an error).
+    """
+    url, _reason = urls.get(
+        app, now=monotonic, read=lambda: effective_database_url(settings, app, runner=runner)
+    )
+    if url is None or not url.startswith("sqlite:///"):
+        return ()
+    return _scan_backups(Path(url.removeprefix("sqlite:///")).parent / "backups")
+
+
+def self_backups(database: Database) -> tuple[BackupFile, ...]:
+    """The same listing as :func:`application_backups`, for WeightRoomGym's own database — no
+    subprocess needed, since it is this process's own engine."""
+    return _scan_backups(own_database.backup_directory(database.engine))
+
+
+def _scan_backups(directory: Path) -> tuple[BackupFile, ...]:
+    if not directory.is_dir():
+        return ()
+    found = [
+        BackupFile(path, path.stat().st_size, datetime.fromtimestamp(path.stat().st_mtime, UTC))
+        for path in directory.iterdir()
+        if path.is_file() and path.suffix in (".sqlite3", ".dump", ".gz")
+    ]
+    return tuple(sorted(found, key=lambda one: (one.modified_at, one.path.name), reverse=True))
+
+
+def run_self_curated(database: Database, verb: str, *, backup_retention: int = 5) -> CuratedResult:
+    """WeightRoomGym's own ``status``/``backup``/``upgrade`` — in-process, since it is this
+    process's own database, never a subprocess launch of itself.
+
+    ``restore`` is refused: this request is itself served from the connection pool the restore
+    would replace out from under, which ``wr-gym db restore`` (a terminal, the unit stopped) does
+    not have to contend with. There is no live-safe version of that operation to offer here.
+
+    Raises:
+        CuratedRefused: ``verb`` is ``restore``, or is not one of the three.
+    """
+    if verb == "status":
+        try:
+            report = own_database.get_status(database)
+        except DatabaseError as exc:
+            return CuratedResult(
+                "weightroom",
+                verb,
+                ("wr-gym", "db", "status"),
+                ok=False,
+                output=None,
+                error=exc.message,
+            )
+        return CuratedResult(
+            "weightroom",
+            verb,
+            ("wr-gym", "db", "status"),
+            ok=True,
+            output={
+                "dialect": report.dialect,
+                "current_revision": report.current_revision,
+                "head_revision": report.head_revision,
+                "is_at_head": report.is_at_head,
+                "table_row_counts": report.table_row_counts,
+                "size_bytes": report.size_bytes,
+                "integrity_ok": report.integrity_ok,
+                "integrity_detail": report.integrity_detail,
+            },
+            error=None,
+        )
+    if verb == "backup":
+        try:
+            result = own_database.backup_database(database, output=None, keep=backup_retention)
+        except DatabaseError as exc:
+            return CuratedResult(
+                "weightroom",
+                verb,
+                ("wr-gym", "db", "backup"),
+                ok=False,
+                output=None,
+                error=exc.message,
+            )
+        return CuratedResult(
+            "weightroom",
+            verb,
+            ("wr-gym", "db", "backup"),
+            ok=True,
+            output={"path": str(result.path), "size_bytes": result.size_bytes},
+            error=None,
+        )
+    if verb == "upgrade":
+        try:
+            outcome = own_database.upgrade(database, backup_retention=backup_retention)
+        except DatabaseError as exc:
+            return CuratedResult(
+                "weightroom",
+                verb,
+                ("wr-gym", "db", "upgrade"),
+                ok=False,
+                output=None,
+                error=exc.message,
+            )
+        return CuratedResult(
+            "weightroom",
+            verb,
+            ("wr-gym", "db", "upgrade"),
+            ok=True,
+            output={
+                "from_revision": outcome.from_revision,
+                "to_revision": outcome.to_revision,
+                "backed_up": outcome.backed_up,
+                "backup_path": str(outcome.backup_path) if outcome.backup_path else None,
+            },
+            error=None,
+        )
+    if verb == "restore":
+        raise CuratedRefused(
+            "WeightRoomGym cannot restore its own database from a request it is itself serving. "
+            "Run `wr-gym db restore <file> --confirm` from a terminal with the weightroom unit "
+            "stopped, the way any other application's restore requires.",
+            details={"app": "weightroom", "verb": "restore"},
+        )
+    raise CuratedRefused(
+        f"weightroom offers no db {verb}; its own verbs are status, backup, upgrade.",
+        details={"app": "weightroom", "verb": verb},
     )

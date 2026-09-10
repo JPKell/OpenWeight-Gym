@@ -52,6 +52,7 @@ __all__ = [
     "Database",
     "DatabaseStatus",
     "backup_database",
+    "backup_directory",
     "build_engine",
     "database_health",
     "ensure_ready",
@@ -140,7 +141,10 @@ def migration_runner(engine: Engine, *, backup_retention: int = 5) -> MigrationR
     )
 
 
-def _backup_directory(engine: Engine) -> Path:
+def backup_directory(engine: Engine) -> Path:
+    """Where this database's own backups land: beside the SQLite file, or ``<data>/backups`` on
+    PostgreSQL. Row W8's Backups page lists it; never the guarded-write directory
+    (``services/db_guard.backups_directory``), which is a different thing at a different path."""
     if engine.dialect.name == "sqlite":
         return sqlite_path(engine).parent / "backups"
     return data_dir() / "backups"
@@ -183,7 +187,7 @@ def ensure_ready(
         raise SchemaAhead(
             f"The database is at revision {current!r}, which this build's migrations do not "
             f"produce (known head: {head!r}). It was likely written by a newer version; restore "
-            f"the pre-migration backup under {_backup_directory(database.engine)} and install "
+            f"the pre-migration backup under {backup_directory(database.engine)} and install "
             "the version that wrote it.",
             details={"current": current, "head": head},
         )
