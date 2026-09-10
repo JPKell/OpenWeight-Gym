@@ -396,6 +396,10 @@ def test_a_host_without_journalctl_ends_the_stream_with_the_reason(tmp_path: Pat
     frames = _frames(text)
     assert frames[0][0] == "error"
     assert frames[0][1]["payload"]["code"] == "UNIT_UNSUPPORTED"
+    # And it says the stream is over in the vocabulary the client closes on. Without this the
+    # browser reconnects into the same unsupported host for as long as the page stays open.
+    assert frames[-1][0] == "log.closed"
+    assert frames[-1][1]["payload"]["reason"] == "UNIT_UNSUPPORTED"
 
 
 def test_every_apps_route_needs_a_session(tmp_path: Path) -> None:

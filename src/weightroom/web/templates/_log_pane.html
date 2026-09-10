@@ -69,6 +69,10 @@
   source.addEventListener("log.closed", () => {
     status.textContent = "reader ended";
     append([["msg", "— the journal reader ended —"]], null, true);
+    // An EventSource cannot tell a stream the server ended from one that dropped, so it retries
+    // both — and this one ends the same way every time. Closing here is what stops the page
+    // requesting the stream for as long as it is open.
+    source.close();
   });
   source.addEventListener("error", (event) => {
     if (event.data) {

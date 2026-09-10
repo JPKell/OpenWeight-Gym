@@ -8,6 +8,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ### Fixed
 
+- The log stream stops reconnecting once it is over. An `EventSource` cannot tell a stream the
+  server ended from a connection that dropped, so it retried both — and a host with no
+  `journalctl` ended the stream the same way on every retry, which is the repeated `GET` on
+  `…/logs/stream` in the access log. The error frame is now followed by `log.closed`, the pane
+  closes on it, and MirrorWall's own pane carries `sse-close`.
 - The telemetry strip is live. The shell now loads MirrorWall's `sse.js` and `telemetry.js`
   (both opt-in per application, and neither was loaded), so CPU, RAM, GPU and VRAM show
   measurements instead of the em dashes they held from first paint onwards. RESIDENT and QUEUE
@@ -21,6 +26,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   chip at the right edge. The strip opts into MirrorWall's inline meters for all four fields.
 - The console Overview lists the four applications as a dense table with status dots, uptime,
   version and unit, in place of the bulleted links row W3 shipped.
+- The shell reflows instead of scrolling sideways. Below 900 px the left menu is a `<details>`
+  disclosure (open, with its summary hidden, above it — one markup for both widths), the telemetry
+  strip wraps and drops its meter tracks to values only, and the top bar wraps rather than
+  scrolling.
 
 ## [0.5.0] — 2026-09-10
 

@@ -346,6 +346,15 @@ async def _log_frames(
             ),
             generator=_GENERATOR,
         )
+        # An error ends this stream as finally as `log.closed` does, and an `EventSource` cannot
+        # tell either of them from a dropped connection: without a terminal frame the client
+        # reconnects, this host still has no systemd, and the pair loop for as long as the page is
+        # open. The client closes on `log.closed`, so an ended stream says `log.closed` — the
+        # error frame above is why it ended, not the fact that it did.
+        yield format_frame(
+            Event(sequence=sequence + 2, type="log.closed", payload={"reason": exc.code}),
+            generator=_GENERATOR,
+        )
 
 
 def _stream(reader: JournalReader, units: Sequence[str], *, backfill: int) -> StreamingResponse:

@@ -39,7 +39,6 @@
     flex-wrap: nowrap;
     min-height: var(--mw-header-h, 48px);
     gap: var(--mw-space-3, 12px);
-    overflow-x: auto;
   }
   .masthead h1 {
     margin: 0;
@@ -92,6 +91,47 @@
   }
   .page-actions a { color: var(--mw-text-muted); text-decoration: none; }
   .page-actions a:hover { color: var(--mw-text); }
+
+  /* Responsive (UI/UX §3). Nothing here scrolls sideways: the shell reflows instead. The menu
+     is a `<details>` so the narrow layout is a real disclosure widget with keyboard behaviour and
+     an accessible name the browser supplies — above the breakpoint the summary is hidden and the
+     element is left open, which is the same markup serving both widths rather than two menus. */
+  .shell-menu > summary { display: none; }
+
+  @media (max-width: 900px) {
+    .masthead { flex-wrap: wrap; row-gap: var(--mw-space-2, 8px); }
+    .console-pages { margin-left: 0; }
+    .operator-chip { margin-left: auto; }
+    .masthead > .field { order: 0; }
+
+    /* "Just the values" (the artboard's meters are a wide-screen affordance): the tracks and the
+       separators go, the strip wraps instead of scrolling, and every number stays. */
+    .telemetry-bar {
+      height: auto;
+      flex-wrap: wrap;
+      row-gap: var(--mw-space-1, 4px);
+      column-gap: var(--mw-space-3, 12px);
+      padding: var(--mw-space-1, 4px) 0;
+      overflow-x: visible;
+    }
+    .telemetry-track, .telemetry-sep { display: none; }
+
+    .shell-body { flex-direction: column; gap: var(--mw-space-3, 12px); }
+    .shell-side { width: 100%; }
+    .shell-menu > summary {
+      display: block;
+      padding: var(--mw-space-2, 8px);
+      border: 1px solid var(--mw-border);
+      border-radius: var(--mw-radius-sm, 6px);
+      background: var(--mw-surface);
+      cursor: pointer;
+      font-size: var(--mw-font-size-sm, 12px);
+      font-weight: 600;
+    }
+    .shell-menu[open] > summary { margin-bottom: var(--mw-space-2, 8px); }
+    /* Two columns of links rather than a 200 px column of them down a phone screen. */
+    .shell-menu .side-nav ul { display: grid; grid-template-columns: 1fr 1fr; }
+  }
   .docs-tree-level { list-style: none; margin: 0; padding-left: var(--mw-space-4, 16px); }
   .docs-tree > .docs-tree-level { padding-left: 0; }
   .docs-tree-dir {
@@ -137,14 +177,19 @@
 {% block content %}
 <div class="shell-body">
   <div class="shell-side">
-    {{ side_nav(nav_sections, footer=nav_footer) }}
-    {% if side_nav_stubs %}
-    <ul class="side-nav-stub">
-      {% for stub in side_nav_stubs %}
-      <li title="{{ stub.title }}">{{ stub.label }}</li>
-      {% endfor %}
-    </ul>
-    {% endif %}
+    {# Open in the markup, so a narrow viewport with no JavaScript gets the whole menu rather than
+       a control it cannot work; the script below closes it once, on a narrow screen only. #}
+    <details class="shell-menu" open>
+      <summary>{{ menu_label | default("Menu") }}</summary>
+      {{ side_nav(nav_sections, footer=nav_footer) }}
+      {% if side_nav_stubs %}
+      <ul class="side-nav-stub">
+        {% for stub in side_nav_stubs %}
+        <li title="{{ stub.title }}">{{ stub.label }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </details>
   </div>
   <div class="shell-main">
     {% block page_content %}{% endblock %}
@@ -178,6 +223,19 @@
         if (event.key === "Enter" || event.key === " ") { event.preventDefault(); go(); }
       });
     });
+  })();
+
+  // The menu is one `<details>` at both widths: open and with its summary hidden above the
+  // breakpoint, a real disclosure below it. Only the transition is scripted, and only when the
+  // viewport actually crosses the breakpoint — a menu the operator closed by hand stays closed
+  // until then, which a `resize` handler that reasserted the state on every pixel would undo.
+  (function () {
+    var menu = document.querySelector(".shell-menu");
+    if (!menu || !window.matchMedia) { return; }
+    var wide = window.matchMedia("(min-width: 901px)");
+    var apply = function (event) { menu.open = event.matches; };
+    apply(wide);
+    if (wide.addEventListener) { wide.addEventListener("change", apply); }
   })();
 
   // RESIDENT and QUEUE are WeightRoomGym-specific meters (design brief §4), not MirrorWall's
