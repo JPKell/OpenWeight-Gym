@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, cast
 
@@ -27,7 +28,9 @@ from tests.support import (
     fake_application,
     mock_loadcoach,
 )
+from weightroom.domain.chat import ThinkingState
 from weightroom.infrastructure.db.models import Message, MessageEvent
+from weightroom.services import chat as chat_service
 from weightroom.services.chat import (
     create_conversation,
     events_after,
@@ -362,6 +365,59 @@ def test_the_stream_replays_persisted_rows_after_last_event_id(
     assert "event: thinking_done" not in resumed
     assert "event: done" in resumed
     assert sse_frame(7, "done", {"message_id": "x"}).startswith("id: 7\n")
+
+
+def test_frames_are_yielded_as_they_arrive_not_when_the_stream_ends() -> None:
+    """A reply is read frame by frame; buffering it to the end hid live thinking (W6 demo)."""
+
+    def lines() -> Iterator[str]:
+        yield "event: thinking"
+        yield 'data: {"payload": {"delta": "a"}}'
+        yield ""
+        message = "iter_frames read past a complete frame before yielding it"
+        raise AssertionError(message)
+
+    assert next(iter_frames(lines())).event == "thinking"
+
+
+def test_a_live_reader_past_the_deltas_still_receives_done(tmp_path: Path) -> None:
+    """Dropping the deltas must not let ``done`` reuse an id a live reader was already sent.
+
+    SQLite hands out the highest remaining rowid plus one unless the table says AUTOINCREMENT, so
+    ``done`` came back numbered below the text deltas and the open thread never finished (found at
+    the W6 demonstration; the replay tests read only after completion and could not see it).
+    """
+    console = _console(tmp_path)
+    conversation_id = create_conversation(
+        console.database, backend="loadcoach", title="t", now=console.now
+    )
+    with console.database.write() as session:
+        message = Message(conversation_id=conversation_id, sequence=1, role="assistant", text="")
+        session.add(message)
+        session.flush()
+        message_id = message.id
+    body = {"message_id": message_id}
+    chat_service._append_event(console.database, message_id, 1, "thinking_done", body, console.now)
+    for sequence in (2, 3):
+        delta = {**body, "delta": "x"}
+        chat_service._append_event(
+            console.database, message_id, sequence, "delta.text", delta, console.now
+        )
+    seen = events_after(console.database, conversation_id, after_id=0)[-1][0]
+    chat_service._complete(
+        console.database,
+        message_id,
+        state=ThinkingState(text="xx"),
+        routing=None,
+        usage=None,
+        cost=None,
+        finish_reason="stop",
+        remote_job_id=None,
+        halt=None,
+        now=console.now,
+    )
+    later = events_after(console.database, conversation_id, after_id=seen)
+    assert [kind for _id, kind, _payload in later] == ["done"]
 
 
 # --- Attachments ----------------------------------------------------------------------------------

@@ -65,7 +65,9 @@ def test_fresh_sqlite_migrates_to_head_seeds_known_revisions_and_has_parity() ->
             .execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
             .all()
         }
-        assert names <= {"alembic_version"}
+        # sqlite_sequence is SQLite's own bookkeeping for an AUTOINCREMENT table (message_events)
+        # and cannot be dropped; every table a migration created is gone.
+        assert names - {"sqlite_sequence"} <= {"alembic_version"}
 
 
 @pytest.mark.integration

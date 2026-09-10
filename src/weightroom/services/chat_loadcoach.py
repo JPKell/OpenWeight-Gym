@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from itertools import chain
 from typing import Any, Final
 
 import httpx
@@ -74,7 +75,7 @@ def iter_frames(lines: Iterable[str]) -> Iterator[Frame]:
     """
     event: str | None = None
     data_lines: list[str] = []
-    for line in [*lines, ""]:
+    for line in chain(lines, [""]):  # lazily: a reply streams frame by frame, never buffered
         if line == "":
             if event is not None and data_lines:
                 try:

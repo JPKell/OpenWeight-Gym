@@ -237,7 +237,12 @@ class MessageEvent(Base):
     """
 
     __tablename__ = "message_events"
-    __table_args__ = (UniqueConstraint("message_id", "sequence"),)
+    # AUTOINCREMENT: without it SQLite reuses the highest rowid once the deltas are dropped, and
+    # the ``done`` frame gets an id a live reader has already passed (found at the W6 demo).
+    __table_args__ = (
+        UniqueConstraint("message_id", "sequence"),
+        {"sqlite_autoincrement": True},
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     message_id: Mapped[str] = mapped_column(

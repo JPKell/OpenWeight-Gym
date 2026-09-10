@@ -91,6 +91,7 @@ def upgrade() -> None:
         sa.UniqueConstraint(
             "message_id", "sequence", name=op.f("uq_message_events_message_id_sequence")
         ),
+        sqlite_autoincrement=True,
     )
     op.create_table(
         "attachments",
