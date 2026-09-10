@@ -6,7 +6,7 @@ Packaging and Release Standards §4 and Security Standards §11.
 | File | Contents | Used by |
 |---|---|---|
 | `ci.lock` | Runtime dependencies plus the `dev` and `postgres` extras: the whole test, lint, type and boundary toolchain | Every CI job that installs this package |
-| `release.in` / `release.lock` | The build and publish chain (`build`, `hatchling`, `twine`) | `release.yml` (when it exists), and CI's `build` job |
+| `release.in` / `release.lock` | The build and publish chain (`build`, `hatchling`, `twine`) | `release.yml`, and CI's `build` job |
 
 They do **not** define what a consumer installs: `pip install wr-gym` resolves the ranges in
 `pyproject.toml`. They exist so a green build stays green and `pip-audit` audits what the build

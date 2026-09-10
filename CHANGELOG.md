@@ -50,6 +50,10 @@ Row W1: Phase 1 of the development plan — skeleton, configuration, database, T
 - `requirements/ci.lock` cut on Python 3.13; CI in the full sibling shape (`--require-hashes`,
   `db-matrix`, `coverage`, `contracts`, `security`, `docs`, `build`, `install-check`).
 - `docs/configuration.md`, generated from the settings model and diff-checked.
+- `.github/workflows/release.yml` in the sibling shape: a `v*.*.*` tag builds from
+  `requirements/release.lock`, tests the built wheel, publishes through Trusted Publishing and
+  creates the GitHub release; a manual `workflow_dispatch` publishes to TestPyPI (the first
+  release's dry run, packaging standards §6).
 
 ### Changed
 - `__about__` to `0.1.0`.
