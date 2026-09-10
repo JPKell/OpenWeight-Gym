@@ -111,7 +111,7 @@ def _telemetry_meters(request: Request) -> list[dict[str, object]]:
         if snapshot is not None and snapshot.gpus:
             gpu = snapshot.gpus[0]
             resident_text = bytes_human(gpu.vram_used_bytes)
-        queue = service.queue_snapshot()
+        queue = service.peek_queue()  # a page render is not a reader; only a stream is
         if queue is not None and queue.get("active") is not None:
             depth = queue.get("depth_by_state") or {}
             waiting = depth.get("queued") if isinstance(depth, dict) else None

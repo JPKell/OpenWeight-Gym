@@ -472,6 +472,19 @@ class TelemetryService:
         self._reader_at = self._clock()
         return self._queue
 
+    def peek_queue(self) -> dict[str, Any] | None:
+        """The value :meth:`queue_snapshot` returns, without renewing the reader window.
+
+        For a first paint: rendering a page is not watching it. Only an open telemetry stream keeps
+        upstream reads going, so a page whose strip is hidden — and so opens no stream — costs
+        Ollama and LoadCoach nothing however often it is loaded.
+
+        Returns:
+            The latest queue read, or ``None`` under the same conditions as
+            :meth:`queue_snapshot`.
+        """
+        return self._queue
+
     def _read_queue(self) -> dict[str, Any] | None:
         """One read of LoadCoach's ``/system/status``, on the sampler thread."""
         if self._app_client is None:

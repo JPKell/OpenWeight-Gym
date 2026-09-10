@@ -30,6 +30,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ### Changed
 
+- A telemetry icon in the top bar shows and hides the strip, remembered per browser. Hidden, the
+  page opens no telemetry stream at all: the server polls nothing for that tab, and once no tab is
+  streaming, WeightRoom asks Ollama and LoadCoach nothing either. Rendering a page no longer counts
+  as watching — only an open stream renews the reader window.
 - Telemetry asks Ollama and LoadCoach nothing while nobody is looking. The host is still sampled
   every tick — that is local and feeds history — but the residency read (`/api/ps`) and the queue
   read (`/api/v1/system/status`) happen only while a page or stream is reading, renewed by every

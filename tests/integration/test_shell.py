@@ -70,6 +70,12 @@ def test_the_strip_loads_the_modules_that_move_it(tmp_path: Path) -> None:
     # One EventSource per tab: RESIDENT and QUEUE read telemetry.js's re-dispatched frame.
     assert 'addEventListener("mw:telemetry"' in page
     assert "mirrorwallSse.connect(" not in page
+    # The strip can be hidden, and a hidden strip opens no stream: the toggle names the bar it
+    # controls, and the remembered choice is applied in <head>, before first paint, so telemetry.js
+    # never finds a rendered bar to connect.
+    assert 'class="icon-button telemetry-toggle" aria-controls="mw-telemetry-bar"' in page
+    assert ':root[data-telemetry="off"] #mw-telemetry-bar { display: none; }' in page
+    assert page.index('localStorage.getItem("weightroom-telemetry")') < page.index("<body")
     # The artboard's inline meters, opted into by name; MirrorWall renders no track without them.
     for group in ("cpu", "ram", "gpu", "vram"):
         assert f'data-meter="{group}"' in page, group

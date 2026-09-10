@@ -300,6 +300,33 @@ class TestTelemetryServiceLifecycle:
         service = self._service(database)
         assert service.queue_snapshot() is None
 
+    def test_peeking_at_the_queue_does_not_count_as_reading(self, tmp_path_factory) -> None:  # type: ignore[no-untyped-def]
+        """A page render peeks; only a stream reads. A page whose strip is hidden opens no stream,
+        so however often it is rendered, the sampler asks LoadCoach nothing."""
+        from weightroom.config import load_settings
+
+        database = _memory_db(tmp_path_factory)
+        settings = load_settings(config_path=None).settings
+        collector = TelemetryCollector(host=NullHostReader(), gpu=NullGpuReader())
+        now = [1000.0]
+        reads: list[float] = []
+        service = TelemetryService(database, settings, collector=collector, clock=lambda: now[0])
+
+        def fake_read() -> dict[str, int]:
+            reads.append(now[0])
+            return {"active": 0}
+
+        service._read_queue = fake_read  # type: ignore[method-assign]  # stand-in for the HTTP read
+        for _ in range(20):
+            now[0] += 1
+            assert service.peek_queue() is None
+            service._on_sample(collector.snapshot())
+        assert reads == []
+
+        service.queue_snapshot()  # a stream frame: now it is read
+        service._on_sample(collector.snapshot())
+        assert reads == [now[0]]
+
     def test_upstream_reads_follow_readers_and_are_capped(self, tmp_path_factory) -> None:  # type: ignore[no-untyped-def]
         """Upstream calls scale with time while someone reads, never with readers, and stop when
         nobody does.

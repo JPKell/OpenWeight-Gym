@@ -12,6 +12,15 @@
 {% from "mirrorwall/components.html" import app_tab, side_nav, status_dot %}
 
 {% block head %}
+<script>
+  // Before first paint, like MirrorWall's theme bootstrap: a strip the operator hid stays hidden
+  // with no flash, and telemetry.js — which connects only a bar that is rendered — opens no stream.
+  try {
+    if (window.localStorage.getItem("weightroom-telemetry") === "off") {
+      document.documentElement.setAttribute("data-telemetry", "off");
+    }
+  } catch (error) { /* storage blocked: the strip shows, which is the default */ }
+</script>
 <style>
   /* The 200px sidebar grid the design brief asks for (design.md §2, §4) — MirrorWall's own
      layout.css deliberately leaves this to the application (its side_nav rules style the menu's
@@ -122,6 +131,18 @@
   .user-menu form button { width: 100%; }
   .user-menu-note { color: var(--mw-text-subtle); font-size: var(--mw-font-size-sm, 12px); }
 
+  /* The telemetry toggle. Hidden, the bar is not rendered, so no stream is open for it. */
+  .icon-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; padding: 0; margin: 0;
+    border: 1px solid var(--mw-border); border-radius: var(--mw-radius-sm, 6px);
+    background: var(--mw-surface); color: var(--mw-text-muted); cursor: pointer;
+  }
+  .icon-button:hover { color: var(--mw-text); }
+  .icon-button[aria-pressed="true"] { background: var(--mw-accent-soft); color: var(--mw-text); }
+  .icon-button svg { width: 16px; height: 16px; }
+  :root[data-telemetry="off"] #mw-telemetry-bar { display: none; }
+
   /* Which copy shows. Wide: everything inline and no Menu at all. */
   .nav-more, .nav-more-apps, .nav-more-console { display: none; }
 
@@ -148,6 +169,9 @@
       padding-top: var(--mw-space-3, 12px); border-top: 1px solid var(--mw-border);
     }
     .user-menu-name { display: none; }
+  }
+  @media (max-width: 400px) {
+    .nav-more-label { display: none; }
   }
 
   /* Main pane head (design brief §4): the 18 px title with its status pill, and a right-aligned
@@ -263,8 +287,11 @@
   {{ console_page_links() }}
 </nav>
 <div class="masthead-end">
+  <button type="button" class="icon-button telemetry-toggle" aria-controls="mw-telemetry-bar" aria-pressed="true" aria-label="Telemetry" title="Hide telemetry">
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M1 8.5h3l2-5 3 9 2-4.5h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
   <details class="dropdown nav-more">
-    <summary>&#9776; Menu</summary>
+    <summary aria-label="Menu">&#9776;<span class="nav-more-label"> Menu</span></summary>
     <div class="dropdown-body">
       <nav class="dropdown-group nav-more-apps" aria-label="Applications">
         {% for view in views %}
@@ -389,6 +416,33 @@
     });
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape") { closeAll(null); }
+    });
+  })();
+
+  // The telemetry toggle. Shown: the strip is rendered and telemetry.js holds its one stream.
+  // Hidden: the stream is closed, so the server stops polling for this tab and, once no tab is
+  // streaming, stops asking Ollama and LoadCoach anything (services/telemetry.py). Remembered per
+  // browser, like the theme.
+  (function () {
+    var button = document.querySelector(".telemetry-toggle");
+    var root = document.documentElement;
+    if (!button) { return; }
+    var sync = function () {
+      var shown = root.getAttribute("data-telemetry") !== "off";
+      button.setAttribute("aria-pressed", shown ? "true" : "false");
+      button.title = shown ? "Hide telemetry" : "Show telemetry";
+    };
+    sync();
+    button.addEventListener("click", function () {
+      var show = root.getAttribute("data-telemetry") === "off";
+      if (show) { root.removeAttribute("data-telemetry"); } else { root.setAttribute("data-telemetry", "off"); }
+      try {
+        window.localStorage.setItem("weightroom-telemetry", show ? "on" : "off");
+      } catch (error) { /* not remembered across pages; the choice still applies here */ }
+      sync();
+      if (window.mirrorwallTelemetry) {
+        if (show) { window.mirrorwallTelemetry.wire(); } else { window.mirrorwallTelemetry.unwire(); }
+      }
     });
   })();
 
