@@ -237,3 +237,15 @@ def test_the_polkit_rule_grants_a_unit_and_a_verb_never_a_command(tmp_path: Path
     # appears in the file's own explanatory comment, never in what polkit evaluates.
     body = "\n".join(line for line in rule.splitlines() if not line.startswith("//"))
     assert "systemctl" not in body
+
+
+def test_the_printed_rule_names_the_configured_unit_not_a_hardcoded_one() -> None:
+    """A host whose Ollama unit has another name must be printed a rule that can match it: the
+    restart acts on `[host] ollama_unit`, so the grant has to name the same unit."""
+    from weightroom.services.ollama import polkit_rule_text
+
+    rule = polkit_rule_text("alex", unit="ollama-gpu.service")
+    assert 'action.lookup("unit") == "ollama-gpu.service"' in rule
+    assert '"ollama.service"' not in rule
+    assert 'subject.user == "alex"' in rule
+    assert "docs/OLLAMA_RESTART_POLKIT.md" in rule

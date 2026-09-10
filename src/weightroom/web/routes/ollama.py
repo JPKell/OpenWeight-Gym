@@ -137,7 +137,9 @@ def ollama_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
         principal=principal,
         report=report,
         rule_path=POLKIT_RULE_PATH,
-        rule_text=polkit_rule_text(operator_user()),
+        rule_text=polkit_rule_text(
+            operator_user(), unit=request.app.state.settings.host.ollama_unit
+        ),
         install_command=POLKIT_INSTALL_COMMAND,
         apply_script=report.apply_script,
     )

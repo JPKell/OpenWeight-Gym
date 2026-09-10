@@ -102,11 +102,14 @@ class OllamaRestartNotPermitted(SuiteError):
     code: ClassVar[str] = "OLLAMA_RESTART_NOT_PERMITTED"
 
 
-def polkit_rule_text(user: str) -> str:
-    """The rule file ADR-0125 rule 5 specifies, for this operator.
+def polkit_rule_text(user: str, *, unit: str = "ollama.service") -> str:
+    """The rule file ADR-0125 rule 5 specifies, for this operator and this host's unit.
 
     Args:
         user: The operator's OS user name.
+        unit: The unit the console restarts — ``[host] ollama_unit``. The rule must name the same
+            unit the restart acts on, or it prints a grant that can never match on a host whose
+            unit has another name. ``docs/OLLAMA_RESTART_POLKIT.md`` is the generic form.
 
     Returns:
         The complete file, ready to be saved and installed. A **unit and a verb** are granted,
@@ -117,9 +120,10 @@ def polkit_rule_text(user: str) -> str:
         f"// {POLKIT_RULE_PATH}\n"
         "// Lets one user restart one unit, without a password and without granting systemctl.\n"
         "// Written by WeightRoomGym (ADR-0125 rule 5). Install it as root; this console cannot.\n"
+        "// For other accounts or a group: docs/OLLAMA_RESTART_POLKIT.md.\n"
         "polkit.addRule(function (action, subject) {\n"
         '    if (action.id == "org.freedesktop.systemd1.manage-units" &&\n'
-        '        action.lookup("unit") == "ollama.service" &&\n'
+        f'        action.lookup("unit") == "{unit}" &&\n'
         '        (action.lookup("verb") == "restart" || action.lookup("verb") == "start" ||\n'
         '         action.lookup("verb") == "stop") &&\n'
         f'        subject.user == "{user}") {{\n'
@@ -423,7 +427,7 @@ def restart_ollama(
                 "unit": settings.host.ollama_unit,
                 "command": f"systemctl restart {settings.host.ollama_unit}",
                 "rule_path": POLKIT_RULE_PATH,
-                "rule": polkit_rule_text(user),
+                "rule": polkit_rule_text(user, unit=settings.host.ollama_unit),
                 "install": POLKIT_INSTALL_COMMAND,
                 "stderr": result.stderr.strip(),
             },
