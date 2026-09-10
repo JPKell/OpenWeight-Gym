@@ -1,0 +1,103 @@
+# LoadCoach configuration.
+# Every key below is optional; a fresh install with no file at all is fully functional.
+# Precedence: defaults -> this file -> LOADCOACH_* environment variables -> CLI flags.
+
+[server]
+host = "127.0.0.1"
+port = 8766
+allow_lan_exposure = false
+allowed_hosts = []          # required when host is not loopback (ADR-0026)
+
+[storage]
+# database_url defaults to a location under the XDG data directory.
+# auto_migrate defaults to true on SQLite and false on PostgreSQL, where a failed migration
+# cannot be rolled back automatically (database standards §5.1). Set it explicitly to override.
+backup_retention = 5        # automatic pre-migration backups to keep
+
+# One provider, the common case. This block is fully supported and is not deprecated: it is
+# exactly one registration named after its kind, declaring remote = false (ADR-0077).
+[provider]
+kind = "ollama"
+base_url = "http://127.0.0.1:11434"
+timeout_seconds = 300.0
+
+# More than one provider: name each of them. `remote` is declared, never inferred from the kind
+# or the URL (ADR-0055). Writing a [providers.<name>] block *and* the [provider] block above is
+# refused at startup, naming both -- delete one.
+# [providers.local]
+# kind = "ollama"
+# base_url = "http://127.0.0.1:11434"
+# remote = false
+# [providers.hosted]
+# kind = "ollama"
+# base_url = "https://example.invalid"
+# remote = true
+
+[providers]
+allow_remote = false        # policy: may *any* remote registration be routed to at all
+
+[adapters]
+directory = ""              # empty = adapters are off entirely (ADR-0061)
+
+[execution]
+max_concurrent_jobs = 1         # raise only on multi-GPU or CPU-only setups
+default_timeout_seconds = 300.0
+max_attempts = 3
+attempt_backoff_seconds = 2.0
+
+[runtime]
+# The default runtime profile every execution resolves against (ADR-0023).
+context_size = 0            # 0 = leave to the provider
+kv_cache_precision = ""
+flash_attention = false
+keep_alive = "5m"
+# [runtime.models."ollama/qwen3.5:9b-q8_0@sha256:1f3a9c4e2b70"]
+# context_size = 32768
+
+[queue]
+max_depth = 1000
+lease_seconds = 60
+poll_interval_ms = 250
+lease_renewal_interval_seconds = 20   # lease_seconds must exceed 3x this
+ageing_interval_seconds = 30
+max_wait_seconds = 3600
+ageing_priority_per_minute = 1.0
+overflow_allowance = 100
+max_affinity_streak = 5
+idempotency_ttl_hours = 24.0          # a key is reserved this long, then released
+cancelling_watchdog_seconds = 30      # a job never stays in `cancelling` longer than this
+
+[routing]
+# A task_profiles.toml of your own, imported at startup instead of the shipped one. Empty means
+# the shipped file. The import is an upsert per (profile_id, version): a file naming a shipped
+# profile replaces it, one naming a new id adds it. A path that is not a file is refused at
+# startup rather than falling back, because routing under profiles you did not write is not
+# something you could tell from the outside.
+task_profiles_path = ""
+strategy = "weighted_evidence"
+min_confidence = 0.05
+prefer_resident_bonus = 0.05
+base_switch_penalty = 0.10        # two-level residency (routing §6.1); chosen, not measured
+require_adapter_evidence = true   # "no benchmark, no use" for adapter subjects (ADR-0064 rule 3)
+min_present_weight = 0.5
+explanation_retention_days = 0    # 0 = forever
+
+[evidence]
+freeweight_url = ""          # empty = not configured, not "unavailable"
+freeweight_api_key_env = ""  # or freeweight_api_key_file (ADR-0026)
+allowed_source_hosts = ["127.0.0.1", "localhost", "::1"]
+import_interval_hours = 24.0
+accept_schema_majors = [1]
+
+[residency]
+unload_idle_seconds = 900
+max_resident_models = 1     # per GPU
+
+[telemetry]
+interval_ms = 1000
+vram_headroom_bytes = 536870912   # per GPU
+
+[logging]
+level = "INFO"
+format = "auto"              # text | json | auto (text on a TTY, json otherwise)
+include_content = false

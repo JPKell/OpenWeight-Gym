@@ -1,0 +1,84 @@
+[approval]
+  -S- approval.gate_egress_at: string {public,internal,confidential}
+  -S- approval.gate_step_cost: object
+  -S- approval.mode: string {auto,hybrid,manual}
+  -S- approval.request_timeout_hours: number ≥ 0
+[budget]
+  -S- budget.daily_money_ceiling: object
+  -S- budget.default_money_ceiling: object
+  -S- budget.default_token_ceiling: integer ≥ 1
+  -S- budget.estimate_min_samples: integer ≥ 1
+  -S- budget.on_daily_exhausted: string {window,approval,halt}
+  -S- budget.on_exhausted: string {approval,halt}
+  -S- budget.partial_pricing: string {floor,strict}
+  -S- budget.window_wait_max_days: integer ≥ 1
+[compaction]
+  --- compaction.policy_chain: array
+  --- compaction.protected_recent_turns: integer ≥ 0
+  L-- compaction.threshold: number 0.01 … 1
+[execution]
+  --- execution.lease_seconds: integer ≥ 1
+  --- execution.max_concurrent_remote_steps: integer ≥ 1
+  --- execution.max_concurrent_steps: integer ≥ 1
+  --- execution.max_concurrent_trajectories: integer ≥ 1
+  --- execution.max_steps: integer ≥ 1
+  L-- execution.max_turns_per_step: integer 1 … 200
+  L-- execution.step_retries: integer 0 … 25
+[loadcoach]
+  -S- loadcoach.api_key_env: string
+  -S- loadcoach.api_key_file: string
+  -S- loadcoach.base_url: string
+  -S- loadcoach.timeout_seconds: number ≥ 0
+[logging]
+  --- logging.format: string {text,json,auto}
+  -S- logging.include_content: boolean
+  --- logging.level: string {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+[planning]
+  -S- planning.allow_request_override: boolean
+  L-- planning.corrective_retries: integer 0 … 5
+  -S- planning.enabled: boolean
+  --- planning.max_plan_steps: integer ≥ 1
+  -S- planning.reapproval_scope: string {on_tier_or_classification_change,any_deviation}
+[policy]
+  -S- policy.default_tier: string
+  -S- policy.escalation_order: array
+[server]
+  -S- server.allow_lan_exposure: boolean
+  -S- server.allowed_hosts: array
+  -S- server.failed_auth_per_minute: integer ≥ 0
+  -S- server.host: string
+  -S- server.max_body_bytes: integer ≥ 1024
+  -S- server.port: integer 1 … 65535
+  -S- server.rate_limit_burst: integer ≥ 1
+  -S- server.rate_limit_per_minute: integer ≥ 0
+[storage]
+  -S- storage.auto_migrate: boolean
+  L-- storage.content_retention_hours: integer 0 … 8760
+  -S- storage.database_url: string
+  -S- storage.retain_content: boolean
+[tiers]
+  -S- tiers.local_fast.context_budget_tokens: integer ≥ 1
+  -S- tiers.local_fast.default_step_input_tokens: integer ≥ 1
+  -S- tiers.local_fast.default_step_output_tokens: integer ≥ 1
+  -S- tiers.local_fast.max_data_classification: string {public,internal,confidential}
+  -S- tiers.local_fast.pricing_file: string
+  -S- tiers.local_fast.remote: boolean
+  -S- tiers.local_fast.task_profile: string
+  -S- tiers.local_large.context_budget_tokens: integer ≥ 1
+  -S- tiers.local_large.default_step_input_tokens: integer ≥ 1
+  -S- tiers.local_large.default_step_output_tokens: integer ≥ 1
+  -S- tiers.local_large.max_data_classification: string {public,internal,confidential}
+  -S- tiers.local_large.pricing_file: string
+  -S- tiers.local_large.remote: boolean
+  -S- tiers.local_large.task_profile: string
+[tools]
+  -S- tools.artifact_root: string
+  -S- tools.container_image: string
+  -S- tools.enabled: array
+  -S- tools.fetch_allowed_hosts: array
+  -S- tools.fetch_max_data_classification: string {public,internal,confidential}
+  -S- tools.max_result_chars: integer ≥ 256
+  -S- tools.read_roots: array
+  -S- tools.redact_args: array
+  -S- tools.timeout_seconds: number ≥ 0
+  -S- tools.workspace_root: string

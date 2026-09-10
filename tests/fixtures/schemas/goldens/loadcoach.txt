@@ -1,0 +1,79 @@
+[adapters]
+  --- adapters.directory: string
+[evidence]
+  --- evidence.accept_schema_majors: array
+  -S- evidence.allowed_source_hosts: array
+  -S- evidence.freeweight_api_key_env: string
+  -S- evidence.freeweight_api_key_file: string
+  -S- evidence.freeweight_url: string
+  --- evidence.import_interval_hours: number ≥ 0
+[execution]
+  --- execution.attempt_backoff_seconds: number ≥ 0
+  --- execution.default_timeout_seconds: number ≥ 0
+  --- execution.max_attempts: integer ≥ 1
+  --- execution.max_concurrent_jobs: integer ≥ 1
+[logging]
+  --- logging.format: string {text,json,auto}
+  -S- logging.include_content: boolean
+  --- logging.level: string
+[provider]
+  -S- provider.base_url: string
+  --- provider.fake: object
+  -S- provider.kind: string
+  --- provider.timeout_seconds: number ≥ 0
+[providers]
+  -S- providers.allow_remote: boolean
+[queue]
+  --- queue.ageing_interval_seconds: integer ≥ 1
+  --- queue.ageing_priority_per_minute: number ≥ 0
+  --- queue.cancelling_watchdog_seconds: integer ≥ 1
+  --- queue.idempotency_ttl_hours: number ≥ 0
+  --- queue.lease_renewal_interval_seconds: integer ≥ 1
+  --- queue.lease_seconds: integer ≥ 1
+  --- queue.max_active_per_source: integer ≥ 0
+  --- queue.max_affinity_streak: integer ≥ 1
+  --- queue.max_depth: integer ≥ 1
+  --- queue.max_wait_seconds: integer ≥ 1
+  --- queue.overflow_allowance: integer ≥ 0
+  --- queue.poll_interval_ms: integer ≥ 1
+  L-- queue.draining: boolean
+  L-- queue.paused: boolean
+[residency]
+  --- residency.max_resident_models: integer ≥ 1
+  --- residency.unload_idle_seconds: integer ≥ 0
+[routing]
+  --- routing.base_switch_penalty: number 0 … 1
+  --- routing.explanation_retention_days: integer ≥ 0
+  L-- routing.min_confidence: number 0 … 1
+  L-- routing.min_present_weight: number 0 … 1
+  L-- routing.prefer_resident_bonus: number 0 … 1
+  L-- routing.remote_cost_factor: number 0.01 … 1
+  --- routing.require_adapter_evidence: boolean
+  --- routing.strategy: string
+  --- routing.task_profiles_path: string
+[runtime]
+  --- runtime.context_size: integer ≥ 0
+  --- runtime.flash_attention: boolean
+  --- runtime.keep_alive: string
+  --- runtime.kv_cache_precision: string {,f16,q8_0,q4_0}
+  --- runtime.models: object
+[server]
+  -S- server.allow_lan_exposure: boolean
+  -S- server.allowed_hosts: array
+  --- server.failed_auth_per_minute: integer ≥ 0
+  -S- server.host: string
+  --- server.max_body_bytes: integer ≥ 1024
+  -S- server.port: integer 1 … 65535
+  --- server.rate_limit_burst: integer ≥ 1
+  --- server.rate_limit_per_minute: integer ≥ 0
+  -S- server.trusted_proxies: array
+[storage]
+  --- storage.auto_migrate: boolean
+  --- storage.backup_retention: integer ≥ 0
+  L-- storage.content_retention_hours: integer 0 … 8760
+  -S- storage.database_url: string
+  -S- storage.retain_content: boolean
+  --- storage.statement_timeout_ms: integer ≥ 0
+[telemetry]
+  --- telemetry.interval_ms: integer ≥ 0
+  --- telemetry.vram_headroom_bytes: integer ≥ 0
