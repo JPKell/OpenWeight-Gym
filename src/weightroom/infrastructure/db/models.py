@@ -14,7 +14,17 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, LargeBinary, MetaData, String
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    LargeBinary,
+    MetaData,
+    String,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from weightsdb import PortableJSON, UtcDateTime, ulid_primary_key
 
@@ -25,6 +35,7 @@ __all__ = [
     "Operator",
     "Session",
     "Setting",
+    "TelemetrySample",
     "utcnow",
 ]
 
@@ -119,6 +130,35 @@ class Setting(Base):
     key: Mapped[str] = mapped_column(String, primary_key=True)
     value_json: Mapped[object | None] = mapped_column(PortableJSON)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+
+
+class TelemetrySample(Base):
+    """One sampler reading (data model §2): host and primary-GPU fields, `NULL` when unavailable.
+
+    ``id`` is a plain autoincrement integer rather than a ULID — the one exception to this
+    module's convention — because it is also the SSE frame's ``id``, and the telemetry stream
+    (``services/telemetry.py``) resumes a client at ``id > Last-Event-ID`` with a numeric
+    comparison. Every non-key column is nullable: ``NULL`` is ADR-0016's *unavailable*, never a
+    stand-in for a real zero.
+    """
+
+    __tablename__ = "telemetry_samples"
+    __table_args__ = (Index("ix_telemetry_samples_at", "at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
+    interval_ms: Mapped[int] = mapped_column(Integer, nullable=False)
+    cpu_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    cpu_temperature_c: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ram_used_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    ram_total_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    gpu_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gpu_utilization_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gpu_temperature_c: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gpu_power_watts: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gpu_vram_used_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    gpu_vram_total_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    resident_json: Mapped[object | None] = mapped_column(PortableJSON, nullable=True)
 
 
 class KnownRevision(Base):

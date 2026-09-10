@@ -41,6 +41,7 @@ from weightroom.infrastructure.db.models import (
     KnownRevision,
     Operator,
     Setting,
+    TelemetrySample,
 )
 from weightroom.infrastructure.db.models import (
     Session as SessionRow,
@@ -65,7 +66,7 @@ MIGRATIONS_LOCATION = str(
 )
 
 _APPLICATION_NAME = "weightroom"
-_ROW_COUNT_MODELS = (Operator, SessionRow, AuditLog, Setting, KnownRevision)
+_ROW_COUNT_MODELS = (Operator, SessionRow, AuditLog, Setting, KnownRevision, TelemetrySample)
 
 
 def build_engine(database_url: str) -> Engine:

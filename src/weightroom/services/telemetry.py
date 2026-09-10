@@ -1,0 +1,410 @@
+"""weightroom.services.telemetry — the one sampler WeightRoomGym owns, persisted and streamed.
+
+``sweatmeter`` in process, at ``[telemetry] interval_ms`` (spec §7.7): one background thread
+samples the host and its primary GPU and writes one row to ``telemetry_samples`` per tick. There
+is no second sampler and telemetry is never re-collected per request — every reader (the SSE
+stream, the history page, ``/system/status``) reads the same persisted rows or the same
+in-memory ``latest()`` cache.
+
+**Persist, then serve.** Unlike FreeWeight's live-only telemetry bar (this package's own
+``services/telemetry.py`` docstring on that application explains why a *run's* bar can afford to
+be live-only), WeightRoomGym's stream must replay from ``Last-Event-ID`` — an operator's browser
+tab reconnecting after a laptop sleep expects the gap filled, not silence until the next tick.
+So the pattern here is FreeWeight's own **run event store** instead: a subscriber, live or
+replaying, asks the database for rows after the highest ``id`` it has already seen, on a short
+poll (``services/apps.py``'s log stream and FreeWeight's ``services/events.py`` both read this
+way already; nothing here invents a third style).
+
+**Resident models are not sampled at 1 Hz.** ``resident_json`` is real — Ollama's ``/api/ps``
+through ModelRack — but refreshed on its own five-second cadence
+(:data:`RESIDENT_REFRESH_SECONDS`) and reused by every sample struck within that window, because
+asking Ollama once a second buys nothing an operator's eye can see and costs a process-local HTTP
+round trip on the sampler's own thread every tick. LoadCoach's queue depth is not persisted at
+all: it is a second application's live number, read fresh for ``/system/resident`` and for the
+SSE frame's payload (never written to a column), so a stale queue count in telemetry history
+cannot outlive the connection that showed it.
+
+**Downsampling is a sweep, not a read-time aggregation** (data model §2: "downsampled to one per
+minute by the sweep"): once a row has aged past an hour, the sweep keeps the newest row in each
+minute and deletes the rest, and drops anything older than ``[telemetry] history_hours``
+outright. Grouped in Python rather than with a dialect-specific date-truncation function, so the
+same code runs unchanged on SQLite and PostgreSQL (ADR-0006).
+"""
+
+from __future__ import annotations
+
+import logging
+import threading
+import time
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING, Any, Final, cast
+
+from baseaicore import UnsupportedPlatformError, is_supported
+from mirrorwall import Event, format_frame
+from setspec import GeneratorInfo
+from sqlalchemy import delete, select
+from sweatmeter import TelemetryCollector, TelemetrySampler
+from sweatmeter.platform import NullHostReader, create_host_reader
+
+from weightroom.__about__ import __version__
+from weightroom.infrastructure.db.models import TelemetrySample
+from weightroom.services.ollama import resident_models
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    import httpx
+    from baseaicore import Measurement
+    from sqlalchemy import CursorResult
+    from sweatmeter import GpuSample, TelemetrySnapshot
+
+    from weightroom.config import Settings
+    from weightroom.services.database import Database
+
+__all__ = [
+    "FIGURE_COLUMNS",
+    "RESIDENT_REFRESH_SECONDS",
+    "SWEEP_INTERVAL_SECONDS",
+    "TelemetryService",
+    "build_collector",
+    "downsample_and_retain",
+    "format_heartbeat",
+    "history_rows",
+    "read_since",
+    "sample_frame",
+    "sample_to_json",
+    "snapshot_to_row",
+]
+
+logger = logging.getLogger(__name__)
+
+_GENERATOR = GeneratorInfo(name="weightroom", version=__version__)
+
+RESIDENT_REFRESH_SECONDS: Final = 5.0
+"""How often the sampler re-asks Ollama for residency; every other tick reuses the last answer."""
+
+SWEEP_INTERVAL_SECONDS: Final = 60.0
+"""How often the retention/downsampling sweep runs — once a minute is the resolution it keeps."""
+
+_MAX_STREAM_BATCH: Final = 500
+_STREAM_POLL_SECONDS: Final = 0.2
+
+FIGURE_COLUMNS: Final[dict[str, str]] = {
+    "cpu_percent": "cpu_percent",
+    "cpu_temperature_c": "cpu_temperature_c",
+    "ram_used_bytes": "ram_used_bytes",
+    "ram_total_bytes": "ram_total_bytes",
+    "gpu_utilization_percent": "gpu_utilization_percent",
+    "gpu_temperature_c": "gpu_temperature_c",
+    "gpu_power_watts": "gpu_power_watts",
+    "gpu_vram_used_bytes": "gpu_vram_used_bytes",
+    "gpu_vram_total_bytes": "gpu_vram_total_bytes",
+}
+"""The ``figure=`` vocabulary ``GET /system/telemetry/history`` accepts — one per column."""
+
+
+def build_collector() -> TelemetryCollector:
+    """Build a :class:`~sweatmeter.TelemetryCollector` for this platform.
+
+    Degrades to :class:`~sweatmeter.platform.NullHostReader` rather than raising on a platform
+    with no reader (SweatMeter spec §13's documented degrade path) — every field then reads
+    honestly ``UNSUPPORTED`` instead of the console failing to start.
+    """
+    try:
+        host = create_host_reader()
+    except UnsupportedPlatformError:
+        host = NullHostReader()
+    return TelemetryCollector(host=host)
+
+
+def _num(value: Measurement | None) -> float | None:
+    """A measurement as a plain float, or ``None`` when this environment cannot supply it."""
+    if value is None or not is_supported(value):
+        return None
+    return float(value)
+
+
+def _primary_gpu(snapshot: TelemetrySnapshot) -> GpuSample | None:
+    """The strip shows one GPU (index 0 by convention); a headless host has none."""
+    return snapshot.gpus[0] if snapshot.gpus else None
+
+
+def snapshot_to_row(
+    snapshot: TelemetrySnapshot, *, interval_ms: int, resident: Sequence[dict[str, Any]] | None
+) -> TelemetrySample:
+    """Build the row one sample writes. Every numeric field is ``None`` where unavailable."""
+    gpu = _primary_gpu(snapshot)
+    return TelemetrySample(
+        at=snapshot.timestamp,
+        interval_ms=interval_ms,
+        cpu_percent=_num(snapshot.cpu_percent),
+        cpu_temperature_c=_num(snapshot.cpu_temperature_c),
+        ram_used_bytes=None if (v := _num(snapshot.ram_used_bytes)) is None else int(v),
+        ram_total_bytes=None if (v := _num(snapshot.ram_total_bytes)) is None else int(v),
+        gpu_index=gpu.index if gpu is not None else None,
+        gpu_utilization_percent=_num(gpu.utilization_percent) if gpu is not None else None,
+        gpu_temperature_c=_num(gpu.temperature_c) if gpu is not None else None,
+        gpu_power_watts=_num(gpu.power_watts) if gpu is not None else None,
+        gpu_vram_used_bytes=(
+            None if gpu is None or (v := _num(gpu.vram_used_bytes)) is None else int(v)
+        ),
+        gpu_vram_total_bytes=(
+            None if gpu is None or (v := _num(gpu.vram_total_bytes)) is None else int(v)
+        ),
+        resident_json=list(resident) if resident is not None else None,
+    )
+
+
+def sample_to_json(row: TelemetrySample) -> dict[str, Any]:
+    """Render a persisted row as the shape MirrorWall's ``telemetry.js`` consumes.
+
+    One GPU entry when the sample carries one, none otherwise — ``telemetry.js`` already treats
+    "no device at this index" as unavailable rather than zero, so an empty list is enough; no
+    second sentinel is invented here.
+    """
+    gpus: list[dict[str, Any]] = []
+    if row.gpu_index is not None:
+        gpus.append(
+            {
+                "index": row.gpu_index,
+                "utilization_percent": row.gpu_utilization_percent,
+                "temperature_c": row.gpu_temperature_c,
+                "power_watts": row.gpu_power_watts,
+                "vram_used_bytes": row.gpu_vram_used_bytes,
+                "vram_total_bytes": row.gpu_vram_total_bytes,
+            }
+        )
+    return {
+        "at": row.at.isoformat(),
+        "interval_ms": row.interval_ms,
+        "cpu_percent": row.cpu_percent,
+        "cpu_temperature_c": row.cpu_temperature_c,
+        "ram_used_bytes": row.ram_used_bytes,
+        "ram_total_bytes": row.ram_total_bytes,
+        "gpus": gpus,
+        "unavailable_reasons": {},
+        "resident": row.resident_json or [],
+    }
+
+
+def sample_frame(row: TelemetrySample, *, queue: dict[str, Any] | None = None) -> str:
+    """One ``telemetry.sampled`` SSE frame for ``row``, ``queue`` folded in live (never stored)."""
+    payload = sample_to_json(row)
+    payload["queue"] = queue
+    return format_frame(
+        Event(sequence=row.id, type="telemetry.sampled", payload=payload), generator=_GENERATOR
+    )
+
+
+def format_heartbeat() -> str:
+    """One SSE heartbeat comment, sent when nothing new has been sampled in a while."""
+    return f": heartbeat {datetime.now(UTC).isoformat()}\n\n"
+
+
+def read_since(
+    database: Database, *, after_id: int, limit: int = _MAX_STREAM_BATCH
+) -> list[TelemetrySample]:
+    """Rows strictly after ``after_id``, ascending: the one read behind replay and the live tail."""
+    with database.read() as session:
+        rows = session.execute(
+            select(TelemetrySample)
+            .where(TelemetrySample.id > after_id)
+            .order_by(TelemetrySample.id.asc())
+            .limit(limit)
+        ).scalars()
+        return list(rows)
+
+
+def history_rows(
+    database: Database, *, figure: str, hours: float
+) -> list[tuple[datetime, float | int | None]]:
+    """``(at, value)`` pairs for one figure over the trailing ``hours`` — already sweep-downsampled.
+
+    Raises:
+        ValueError: ``figure`` is not one of :data:`FIGURE_COLUMNS`.
+    """
+    if figure not in FIGURE_COLUMNS:
+        message = f"{figure!r} is not a telemetry figure; the names are {sorted(FIGURE_COLUMNS)}."
+        raise ValueError(message)
+    column = getattr(TelemetrySample, FIGURE_COLUMNS[figure])
+    cutoff = datetime.now(UTC) - timedelta(hours=max(0.0, hours))
+    with database.read() as session:
+        rows = session.execute(
+            select(TelemetrySample.at, column)
+            .where(TelemetrySample.at >= cutoff)
+            .order_by(TelemetrySample.at.asc())
+        ).all()
+        return [(at, value) for at, value in rows]
+
+
+def downsample_and_retain(
+    database: Database, *, history_hours: float, now: datetime | None = None
+) -> int:
+    """Reduce rows older than an hour to one per minute, and drop anything past ``history_hours``.
+
+    Grouped in Python (this module's docstring) rather than a dialect-specific date-truncation
+    function, so the same sweep runs on SQLite and PostgreSQL alike.
+
+    Returns:
+        How many rows were deleted.
+    """
+    instant = now if now is not None else datetime.now(UTC)
+    retain_cutoff = instant - timedelta(hours=max(0.0, history_hours))
+    downsample_cutoff = instant - timedelta(hours=1)
+    deleted = 0
+    with database.write() as session:
+        # `rowcount` is defined on `CursorResult`, which is what a DML `session.execute()`
+        # returns; the ORM-generic `Result` type mypy infers here does not carry it.
+        retained = cast(
+            "CursorResult[Any]",
+            session.execute(delete(TelemetrySample).where(TelemetrySample.at < retain_cutoff)),
+        )
+        deleted += retained.rowcount or 0
+        aging = session.execute(
+            select(TelemetrySample.id, TelemetrySample.at)
+            .where(TelemetrySample.at >= retain_cutoff, TelemetrySample.at < downsample_cutoff)
+            .order_by(TelemetrySample.at.asc())
+        ).all()
+        keep_per_minute: dict[str, int] = {}
+        for row_id, at in aging:
+            minute_key = at.strftime("%Y-%m-%dT%H:%M")
+            keep_per_minute[minute_key] = row_id  # last row seen in the minute wins — newest kept
+        doomed = [row_id for row_id, _at in aging if row_id not in keep_per_minute.values()]
+        if doomed:
+            swept = cast(
+                "CursorResult[Any]",
+                session.execute(delete(TelemetrySample).where(TelemetrySample.id.in_(doomed))),
+            )
+            deleted += swept.rowcount or 0
+    return deleted
+
+
+@dataclass
+class _ResidentCache:
+    """The last Ollama residency read, reused within :data:`RESIDENT_REFRESH_SECONDS`."""
+
+    checked_at: float = 0.0
+    residents: list[dict[str, Any]] | None = None
+
+    def get(self, settings: Settings, *, client: httpx.Client, now: float) -> list[dict[str, Any]]:
+        if self.residents is not None and (now - self.checked_at) < RESIDENT_REFRESH_SECONDS:
+            return self.residents
+        resident, _error = resident_models(settings, client=client)
+        self.residents = [entry.as_json() for entry in resident]
+        self.checked_at = now
+        return self.residents
+
+
+class TelemetryService:
+    """Owns the sampler thread, the resident cache and the retention sweep.
+
+    Built once by the web lifespan (``app.state.telemetry``) and stopped at shutdown; every
+    request reads through its ``latest()`` cache or through :func:`read_since`/:func:`history_rows`
+    against the database it was given — never by triggering a fresh collection of its own.
+
+    Args:
+        database: Where samples are written.
+        settings: For ``[telemetry]`` and Ollama's base URL.
+        collector: The live collector; :func:`build_collector` by default.
+        ollama_client: The pooled transport for the residency read, carrying Ollama's base URL
+            (ADR-0123 rule 5 — ModelRack's client, never a second Ollama client written here).
+        app_client: The general-purpose pooled transport ``services/apps.py`` uses to reach the
+            four applications, for the one absolute-URL read of LoadCoach's queue depth.
+    """
+
+    def __init__(
+        self,
+        database: Database,
+        settings: Settings,
+        *,
+        collector: TelemetryCollector | None = None,
+        ollama_client: httpx.Client | None = None,
+        app_client: httpx.Client | None = None,
+    ) -> None:
+        """Configure the sampler without starting its thread."""
+        self._database = database
+        self._settings = settings
+        self._ollama_client = ollama_client
+        self._app_client = app_client if app_client is not None else ollama_client
+        self._resident_cache = _ResidentCache()
+        self._sweep_lock = threading.Lock()
+        self._last_sweep = 0.0
+        collector = collector if collector is not None else build_collector()
+        self._sampler = TelemetrySampler(
+            collector,
+            interval_seconds=settings.telemetry.interval_ms / 1000.0,
+            on_sample=self._on_sample,
+        )
+
+    def _on_sample(self, snapshot: TelemetrySnapshot) -> None:
+        resident: list[dict[str, Any]] | None = None
+        if self._ollama_client is not None:
+            try:
+                resident = self._resident_cache.get(
+                    self._settings, client=self._ollama_client, now=time.monotonic()
+                )
+            except Exception:  # noqa: BLE001 — a residency hiccup never stops the sampler
+                logger.warning("telemetry.resident_read_failed", exc_info=True)
+        row = snapshot_to_row(
+            snapshot, interval_ms=self._settings.telemetry.interval_ms, resident=resident
+        )
+        try:
+            with self._database.write() as session:
+                session.add(row)
+        except Exception:  # noqa: BLE001 — a write failure degrades history, not the live tick
+            logger.warning("telemetry.write_failed", exc_info=True)
+        self._maybe_sweep()
+
+    def _maybe_sweep(self) -> None:
+        now = time.monotonic()
+        with self._sweep_lock:
+            if (now - self._last_sweep) < SWEEP_INTERVAL_SECONDS:
+                return
+            self._last_sweep = now
+        try:
+            downsample_and_retain(
+                self._database, history_hours=self._settings.telemetry.history_hours
+            )
+        except Exception:  # noqa: BLE001 — the sweep is maintenance, not the sample itself
+            logger.warning("telemetry.sweep_failed", exc_info=True)
+
+    def start(self) -> None:
+        """Start background sampling, or do nothing if already running."""
+        self._sampler.start()
+
+    def stop(self, *, timeout: float = 5.0) -> None:
+        """Stop background sampling and wait for the worker thread to exit."""
+        self._sampler.stop(timeout=timeout)
+
+    def latest(self) -> TelemetrySnapshot | None:
+        """The newest live sample, or ``None`` before the first successful collection."""
+        return self._sampler.latest()
+
+    def queue_snapshot(self) -> dict[str, Any] | None:
+        """LoadCoach's queue depth, read fresh — never persisted (this module's docstring)."""
+        if self._app_client is None:
+            return None
+        base_url = self._settings.apps.loadcoach.base_url
+        if not base_url:
+            return None
+        from weightroom.services.apps import bearer_token
+
+        headers = {}
+        token = bearer_token(self._settings, "loadcoach")
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        try:
+            response = self._app_client.get(
+                f"{base_url.rstrip('/')}/api/v1/system/status", headers=headers, timeout=3.0
+            )
+            response.raise_for_status()
+            body = response.json()
+        except Exception:  # noqa: BLE001 — a queue read that fails renders "—", not an error page
+            return None
+        if not isinstance(body, dict):
+            return None
+        return {
+            "active": body.get("active"),
+            "depth_by_state": body.get("depth_by_state"),
+        }

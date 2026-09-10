@@ -83,7 +83,7 @@ def test_ensure_ready_refuses_a_revision_this_build_does_not_know() -> None:
     with temporary_sqlite() as engine:
         runner = MigrationRunner(engine, script_location=MIGRATIONS_LOCATION)
         runner.upgrade(backup=False)
-        runner.stamp("0001")
+        runner.stamp(_head())
         assert ensure_ready(Database(engine), auto_migrate=False) is None
         with engine.begin() as connection:
             connection.execute(text("UPDATE alembic_version SET version_num = '9999'"))

@@ -41,6 +41,7 @@ from weightroom.services.database import Database
 from weightroom.services.journal import JournalReader
 from weightroom.services.ollama import ollama_client
 from weightroom.services.processes import SubprocessSystemdController
+from weightroom.services.telemetry import TelemetryService
 from weightroom.web.csrf import render_form_page
 from weightroom.web.hosts import resolve_allowed_hosts
 from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, SameOriginMiddleware
@@ -213,9 +214,17 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         raise RuntimeError(message)
     database = Database.from_url(database_url)
     app.state.database = database
+    app.state.telemetry = TelemetryService(
+        database,
+        settings,
+        ollama_client=app.state.ollama_http,
+        app_client=app.state.http,
+    )
+    app.state.telemetry.start()
     try:
         yield
     finally:
+        app.state.telemetry.stop()
         database.close()
         app.state.database = None
         app.state.http.close()

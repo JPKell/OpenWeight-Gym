@@ -96,8 +96,17 @@ def test_system_status_reports_unknown_and_null_never_zero(console: Console) -> 
     assert set(body["applications"]) == set(APPLICATIONS)
     assert all(app["state"] == "not installed" for app in body["applications"].values())
     assert all(app["version"] is None for app in body["applications"].values())
-    for key in ("ollama", "telemetry", "costs_today", "alerts_open", "jobs_running", "doctor_last"):
+    for key in ("costs_today", "alerts_open", "jobs_running", "doctor_last"):
         assert body[key] is None
+    # No sampler tick lands within a synchronous test request, so the live snapshot is still
+    # unavailable — the same "unavailable, never zero" claim this test makes about every other
+    # not-yet-filled figure (ADR-0016).
+    assert body["telemetry"] is None
+    # Ollama and the applications are read the same way (W2): the console's own read never
+    # raises for an unreachable unit, and the fixture's fake systemd answers "unknown" honestly
+    # rather than a guessed state.
+    assert body["ollama"]["unit"] == "ollama.service"
+    assert body["ollama"]["residency"] == []
     assert body["tls_days_to_expiry"] >= 397
     assert body["bind"] == {"host": "127.0.0.1", "port": 8769}
     console.advance(hours=1)

@@ -147,6 +147,7 @@ def system_status(
     now: datetime | None = None,
     views: Sequence[AppView] | None = None,
     ollama: dict[str, Any] | None = None,
+    telemetry: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The ``GET /system/status`` machine view (spec §17), with ``null`` for what is not known.
 
@@ -181,7 +182,7 @@ def system_status(
             for name in APPLICATIONS
         },
         "ollama": ollama,
-        "telemetry": None,
+        "telemetry": telemetry,
         "costs_today": None,
         "alerts_open": None,
         "jobs_running": None,
