@@ -145,6 +145,9 @@ STATUS_BY_CODE: dict[str, int] = {
     # 404: no job or schedule by that id; 409: the job is fine and has already finished (api.md §7).
     "JOB_NOT_FOUND": status.HTTP_404_NOT_FOUND,
     "JOB_INVALID_STATE": status.HTTP_409_CONFLICT,
+    # 409, as the guard's host-and-data refusals: the file (magic, size, name) or the host (no
+    # llama.cpp model_directory, or two that disagree) is what refuses; the console did its part.
+    "CATALOG_DROPIN_REFUSED": status.HTTP_409_CONFLICT,
 }
 """Spec §13's codes to HTTP statuses, for the ones Phases 1 through 5 raise."""
 
