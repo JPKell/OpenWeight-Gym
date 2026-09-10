@@ -121,13 +121,25 @@ def test_a_failed_login_logs_the_address_never_the_password(
     assert "the wrong secret" not in caplog.text
 
 
-# §14: archive handling — no Phase 1 endpoint accepts an upload (attachments and GGUF are W6/W8)
+# §14: archive handling — the only uploads are W6's chat attachments (text and markdown, capped,
+# never unpacked: tests/integration/test_chat_loadcoach.py refuses a .pdf, binary and oversize);
+# W8's GGUF drop-in joins this list when it lands, and nothing else may.
+
+UPLOAD_ROUTES = frozenset(
+    {
+        "/api/v1/chat/conversations/{conversation_id}/attachments",
+        "/chat/{conversation_id}/attachments",
+    }
+)
 
 
-def test_no_route_accepts_a_body_file(console: Console) -> None:
-    for _path, route in api_routes(console.client.app):
+def test_only_the_named_routes_accept_an_uploaded_file(console: Console) -> None:
+    accepting = set()
+    for path, route in api_routes(console.client.app):
         for body_field in route.dependant.body_params:
-            assert "UploadFile" not in str(body_field.field_info.annotation)
+            if "UploadFile" in str(body_field.field_info.annotation):
+                accepting.add(path)
+    assert accepting == UPLOAD_ROUTES
 
 
 # §14: hostile model output — Phase 1 renders no model output; the audit page escapes everything

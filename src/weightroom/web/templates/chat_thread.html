@@ -1,0 +1,157 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge %}
+{% block title %}{{ conversation.title }} — Chat — WeightRoomGym{% endblock %}
+{% block extra_head %}
+<style>
+  .chat-message { border-top: 1px solid var(--mw-border, #ddd); padding: .6rem 0; }
+  .chat-role { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+  .chat-user-text, .chat-live, .chat-thinking-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .chat-thinking { margin: .3rem 0; opacity: .85; }
+  .chat-thinking summary, .chat-decision summary { cursor: pointer; }
+  .chat-answer pre { overflow-x: auto; }
+  .chat-code { position: relative; }
+  .chat-copy { position: absolute; top: .25rem; right: .25rem; font-size: .75rem; }
+  .chat-decision { font-size: .8rem; margin-top: .3rem; }
+  .chat-answer, .chat-decision summary { overflow-wrap: anywhere; }
+</style>
+{% endblock %}
+{% block page_content %}
+<h2>{{ conversation.title }} {{ badge(conversation.backend, tone="neutral") }}</h2>
+<p class="muted">
+  {% if conversation.backend == "loadcoach" %}task <code>{{ conversation.task_profile or "default" }}</code>{% if conversation.model_override %} · pinned <code>{{ conversation.model_override }}</code>{% endif %}
+  {% else %}classification <code>{{ conversation.classification }}</code>{% if conversation.tier %} · tier <code>{{ conversation.tier }}</code>{% endif %}{% if conversation.tools %} · tools <code>{{ conversation.tools | join(", ") }}</code>{% endif %}{% endif %}
+  · <a href="/chat">all conversations</a> · <a href="/api/v1/chat/conversations/{{ conversation.id }}">JSON</a>
+</p>
+
+{% if error %}<p class="notice" role="alert"><strong>Refused.</strong> {{ error }}</p>{% endif %}
+
+<section id="chat-thread" data-conversation-id="{{ conversation.id }}" data-resume-after="{{ conversation.resume_after }}">
+  {% for message in conversation.messages %}
+  {% include "_chat_message.html" %}
+  {% endfor %}
+</section>
+
+{% if unavailable %}
+<p class="notice" role="status" id="chat-unavailable"><strong>Sending is off.</strong> {{ unavailable }}</p>
+{% endif %}
+
+<form method="post" action="/chat/{{ conversation.id }}/messages" id="chat-send">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <div class="field">
+    <label for="chat-text">Message</label>
+    <textarea id="chat-text" name="text" rows="4" required {% if unavailable or conversation.in_progress %}disabled{% endif %}></textarea>
+  </div>
+  <button type="submit" {% if unavailable or conversation.in_progress %}disabled title="{{ unavailable or 'The previous reply is still streaming.' }}"{% endif %}>Send</button>
+</form>
+
+<details>
+  <summary>Attachments ({{ conversation.attachments | length }})</summary>
+  <p class="muted">Text and markdown only, up to {{ max_attachment_bytes | bytes_human }}. Every file here is
+  context for every message in this conversation — read, never executed or fetched from.</p>
+  {% if conversation.attachments %}
+  <ul>{% for file in conversation.attachments %}<li><code>{{ file.filename }}</code> · {{ file.size_bytes | bytes_human }}</li>{% endfor %}</ul>
+  {% endif %}
+  <form method="post" action="/chat/{{ conversation.id }}/attachments" enctype="multipart/form-data">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="file" name="file" accept=".txt,.md,.markdown,.text,.log,text/plain,text/markdown">
+    <button type="submit">Attach</button>
+  </form>
+</details>
+
+<form method="post" action="/chat/{{ conversation.id }}/delete" class="field">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit" data-variant="quiet">Delete this conversation</button>
+</form>
+
+<script>
+  // Live replies. Model text is only ever written as textContent here; the finished message is
+  // re-fetched as server-rendered, sanitised HTML (services/chat.py render_reply) on done/halt.
+  (function () {
+    "use strict";
+    var thread = document.getElementById("chat-thread");
+    if (!thread || !window.EventSource) { return; }
+    var conversation = thread.getAttribute("data-conversation-id");
+    var seen = {};
+
+    function addCopyButtons(root) {
+      root.querySelectorAll(".chat-code").forEach(function (block) {
+        if (block.querySelector(".chat-copy")) { return; }
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "chat-copy";
+        button.setAttribute("data-variant", "quiet");
+        button.textContent = "Copy";
+        button.addEventListener("click", function () {
+          var code = block.querySelector("code");
+          if (code && navigator.clipboard) {
+            navigator.clipboard.writeText(code.textContent).then(function () {
+              button.textContent = "Copied";
+              setTimeout(function () { button.textContent = "Copy"; }, 1500);
+            });
+          }
+        });
+        block.appendChild(button);
+      });
+    }
+    addCopyButtons(thread);
+
+    function messageEl(id) { return document.getElementById("m-" + id); }
+
+    function refresh(id) {
+      fetch("/chat/" + conversation + "/messages/" + id, { headers: { "Accept": "text/html" }, credentials: "same-origin" })
+        .then(function (response) { return response.ok ? response.text() : null; })
+        .then(function (html) {
+          var el = messageEl(id);
+          if (!html || !el) { return; }
+          var holder = document.createElement("div");
+          holder.innerHTML = html; // server-rendered and sanitised; never model text directly
+          var fresh = holder.firstElementChild;
+          if (fresh) { el.replaceWith(fresh); addCopyButtons(fresh); }
+          if (!document.querySelector("[data-streaming='true']")) {
+            var text = document.getElementById("chat-text");
+            var send = document.querySelector("#chat-send button");
+            if (text && !document.getElementById("chat-unavailable")) { text.disabled = false; }
+            if (send && !document.getElementById("chat-unavailable")) { send.disabled = false; send.removeAttribute("title"); }
+          }
+        });
+    }
+
+    function handler(kind) {
+      return function (event) {
+        if (seen[event.lastEventId]) { return; }
+        seen[event.lastEventId] = true;
+        var body;
+        try { body = JSON.parse(event.data).payload; } catch (error) { return; }
+        if (!body || !body.message_id) { return; }
+        var el = messageEl(body.message_id);
+        if (!el) { return; }
+        var waiting = el.querySelector(".chat-waiting");
+        if (waiting && kind !== "done" && kind !== "halt") { waiting.remove(); }
+        var thinking = el.querySelector(".chat-thinking");
+        if (kind === "delta.thinking" && thinking) {
+          thinking.hidden = false;
+          thinking.open = true;
+          thinking.querySelector(".chat-thinking-body").textContent += body.delta || "";
+        } else if (kind === "thinking_done" && thinking) {
+          thinking.open = false;
+          thinking.querySelector("summary").textContent = "Thinking";
+        } else if (kind === "delta.text") {
+          var live = el.querySelector(".chat-live");
+          if (live) { live.textContent += body.delta || ""; }
+        } else if (["plan", "step", "tool_call", "egress_decision", "approval_pending"].indexOf(kind) !== -1) {
+          refresh(body.message_id); // server-rendered card, with its approve/deny forms
+        } else if (kind === "done" || kind === "halt") {
+          el.removeAttribute("data-streaming");
+          refresh(body.message_id);
+        }
+      };
+    }
+
+    var source = new EventSource("/api/v1/chat/conversations/" + conversation + "/stream?last_event_id=" + thread.getAttribute("data-resume-after"));
+    ["delta.thinking", "delta.text", "thinking_done", "done", "halt",
+     "plan", "step", "tool_call", "egress_decision", "approval_pending"].forEach(function (kind) {
+      source.addEventListener(kind, handler(kind));
+    });
+  })();
+</script>
+{% endblock %}

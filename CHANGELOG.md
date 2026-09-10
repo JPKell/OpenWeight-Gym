@@ -6,6 +6,60 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-09-10
+
+Row W6: Phase 6 of the development plan — chat through LoadCoach and PromptCadence, thinking that
+streams and collapses, the routing decision and cost under every reply, PromptCadence's plan, steps,
+tools, egress and approvals inline. It also carries the shell, telemetry and docs-viewer changes
+made on `main` while W6 ran on its branch (merged 2026-09-10). Prepared, not tagged, not pushed,
+not published.
+
+### Added
+- **The chat model and the thinking state machine** (`domain/chat.py`, migration `0004`):
+  `conversations` with a check constraint naming the two backends and no third (spec §11 contract
+  6), `messages`, `message_events` and `attachments`. Thinking opens on the first thinking delta,
+  collapses on the first text delta that is not whitespace or on the terminal frame, never
+  reopens, fills from the result when a backend reports it only at the end, and shows no block for
+  a provider with no thinking channel.
+- **Chat through LoadCoach** (`services/chat_loadcoach.py`): the whole conversation as
+  `messages`, the task profile and optional model pin, live `thinking` and `token` frames, the
+  routing line from the stream's own `routing` frame, tokens by class with `—` for anything
+  unreported and money only where priced.
+- **Chat through PromptCadence** (`services/chat_promptcadence.py`): one trajectory per message
+  with the conversation so far as context, the tool allowlist always sent (an omitted one is every
+  tool to PromptCadence), plan/step/tool-call cards as the events arrive, recorded egress
+  decisions at the end, the answer from the last assistant turn, halts in PromptCadence's own
+  words, and approvals granted or denied inline with the `approve`-scoped token — a token without
+  the scope shows *no approve scope* and no button that would fail.
+- **Replies run beside the request** (`services/chat.py`): a small thread pool, one persisted row
+  per step, and one transaction on completion that fills the message, drops the deltas and writes
+  `done` or `halt` (ADR-0044). The page's stream replays by `Last-Event-ID`. A reply interrupted by
+  a console restart is closed as a named halt at startup.
+- **Attachments**: text and markdown only, capped, stored `0600` under a generated name, prepended
+  as fenced context to every request of the conversation.
+- **Nothing raw**: live deltas reach the page as `textContent`; the finished answer is rendered by
+  an escape-on markdown renderer (http(s) links only, images reduced to alt text so nothing a
+  model wrote is fetched) and handed to Jinja through `__html__`; no chat template marks anything
+  safe. PromptCadence's own injection corpus is rendered through every path into a thread.
+- `chat.create`, `chat.message`, `chat.attachment`, `chat.delete`, `chat.approve` and `chat.deny`
+  join the audit vocabulary; `CHAT_BACKEND_UNAVAILABLE`, `ATTACHMENT_TOO_LARGE` and
+  `ATTACHMENT_TYPE_REFUSED` join the error codes.
+- A network-isolation test: a reply through either backend reaches the two configured base URLs
+  and nothing else, and opens no raw socket.
+
+### Found, and fixed where they live
+- **LoadCoach dropped live thinking** (ADR-0132, `loadcoach 1.5.0`): ModelRack streamed each
+  reasoning delta and LoadCoach forwarded only answer tokens, so thinking arrived after the answer.
+  LoadCoach now streams a `thinking` frame; this console falls back to `result.reasoning` for an
+  older LoadCoach.
+- **MirrorWall refused every multipart form** as `CSRF_FAILED` — the token was searched for with a
+  parser that cannot read multipart. Fixed in MirrorWall (`[Unreleased]`); attachment uploads
+  depended on it.
+- **PromptCadence could not run any trajectory on the reference machine**: LoadCoach requires a
+  bearer token once any exists, and PromptCadence had none. A LoadCoach token was minted for it and
+  configured by reference (host change, recorded in the W6 handoff).
+- The security checklist's Phase 1 *no uploads* test is now an allowlist of the two attachment
+  routes.
 ### Fixed
 
 - The console no longer floods LoadCoach with `GET /api/v1/system/status`. Every telemetry

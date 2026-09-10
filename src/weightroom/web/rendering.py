@@ -52,7 +52,7 @@ NAV_ITEMS: tuple[dict[str, str], ...] = (
 )
 
 CONSOLE_PAGES: tuple[dict[str, str], ...] = (
-    {"label": "Chat", "phase": "W6"},
+    {"label": "Chat", "href": "/chat"},
     {"label": "Docs", "href": "/docs"},
     {"label": "Database", "phase": "W7"},
     {"label": "Jobs", "phase": "W9"},

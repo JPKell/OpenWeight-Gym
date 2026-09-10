@@ -1,0 +1,12 @@
+id: 1
+event: trajectory.created
+data: {"generated_at":"2026-09-10T07:32:14.089Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"bypass_planning":false,"classification":"internal","project":null,"token_budget":2000000,"tool_allowlist":["list_dir","read_file"],"trajectory_id":"01M253PFZWGZQDSJ003D4RYZB3"},"entity":{"id":"01M253PFZWGZQDSJ003D4RYZB3","kind":"trajectory"},"event_id":"01M253PG0SC4W95F1A62QYSNEV","message":null,"sequence":1,"timestamp":"2026-09-10T07:32:13.948Z","type":"trajectory.created"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 2
+event: trajectory.claimed
+data: {"generated_at":"2026-09-10T07:32:14.090Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"lease_expires_at":"2026-09-10T07:33:13.989723+00:00","state":"planning","trajectory_id":"01M253PFZWGZQDSJ003D4RYZB3","worker_id":"Jordan-main:639456/0"},"entity":{"id":"01M253PFZWGZQDSJ003D4RYZB3","kind":"trajectory"},"event_id":"01M253PG1AYKY22X6H6A0NPSWY","message":null,"sequence":2,"timestamp":"2026-09-10T07:32:13.989Z","type":"trajectory.claimed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 3
+event: trajectory.failed
+data: {"generated_at":"2026-09-10T07:32:14.128Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"cause":"LoadCoach refused /api/v1/generate with UNAUTHORIZED: This endpoint requires a bearer token. (in-flight planning jobs could not be cancelled: LoadCoach refused /api/v1/jobs with UNAUTHORIZED: This endpoint requires a bearer token.)","error_code":"LOADCOACH_ERROR","trajectory_id":"01M253PFZWGZQDSJ003D4RYZB3"},"entity":{"id":"01M253PFZWGZQDSJ003D4RYZB3","kind":"trajectory"},"event_id":"01M253PG5FBQ3PHWPBMT31W1RM","message":null,"sequence":3,"timestamp":"2026-09-10T07:32:14.125Z","type":"trajectory.failed"},"schema":"event.envelope","schema_version":"1.0"}
+

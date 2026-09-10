@@ -164,7 +164,16 @@ def test_the_stream_resumes_from_last_event_id(tmp_path: Path) -> None:
 
 
 def test_resident_reports_a_source_and_an_error_for_each_unreachable_side(tmp_path: Path) -> None:
-    console = _console(tmp_path)
+    # Both sides on a refused port: the defaults are the real Ollama and LoadCoach, and this test
+    # failed whenever the developer's Ollama had a model loaded (found at the W6 demonstration).
+    unreachable = "http://127.0.0.1:9"
+    console = build_console(
+        tmp_path,
+        extra_toml=(
+            f'[host]\nollama_base_url = "{unreachable}"\n'
+            f'[apps.loadcoach]\nbase_url = "{unreachable}"\n'
+        ),
+    )
     console.login()
 
     body = console.client.get("/api/v1/system/resident").json()

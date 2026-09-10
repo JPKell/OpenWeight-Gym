@@ -38,6 +38,16 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         # entries, and neither row ever carries the secret (`params` is redacted regardless).
         "token.create",
         "token.revoke",
+        # W6. Starting, sending to, attaching to and deleting a conversation. The row names the
+        # conversation and counts; message text and attachment contents are never in it.
+        "chat.create",
+        "chat.message",
+        "chat.attachment",
+        "chat.delete",
+        # W6. Granting or denying a PromptCadence approval from a thread: the one chat action that
+        # authorises spend or egress, so its row names the trajectory and the request it resolved.
+        "chat.approve",
+        "chat.deny",
         "db.guarded_write",
         "db.curated",
         "catalog.pull",

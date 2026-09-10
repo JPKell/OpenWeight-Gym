@@ -124,6 +124,158 @@ def _token_revoke(console: Console) -> Any:  # noqa: ANN401
     return console.post_form("/apps/loadcoach/tokens/revoke", {"name": "laptop"})
 
 
+def _chat_conversation(console: Console) -> str:
+    """A conversation made without a route, so the exercise's own row is the only one counted."""
+    from weightroom.services.chat import create_conversation
+
+    return create_conversation(console.database, backend="loadcoach", title="t", now=console.now)
+
+
+def _chat_join(console: Console) -> None:
+    from typing import cast
+
+    cast(Any, console.client.app).state.chat.join()
+
+
+def _chat_create_json(console: Console) -> Any:  # noqa: ANN401
+    return console.client.post(
+        "/api/v1/chat/conversations",
+        json={"backend": "loadcoach", "title": "t"},
+        headers=JSON_HEADERS,
+    )
+
+
+def _chat_delete_json(console: Console) -> Any:  # noqa: ANN401
+    conversation_id = _chat_conversation(console)
+    return console.client.delete(
+        f"/api/v1/chat/conversations/{conversation_id}", headers=JSON_HEADERS
+    )
+
+
+def _chat_send_json(console: Console) -> Any:  # noqa: ANN401
+    import respx
+
+    from tests.support import mock_loadcoach
+
+    conversation_id = _chat_conversation(console)
+    with respx.mock(assert_all_called=False) as router:
+        mock_loadcoach(router)
+        response = console.client.post(
+            f"/api/v1/chat/conversations/{conversation_id}/messages",
+            json={"text": "hello"},
+            headers=JSON_HEADERS,
+        )
+        _chat_join(console)
+    return response
+
+
+def _chat_attach_json(console: Console) -> Any:  # noqa: ANN401
+    conversation_id = _chat_conversation(console)
+    return console.client.post(
+        f"/api/v1/chat/conversations/{conversation_id}/attachments",
+        files={"file": ("a.md", b"a", "text/markdown")},
+        data={"csrf_token": console.csrf_token()},
+        headers={"Sec-Fetch-Site": "same-origin"},
+    )
+
+
+def _chat_create_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/chat", {"backend": "loadcoach", "title": "t"})
+
+
+def _chat_send_form(console: Console) -> Any:  # noqa: ANN401
+    import respx
+
+    from tests.support import mock_loadcoach
+
+    conversation_id = _chat_conversation(console)
+    with respx.mock(assert_all_called=False) as router:
+        mock_loadcoach(router)
+        response = console.post_form(f"/chat/{conversation_id}/messages", {"text": "hello"})
+        _chat_join(console)
+    return response
+
+
+def _chat_attach_form(console: Console) -> Any:  # noqa: ANN401
+    conversation_id = _chat_conversation(console)
+    return console.client.post(
+        f"/chat/{conversation_id}/attachments",
+        files={"file": ("a.md", b"a", "text/markdown")},
+        data={"csrf_token": console.csrf_token()},
+        headers={"Accept": "text/html"},
+    )
+
+
+def _chat_delete_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form(f"/chat/{_chat_conversation(console)}/delete", {})
+
+
+def _chat_pending_approval(console: Console) -> tuple[str, str]:
+    """A PromptCadence reply parked on an approval, and the scope cache primed as held — the
+    exercise counts the decision's own row, not a `token list` subprocess."""
+    import time
+
+    from weightroom.infrastructure.db.models import Message, MessageEvent
+    from weightroom.services import chat_promptcadence
+    from weightroom.services.chat import create_conversation
+
+    chat_promptcadence._SCOPE_CACHE["promptcadence"] = (time.monotonic(), True)
+    conversation_id = create_conversation(
+        console.database, backend="promptcadence", title="t", now=console.now
+    )
+    with console.database.write() as session:
+        message = Message(
+            conversation_id=conversation_id,
+            sequence=1,
+            role="assistant",
+            text="",
+            remote_job_id="01TRAJECTORY00000000000001",
+        )
+        session.add(message)
+        session.flush()
+        session.add(
+            MessageEvent(
+                message_id=message.id,
+                sequence=1,
+                kind="approval_pending",
+                payload={
+                    "message_id": message.id,
+                    "status": "requested",
+                    "approval_request_id": "01REQUEST0000000000000001",
+                },
+            )
+        )
+    return conversation_id, "01REQUEST0000000000000001"
+
+
+def _chat_decide_json(console: Console) -> Any:  # noqa: ANN401
+    import respx
+
+    from tests.support import mock_promptcadence
+
+    conversation_id, request_id = _chat_pending_approval(console)
+    with respx.mock(assert_all_called=False) as router:
+        mock_promptcadence(router)
+        return console.client.post(
+            f"/api/v1/chat/conversations/{conversation_id}/approvals/{request_id}",
+            json={"decision": "approve"},
+            headers=JSON_HEADERS,
+        )
+
+
+def _chat_decide_form(console: Console) -> Any:  # noqa: ANN401
+    import respx
+
+    from tests.support import mock_promptcadence
+
+    conversation_id, request_id = _chat_pending_approval(console)
+    with respx.mock(assert_all_called=False) as router:
+        mock_promptcadence(router)
+        return console.post_form(
+            f"/chat/{conversation_id}/approvals/{request_id}", {"decision": "deny"}
+        )
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -145,6 +297,19 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/apps/{app}/restart-for-settings"): _restart_for_settings,
     ("POST", "/apps/{app}/tokens"): _token_create,
     ("POST", "/apps/{app}/tokens/revoke"): _token_revoke,
+    ("POST", "/api/v1/chat/conversations"): _chat_create_json,
+    ("DELETE", "/api/v1/chat/conversations/{conversation_id}"): _chat_delete_json,
+    ("POST", "/api/v1/chat/conversations/{conversation_id}/messages"): _chat_send_json,
+    ("POST", "/api/v1/chat/conversations/{conversation_id}/attachments"): _chat_attach_json,
+    ("POST", "/chat"): _chat_create_form,
+    ("POST", "/chat/{conversation_id}/messages"): _chat_send_form,
+    ("POST", "/chat/{conversation_id}/attachments"): _chat_attach_form,
+    ("POST", "/chat/{conversation_id}/delete"): _chat_delete_form,
+    (
+        "POST",
+        "/api/v1/chat/conversations/{conversation_id}/approvals/{approval_id}",
+    ): _chat_decide_json,
+    ("POST", "/chat/{conversation_id}/approvals/{approval_id}"): _chat_decide_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 

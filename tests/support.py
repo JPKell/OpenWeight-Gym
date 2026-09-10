@@ -108,6 +108,7 @@ def build_console(
     )
     # The lifespan would open its own handle; tests share this one and never enter the lifespan.
     app.state.database = database
+    app.state.attachments_root = tmp_path / "attachments"
     console = Console(
         settings=settings,
         database=database,
@@ -200,3 +201,133 @@ def api_routes(app: Any) -> list[tuple[str, APIRoute]]:  # noqa: ANN401 — a Fa
             sub_prefix = prefix + str(getattr(context, "prefix", "") or "")
             pending.extend((sub_prefix, sub) for sub in inner.routes)
     return found
+
+
+CHAT_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "chat"
+LOADCOACH_URL = "http://127.0.0.1:8766"
+
+
+def mock_loadcoach(
+    router: Any,  # noqa: ANN401 — a respx router
+    *,
+    stream: bytes | str | Exception | None = None,
+    version: str = "1.5.0",
+) -> Any:  # noqa: ANN401 — the respx route for POST /generate/stream
+    """LoadCoach as the console sees it: a version probe, and one recorded stream replayed.
+
+    ``stream`` is a fixture file name under ``tests/fixtures/chat``, raw SSE bytes, or an
+    exception the transport raises. The recordings are the reference machine's own streams.
+    """
+    import httpx
+
+    router.get(f"{LOADCOACH_URL}/api/v1/version").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "application": {"name": "loadcoach", "version": version},
+                "api": {"current": "v1"},
+            },
+        )
+    )
+    route = router.post(f"{LOADCOACH_URL}/api/v1/generate/stream")
+    if isinstance(stream, Exception):
+        route.mock(side_effect=stream)
+    else:
+        body = stream if stream is not None else "loadcoach-1.5.0-gpt-oss-thinking.sse"
+        if isinstance(body, str) and body.endswith(".sse"):
+            body = (CHAT_FIXTURES / body).read_bytes()
+        route.mock(
+            return_value=httpx.Response(
+                200,
+                headers={"content-type": "text/event-stream"},
+                content=body if isinstance(body, bytes) else body.encode(),
+            )
+        )
+    return route
+
+
+PROMPTCADENCE_URL = "http://127.0.0.1:8768"
+RECORDED_TRAJECTORY = "01M253YZNV3QQY0CZPWH0E4AYC"
+
+
+def mock_promptcadence(
+    router: Any,  # noqa: ANN401 — a respx router
+    *,
+    stream: bytes | str = "promptcadence-1.3.3-completed.sse",
+    turns: str = "promptcadence-1.3.3-completed-turns.json",
+    trajectory_id: str = RECORDED_TRAJECTORY,
+    egress: list[dict[str, Any]] | None = None,
+    tier_remote: bool = False,
+    submit_status: int = 202,
+    submit_error: dict[str, Any] | None = None,
+) -> dict[str, Any]:  # noqa: ANN401 — the respx routes by name
+    """PromptCadence as the console sees it, replaying the reference machine's recorded trajectory.
+
+    LoadCoach's explanation for the turn's job is mocked too, because the decision line under a
+    PromptCadence reply reads it (services/chat.py ``_promptcadence_routing``).
+    """
+    import httpx
+
+    router.get(f"{PROMPTCADENCE_URL}/api/v1/version").mock(
+        return_value=httpx.Response(
+            200, json={"application": "promptcadence", "version": "1.3.3", "api_version": "v1"}
+        )
+    )
+    submitted = {"trajectory_id": trajectory_id, "state": "queued"}
+    submit = router.post(f"{PROMPTCADENCE_URL}/api/v1/trajectories").mock(
+        return_value=httpx.Response(
+            submit_status, json=submit_error if submit_error is not None else submitted
+        )
+    )
+    body = stream
+    if isinstance(body, str) and body.endswith(".sse"):
+        body = (CHAT_FIXTURES / body).read_bytes()
+    events = router.get(url__regex=rf"{PROMPTCADENCE_URL}/api/v1/trajectories/[^/]+/stream").mock(
+        return_value=httpx.Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            content=body if isinstance(body, bytes) else body.encode(),
+        )
+    )
+    router.get(url__regex=rf"{PROMPTCADENCE_URL}/api/v1/trajectories/[^/]+/turns").mock(
+        return_value=httpx.Response(200, content=(CHAT_FIXTURES / turns).read_bytes())
+    )
+    router.get(f"{PROMPTCADENCE_URL}/api/v1/egress-decisions").mock(
+        return_value=httpx.Response(200, json={"items": egress or []})
+    )
+    router.get(f"{PROMPTCADENCE_URL}/api/v1/tiers").mock(
+        return_value=httpx.Response(
+            200, json={"rows": [{"name": "local_fast", "is_remote": tier_remote}]}
+        )
+    )
+    router.get(url__regex=rf"{LOADCOACH_URL}/api/v1/jobs/[^/]+/explanation").mock(
+        return_value=httpx.Response(
+            200, content=(CHAT_FIXTURES / "loadcoach-1.3.1-explanation.json").read_bytes()
+        )
+    )
+    decided = {"trajectory_id": trajectory_id, "state": "executing", "already_resolved": False}
+    approve = router.post(
+        url__regex=rf"{PROMPTCADENCE_URL}/api/v1/trajectories/[^/]+/approve"
+    ).mock(return_value=httpx.Response(200, json={**decided, "minted": []}))
+    deny = router.post(url__regex=rf"{PROMPTCADENCE_URL}/api/v1/trajectories/[^/]+/deny").mock(
+        return_value=httpx.Response(200, json={**decided, "state": "failed"})
+    )
+    return {"submit": submit, "stream": events, "approve": approve, "deny": deny}
+
+
+def promptcadence_token_cli(tmp_path: Path, *, scopes: list[str]) -> Path:
+    """A ``promptcadence`` executable whose ``token list --json`` names the console's token."""
+    directory = tmp_path / "promptcadence-cli"
+    directory.mkdir(parents=True, exist_ok=True)
+    listing = directory / "tokens.json"
+    listing.write_text(
+        json.dumps({"items": [{"name": "weightroom", "scopes": scopes, "active": True}]}),
+        encoding="utf-8",
+    )
+    executable = directory / "promptcadence"
+    executable.write_text(
+        f'#!/bin/sh\nif [ "$1" = "token" ]; then cat {listing}; fi\nexit 0\n',
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
+    return executable
