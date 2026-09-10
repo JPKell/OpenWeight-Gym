@@ -1,6 +1,9 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, empty_state, kv_list %}
 {% block title %}{{ app | app_label }} database — WeightRoom{% endblock %}
+{% block extra_head %}
+<style>#db-query td { white-space: nowrap; }</style>
+{% endblock %}
 {% block page_content %}
 <h2>Database</h2>
 <p class="muted">Every connection this page opens is read-only — <code>mode=ro</code> on SQLite,
