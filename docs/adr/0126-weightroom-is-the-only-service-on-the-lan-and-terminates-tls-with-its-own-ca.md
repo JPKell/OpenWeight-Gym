@@ -13,7 +13,7 @@ console — the ceiling this record is the other side of), [ADR-0123](0123-weigh
 rule 6 (the applications stay loopback), [Security Standards §2, §3, §8](../standards/security-standards.md),
 [Configuration Standards §6](../standards/configuration-standards.md) (secrets by reference),
 [`LAN_ACCESS.md`](../LAN_ACCESS.md) (rewritten by this row around this record).
-**Source:** the operator interview of 2026-09-09, decision D7, and the [kickoff](../history/w0-weightroom-phase-0.prompt.md)
+**Source:** the operator interview of 2026-09-09, decision D7, and the [kickoff](../history/prompts/w0-weightroom-phase-0.prompt.md)
 §6's auth-model, CA and app-token items.
 
 ## Context

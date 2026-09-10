@@ -216,7 +216,7 @@ per the standing rule.
 **Deviation, 2026-09-07:** rows M1–M3 of `outstanding-work.md` ran overnight, unattended, on the
 operator's explicit instruction ("execute rows M1–M3 overnight without my input, I trust your
 judgement"). M1 is scheduled "never overnight" — it builds a sandbox and an egress decision. The
-kickoffs (`history/m1-ideapress-research-toolyard.prompt.md`, `m2-…`, `m3-…`) compensate the
+kickoffs (`history/prompts/m1-ideapress-research-toolyard.prompt.md`, `m2-…`, `m3-…`) compensate the
 only way an unattended run can: the conservative option is named for every judgement call
 (empty host allowlist by default, refusal over guess), and every judgement is written into the
 handoff for the morning's review. M2 and M3 ran at **high** per this section, not `standard`.
@@ -279,7 +279,7 @@ The rule is not a capability judgement about the weaker model. It is about **whe
 actually falls**, and F1 is the evidence. That row was scheduled as Opus for the crash-reconciliation
 core and Sonnet for "the edges: the estimator, config plumbing, the surfaces, the project label —
 transcription against a working example". It ran whole on Opus, and the handoff
-(`docs/history/F1_HANDOFF.md` §11) records why three of the four edges could not have been transcribed:
+(`docs/history/handoffs/F1_HANDOFF.md` §11) records why three of the four edges could not have been transcribed:
 
 * The **estimator** could not be written until it was settled that a ledger entry carries no money,
   that the historical estimate is therefore a *usage* estimate priced through the tier, and that an

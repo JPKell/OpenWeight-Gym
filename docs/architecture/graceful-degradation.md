@@ -142,7 +142,7 @@ machine telemetry by decision, and the three cells now read `n/a — ADR-0115`. 
 **incompatible API major version** — the last row L8 left `untested` as a documented behaviour that
 was never built — is closed the same way, by building rather than scoping out:
 `FreeWeightClient.version()` now negotiates FreeWeight's `GET /version` before any evidence is
-read (row M2, 2026-09-08; `docs/history/M2_HANDOFF.md`). No cell in this index still reads
+read (row M2, 2026-09-08; `docs/history/handoffs/M2_HANDOFF.md`). No cell in this index still reads
 `untested — behaviour not implemented`; every remaining plain `untested` cell is an ordinary
 missing-test gap on an already-built behaviour, not a documented behaviour nobody wrote, the
 distinction ADR-0042 draws. G20 can be turned on, the way ADR-0111 scopes out ToolYard's podman

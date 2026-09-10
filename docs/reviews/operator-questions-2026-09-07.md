@@ -43,7 +43,7 @@ and runs, IdeaPress stores units and attempt history, and PromptCadence stores a
 One thing *is* retained below the application, and it is the runtime's, not ModelRack's: the
 server's own prompt/KV cache. llama-server reuses a shared prefix across requests in one process —
 measured at row D3, `cache_read 14 (second request, shared prefix)`
-([D3_HANDOFF.md:444](../history/D3_HANDOFF.md)) — and ModelRack reports it as `cache_read_tokens`
+([D3_HANDOFF.md:444](../history/handoffs/D3_HANDOFF.md)) — and ModelRack reports it as `cache_read_tokens`
 (ADR-0070) while deliberately refusing to pin a slot, so slot selection stays the server's
 (`py/ModelRack/src/modelrack/providers/_llamacpp_wire.py:139-147`, ADR-0062 decision 4). Under
 Ollama, `keep_alive` keeps the *weights* resident; the context is re-sent on every call
@@ -305,8 +305,8 @@ deletion is unrecoverable (`CLAUDE.md`, *Working-tree integrity*; the `harness.m
 | `changes` | nothing (0 bytes, 2026-08-24) | delete |
 | `TAG_COMMANDS.sh`, `H3_TAG_COMMANDS.sh`, `I3_TAG_COMMANDS.sh` | one-shot helpers for released rows | delete once the tags exist |
 | `SUITE_REVIEW.md` | nothing in `docs/` | archive or delete |
-| `A1_REPORT.md`, `A1_REVIEW.md` | `history/a1-review.prompt.md`, `history/B3_HANDOFF.md` | **move** into `docs/history/` |
-| `E1_E2_RELEASE_RUNBOOK.md` | `history/E3_HANDOFF.md`, `history/H1_HANDOFF.md` | **move** into `docs/history/` |
+| `A1_REPORT.md`, `A1_REVIEW.md` | `history/prompts/a1-review.prompt.md`, `history/handoffs/B3_HANDOFF.md` | **move** into `docs/history/` |
+| `E1_E2_RELEASE_RUNBOOK.md` | `history/handoffs/E3_HANDOFF.md`, `history/handoffs/H1_HANDOFF.md` | **move** into `docs/history/` |
 | `M9_AUDIT.md`, `ADR_GAP_REVIEW.md` | `roadmap/master-roadmap.md`, `roadmap/outstanding-work.md`, ADR-0113, ADR-0114 | **move**; do not delete while rows cite them |
 | `harness.md` | `roadmap/*`, `apps/promptcadence/spec.md` | keep — it is a signpost, and it is the file that was lost once |
 | `.mypy_cache/`, `.ruff_cache/`, root `.venv/` | — | regenerable |
@@ -317,7 +317,7 @@ Moving rather than deleting is the established precedent: commit `c987091`,
 **What is specified but not built.** Two documents still describe a directory that is already gone:
 `.old_projects/` no longer exists in the workspace, yet `CLAUDE.md:28` lists it in the tree and
 [CODE_REVIEW_PLAN.md §0](../CODE_REVIEW_PLAN.md) still instructs *"Do not read `.old_projects/`"*.
-The inventory ([legacy-material-inventory.md](../inventory/legacy-material-inventory.md)) is the
+The inventory (legacy-material-inventory.md) is the
 surviving record and should stay.
 
 **What would be new.** Nothing architectural. This is a housekeeping row at most, and more likely
@@ -389,14 +389,14 @@ that revisit: an ADR on cross-machine evidence semantics first, then a row.
 ## "!! M7_HANDOFF.md talks about Gemma4:12B returning nothing it's first prompt after a cold load. This is concerning and I think that it should be flagged in freeweight and handled perhaps in loadcoach? It should warm the model then clear the KV and get it ready for the caller?"
 
 **The premise is correct, and the problem is broader than the handoff says.**
-[M7_HANDOFF.md §M7-16](../history/M7_HANDOFF.md) measured `gemma4:12b` consuming its entire output
+[M7_HANDOFF.md §M7-16](../history/handoffs/M7_HANDOFF.md) measured `gemma4:12b` consuming its entire output
 budget thinking on the first generation after a cold load and returning an empty string with
 `finish_reason="length"` — reproduced three times in three with explicit unloads, not observed on
 `qwen3.5:9b-q8_0` — and since ADR-0038 unloads before every model switch, a cold load is guaranteed
 on every alternation between IdeaPress's two default bindings.
 
 Row G2 then measured the same failure **warm**, on a different model:
-[G2_HANDOFF.md §4](../history/G2_HANDOFF.md) records `gpt-oss:20b` returning an empty answer in
+[G2_HANDOFF.md §4](../history/handoffs/G2_HANDOFF.md) records `gpt-oss:20b` returning an empty answer in
 1 of 6 planning calls at the shipped 4096-token budget and 3 of 6 at 8192 — `done_reason=length`,
 `eval_count` exactly the budget, up to 34,000 characters of thinking. So this is not only a
 cold-load quirk: it is what a reasoning model does when its output budget runs out before its first

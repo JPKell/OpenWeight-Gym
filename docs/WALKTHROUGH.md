@@ -45,7 +45,7 @@ Then **ten ADRs**, and only ten — the ones whose absence makes the code unread
 | [0070](adr/0070-an-absent-token-class-is-zero-only-where-the-protocol-cannot-bill-it.md) | The one carve-out from 0016 — read it straight after |
 
 7. **`roadmap/outstanding-work.md` §1** (45 min) — one row per model session, with its status and,
-   once run, a `history/<ROW>_HANDOFF.md`. A1–L6 are done; **M1 is the only row left**. Skim §3,
+   once run, a `history/handoffs/<ROW>_HANDOFF.md`. A1–L6 are done; **M1 is the only row left**. Skim §3,
    "which orderings are load-bearing" — the honest record of what depended on what.
 8. **The two audits of 2026-09-07**, at the workspace root: `ADR_GAP_REVIEW.md` (102 records, 21
    findings — three are contradictions a reader would act on and get wrong) and `M9_AUDIT.md` (the
@@ -67,7 +67,7 @@ cd ~/ai/suite/<repo> && .venv/bin/ruff format --check . && .venv/bin/ruff check 
 `pytest` already excludes `live` and `performance` via `addopts`; below, `pytest -q` stands for the
 whole gate. Interpreters differ by repo and are named because a gate report must name them. Each
 component's purpose is §1 of its `spec.md`, under `packages/<name>/` or `apps/<name>/`; its handoffs
-are in `history/`, and they hold the decisions the spec does not. The application rows carry the
+are in `history/handoffs/`, and they hold the decisions the spec does not. The application rows carry the
 loopback port instead of a layer.
 
 | Layer | Component | Version / port | Python | Handoffs — what each settled |
@@ -223,7 +223,7 @@ Three compositions, all over HTTP with SetSpec payloads, none reading another's 
 **FreeWeight → LoadCoach.** With both serving, diff `route explain` before and after the import: the
 `low_evidence` flag clears and the explanation names what carried the score and how old it is. A
 FreeWeight elsewhere on the network must be named in `evidence.allowed_source_hosts` first (ADR-0026
-§3). Demonstrated end to end in `history/H5_HANDOFF.md`.
+§3). Demonstrated end to end in `history/handoffs/H5_HANDOFF.md`.
 
 ```bash
 .venv/bin/loadcoach evidence import --url http://127.0.0.1:8765
@@ -243,7 +243,7 @@ export IDEAPRESS_INFERENCE__MODE=loadcoach \
 **PromptCadence → LoadCoach** (every model call, ADR-0045). `promptcadence tiers check` above *is*
 the composition test: the five harness profiles (`tools.agent.local_fast`, `local_large`,
 `remote_cheap`, `remote_frontier`, `tools.plan`) must exist in the running LoadCoach. The live proof
-on real models is `history/G2_HANDOFF.md`; the 1.0 verdict is `history/I2_HANDOFF.md`.
+on real models is `history/handoffs/G2_HANDOFF.md`; the 1.0 verdict is `history/handoffs/I2_HANDOFF.md`.
 
 ## 4. What is deliberately not done
 

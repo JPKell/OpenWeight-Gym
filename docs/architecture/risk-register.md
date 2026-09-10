@@ -14,7 +14,7 @@ the design (not an intention) and an early signal that tells us it is materializ
 
 | # | Risk | L | I | Mitigation | Early signal |
 |---|---|---|---|---|---|
-| A1 | **Boundary erosion** — an application imports another, or reads its database, "temporarily" | Medium | Critical | import-linter contracts in every repository; clean-venv install-and-import check; the rejection of "shared DB as a shortcut" recorded in the [inventory](../inventory/legacy-material-inventory.md) | A PR that adds a dependency between application repositories |
+| A1 | **Boundary erosion** — an application imports another, or reads its database, "temporarily" | Medium | Critical | import-linter contracts in every repository; clean-venv install-and-import check; the rejection of "shared DB as a shortcut" recorded in the inventory | A PR that adds a dependency between application repositories |
 | A2 | **Shared package absorbs application logic** — WeightsDB grows a benchmark table, MirrorWall grows a runs page | Medium | High | Empty-`MetaData` test; term-scan test for application vocabulary; explicit non-goals in every package spec | A package release whose changelog names an application feature |
 | A3 | **Premature extraction** of WeightsDB or MirrorWall shaped by one consumer | Medium | Medium | Extraction scheduled at the *second* consumer ([ADR-0011](../adr/0011-shared-package-boundaries.md)); FreeWeight's unchanged test suite is the adoption gate | An extracted package needing a change for its second consumer within weeks |
 | A4 | **Contract freeze too early** — schemas frozen before their producer exists | Medium | High | SetSpec ships draft payloads, freezes only after FreeWeight P11 produces real results | Repeated `1.0-draft` changes after freeze |

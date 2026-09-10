@@ -76,7 +76,7 @@ mistake. The fix is always to move the code back into the application, never to 
 
 | Rule | The failure it prevents | Evidence it is a real risk |
 |---|---|---|
-| Packages never import applications | The package becomes un-installable on its own; the "independent download" promise dies quietly | `content_factory/models/backend.py` imported `engine.types`, which is exactly why that provider layer could never be reused ([inventory §3](../inventory/legacy-material-inventory.md)) |
+| Packages never import applications | The package becomes un-installable on its own; the "independent download" promise dies quietly | `content_factory/models/backend.py` imported `engine.types`, which is exactly why that provider layer could never be reused (inventory §3) |
 | Applications never import applications | IdeaPress would require LoadCoach to be installed to start | Requirement §2; the old planning explicitly warned about `from loadcoach.routing.router import Router` |
 | No cross-application database access | The reader binds to the writer's internal schema; the writer can never migrate | Old planning proposed shared DB access "as a temporary shortcut" — rejected |
 | Capability packages do not import each other | `sweatmeter` importing `modelrack` would force every telemetry consumer to install an HTTP client | — |

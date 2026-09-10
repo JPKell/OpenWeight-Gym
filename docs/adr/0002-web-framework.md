@@ -12,7 +12,7 @@ The prior benchmark specification forbade web frameworks entirely and mandated
 `http.server.ThreadingHTTPServer` with hand-written routing. The partial implementation that
 followed it produced ~350 lines of server and dispatch code, with no validation, no generated
 documentation and no typed request models, before a single benchmark existed. That constraint is
-rejected in the [inventory](../inventory/legacy-material-inventory.md); dependency minimalism
+rejected in the inventory; dependency minimalism
 survives as a budget, not a prohibition.
 
 Requirements that bear directly on the choice:

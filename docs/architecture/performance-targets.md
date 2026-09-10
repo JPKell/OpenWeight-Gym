@@ -11,7 +11,7 @@ verified by a performance test, on the reference machine.
 ## 1. Reference machine
 
 Targets are stated against the development machine recorded at architecture freeze
-([inventory §7](../inventory/legacy-material-inventory.md)):
+(inventory §7):
 
 ```text
 Ubuntu 26.04 LTS · Python 3.13 · NVIDIA RTX 5060 Ti (16 GB) · Ollama 0.32.13 · local SQLite (WAL)

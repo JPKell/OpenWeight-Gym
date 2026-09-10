@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Finish rows N1–N6 (WeightRoom/docs/history/N*_HANDOFF.md): everything the model session was not allowed to
+# Finish rows N1–N6 (WeightRoom/docs/history/handoffs/N*_HANDOFF.md): everything the model session was not allowed to
 # do — push, tag, publish, relock — in the order the dependencies force.
 #
 #   WeightRoom/docs/scripts/finish_n_rows.sh                # run every step from the start

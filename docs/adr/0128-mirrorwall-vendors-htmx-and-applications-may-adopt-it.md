@@ -15,7 +15,7 @@ rule 5 (the CSRF and same-origin checks every htmx request must pass),
 [`apps/weightroom/design.md`](../apps/weightroom/design.md) §5 (the components this changes the
 implementation of).
 **Source:** the operator's decision of 2026-09-09, on the trade-offs written into
-[`history/W0_HANDOFF.md`](../history/W0_HANDOFF.md) §6, after row W0 had read the interview's
+[`history/handoffs/W0_HANDOFF.md`](../history/handoffs/W0_HANDOFF.md) §6, after row W0 had read the interview's
 "server-rendered + htmx" as the patterns only.
 
 ## Context

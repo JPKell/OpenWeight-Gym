@@ -15,8 +15,8 @@ password again within a five-minute window before a security key moves. W1 alrea
 that as a stamp on the session row (``sessions.reauth_at``, ``POST /reauth``,
 :func:`~weightroom.services.auth.require_fresh_reauth`), so this row carries no second
 credential: the page posts the password with the change, this module opens the window and then
-performs the write in the same request. See ``docs/history/W4_HANDOFF.md`` for why a header or a
-second cookie was rejected.
+performs the write in the same request. See ``docs/history/handoffs/W4_HANDOFF.md`` for why a
+header or a second cookie was rejected.
 """
 
 from __future__ import annotations

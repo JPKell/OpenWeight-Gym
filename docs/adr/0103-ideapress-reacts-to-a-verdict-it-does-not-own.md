@@ -9,7 +9,7 @@ caller enforces).
 (the mounting pattern both adoptions use), [ADR-0069](0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md)
 (floor vs strict), [ADR-0046](0046-data-classification-is-ordered-and-defaults-closed.md) (defaults
 are closed).
-**Source:** Row J1 (`docs/history/j1-ideapress-loadledger-commissioner.prompt.md`), decisions D4
+**Source:** Row J1 (`docs/history/prompts/j1-ideapress-loadledger-commissioner.prompt.md`), decisions D4
 and D6.
 
 ## Context

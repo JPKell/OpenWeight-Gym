@@ -10,7 +10,7 @@
 (evidence is measured, never inherited), [ADR-0088](0088-an-excluded-measurement-falls-back-to-the-prior-it-displaced.md)
 (the other half of the same live failure).
 **Source:** Row H6, from the H5 interview on 2026-09-06 — observed live at H5 rather than reasoned
-about in advance (`docs/history/H5_HANDOFF.md` §9, §10.1).
+about in advance (`docs/history/handoffs/H5_HANDOFF.md` §9, §10.1).
 
 ## Context
 

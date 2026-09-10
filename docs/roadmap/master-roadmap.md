@@ -398,7 +398,7 @@ and it needs a look before the M9 release boxes can be ticked.
    CutCtx as their second consumer, shipped as `ideapress 1.2.0` on 2026-09-07
    ([Outstanding Work](outstanding-work.md) rows J1 and J2). Declaring the milestone is a human
    step; the arcs stay authoritative for rationale, and each finished row's
-   `docs/history/<ROW>_HANDOFF.md` records what it actually built.
+   `docs/history/handoffs/<ROW>_HANDOFF.md` records what it actually built.
 
 Of the releases that were pending on 2026-09-06, `freeweight 1.1.0`, `ideapress 1.2.0` and
 `promptcadence 1.2.0` were tagged and published by CI on 2026-09-07. What remains is
@@ -406,9 +406,9 @@ Of the releases that were pending on 2026-09-06, `freeweight 1.1.0`, `ideapress 
 (committed, untagged). Tagging and PyPI approval stay a human step by standing instruction.
 
 **The record of how each milestone was verified** stays in the handoff and verification documents:
-`docs/history/M4_HANDOFF.md`, `docs/history/M6_HANDOFF.md` and `docs/history/M7_HANDOFF.md` are where the decisions the
-documents left open were made, and `docs/history/m5-reverification.prompt.md`, `docs/history/m6-verification.prompt.md` and
-`docs/history/m7-verification.prompt.md` are how each milestone was checked before it was declared. The M7
+`docs/history/handoffs/M4_HANDOFF.md`, `docs/history/handoffs/M6_HANDOFF.md` and `docs/history/handoffs/M7_HANDOFF.md` are where the decisions the
+documents left open were made, and `docs/history/prompts/m5-reverification.prompt.md`, `docs/history/prompts/m6-verification.prompt.md` and
+`docs/history/prompts/m7-verification.prompt.md` are how each milestone was checked before it was declared. The M7
 verification is the precedent worth keeping in view: it returned *not ready*, with findings that
 took a further build round to close.
 
@@ -420,5 +420,5 @@ touches. It should not need to invent an architectural decision; if it does, tha
 this documentation set and should be closed with an ADR before the code is written. The
 [final architecture audit](../reviews/final_architecture_audit.md) is still worth reading before a
 first phase: it added ADR-0022 – ADR-0029 and corrected the specifications they touch. The M4 and
-M5 handoff sections in `docs/history/M4_HANDOFF.md` are where the decisions the documents left open
+M5 handoff sections in `docs/history/handoffs/M4_HANDOFF.md` are where the decisions the documents left open
 were made, and the verification prompts are how each milestone is checked before it is declared.

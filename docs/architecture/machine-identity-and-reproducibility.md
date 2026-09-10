@@ -84,7 +84,7 @@ machine_fingerprint = sha256(
 | Container/VM identifiers | Not stable, and not meaningful on the primary deployment shape. |
 
 This exclusion policy is inherited verbatim from the prior implementation, where it was the
-correct call ([inventory §2.2](../inventory/legacy-material-inventory.md)).
+correct call (inventory §2.2).
 
 Unreadable fields become `UNSUPPORTED` and hash as the literal string `unsupported`. A machine that
 cannot report its CPU model still gets a stable fingerprint; it simply carries less identity.

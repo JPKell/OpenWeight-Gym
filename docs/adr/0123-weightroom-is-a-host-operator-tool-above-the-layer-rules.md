@@ -18,7 +18,7 @@ one component), and the four records that fill in its parts:
 [ADR-0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) (exposure),
 [ADR-0127](0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) (settings).
 **Source:** the operator interview of 2026-09-09, decisions D1, D2, D5, D8, D14 and D15
-([kickoff](../history/w0-weightroom-phase-0.prompt.md) §2).
+([kickoff](../history/prompts/w0-weightroom-phase-0.prompt.md) §2).
 
 ## Context
 

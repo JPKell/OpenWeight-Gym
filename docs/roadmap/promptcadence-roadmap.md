@@ -12,7 +12,7 @@ order and rework risk, not calendar dates. Milestones continue the suite's numbe
 **State (2026-09-07):** M10, M11 and M12 are complete — `promptcadence 1.1.0` and all four packages
 are on PyPI. M13, IdeaPress's adoption of three of them, is the last milestone and is under way.
 This document stays authoritative for rationale; what each session actually built is in
-[outstanding-work.md](outstanding-work.md) and the per-row `docs/history/<ROW>_HANDOFF.md`.
+[outstanding-work.md](outstanding-work.md) and the per-row `docs/history/handoffs/<ROW>_HANDOFF.md`.
 **Parallel stream:** the [Adapter arc](adapter-roadmap.md) (hot-swappable LoRA serving via
 llama.cpp) shares this arc's Phase 0 — its contracts land jointly so every schema below is born
 adapter-aware — and converges at M12; its sequencing rules are that roadmap's §5.

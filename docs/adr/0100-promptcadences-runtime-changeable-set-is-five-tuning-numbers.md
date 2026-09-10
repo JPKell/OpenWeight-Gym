@@ -14,7 +14,7 @@ these keys bound),
 [ADR-0069](0069-a-partial-price-is-a-floor-and-a-money-ceiling-chooses-how-it-binds.md) (why
 `budget.partial_pricing` is not a tuning number).
 **Source:** Row I5 — the settings pair spec §7.1 promised and the 1.0 build recorded as unbuilt
-([I2 §5](../history/I2_HANDOFF.md)). The operator chose to schedule the row rather than strike the
+([I2 §5](../history/handoffs/I2_HANDOFF.md)). The operator chose to schedule the row rather than strike the
 endpoints from the spec.
 
 ## Context

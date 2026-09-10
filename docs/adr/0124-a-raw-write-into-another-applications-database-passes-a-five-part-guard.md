@@ -9,7 +9,7 @@
 (intents are never edited), [ADR-0044](0044-a-state-change-and-its-event-are-one-write.md) (an event
 row is the state change's witness), [ADR-0017](0017-benchmark-confidence-and-freshness.md) and
 [ADR-0023](0023-runtime-profile-resolution.md) (what is hashed into a measurement subject).
-**Source:** the operator interview of 2026-09-09, decision D3; the [kickoff](../history/w0-weightroom-phase-0.prompt.md) §3.
+**Source:** the operator interview of 2026-09-09, decision D3; the [kickoff](../history/prompts/w0-weightroom-phase-0.prompt.md) §3.
 
 ## Context
 

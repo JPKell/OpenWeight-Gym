@@ -5,7 +5,8 @@ Revises:
 Create Date: 2026-09-09 00:00:00.000000
 
 ``known_revisions`` is seeded with the head of each application's migration history as read
-from the four repositories on 2026-09-09 (row W1; recorded in ``docs/history/W1_HANDOFF.md``).
+from the four repositories on 2026-09-09 (row W1; recorded in
+``docs/history/handoffs/W1_HANDOFF.md``).
 A later WeightRoomGym release that learns a newer revision adds a row in its own migration.
 """
 

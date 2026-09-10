@@ -3,7 +3,7 @@
 **Purpose:** [`performance-targets.md`](performance-targets.md) states a budget for every measure
 that matters; this document is where a budget's **measured** number lives once something has
 actually run it. Never invent a figure here — every number below either came from
-`docs/history/*_HANDOFF.md` (a session that ran the test and recorded what it saw) or from a
+`docs/history/handoffs/*_HANDOFF.md` (a session that ran the test and recorded what it saw) or from a
 nightly `performance` job's own output, pasted in per §2. A blank "Measured" cell means exactly
 that: nobody has run that budget in CI yet, which — before M9 Group 4 (`docs/roadmap/outstanding-
 work.md` row L4) added a nightly schedule to the ten repositories that lacked one — was true of

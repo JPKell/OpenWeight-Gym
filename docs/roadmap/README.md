@@ -2,8 +2,8 @@
 
 **Since 2026-09-09 each arc the operator starts has its own work file** in the master-table shape
 (`# | Phase → ships | Model · effort | Runs after | Work overview — and required reading | Why this
-model`), with the same status marks, the same `docs/history/<ROW>_HANDOFF.md` rule and one kickoff
-prompt per row under `docs/history/`. A person opening this directory sees the arcs first.
+model`), with the same status marks, the same `docs/history/handoffs/<ROW>_HANDOFF.md` rule and one kickoff
+prompt per row under `docs/history/prompts/`. A person opening this directory sees the arcs first.
 
 ## Work files — the schedules
 

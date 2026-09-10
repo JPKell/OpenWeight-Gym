@@ -30,6 +30,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ### Changed
 
+- The documentation tree: `docs/history/` now holds the handoffs under `handoffs/` and the
+  kickoff prompts under `prompts/`, so the docs viewer's History section lists them under
+  their own headings. Every reference across the suite follows the move. `docs/inventory/` is
+  removed.
 - The docs viewer is organised by section. The left menu lists Home (the root's own documents),
   Apps, Packages, Standards, Architecture, ADR, Roadmap, History and Reviews, with any other
   top-level folder appended after them; the selected section expands to its folders. Choosing a

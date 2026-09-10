@@ -9,7 +9,7 @@
 carried, not validated),
 [API and Contract Standards §4](../standards/api-and-contract-standards.md) (compatibility rules).
 **Source:** Row H2, decision 2 of its kickoff §0.2; the defect is
-[`docs/history/G2_HANDOFF.md`](../history/G2_HANDOFF.md) §7 and the open item is its §8.
+[`docs/history/handoffs/G2_HANDOFF.md`](../history/handoffs/G2_HANDOFF.md) §7 and the open item is its §8.
 
 ## Context
 

@@ -6,7 +6,7 @@ schema is passed through, never validated — the rule this record inherits for 
 `parameters`), [ADR-0007](0007-provider-abstraction.md) (a provider declares what it can
 do and is refused what it cannot), [ADR-0016](0016-unavailable-is-not-zero.md) (an absent fact is
 not a permissive one).
-**Source:** G1's real-stack evidence (`docs/history/G1_HANDOFF.md` §9.3) and row G2 of
+**Source:** G1's real-stack evidence (`docs/history/handoffs/G1_HANDOFF.md` §9.3) and row G2 of
 [`docs/roadmap/outstanding-work.md`](../roadmap/outstanding-work.md).
 
 ## Context

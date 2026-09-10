@@ -70,7 +70,7 @@ five has its own repository, and `promptcadence`, `cutctx`, `toolyard`, `loadled
 | **Working on either post-1.0 arc** | [Outstanding Work](roadmap/outstanding-work.md) (the schedule) → the arc's roadmap ([PromptCadence](roadmap/promptcadence-roadmap.md) · [Adapter](roadmap/adapter-roadmap.md)) → the decisions it rests on (ADRs [0045–0067](adr/README.md)) → the component's `spec.md` → that phase in its `development-plan.md` |
 | **Deciding something architectural** | [ADR index](adr/README.md) → [Dependency and Boundary Rules](architecture/dependency-and-boundary-rules.md) → [Traceability Matrix](architecture/traceability-matrix.md) |
 | **Reviewing a change** | [Coding Standards](standards/coding-standards.md) → [Testing Standards](standards/testing-standards.md) → [Gold Standards](standards/gold-standards.md) |
-| **Wondering why something is the way it is** | [Legacy Material Inventory](inventory/legacy-material-inventory.md) → the relevant [ADR](adr/README.md) |
+| **Wondering why something is the way it is** | The relevant [ADR](adr/README.md) → the handoff of the row that wrote it, under `history/handoffs/` |
 | **Wondering what changed after the freeze** | [Final Architecture Audit](reviews/final_architecture_audit.md) |
 
 ---
@@ -244,7 +244,6 @@ exception and still has one: PromptCadence is its only consumer.
 | [PromptCadence Arc](roadmap/promptcadence-roadmap.md) | M10–M13: the harness and its four packages — decisions D-1…D-13 (now ADRs 0045–0057), milestones, work streams, integration verifications, risks |
 | [Adapter Arc](roadmap/adapter-roadmap.md) | LA0–LA3: hot-swappable LoRA serving — decisions A-1…A-10 (now ADRs 0058–0067), checkpoints, per-component work, sequencing against the harness arc |
 | [Model Assignment Guide](roadmap/model-assignment.md) | Advisory: which model and reasoning effort to point at each phase, what makes a phase hard for a model, the first-instance rule, and where never to economize |
-| [Legacy Material Inventory](inventory/legacy-material-inventory.md) | Everything inspected in `planning/` and `.old_projects/`: what was adopted, what was rejected and why, conflicts and their resolutions, technical debt not inherited, the observed environment |
 | [Final Architecture Audit](reviews/final_architecture_audit.md) | The post-freeze audit: 41 findings by severity, the corrections made, ADRs 0022–0029 and the seven amended, deployment combinations re-verified, deliberately deferred concerns, and the clean-room verification |
 
 ---
@@ -261,8 +260,9 @@ WeightRoom/              the WeightRoomGym repository (OpenWeight-Gym) — src/,
     ├── standards/           suite-wide standards every component follows
     ├── adr/                 architecture decision records
     ├── roadmap/             the roadmaps, and one work file per arc (roadmap/README.md indexes them)
-    ├── history/             kickoff prompts and handoffs, one per row
-    ├── inventory/           ← addition: the legacy-material inventory
+    ├── history/             one-off audits and reviews, and one folder each for:
+    │   ├── handoffs/        the handoff each row wrote
+    │   └── prompts/         the kickoff prompt each row ran from
     ├── reviews/             ← addition: architecture reviews and audits
     ├── apps/                one directory per application (weightroom/ is its own canonical home)
     ├── packages/            one directory per shared package
@@ -275,13 +275,6 @@ The ADRs carry the decisions; the audit carries the findings, their severity, an
 deliberately left alone. A reader who wants to know *what changed after the freeze and why* has one
 place to look.
 
-**Why `inventory/` exists as its own directory:** the requirements mandate an inventory of prior
-material *before* the architecture is designed, and that inventory is neither architecture nor a
-standard — it is the audit trail explaining which prior decisions were kept, which were rejected and
-why. Keeping it separate stops it from being mistaken for current architecture, while leaving it
-citable from every document that inherited a pattern from it. It is the first place to look when
-someone asks "why didn't you just do what the old spec said?"
-
 Each application directory carries more than `spec.md` and `development-plan.md` because four
 subjects are too large to nest inside a specification without burying them: the benchmark catalogue,
 the routing and queue designs, the workflow pipeline, and the trajectory lifecycle. Each is
@@ -293,7 +286,7 @@ referenced from its specification and does not duplicate it.
 
 | Requirement | Deliverable | Status |
 |---|---|---|
-| §4 Inventory of existing material | [Legacy Material Inventory](inventory/legacy-material-inventory.md) | Complete |
+| §4 Inventory of existing material | Legacy Material Inventory (removed 2026-09-10; in git history) | Complete |
 | §28 Executive summary | [Executive Summary](architecture/executive-summary.md) | Complete |
 | §28 Master architecture | [Master Architecture](architecture/master-architecture.md) + 8 supporting documents | Complete |
 | §28 Master development roadmap | [Master Roadmap](roadmap/master-roadmap.md) | Complete |

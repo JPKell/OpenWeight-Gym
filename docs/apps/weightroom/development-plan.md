@@ -26,7 +26,7 @@ ADRs 0123–0127 accepted and indexed; `apps/weightroom/{spec,api,data-model,des
 and this plan; master architecture, executive summary, `MEMORY_SAFETY.md`, `LAN_ACCESS.md`
 amended; `expose_on_lan.sh` deleted; the documentation repository becomes the WeightRoomGym
 repository with the tree under `docs/`; the skeleton at `0.0.0` with the gate green; the arc's
-roadmap file and its kickoff prompts. Handoff: `docs/history/W0_HANDOFF.md`.
+roadmap file and its kickoff prompts. Handoff: `docs/history/handoffs/W0_HANDOFF.md`.
 
 ---
 

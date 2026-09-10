@@ -9,7 +9,7 @@ are unchanged), [ADR-0016](0016-unavailable-is-not-zero.md) (an absence is never
 [ADR-0087](0087-the-evidence-gate-admits-only-a-signal-that-scores.md) (the other half of the same
 live failure).
 **Source:** Row H6, from the H5 interview on 2026-09-06 — the second, independent defect noted while
-tightening the gate (`docs/history/H5_HANDOFF.md` §10.1).
+tightening the gate (`docs/history/handoffs/H5_HANDOFF.md` §10.1).
 
 ## Context
 

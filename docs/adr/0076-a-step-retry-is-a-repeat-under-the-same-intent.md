@@ -10,14 +10,14 @@ own scope, and silence never grants it — why an escalation is a re-approval an
 retried turn keeps), [ADR-0075](0075-a-request-carrying-tools-requires-tool-use-of-every-candidate.md)
 (a construction-time refusal is `VALIDATION_ERROR`, which this record classes as deterministic).
 **Source:** row G3 of [`docs/roadmap/outstanding-work.md`](../roadmap/outstanding-work.md), deferred
-at G1 (`docs/history/G1_HANDOFF.md` §9) and scheduled by operator decision on 2026-09-04.
+at G1 (`docs/history/handoffs/G1_HANDOFF.md` §9) and scheduled by operator decision on 2026-09-04.
 
 ## Context
 
 Until this record, a step that could not complete ended the trajectory. A LoadCoach failure at the
 `/generate` call site halts at **T12** (`executing → halted`) with `LOADCOACH_ERROR` and LoadCoach's
 own code preserved in the cause — G1's live run halted exactly that way when Ollama rejected a
-tool call and LoadCoach answered `ALL_CANDIDATES_FAILED` (`docs/history/G1_HANDOFF.md` §10.4). (The
+tool call and LoadCoach answered `ALL_CANDIDATES_FAILED` (`docs/history/handoffs/G1_HANDOFF.md` §10.4). (The
 roadmap row said T7. T7 is `planning → failed`, the plan draft's corrective budget; a step failure
 during execution is T12, or T13 when LoadCoach is unreachable.)
 
