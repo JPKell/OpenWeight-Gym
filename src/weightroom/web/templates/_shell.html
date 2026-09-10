@@ -101,6 +101,9 @@
   .page-actions a:hover { color: var(--mw-text); }
 
   .shell-menu > summary { display: none; }
+  /* A config path or a command is one unbroken token; on a phone it would push the page sideways
+     rather than wrap, since `code` has no break opportunity of its own. */
+  .shell-main code { overflow-wrap: anywhere; }
 
   /* Responsive (UI/UX §3). Nothing here scrolls the page sideways: the shell reflows instead. */
   @media (max-width: 900px) {
@@ -168,6 +171,41 @@
     }
     .shell-menu[open] > summary { margin-bottom: var(--mw-space-2, 8px); }
     .shell-menu .side-nav ul { display: grid; grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Phones: a hand-written dense table (the settings form, the doctor's findings, the token list —
+     no `data-table`, so MirrorWall's `table` macro tables and their `.table-scroll` are untouched)
+     stacks each row into a card instead of pushing the page sideways. Every cell is still read in
+     order, and a row's `th scope="row"` stays its heading. */
+  @media (max-width: 700px) {
+    .shell-main table[data-density="dense"]:not([data-table]),
+    .shell-main table[data-density="dense"]:not([data-table]) caption,
+    .shell-main table[data-density="dense"]:not([data-table]) tbody,
+    .shell-main table[data-density="dense"]:not([data-table]) tr,
+    .shell-main table[data-density="dense"]:not([data-table]) th,
+    .shell-main table[data-density="dense"]:not([data-table]) td {
+      display: block;
+      width: 100%;
+    }
+    /* A caption keeps table-caption sizing inside a block table and shrinks to one word a line. */
+    .shell-main table[data-density="dense"]:not([data-table]) caption { text-align: left; }
+    .shell-main table[data-density="dense"]:not([data-table]) thead {
+      position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
+    }
+    .shell-main table[data-density="dense"]:not([data-table]) tr {
+      padding: var(--mw-space-2, 8px) 0;
+      border-bottom: 1px solid var(--mw-border);
+    }
+    .shell-main table[data-density="dense"]:not([data-table]) th,
+    .shell-main table[data-density="dense"]:not([data-table]) td {
+      height: auto;
+      padding: var(--mw-space-1, 4px) 0;
+      border: 0;
+      text-align: left;
+    }
+    .shell-main table[data-density="dense"]:not([data-table]) :is(input, select, textarea) {
+      max-width: 100%;
+    }
   }
   .docs-tree-level { list-style: none; margin: 0; padding-left: var(--mw-space-4, 16px); }
   .docs-tree > .docs-tree-level { padding-left: 0; }

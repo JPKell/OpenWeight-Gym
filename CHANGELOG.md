@@ -43,6 +43,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   without meter tracks; the main pane stretches instead of sizing to its widest line; and the
   Overview table drops its version and unit columns below 600 px. The side menu's version footer
   now sits after the unbuilt pages rather than between them.
+- W4's pages follow the same rule now that they sit in that shell: below 700 px the settings
+  form, the doctor's findings and the token list stack each row into a card instead of scrolling
+  the page, and a long config path or command wraps inside the main pane.
 
 ## [0.5.0] — 2026-09-10
 
