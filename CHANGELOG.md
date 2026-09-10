@@ -6,6 +6,55 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-10
+
+Row W5: Phase 5 of the development plan — the documentation viewer. Prepared, not tagged, not
+pushed, not published. The one flexible row (any time after W3); built without W4.
+
+### Added
+- **`services/docs.py`**: `[docs] root` resolution (configured, else the `docs/` beside this
+  checkout, else `DOCS_ROOT_MISSING`); resolve-then-check containment mirroring ToolYard's
+  `PathContainment` (read as the containment vector set, never imported — ADR-0123 rule 4); the
+  directory tree; a `mistune.HTMLRenderer(escape=True)` renderer built fresh per request (never
+  shared — Starlette runs sync routes in a threadpool) with stable heading ids and an outline, a
+  `mermaid` fence mounted as `<pre class="mermaid">`, and relative links rewritten to
+  `/docs/page` routes only when they resolve to a `.md` file inside the root — everything else
+  (outside the root, a non-markdown target, an image; there is no raw-asset route in api.md §8)
+  renders as plain text. `adr/README.md`'s own table is the ADR index, never the filenames.
+- **`services/docs_index.py`**: migration `0003` creates `docs_index` as an FTS5 virtual table on
+  SQLite when the module is compiled in, a plain three-column table otherwise (spec §13 risk T9),
+  and a table with a generated `tsvector` column plus a GIN index on PostgreSQL; `search()`
+  degrades to a parameterised `LIKE` query — labelled `degraded=True` — on a malformed FTS5 query
+  or a missing FTS5 module alike, rather than a 500 from a search box. `wr-gym docs index`
+  rebuilds it from the tree.
+- `GET /docs/tree`, `GET /docs/page?path=`, `GET /docs/search?q=`, `GET /docs/adrs` (JSON,
+  api.md §8) and their HTML pages inside the shell (`/docs`, `/docs/page`, `/docs/search`,
+  `/docs/adrs`); the top bar's "Docs" entry is a real link now, not a stub.
+- **mermaid 11.17.2 vendored** (`web/static/vendor/mermaid/`, MIT, offline, ~3.4 MB — spec §15's
+  one exception to the per-page JS budget) and mounted at `/app-static/`
+  (`mount_static`'s `extra_dirs`, a WeightRoomGym-owned static root distinct from MirrorWall's);
+  loaded only on a page whose document contains a `mermaid` fence, with `securityLevel: "strict"`
+  (a diagram's source is untrusted document content, security standards §6).
+
+### Changed
+- `services/health.py`'s `STATUS_BY_CODE` gains `DOCS_ROOT_MISSING` (500) and
+  `DOCS_PAGE_OUTSIDE_ROOT` (404).
+- The security checklist's "no route accepts a path-shaped parameter" test now carries a named,
+  reviewed allowlist (`/docs/page`'s `path`, both the JSON and HTML routes) rather than refusing
+  the documentation viewer's one legitimate, contained exception outright.
+
+### Decided
+- **`docs_index`'s FTS5 shadow tables are excluded from the migration-parity check by name**
+  (`FTS5_SHADOW_TABLES`, `tests/integration/test_migrations.py`) — SQLite's FTS5 module creates
+  five bookkeeping tables alongside the virtual table itself, none of which is or should be
+  modelled in `Base.metadata`.
+- **No raw-asset route this row.** A markdown image or a link to a non-`.md` file renders as
+  plain text rather than a broken link — api.md §8 names four routes and none of them serves a
+  raw file. A later row can add one if the documentation ever needs embedded images rendered.
+- **The ADR index kickoff's demonstration number is stale.** The row's own prompt says "the ADR
+  index of 127 rows"; the real `adr/README.md` carries 129 as of this row (ADRs 0128–0129 landed
+  at W3/WM). Rendered as whatever is actually there, not force-fit to 127.
+
 ## [0.3.0] — 2026-09-09
 
 Row W3: Phase 3 of the development plan — the telemetry sampler, the real shell over MirrorWall

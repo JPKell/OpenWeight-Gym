@@ -1,0 +1,22 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% block title %}ADR index — WeightRoomGym{% endblock %}
+{% block page_content %}
+<h2>ADR index</h2>
+<p class="muted">Parsed from <code>adr/README.md</code>'s own table — never the filenames.</p>
+{% if rows %}
+{% set columns = [{"label": "ADR"}, {"label": "Title"}, {"label": "Status"}] %}
+{% set table_rows = [] %}
+{% for row in rows %}
+{% set status_tone = "success" if row.status == "Accepted" else ("warning" if row.status.startswith("Superseded") else "neutral") %}
+{% set _ = table_rows.append([
+  ('<a href="/docs/page?path=' ~ row.path ~ '">' ~ row.number ~ '</a>') | safe,
+  row.title,
+  badge(row.status, tone=status_tone)
+]) %}
+{% endfor %}
+{{ table(columns, table_rows, table_id="adr-index", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No ADR index found under [docs] root.") }}
+{% endif %}
+{% endblock %}

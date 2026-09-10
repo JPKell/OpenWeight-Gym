@@ -50,11 +50,12 @@ NAV_ITEMS: tuple[dict[str, str], ...] = (
 
 CONSOLE_PAGES: tuple[dict[str, str], ...] = (
     {"label": "Chat", "phase": "W6"},
-    {"label": "Docs", "phase": "W5"},
+    {"label": "Docs", "href": "/docs"},
     {"label": "Database", "phase": "W7"},
     {"label": "Jobs", "phase": "W9"},
 )
-"""The console's own top-bar pages (design brief §4): named now, built in a later row."""
+"""The console's own top-bar pages (design brief §4): a built one carries ``href``, an unbuilt
+one carries ``phase`` and renders inert until its row lands."""
 
 _APP_PAGES: dict[str, tuple[str, ...]] = {
     "freeweight": (

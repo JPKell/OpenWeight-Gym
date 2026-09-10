@@ -1,0 +1,17 @@
+{# _docs_tree.html — the recursive folder tree; one consumer (design brief §5), so it lives
+   here rather than as a MirrorWall macro. Self-recursion is ordinary Jinja: a macro may call
+   itself by name from within its own body. #}
+{% macro tree_list(node, current_path=None) %}
+<ul class="docs-tree-level">
+  {% for child in node.children %}
+  <li>
+    {% if child.is_dir %}
+    <span class="docs-tree-dir">{{ child.name }}</span>
+    {{ tree_list(child, current_path) }}
+    {% else %}
+    <a href="/docs/page?path={{ child.path }}"{% if child.path == current_path %} aria-current="page"{% endif %}>{{ child.name }}</a>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}

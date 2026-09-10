@@ -48,6 +48,7 @@ from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, 
 from weightroom.web.rendering import templates
 from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
+from weightroom.web.routes import docs as docs_routes
 from weightroom.web.routes import ollama as ollama_routes
 from weightroom.web.routes import session as session_routes
 from weightroom.web.routes import shell as shell_routes
@@ -57,9 +58,13 @@ from weightroom.web.routes import trust as trust_routes
 if TYPE_CHECKING:
     from weightroom.services.tls import HostIdentity, TlsStatus
 
-__all__ = ["STATUS_BY_CODE", "create_app"]
+__all__ = ["APP_STATIC_DIR", "STATUS_BY_CODE", "create_app"]
 
 logger = logging.getLogger(__name__)
+
+APP_STATIC_DIR = Path(__file__).parent / "static"
+"""WeightRoomGym's own vendored assets (mermaid) — one consumer, so it lives here, not in
+MirrorWall (design brief §5)."""
 
 STATUS_BY_CODE: dict[str, int] = {
     "VALIDATION_ERROR": status.HTTP_400_BAD_REQUEST,
@@ -93,8 +98,12 @@ STATUS_BY_CODE: dict[str, int] = {
     "DATABASE_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
     "DATABASE_UNAVAILABLE": status.HTTP_503_SERVICE_UNAVAILABLE,
     "INTERNAL_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
+    # 500: a hosting problem (no root configured), not something a request parameter fixes.
+    "DOCS_ROOT_MISSING": status.HTTP_500_INTERNAL_SERVER_ERROR,
+    # 404: the requested or linked document does not resolve to a file this viewer will serve.
+    "DOCS_PAGE_OUTSIDE_ROOT": status.HTTP_404_NOT_FOUND,
 }
-"""Spec §13's codes to HTTP statuses, for the ones Phases 1 and 2 raise."""
+"""Spec §13's codes to HTTP statuses, for the ones Phases 1 through 5 raise."""
 
 _CODE_BY_HTTP_STATUS: dict[int, str] = {
     404: "NOT_FOUND",
@@ -298,6 +307,7 @@ def create_app(
     app.include_router(apps_routes.router, prefix="/api/v1")
     app.include_router(audit_routes.router, prefix="/api/v1")
     app.include_router(ollama_routes.router, prefix="/api/v1")
+    app.include_router(docs_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
@@ -305,6 +315,7 @@ def create_app(
     app.include_router(audit_routes.ui_router)
     app.include_router(ollama_routes.ui_router)
     app.include_router(system_routes.ui_router)
+    app.include_router(docs_routes.ui_router)
 
-    mount_static(app, environment=templates())
+    mount_static(app, environment=templates(), extra_dirs={"/app-static": APP_STATIC_DIR})
     return app

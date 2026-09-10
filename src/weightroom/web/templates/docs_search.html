@@ -1,0 +1,34 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import empty_state %}
+{% block title %}Search — WeightRoomGym{% endblock %}
+{% block page_content %}
+<h2>Search</h2>
+<form method="get" action="/docs/search" class="filter-bar" role="search">
+  <div class="field">
+    <label for="q">Search</label>
+    <input id="q" name="q" type="search" value="{{ q }}">
+  </div>
+  <button type="submit">Search</button>
+</form>
+{% if result is none %}
+<p class="muted">Type something to search the documentation.</p>
+{% elif result.degraded %}
+<p class="notice">Searching in degraded mode (risk T9): the full-text index is unavailable on
+this database, so this is a plain substring match over titles and bodies.</p>
+{% endif %}
+{% if result is not none %}
+{% if result.hits %}
+<ul class="docs-search-results">
+  {% for hit in result.hits %}
+  <li>
+    <a href="/docs/page?path={{ hit.path }}">{{ hit.title }}</a>
+    <p class="muted">{{ hit.path }}</p>
+    <p>{{ hit.snippet }}</p>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+{{ empty_state("No documents match " ~ q ~ ".") }}
+{% endif %}
+{% endif %}
+{% endblock %}

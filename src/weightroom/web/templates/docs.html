@@ -1,0 +1,17 @@
+{% extends "_shell.html" %}
+{% from "_docs_tree.html" import tree_list %}
+{% block title %}Docs — WeightRoomGym{% endblock %}
+{% block page_content %}
+<h2>Documentation</h2>
+<p class="muted">Read-only: {{ root }}. <a href="/docs/adrs">ADR index</a></p>
+<form method="get" action="/docs/search" class="filter-bar" role="search">
+  <div class="field">
+    <label for="q">Search</label>
+    <input id="q" name="q" type="search" placeholder="never zero">
+  </div>
+  <button type="submit">Search</button>
+</form>
+<nav class="docs-tree" aria-label="Documentation tree">
+  {{ tree_list(tree) }}
+</nav>
+{% endblock %}

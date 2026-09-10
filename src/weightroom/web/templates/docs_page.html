@@ -1,0 +1,50 @@
+{% extends "_shell.html" %}
+{% block title %}{{ page.title }} — WeightRoomGym{% endblock %}
+{% block page_content %}
+<p class="muted"><a href="/docs">Docs</a> / {{ path }}</p>
+<div class="docs-page-layout">
+  <article class="docs-article">
+    {{ page.html | safe }}
+  </article>
+  {% if page.outline %}
+  <nav class="docs-outline" aria-label="On this page">
+    <p class="side-nav-title">On this page</p>
+    <ul>
+      {% for entry in page.outline %}
+      <li class="docs-outline-l{{ entry.level }}"><a href="#{{ entry.id }}">{{ entry.text }}</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_head %}
+<style>
+  .docs-page-layout { display: flex; gap: var(--mw-space-5, 20px); align-items: flex-start; }
+  .docs-article { flex: 1 1 auto; min-width: 0; max-width: 860px; }
+  .docs-article :is(h1, h2, h3, h4, h5, h6) { scroll-margin-top: var(--mw-space-5, 20px); }
+  .docs-article table { width: 100%; }
+  .docs-outline { flex: 0 0 220px; position: sticky; top: var(--mw-space-5, 20px); }
+  .docs-outline ul { list-style: none; margin: 0; padding: 0; }
+  .docs-outline li { font-size: var(--mw-font-size-sm, 12px); padding: 2px 0; }
+  .docs-outline-l3, .docs-outline-l4, .docs-outline-l5, .docs-outline-l6 { padding-left: 12px; }
+  .mermaid { background: transparent; }
+</style>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+{% if page.has_mermaid %}
+<script src="/app-static/vendor/mermaid/mermaid.min.js" defer></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!window.mermaid) { return; }
+    var explicit = document.documentElement.getAttribute("data-theme");
+    var dark = explicit === "dark" || (explicit !== "light" && window.matchMedia
+      && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    // strict: mermaid renders untrusted document content, never a place to execute click
+    // handlers or raw HTML a diagram source might carry (security standards §6).
+    window.mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "default", securityLevel: "strict" });
+  });
+</script>
+{% endif %}
+{% endblock %}

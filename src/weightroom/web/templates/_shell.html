@@ -34,6 +34,15 @@
     width: 24px; height: 24px; border-radius: 50%;
     background: var(--mw-accent-soft); font-size: var(--mw-font-size-xs, 11px); font-weight: 600;
   }
+  .docs-tree-level { list-style: none; margin: 0; padding-left: var(--mw-space-4, 16px); }
+  .docs-tree > .docs-tree-level { padding-left: 0; }
+  .docs-tree-dir {
+    display: block; color: var(--mw-text-subtle);
+    font-size: var(--mw-font-size-xs, 11px); text-transform: uppercase; letter-spacing: 0.04em;
+    margin-top: var(--mw-space-2, 8px);
+  }
+  .docs-search-results { list-style: none; margin: 0; padding: 0; }
+  .docs-search-results li { padding: var(--mw-space-3, 12px) 0; border-top: 1px solid var(--mw-border); }
 </style>
 {% block extra_head %}{% endblock %}
 {% endblock %}
@@ -48,7 +57,11 @@
 </nav>
 <nav class="console-pages" aria-label="Console">
   {% for page in console_pages %}
+  {% if page.href is defined %}
+  <a href="{{ page.href }}">{{ page.label }}</a>
+  {% else %}
   <span class="console-page-stub" title="coming in phase {{ page.phase }}">{{ page.label }}</span>
+  {% endif %}
   {% endfor %}
   <span class="console-page-stub" title="alerts arrive at row W9">⚠ —</span>
 </nav>

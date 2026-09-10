@@ -26,7 +26,17 @@ def console(tmp_path: Path) -> Console:
     return build_console(tmp_path)
 
 
-# §14: path traversal — no Phase 1 endpoint or CLI argument accepts a filesystem path
+# §14: path traversal — no route accepts a filesystem path without going through
+# services/docs.py's resolve-then-check containment (security standards §5); every route below
+# was reviewed against that discipline before being added to this allowlist.
+_REVIEWED_PATH_PARAMETERS = frozenset(
+    {
+        # resolve_doc_path: resolved, then checked against [docs] root — the JSON route and its
+        # HTML page both take the same parameter.
+        ("/api/v1/docs/page", "path"),
+        ("/docs/page", "path"),
+    }
+)
 
 
 def test_no_route_accepts_a_path_shaped_parameter(console: Console) -> None:
@@ -34,6 +44,8 @@ def test_no_route_accepts_a_path_shaped_parameter(console: Console) -> None:
     for path, route in api_routes(console.client.app):
         for parameter in route.dependant.query_params + route.dependant.path_params:
             if any(word in parameter.name for word in ("path", "file", "dir")):
+                if (path, parameter.name) in _REVIEWED_PATH_PARAMETERS:
+                    continue
                 suspicious.append((path, parameter.name))
     assert suspicious == []
 
