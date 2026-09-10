@@ -30,6 +30,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ### Changed
 
+- Each application's and package's own README and user documents (quickstart, api, operations,
+  …) appear in the docs viewer under `apps/<name>/guide/` and `packages/<name>/guide/`. They
+  are copied from the components by `docs/scripts/sync_component_docs.py`; `--check` reports
+  a stale copy.
 - The documentation tree: `docs/history/` now holds the handoffs under `handoffs/` and the
   kickoff prompts under `prompts/`, so the docs viewer's History section lists them under
   their own headings. Every reference across the suite follows the move. `docs/inventory/` is

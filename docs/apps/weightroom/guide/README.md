@@ -1,0 +1,35 @@
+# WeightRoomGym
+
+**The host operator's console for the Local AI Suite** — and the repository that holds the suite's
+canonical documentation under [`docs/`](../../../README.md).
+
+WeightRoomGym (`pip install wr-gym`, CLI `wr-gym`, import `weightroom`, port 8769) is the fifth application: a
+host operator tool that sits **above** the suite's layer rules. It is the one service exposed on the
+LAN — with its own certificate authority, HTTPS and a login — and from it an operator runs, watches,
+configures, backs up, inspects and talks to FreeWeight, LoadCoach, IdeaPress and PromptCadence,
+which all stay on loopback behind it.
+
+| | |
+|---|---|
+| Decisions | [ADR-0123](../../../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) (what it is), [ADR-0124](../../../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md) (the write guard), [ADR-0125](../../../adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md) (process control), [ADR-0126](../../../adr/0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) (LAN, TLS, login), [ADR-0127](../../../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) (settings schema) |
+| Specification | [`docs/apps/weightroom/spec.md`](../spec.md) · [API](../api.md) · [Data model](../data-model.md) · [Design brief](../design.md) · [Risks](../risks.md) |
+| Plan | [`docs/apps/weightroom/development-plan.md`](../development-plan.md); the schedule is [`docs/roadmap/weightroom-work.md`](../../../roadmap/weightroom-work.md) |
+| Status | Row W4 (2026-09-09): `0.4.0` prepared, unpublished (`0.1.0` is on PyPI; `pip install wr-gym`). `wr-gym setup && wr-gym serve` gives an HTTPS console with a login and the audit trail; the five `systemd --user` units, start/stop/restart, the journal live and unified, the Ollama memory-safety pane, the audit page, the telemetry strip and shell, each application's Overview, its settings form generated from its own `config schema` document, its tokens page, and `wr-gym doctor` are here. Docs, chat, the database viewer and jobs are rows W5–W9 (`docs/roadmap/weightroom-work.md`). |
+
+## The documentation tree
+
+`docs/` is the **single source of truth** for the whole suite — architecture, standards, ADRs,
+per-component specifications and development plans. Every other repository carries a
+byte-identical mirror of the documents that concern it. Start at [`docs/README.md`](../../../README.md).
+
+## Development
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+ruff format --check . && ruff check . && mypy src tests && lint-imports && pytest
+```
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).

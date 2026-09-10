@@ -264,9 +264,11 @@ WeightRoom/              the WeightRoomGym repository (OpenWeight-Gym) — src/,
     │   ├── handoffs/        the handoff each row wrote
     │   └── prompts/         the kickoff prompt each row ran from
     ├── reviews/             ← addition: architecture reviews and audits
-    ├── apps/                one directory per application (weightroom/ is its own canonical home)
-    ├── packages/            one directory per shared package
-    └── scripts/             host scripts: memory safety, the compatibility matrix, the N-row finisher
+    ├── apps/                one directory per application (weightroom/ is its own canonical home);
+    │                        each guide/ is the component's README and docs, copied by a script
+    ├── packages/            one directory per shared package, each with the same guide/
+    └── scripts/             host scripts: memory safety, the compatibility matrix, the N-row
+                             finisher, sync_component_docs.py (the guide/ copies)
 ```
 
 **Why `reviews/` exists:** an audit is neither architecture nor a decision record. It is the evidence
