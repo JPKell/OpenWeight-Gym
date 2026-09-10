@@ -84,9 +84,10 @@ linking there rather than copying it. Two additions for this arc:
   (row WM) vendors htmx and its SSE extension, opt-in per page.
 * Create the GitHub remote's settings for the renamed repository (it is still `weightroom`;
   no rename needed); the `pypi` environment for the release workflow before W10.
-* Apply `MEMORY_SAFETY.md` §2.1 on the reference machine (`docs/scripts/apply_memory_safety.sh`):
-  the override still reads `OLLAMA_CONTEXT_LENGTH=112000` with no cap as of W0 — W2's Ollama pane
-  will show it red until then, which is correct.
+* ~~Apply `MEMORY_SAFETY.md` §2.1 on the reference machine (`docs/scripts/apply_memory_safety.sh`)~~
+  — **done by 2026-09-09**: `wr-gym doctor` at row W4 shows all seven §2.1 lines passing on the
+  reference machine (the override no longer reads `OLLAMA_CONTEXT_LENGTH=112000`), and both §2.2
+  units carry their caps. Struck at the operator's instruction.
 * Install the polkit rule W2 prints, if the Ollama restart button is wanted.
 * Decide whether Ollama stays on `0.0.0.0` (`LAN_ACCESS.md` §5).
 * Remove the `docs` symlink at the workspace root at W10 (the row does it; the operator confirms
