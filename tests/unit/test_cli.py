@@ -191,7 +191,13 @@ def test_tls_operator_audit_and_health(tmp_path: Path) -> None:
     assert json.loads(out)["status"] == "ok"
 
 
-def test_setup_unattended(tmp_path: Path) -> None:
+def test_setup_unattended(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Spec §20 criterion 10: the suite passes with no systemd. The wizard's units and linger
+    # steps run against a fake host, so this test drives the CLI wiring and nothing else.
+    from weightroom.services import setup as setup_service
+    from weightroom.services.processes import FakeSystemdController
+
+    monkeypatch.setattr(setup_service, "SubprocessSystemdController", FakeSystemdController)
     file = tmp_path / "config.toml"
     file.write_text(
         f'[storage]\ndatabase_url = "sqlite:///{tmp_path}/db.sqlite3"\n'
@@ -208,11 +214,14 @@ def test_setup_unattended(tmp_path: Path) -> None:
         "lan",
         "--lan-address",
         "10.77.10.84",
+        "--no-start-console",
         input="correct horse battery\n",
     )
     assert code == 0, err
     assert "created operator 'jordan'" in out and "10.77.10.84 (one LAN interface)" in out
-    assert "not installed; no token" in out and "later      units" in out
+    assert "not installed; no token" in out
+    assert "linger     " in out and "unit       loadcoach: not_installed" in out
+    assert "--no-start-console" in out
     code, out, _ = _run("config", "show", "--config", str(file), "--json")
     values = json.loads(out)["values"]
     assert values["server.host"] == "10.77.10.84"
@@ -232,3 +241,84 @@ def test_serve_refuses_an_insecure_bind_before_any_socket(tmp_path: Path) -> Non
     )
     code, _, err = _run("serve", "--config", str(file))
     assert code == 3 and "INSECURE_BINDING" in err
+
+
+def _fake_host(monkeypatch: pytest.MonkeyPatch, **kwargs: object) -> object:
+    """Point every ``SubprocessSystemdController()`` in the CLI at one fake host."""
+    from weightroom.services import processes
+
+    host = processes.FakeSystemdController(**kwargs)  # type: ignore[arg-type]
+    monkeypatch.setattr(processes, "SubprocessSystemdController", lambda **_kw: host)
+    return host
+
+
+def test_units_sync_writes_reports_and_audits(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    file = tmp_path / "config.toml"
+    application = tmp_path / "loadcoach"
+    application.write_text("#!/bin/sh\nexit 0\n")
+    application.chmod(0o755)
+    file.write_text(
+        f'[storage]\ndatabase_url = "sqlite:///{tmp_path}/db.sqlite3"\n'
+        f'[apps.loadcoach]\nexecutable = "{application}"\n'
+    )
+    _fake_host(monkeypatch)
+    code, out, err = _run("units", "sync", "--config", str(file), "--diff")
+    assert code == 0, err
+    assert "loadcoach      written" in out
+    assert "freeweight     not installed; no unit" in out
+    assert "+MemoryHigh=22G" in out
+    assert "reload    systemd reloaded" in out
+
+    code, out, _ = _run("units", "sync", "--config", str(file))
+    assert code == 0
+    assert "loadcoach      unchanged" in out and "reload    not needed" in out
+
+    code, out, _ = _run("audit", "list", "--config", str(file), "--action", "unit.sync", "--json")
+    rows = json.loads(out)
+    assert len(rows) == 2
+    assert rows[-1]["params"]["written"] == ["loadcoach.service"]
+
+
+def test_units_status_and_control_write_one_row_each(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    file = tmp_path / "config.toml"
+    file.write_text(f'[storage]\ndatabase_url = "sqlite:///{tmp_path}/db.sqlite3"\n')
+    _fake_host(monkeypatch, states={"loadcoach.service": "inactive"})
+    code, out, err = _run("units", "start", "loadcoach", "--config", str(file))
+    assert code == 0, err
+    assert "loadcoach.service        started" in out
+    code, out, _ = _run("units", "status", "--config", str(file))
+    assert "loadcoach.service        active" in out
+    assert "freeweight.service       absent" in out and "up —" in out
+    code, out, _ = _run("audit", "list", "--config", str(file), "--action", "unit.start", "--json")
+    rows = json.loads(out)
+    assert len(rows) == 1 and rows[0]["target"] == "loadcoach.service"
+
+
+def test_units_control_surfaces_systemds_refusal_and_exits_four(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    file = tmp_path / "config.toml"
+    file.write_text(f'[storage]\ndatabase_url = "sqlite:///{tmp_path}/db.sqlite3"\n')
+    _fake_host(
+        monkeypatch,
+        refuse={
+            ("loadcoach.service", "start"): "Failed to start loadcoach.service: Unit not found."
+        },
+    )
+    code, _out, err = _run("units", "start", "loadcoach", "--config", str(file))
+    assert code == 4
+    assert "Unit not found" in err
+    code, out, _ = _run("audit", "list", "--config", str(file), "--action", "unit.start", "--json")
+    assert json.loads(out)[0]["outcome"] == "failed"
+
+
+def test_units_rejects_an_application_that_has_no_unit(tmp_path: Path) -> None:
+    file = tmp_path / "config.toml"
+    file.write_text(f'[storage]\ndatabase_url = "sqlite:///{tmp_path}/db.sqlite3"\n')
+    code, _out, err = _run("units", "start", "ollama", "--config", str(file))
+    assert code == 2
+    assert "is not an application" in err

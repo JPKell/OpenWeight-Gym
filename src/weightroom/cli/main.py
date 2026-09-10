@@ -18,6 +18,7 @@ from weightroom.cli.commands import operator as operator_commands
 from weightroom.cli.commands import setup as setup_commands
 from weightroom.cli.commands import system as system_commands
 from weightroom.cli.commands import tls as tls_commands
+from weightroom.cli.commands import units as units_commands
 
 __all__ = ["app"]
 
@@ -67,3 +68,4 @@ app.add_typer(db_commands.app, name="db", help="Database migration and maintenan
 app.add_typer(tls_commands.app, name="tls", help="The certificate authority and the leaf.")
 app.add_typer(operator_commands.app, name="operator", help="The operator account.")
 app.add_typer(audit_commands.app, name="audit", help="The audit trail.")
+app.add_typer(units_commands.app, name="units", help="The systemd --user units (ADR-0125).")

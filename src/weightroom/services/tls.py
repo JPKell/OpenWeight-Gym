@@ -35,6 +35,7 @@ from weightroom.domain.tls import (
     certificate_names,
     renewal_decision,
 )
+from weightroom.services.processes import child_environment
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -153,6 +154,9 @@ def host_identity(*, hostname: str | None = None) -> HostIdentity:
                 capture_output=True,
                 text=True,
                 timeout=5,
+                # Gold standard G12: a child sees the allowlist, never this process's
+                # environment. `ip` needs nothing from it (row W2).
+                env=child_environment(),
                 check=True,
             )
             return HostIdentity(name, _addresses_from_ip_json(completed.stdout))

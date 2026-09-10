@@ -1,0 +1,15 @@
+# weightroom.service — generated whole by WeightRoomGym 0.2.0 (ADR-0125 rule 1).
+# Edits here are overwritten by `wr-gym units sync`. To change this unit, change
+# WeightRoomGym's configuration: [apps.<app>] executable, [host] memory_high/memory_max.
+
+[Unit]
+Description=WeightRoomGym (Local AI Suite; the operator console)
+After=network.target
+
+[Service]
+ExecStart=/home/op/ai/suite/venvs/weightroom/bin/wr-gym serve
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

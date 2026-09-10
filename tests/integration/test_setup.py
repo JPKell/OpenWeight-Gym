@@ -12,8 +12,15 @@ import pytest
 from weightroom.config import load_settings, secrets_dir
 from weightroom.services.auth import operator_count
 from weightroom.services.database import Database, ensure_ready
+from weightroom.services.processes import (
+    CommandResult,
+    FakeSystemdController,
+    UnitActionFailed,
+)
 from weightroom.services.setup import (
     SetupAnswers,
+    SetupReport,
+    enable_linger_step,
     installed_executable,
     issue_token_via_cli,
     run_setup,
@@ -63,6 +70,8 @@ def test_setup_from_nothing_creates_tls_account_hosts_bind_and_tokens_by_referen
         answers=answers,
         identity=IDENTITY,
         now=NOW,
+        controller=FakeSystemdController(),
+        start_console=False,
     )
     assert TlsPaths.for_settings(settings).complete() and tls.days_left >= 397
     assert report.tls.startswith("created")
@@ -86,7 +95,14 @@ def test_setup_from_nothing_creates_tls_account_hosts_bind_and_tokens_by_referen
     assert "lc_secret_token" not in str(report.as_params())
     reloaded = load_settings(config_path=config_path).settings
     assert reloaded.server.host == "10.77.10.84"
-    assert "linger" in " ".join(report.deferred) and "units" in " ".join(report.deferred)
+    assert report.linger.endswith("(existing)") or "enabled" in report.linger
+    assert set(report.units) == {
+        "freeweight",
+        "loadcoach",
+        "ideapress",
+        "promptcadence",
+        "weightroom",
+    }
 
 
 def test_setup_keeps_an_existing_ca_and_account_and_can_choose_every_interface(
@@ -102,6 +118,8 @@ def test_setup_keeps_an_existing_ca_and_account_and_can_choose_every_interface(
         answers=first,
         identity=IDENTITY,
         now=NOW,
+        controller=FakeSystemdController(),
+        start_console=False,
     )
     fingerprint = TlsPaths.for_settings(settings).ca_crt.read_bytes()
     second = SetupAnswers(username="ignored", password=None, bind="all")
@@ -112,6 +130,8 @@ def test_setup_keeps_an_existing_ca_and_account_and_can_choose_every_interface(
         answers=second,
         identity=IDENTITY,
         now=NOW,
+        controller=FakeSystemdController(),
+        start_console=False,
     )
     assert report.tls.startswith("kept") and report.account == "kept the existing operator account"
     assert TlsPaths.for_settings(settings).ca_crt.read_bytes() == fingerprint
@@ -132,6 +152,8 @@ def test_setup_refuses_a_lan_bind_without_an_address_and_a_missing_password(
             answers=SetupAnswers(username="j", password=None, bind="loopback"),
             identity=IDENTITY,
             now=NOW,
+            controller=FakeSystemdController(),
+            start_console=False,
         )
     with pytest.raises(ValueError, match="address"):
         run_setup(
@@ -141,6 +163,8 @@ def test_setup_refuses_a_lan_bind_without_an_address_and_a_missing_password(
             answers=SetupAnswers(username="j", password="correct horse battery", bind="lan"),
             identity=IDENTITY,
             now=NOW,
+            controller=FakeSystemdController(),
+            start_console=False,
         )
 
 
@@ -156,6 +180,8 @@ def test_a_failing_token_command_is_reported_not_fatal(tmp_path: Path, database:
         answers=SetupAnswers(username="j", password="correct horse battery", bind="loopback"),
         identity=IDENTITY,
         now=NOW,
+        controller=FakeSystemdController(),
+        start_console=False,
     )
     assert report.tokens["promptcadence"].startswith("failed:")
     assert not (secrets_dir() / "promptcadence.token").exists()
@@ -193,3 +219,121 @@ def test_write_config_changes_creates_nested_tables_and_keeps_the_previous_file(
     data = tomllib.loads(path.read_text())
     assert data["apps"]["loadcoach"]["api_key_file"] == "/x" and data["server"]["port"] == 9001
     assert tomllib.loads(path.with_suffix(".toml.bak").read_text())["server"]["port"] == 9000
+
+
+def test_the_wizard_enables_lingering_before_it_writes_a_unit(
+    tmp_path: Path, database: Database
+) -> None:
+    """ADR-0125 rule 2: a unit written under a session that does not linger dies at logout."""
+    config_path = tmp_path / "config.toml"
+    settings = load_settings(config_path=config_path).settings
+    host = FakeSystemdController(linger=False)
+    report, _tls = run_setup(
+        settings,
+        config_path=config_path,
+        database=database,
+        answers=SetupAnswers(username="j", password="correct horse battery", bind="loopback"),
+        identity=IDENTITY,
+        now=NOW,
+        controller=host,
+        start_console=False,
+    )
+    assert report.linger == "enabled for " + (host.calls[0][1] if host.calls else "")
+    assert host.calls[0][0] == "enable-linger"
+    assert host.linger is True
+
+
+def test_the_wizard_refuses_to_continue_when_lingering_cannot_be_enabled() -> None:
+    class Refusing(FakeSystemdController):
+        def enable_linger(self, user: str) -> CommandResult:
+            return CommandResult(
+                ("loginctl", "enable-linger", user),
+                returncode=1,
+                stdout="",
+                stderr="Failed to enable linger: Access denied",
+            )
+
+    report = SetupReport()
+    with pytest.raises(UnitActionFailed) as caught:
+        enable_linger_step(Refusing(linger=False), user="op", report=report)
+    assert caught.value.code == "UNIT_ACTION_FAILED"
+    assert caught.value.details["command"] == "loginctl enable-linger op"
+    assert "Access denied" in caught.value.message
+    assert report.linger.startswith("failed:")
+
+
+def test_lingering_already_on_is_left_alone() -> None:
+    host = FakeSystemdController(linger=True)
+    report = SetupReport()
+    enable_linger_step(host, user="op", report=report)
+    assert report.linger == "already enabled for op"
+    assert host.calls == []
+
+
+def test_the_wizard_writes_the_units_and_says_which_applications_have_none(
+    tmp_path: Path, database: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path = tmp_path / "config.toml"
+    loadcoach = _fake_app(tmp_path, "loadcoach")
+    config_path.write_text(f'[apps.loadcoach]\nexecutable = "{loadcoach}"\n')
+    settings = load_settings(config_path=config_path).settings
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    report, _tls = run_setup(
+        settings,
+        config_path=config_path,
+        database=database,
+        answers=SetupAnswers(username="j", password="correct horse battery", bind="loopback"),
+        identity=IDENTITY,
+        now=NOW,
+        controller=FakeSystemdController(),
+        start_console=False,
+    )
+    assert report.units["loadcoach"] == "written"
+    assert report.units["freeweight"] == "not_installed"
+    unit = tmp_path / "xdg" / "systemd" / "user" / "loadcoach.service"
+    assert unit.is_file()
+    assert "MemoryMax=24G" in unit.read_text(encoding="utf-8")
+    assert "--no-start-console" in report.console
+
+
+def test_the_console_unit_is_enabled_and_started_by_default(
+    tmp_path: Path, database: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ADR-0125 rule 6: the console outlives the login that installed it."""
+    config_path = tmp_path / "config.toml"
+    settings = load_settings(config_path=config_path).settings
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    host = FakeSystemdController()
+    report, _tls = run_setup(
+        settings,
+        config_path=config_path,
+        database=database,
+        answers=SetupAnswers(username="j", password="correct horse battery", bind="loopback"),
+        identity=IDENTITY,
+        now=NOW,
+        controller=host,
+    )
+    assert report.console == "enabled and started as weightroom.service"
+    assert ("act", "user", "weightroom.service", "enable") in host.calls
+    assert ("act", "user", "weightroom.service", "start") in host.calls
+
+
+def test_a_host_without_systemd_finishes_the_wizard_and_says_so_by_name(
+    tmp_path: Path, database: Database
+) -> None:
+    """ADR-0125 rule 7: the rest of the console works."""
+    config_path = tmp_path / "config.toml"
+    settings = load_settings(config_path=config_path).settings
+    report, tls = run_setup(
+        settings,
+        config_path=config_path,
+        database=database,
+        answers=SetupAnswers(username="j", password="correct horse battery", bind="loopback"),
+        identity=IDENTITY,
+        now=NOW,
+        controller=FakeSystemdController(supported=False),
+    )
+    assert tls.days_left >= 397
+    assert operator_count(database) == 1
+    assert "unsupported on this host" in report.units["all"]
+    assert "unsupported on this host" in report.console

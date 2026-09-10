@@ -1,0 +1,20 @@
+# loadcoach.service — generated whole by WeightRoomGym 0.2.0 (ADR-0125 rule 1).
+# Edits here are overwritten by `wr-gym units sync`. To change this unit, change
+# WeightRoomGym's configuration: [apps.<app>] executable, [host] memory_high/memory_max.
+
+[Unit]
+Description=LoadCoach (Local AI Suite; loopback, fronted by WeightRoomGym)
+After=network.target
+
+[Service]
+ExecStart=/home/op/ai/suite/venvs/loadcoach/bin/loadcoach serve
+Restart=on-failure
+RestartSec=3
+# ADR-0119: the model-serving applications run under the host-memory cap. These
+# replace MEMORY_SAFETY.md §2.2's systemd-run wrapper for a unit-managed application.
+MemoryHigh=22G
+MemoryMax=24G
+MemorySwapMax=0
+
+[Install]
+WantedBy=default.target

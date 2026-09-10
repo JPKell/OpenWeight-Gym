@@ -24,9 +24,11 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "tls.rotate",
         "setup.run",
         # Named by data-model.md §2 for later phases; a row's writer arrives with its phase.
+        "unit.sync",
         "unit.start",
         "unit.stop",
         "unit.restart",
+        "ollama.restart",
         "settings.write",
         "db.guarded_write",
         "db.curated",

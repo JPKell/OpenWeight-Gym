@@ -7,8 +7,14 @@ addresses, ``server.host`` as chosen, and an application token for every **insta
 application that issues them (ADR-0126 rule 8: ``loadcoach`` with ``write``, ``promptcadence``
 with ``write,approve``) written to ``<config>/secrets/<app>.token`` (``0600``) and named by
 ``api_key_file`` — never the value. The configuration file is edited in place with ``tomlkit``,
-comments kept, written beside and renamed over with a ``.bak`` (ADR-0117's mechanism). Units and
-linger are Phase 2; the report says so.
+comments kept, written beside and renamed over with a ``.bak`` (ADR-0117's mechanism).
+
+Row W2 added the last two steps, in this order and for this reason: **lingering first, then the
+units** (ADR-0125 rule 2). A unit written under a session that does not linger stops at logout,
+so writing five of them and then discovering the session does not linger would leave the
+operator with a console that dies with their SSH connection and no message saying why. The
+wizard therefore enables lingering, and refuses to go on with the command to run by hand when
+it cannot.
 """
 
 from __future__ import annotations
@@ -34,6 +40,13 @@ from weightroom.config import (
     secrets_dir,
 )
 from weightroom.services.auth import create_operator, operator_count
+from weightroom.services.processes import (
+    SubprocessSystemdController,
+    SystemdController,
+    UnitActionFailed,
+    UnitUnsupported,
+    sync_units,
+)
 from weightroom.services.tls import HostIdentity, TlsPaths, TlsStatus, init_tls, tls_status
 
 if TYPE_CHECKING:
@@ -47,6 +60,7 @@ __all__ = [
     "SetupAnswers",
     "SetupReport",
     "TokenIssuer",
+    "enable_linger_step",
     "installed_executable",
     "issue_token_via_cli",
     "run_setup",
@@ -86,10 +100,10 @@ class SetupReport:
     allowed_hosts: tuple[str, ...] = ()
     tokens: dict[str, str] = field(default_factory=dict)
     config_path: Path | None = None
-    deferred: tuple[str, ...] = (
-        "units: `wr-gym units sync` and the systemd --user units arrive at W2",
-        "linger: `loginctl enable-linger` is printed by the W2 wizard step",
-    )
+    linger: str = ""
+    units: dict[str, str] = field(default_factory=dict)
+    console: str = ""
+    deferred: tuple[str, ...] = ("settings: the per-application settings forms arrive at W4",)
 
     def as_params(self) -> dict[str, Any]:
         """The audit row's ``params``: no secret, only what was done."""
@@ -100,6 +114,9 @@ class SetupReport:
             "allowed_hosts": list(self.allowed_hosts),
             "tokens": dict(self.tokens),
             "config_path": str(self.config_path) if self.config_path else None,
+            "linger": self.linger,
+            "units": dict(self.units),
+            "console": self.console,
         }
 
 
@@ -194,6 +211,44 @@ def write_config_changes(path: Path, changes: Mapping[str, Any]) -> None:
     Path(temporary).replace(path)
 
 
+def enable_linger_step(controller: SystemdController, *, user: str, report: SetupReport) -> None:
+    """Enable lingering for ``user``, or refuse to continue (ADR-0125 rule 2).
+
+    Args:
+        controller: The systemd boundary.
+        user: The operator's own OS user.
+        report: Filled in with what happened.
+
+    Raises:
+        UnitActionFailed: Lingering is off and could not be turned on. ``details['command']``
+            is what the operator runs by hand; without it every unit this wizard is about to
+            write stops at logout.
+    """
+    already = controller.linger_enabled(user)
+    if already:
+        report.linger = f"already enabled for {user}"
+        return
+    command = f"loginctl enable-linger {user}"
+    result = controller.enable_linger(user)
+    if not result.ok:
+        report.linger = f"failed: {result.failure_text}"
+        raise UnitActionFailed(
+            f"lingering is required and could not be enabled: {result.failure_text}. Run "
+            f"`{command}` and start again — units under user@<uid>.service stop at logout "
+            f"otherwise (ADR-0125 rule 2).",
+            details={"command": command, "user": user, "stderr": result.stderr.strip()},
+        )
+    confirmed = controller.linger_enabled(user)
+    if confirmed is False:
+        report.linger = "enable-linger reported success but lingering is still off"
+        raise UnitActionFailed(
+            f"`{command}` reported success but lingering is still off. Run it by hand and "
+            f"check `loginctl show-user {user} -p Linger`.",
+            details={"command": command, "user": user},
+        )
+    report.linger = f"enabled for {user}"
+
+
 def run_setup(
     settings: Settings,
     *,
@@ -203,6 +258,8 @@ def run_setup(
     identity: HostIdentity,
     now: datetime,
     issue_token: TokenIssuer = issue_token_via_cli,
+    controller: SystemdController | None = None,
+    start_console: bool = True,
 ) -> tuple[SetupReport, TlsStatus]:
     """Do the wizard's work.
 
@@ -214,12 +271,18 @@ def run_setup(
         identity: The host's names and addresses.
         now: The clock.
         issue_token: How to obtain an application token; the CLI subprocess by default.
+        controller: The systemd boundary; the real one when ``None``.
+        start_console: Whether to enable and start ``weightroom.service`` (ADR-0125 rule 6), so
+            the console outlives the login that installed it. ``False`` leaves the unit written
+            but not enabled — for a scratch install, or an operator who runs ``wr-gym serve`` in
+            the foreground.
 
     Returns:
         The report and the certificate status.
 
     Raises:
         ValueError: ``lan`` was chosen without an address, or a password is needed and absent.
+        UnitActionFailed: Lingering could not be enabled (ADR-0125 rule 2).
     """
     report = SetupReport(config_path=config_path)
     paths = TlsPaths.for_settings(settings)
@@ -276,5 +339,32 @@ def run_setup(
         report.tokens[app] = f"scope {scope} → {secret_path}"
 
     write_config_changes(config_path, changes)
-    load_settings(config_path=config_path)  # the file the wizard wrote must load
+    reloaded = load_settings(config_path=config_path)  # the file the wizard wrote must load
+
+    systemd = controller if controller is not None else SubprocessSystemdController()
+    try:
+        enable_linger_step(
+            systemd, user=os.environ.get("USER", "") or Path.home().name, report=report
+        )
+        sync = sync_units(reloaded.settings, controller=systemd)
+    except UnitUnsupported as exc:
+        report.linger = report.linger or "unsupported on this host"
+        report.units = {"all": f"unsupported on this host: {exc.message}"}
+        report.console = "unsupported on this host; run `wr-gym serve` in the foreground"
+        return report, tls
+    report.units = {plan.app: plan.outcome for plan in sync.plans}
+    report.console = _console_unit_step(systemd, start=start_console)
     return report, tls
+
+
+def _console_unit_step(controller: SystemdController, *, start: bool) -> str:
+    """Enable — and, unless told not to, start — ``weightroom.service`` (ADR-0125 rule 6)."""
+    if not start:
+        return "written, not enabled (--no-start-console); `wr-gym serve` runs it in the foreground"
+    enabled = controller.act("weightroom.service", "enable")
+    if not enabled.ok:
+        return f"enable failed: {enabled.failure_text}"
+    started = controller.act("weightroom.service", "start")
+    if not started.ok:
+        return f"enabled; start failed: {started.failure_text}"
+    return "enabled and started as weightroom.service"

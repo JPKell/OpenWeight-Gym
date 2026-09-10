@@ -28,13 +28,21 @@ def setup(
     lan_address: Annotated[
         str | None, typer.Option("--lan-address", help="The interface for --bind lan.")
     ] = None,
+    start_console: Annotated[
+        bool,
+        typer.Option(
+            "--start-console/--no-start-console",
+            help="Enable and start weightroom.service (ADR-0125 rule 6).",
+        ),
+    ] = True,
     config: Annotated[
         str | None, typer.Option("--config", help="Path to a config.toml file.")
     ] = None,
 ) -> None:
-    """The wizard: TLS, the operator account, allowed_hosts, the bind, the application tokens.
+    """The wizard: TLS, the account, the bind, the tokens, lingering and the five units.
 
-    Units and linger arrive at W2; the wizard says so at the end.
+    Lingering is enabled before any unit is written and the wizard refuses to continue without
+    it (ADR-0125 rule 2).
 
     Example:
         wr-gym setup
@@ -97,6 +105,7 @@ def setup(
                 answers=answers,
                 identity=identity,
                 now=now_utc(),
+                start_console=start_console,
             )
         except (SuiteError, ValueError) as exc:
             record_cli(
@@ -119,6 +128,12 @@ def setup(
     for app, outcome in report.tokens.items():
         typer.echo(f"token      {app}: {outcome}")
     typer.echo(f"config     {report.config_path}")
+    typer.echo(f"linger     {report.linger}")
+    for app, outcome in report.units.items():
+        typer.echo(f"unit       {app}: {outcome}")
+    typer.echo(f"console    {report.console}")
     for item in report.deferred:
         typer.echo(f"later      {item}")
-    typer.echo("next       wr-gym serve; then `wr-gym trust` for the per-device steps")
+    typer.echo(
+        "next       `wr-gym trust` for the per-device steps; `wr-gym apps status` for the five"
+    )
