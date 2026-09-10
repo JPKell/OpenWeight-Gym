@@ -14,6 +14,8 @@ pinned as an editable path install (prepared, not yet published itself — **TOD
 | `2de2472` | B | `mirrorwall` re-pinned to `0.3` and installed editable; `_shell.html` (app tabs with status dots, the telemetry strip with the RESIDENT/QUEUE meters, the console page ghosts, the operator chip, the left menu); `render_shell_page`/`app_side_nav`/`app_side_nav_stubs`; every existing page converted to extend it; tests |
 | `f1a4e2a` | C | `services/overview.py` (figures from the API or a `COUNT(*)`, the primary table always from the database, the known-revision degrade); `app.html` rebuilt as the real Overview (`card(kind="figure")`, `table(density="dense")`, `log_pane`); `CHANGELOG`; `0.3.0`; tests |
 | `4c82c51` | — (found while demonstrating) | `GET /telemetry/history`: a plain inline SVG line (`sparkline_svg`, no chart library) and a small script making the strip's fields clickable — see §2.3 |
+| `523a962` | — (post-handoff interview, §2.5) | The four fixture databases at `tests/fixtures/databases/`, ahead of W7 |
+| `4afb0db` | — (post-handoff interview, §2.5) | The Overview footer's accurate wording (and the `\| capitalize` bug it surfaced); RESIDENT/QUEUE live-updating |
 
 Full local gate, `WeightRoom` (Python 3.14.4, `.venv`): `ruff format --check .` (114 files),
 `ruff check .` clean, `mypy src tests` clean (106 files, strict), `lint-imports` 5 contracts
@@ -46,22 +48,24 @@ recorded in the module's own docstring so the decision travels with the code:
    database viewer is where a *browsable* table belongs**, and this Overview table is content to
    be a read of the same rows, once.
 
-The consequence: a *running* application's Overview footer says "from the API" (the figures'
-source), while its primary table is quietly database-sourced underneath. That mismatch is real
-and is the one place this row's footer label is not fully precise — flagged here rather than
-smoothed over, and a natural W7 cleanup once the guarded viewer exists to browse the same table
-properly.
+**Resolved same day, after the operator reviewed this decision:** the footer now names both
+halves when they differ (`_compose`, `services/overview.py`) — "Figures from the API; table: the
+database at revision 15" — rather than the single word "api" implying the table came from there
+too (commit `4afb0db`). Fixing this also surfaced a real bug: `app.html`'s `| capitalize` Jinja
+filter lower-cases the rest of the string, so "from the API" had been rendering as "From the api"
+since Gate C — found only by actually reading the rendered HTML rather than trusting the test
+assertions, which had never checked the exact string. Both fixed together.
 
-### 2.2 RESIDENT and QUEUE do not refresh in place
+### 2.2 RESIDENT and QUEUE — resolved same day
 
-The strip's generic CPU/GPU/RAM/VRAM fields are wired live by MirrorWall's own `telemetry.js`
-against the SSE stream's payload. The two WeightRoomGym-specific meters this row adds — RESIDENT
-(VRAM of the primary GPU's resident model) and QUEUE (LoadCoach's queue depth) — are computed
-server-side at page render and do **not** update in place the way the generic fields do; an
-operator has to reload the page to see a new value. `meter()` (MirrorWall 0.3) has no live-update
-hook and extending it for two WeightRoomGym-only fields is the "one consumer stays here" case
-design brief §5 already names — the corner this row cut on the strip's "moving once a second"
-claim, and named here rather than left to be discovered.
+Originally shipped page-load-only: the strip's generic CPU/GPU/RAM/VRAM fields are wired live by
+MirrorWall's own `telemetry.js` against the SSE stream's payload, but the two WeightRoomGym-
+specific meters this row adds — RESIDENT (VRAM of the primary GPU's resident model) and QUEUE
+(LoadCoach's queue depth) — were computed server-side at render only, needing a reload to change.
+**Fixed same day** (commit `4afb0db`) rather than left as a gap: `_shell.html` opens a second
+`mirrorwallSse` connection to the same stream (`meter()` has no live-update hook of its own for a
+two-field, one-consumer addition — design brief §5's "one consumer stays here" case again) and
+matches the two meters by their label text, since the macro gives them no other hook.
 
 ### 2.3 Clicking a telemetry figure — and no ECharts to open it with
 
@@ -77,18 +81,35 @@ script in `_shell.html` makes the strip's `[data-field]` spans clickable and key
 without forking MirrorWall's `telemetry_bar.html`. A later row can swap the SVG for ECharts
 behind the same URL once MirrorWall vendors it.
 
-### 2.4 Not every spec §7.3 page has a row yet
+### 2.4 Not every spec §7.3 page has a row yet — resolved by operator interview
 
 Each application's left menu names every page spec §7.3 lists; only `Settings`/`Providers`/
 `Tokens` (W4) and `Database` (W7) carry a phase, because those are the only ones
 `roadmap/weightroom-work.md` schedules between W3 and W10. `Models`, `Runs`, `Routing`, `Queue`,
 `Evidence`, `Adapters`, `Reliability`, `Projects`, `Units`, `Workflows`, `Backends`,
 `Trajectories`, `Approvals`, `Tiers`, `Tools`, `Ledger`, `Egress` and a dedicated per-application
-`Logs` page have **no row** in the roadmap as of this one. Per CLAUDE.md ("if an architectural
-decision seems missing, that is a defect in the docs"), this is recorded rather than an answer
-invented for it: either these pages are meant to land inside W7–W9's broader rows (the catalog,
-the jobs/alerts/prompts row) without being named individually, or the roadmap is missing rows
-between W3 and W10. Worth a decision before W7.
+`Logs` page had **no row** in the roadmap as of this row.
+
+**Operator decision (2026-09-09, post-handoff interview): fold them into W7–W9.** These pages do
+not get rows of their own; they land inside the existing catalog (W8), jobs/alerts/prompts (W9)
+and database-viewer (W7) rows as each is built, rather than expanding the roadmap with a row per
+page or per application. `app_side_nav_stubs`' phase map (`web/rendering.py`) should be widened
+at whichever row actually lands each page, not before.
+
+## 2.5 Operator decisions from the post-handoff interview (2026-09-09)
+
+Five more questions were put to the operator once this row's own choices were read back:
+
+1. **The primary table stays database-sourced in every state** (§2.1) — confirmed, no change;
+   W7's guarded viewer is still where a browsable, API-capable table belongs.
+2. **The telemetry-history chart stays a plain SVG** (§2.3) — confirmed; no MirrorWall row is
+   scheduled to vendor ECharts on the strength of this alone.
+3. **The four fixture databases were built ahead of W7**, not left for that row to discover
+   missing (§4 item 1, below) — done this session, commit `523a962`.
+4. **The Overview footer's imprecise wording was fixed now**, not left for W7 (§2.1) — done,
+   commit `4afb0db`.
+5. **RESIDENT/QUEUE were made to live-update now**, not left as a documented gap (§2.2) — done,
+   commit `4afb0db`.
 
 ## 3. Other decisions taken in this row
 
@@ -125,13 +146,16 @@ between W3 and W10. Worth a decision before W7.
 
 ## 4. What the kickoff got wrong, or did not know
 
-1. **No fixture databases exist yet at `tests/fixtures/databases/`.** The kickoff's "the fixture
-   databases from W0's seeded revisions" assumes W0 or W1 built them; neither did — `W1_HANDOFF.md`
-   §2 seeded `known_revisions`' four rows but wrote no `.sqlite3` files, and W7's own kickoff
-   (`w7-weightroom-p7-db-viewer-guard.prompt.md`) still describes them as work to do. This row's
-   tests build synthetic SQLite databases at test time with raw `sqlite3` instead (the FreeWeight
-   M6 memory note: a gitignored binary fixture is how a CI run goes red for a reason nobody in
-   the diff can see) and touches nothing under that path.
+1. **No fixture databases existed yet at `tests/fixtures/databases/`.** The kickoff's "the
+   fixture databases from W0's seeded revisions" assumes W0 or W1 built them; neither did —
+   `W1_HANDOFF.md` §2 seeded `known_revisions`' four rows but wrote no `.sqlite3` files, and W7's
+   own kickoff (`w7-weightroom-p7-db-viewer-guard.prompt.md`) still describes them as work to do.
+   This row's own tests build synthetic SQLite databases at test time with raw `sqlite3` instead
+   (the FreeWeight M6 memory note: a gitignored binary fixture is how a CI run goes red for a
+   reason nobody in the diff can see). **Built as a same-day follow-up per the operator's
+   interview decision** (commit `523a962`): each of the four migrated to its known head through
+   the application's own migration runner against a throwaway database, plus one hand-stamped to
+   an unknown revision — `tests/fixtures/databases/README.md` records how, and how to regenerate.
 2. **No application's `alembic_version` has moved since W1** (`freeweight` `0009`, `loadcoach`
    `0015`, `ideapress` `0010`, `promptcadence` `0011` — checked against each repository's
    `infrastructure/db/migrations/versions/` directly). `known_revisions` needed no new row.
@@ -167,13 +191,12 @@ cd WeightRoom && source .venv/bin/activate
 pip install -e ../py/MirrorWall --no-deps   # 0.3.0, prepared not published — see the TODO above
 ruff format --check . && ruff check . && mypy src tests && lint-imports
 pytest -m "not live and not performance" --cov --cov-report=term-missing
-# 614 passed, 1 skipped, coverage 90.10%
+# 616 passed, 1 skipped, coverage 90.21% (after the post-handoff follow-ups, §2.5)
 wr-gym config reference --check
 ```
 
 ## 7. What is deferred, unchanged from the kickoff
 
 Settings, the doctor, docs, chat and the database viewer — W4 through W7, per the development
-plan's own Phase 3 scope line. §2.4 above is the one addition: which of spec §7.3's remaining
-per-application pages land in those rows, versus needing rows of their own, is now an open
-question for the operator to answer before W7.
+plan's own Phase 3 scope line. §2.4's question is answered (fold into W7–W9, §2.5); nothing is
+left open from this row.
