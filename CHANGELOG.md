@@ -6,6 +6,12 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
+### Added
+- **FreeWeight `0010` is a known revision** (row WA1, ADR-0135). Migration `0005` adds it to
+  `known_revisions`, beside `0009`, so a FreeWeight at `1.3.0` — whose `runtime_profiles` gains
+  `adapters_registered` — is read rather than refused as unknown. `tests/fixtures/databases/`
+  gains `freeweight-0010.sqlite3`, and the never-writable guard tests run against it.
+
 ## [0.7.0] — 2026-09-10
 
 Row W7: Phase 7 of the development plan — every application's database readable, a raw write only

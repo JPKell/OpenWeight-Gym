@@ -43,7 +43,7 @@ ADR_0124 = (
 )
 FIXTURES = ROOT / "tests" / "fixtures" / "databases"
 APPS = ("freeweight", "loadcoach", "ideapress", "promptcadence")
-KNOWN = {"freeweight": "0009", "loadcoach": "0015", "ideapress": "0010", "promptcadence": "0011"}
+KNOWN = {"freeweight": "0010", "loadcoach": "0015", "ideapress": "0010", "promptcadence": "0011"}
 ENGINE_CATALOG = "Engine catalog"
 
 

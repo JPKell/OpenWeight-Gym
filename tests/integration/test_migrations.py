@@ -12,10 +12,11 @@ from weightroom.services.database import MIGRATIONS_LOCATION, Database, ensure_r
 from weightroom.services.docs_index import FTS5_SHADOW_TABLES
 
 EXPECTED_SEED = {
-    "freeweight": "0009",
-    "loadcoach": "0015",
-    "ideapress": "0010",
-    "promptcadence": "0011",
+    ("freeweight", "0009"),
+    ("freeweight", "0010"),  # migration 0005, row WA1
+    ("loadcoach", "0015"),
+    ("ideapress", "0010"),
+    ("promptcadence", "0011"),
 }
 
 
@@ -42,13 +43,13 @@ def _assert_parity(parity: ParityResult) -> None:
     assert not remaining, "\n".join(remaining)
 
 
-def _seed(engine: object) -> dict[str, str]:
+def _seed(engine: object) -> set[tuple[str, str]]:
     from sqlalchemy import Engine
 
     assert isinstance(engine, Engine)
     with engine.connect() as connection:
         rows = connection.execute(text("SELECT app, revision FROM known_revisions")).all()
-    return {str(app): str(rev) for app, rev in rows}
+    return {(str(app), str(rev)) for app, rev in rows}
 
 
 def test_fresh_sqlite_migrates_to_head_seeds_known_revisions_and_has_parity() -> None:
@@ -93,7 +94,7 @@ def test_ensure_ready_migrates_a_fresh_database_and_is_a_no_op_at_head() -> None
         assert ensure_ready(database, auto_migrate=True) is None
         status = get_status(database)
         assert status.is_at_head and status.integrity_ok
-        assert status.table_row_counts["known_revisions"] == 4
+        assert status.table_row_counts["known_revisions"] == len(EXPECTED_SEED)
 
 
 def test_ensure_ready_refuses_a_revision_this_build_does_not_know() -> None:

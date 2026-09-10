@@ -13,6 +13,7 @@ from pathlib import Path
 # an awkward, non-obvious import for anything outside Alembic's own loader.
 KNOWN_REVISIONS: tuple[tuple[str, str], ...] = (
     ("freeweight", "0009"),
+    ("freeweight", "0010"),  # migration 0005, row WA1
     ("loadcoach", "0015"),
     ("ideapress", "0010"),
     ("promptcadence", "0011"),

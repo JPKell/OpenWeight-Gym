@@ -5,9 +5,14 @@ One SQLite file per application, migrated to the exact revision `known_revisions
 kickoff already assumes exist. Each is empty (no application data, only the schema): W7 fills
 them with rows as its own tests need them.
 
+FreeWeight has two since row WA1: `0010` (migration `0005`) is its head and is what the
+never-writable guard test reads; `0009` stays, because `known_revisions` still lists it and the
+database-page tests written at W7 read it.
+
 | File | Application | Revision | Rows |
 |---|---|---|---|
-| `freeweight-0009.sqlite3` | FreeWeight | `0009` (known head) | none |
+| `freeweight-0010.sqlite3` | FreeWeight | `0010` (known head, row WA1) | none |
+| `freeweight-0009.sqlite3` | FreeWeight | `0009` (still known) | none |
 | `loadcoach-0015.sqlite3` | LoadCoach | `0015` (known head) | none |
 | `ideapress-0010.sqlite3` | IdeaPress | `0010` (known head) | none |
 | `promptcadence-0011.sqlite3` | PromptCadence | `0011` (known head) | none |
@@ -28,7 +33,7 @@ database — never the operator's real one:
 scratch=$(mktemp -d)
 printf '[storage]\ndatabase_url = "sqlite:///%s/freeweight.sqlite3"\n' "$scratch" > "$scratch/config.toml"
 ~/ai/suite/FreeWeight/.venv/bin/freeweight db upgrade --config "$scratch/config.toml"
-cp "$scratch/freeweight.sqlite3" freeweight-0009.sqlite3
+cp "$scratch/freeweight.sqlite3" freeweight-0010.sqlite3
 
 # IdeaPress: no --config on `db upgrade`; override by environment instead
 IDEAPRESS_STORAGE__DATABASE_URL="sqlite:///$scratch/ideapress.sqlite3" \
