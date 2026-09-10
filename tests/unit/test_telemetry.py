@@ -299,3 +299,44 @@ class TestTelemetryServiceLifecycle:
         database = _memory_db(tmp_path_factory)
         service = self._service(database)
         assert service.queue_snapshot() is None
+
+    def test_readers_share_one_queue_read_per_sample(self, tmp_path_factory) -> None:  # type: ignore[no-untyped-def]
+        """Upstream calls scale with samples, never with readers.
+
+        Every open telemetry stream used to read LoadCoach's queue on each pass of its poll loop —
+        five a second per stream — until LoadCoach's rate limiter answered 429.
+        """
+        import httpx
+        import respx
+
+        from weightroom.config import load_settings
+
+        database = _memory_db(tmp_path_factory)
+        settings = load_settings(config_path=None).settings
+        base_url = settings.apps.loadcoach.base_url.rstrip("/")
+        collector = TelemetryCollector(host=NullHostReader(), gpu=NullGpuReader())
+        with respx.mock(assert_all_called=True) as router:
+            route = router.get(f"{base_url}/api/v1/system/status").mock(
+                return_value=httpx.Response(
+                    200, json={"active": 2, "depth_by_state": {"queued": 1}}
+                )
+            )
+            with httpx.Client() as client:
+                service = TelemetryService(
+                    database, settings, collector=collector, app_client=client
+                )
+                assert (
+                    service.queue_snapshot() is None
+                )  # no tick yet, and no read triggered by asking
+                assert route.call_count == 0
+
+                service._on_sample(collector.snapshot())
+                for _ in range(50):
+                    assert service.queue_snapshot() == {
+                        "active": 2,
+                        "depth_by_state": {"queued": 1},
+                    }
+                assert route.call_count == 1
+
+                service._on_sample(collector.snapshot())
+                assert route.call_count == 2

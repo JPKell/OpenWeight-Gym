@@ -373,6 +373,7 @@ class TelemetryService:
         self._ollama_client = ollama_client
         self._app_client = app_client if app_client is not None else ollama_client
         self._resident_cache = _ResidentCache()
+        self._queue: dict[str, Any] | None = None
         self._sweep_lock = threading.Lock()
         self._last_sweep = 0.0
         collector = collector if collector is not None else build_collector()
@@ -383,6 +384,11 @@ class TelemetryService:
         )
 
     def _on_sample(self, snapshot: TelemetrySnapshot) -> None:
+        # LoadCoach's queue is read here, once per tick, and every reader shares the result. It
+        # used to be read by each reader instead — every pass of every open telemetry stream, five
+        # a second per stream — so the upstream call rate scaled with open tabs until LoadCoach's
+        # rate limiter answered 429 and its journal filled with `request.rate_limited`.
+        self._queue = self._read_queue()
         resident: list[dict[str, Any]] | None = None
         if self._ollama_client is not None:
             try:
@@ -427,7 +433,18 @@ class TelemetryService:
         return self._sampler.latest()
 
     def queue_snapshot(self) -> dict[str, Any] | None:
-        """LoadCoach's queue depth, read fresh — never persisted (this module's docstring)."""
+        """LoadCoach's queue depth as of the latest sample — never persisted, never fetched here.
+
+        Returns:
+            ``{"active", "depth_by_state"}`` from the sampler's last tick, or ``None`` before the
+            first tick, with no LoadCoach configured, or when the last read failed. A request never
+            triggers an upstream call of its own: the sampler makes one per interval however many
+            streams and pages are reading.
+        """
+        return self._queue
+
+    def _read_queue(self) -> dict[str, Any] | None:
+        """One read of LoadCoach's ``/system/status``, on the sampler thread."""
         if self._app_client is None:
             return None
         base_url = self._settings.apps.loadcoach.base_url

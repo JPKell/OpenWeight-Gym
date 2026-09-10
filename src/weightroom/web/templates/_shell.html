@@ -28,12 +28,16 @@
   }
 
   /* Top bar (design brief §4): one 48 px row — brand, application tabs, console pages, alerts,
-     the theme control and the operator chip. MirrorWall's masthead is a wrap-friendly
-     space-between row sized for an application with a 20 px product title and nothing else in it;
-     the console puts five groups in the same row, so the layout is set here rather than in the
-     shared file, where it would re-flow four applications that want the roomier default. */
+     the theme control and the operator chip. Set here rather than in MirrorWall's masthead, which
+     is a wrap-friendly row sized for an application with a product title and nothing else.
+
+     The tabs, console pages and theme control sit in one `<details class="topnav">`. Above the
+     breakpoint it is open with its summary hidden, so it is simply the row; below it the summary
+     is the menu button and the body drops down over the page. One element serves both widths:
+     no duplicated links, and a real disclosure widget with keyboard behaviour the browser owns. */
   header { position: sticky; top: 0; z-index: 5; background: var(--mw-bg); }
   .masthead {
+    position: relative;
     align-items: center;
     justify-content: flex-start;
     flex-wrap: nowrap;
@@ -46,17 +50,22 @@
     font-weight: 600;
     white-space: nowrap;
   }
-  /* The theme select keeps its accessible name, but the visible "Theme" label is a word the
-     artboard does not have room for beside five other groups (UI/UX §7: hidden, not removed). */
-  .masthead > .field { order: 90; margin: 0; }
-  .masthead > .field label {
-    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
+  .topnav { flex: 1 1 auto; min-width: 0; }
+  .topnav > summary { display: none; }
+  .topnav-body { display: flex; align-items: center; gap: var(--mw-space-3, 12px); }
+  .topnav-theme { margin: 0 0 0 auto; }
+  /* The "Theme" word is visually hidden in the row (no room beside five groups) and shown in the
+     dropdown, where there is; the select keeps its accessible name at both widths. */
+  .topnav-theme label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
   }
-  .masthead > .field select {
+  .topnav-theme select {
     height: 26px; padding: 0 var(--mw-space-2, 8px);
     font-size: var(--mw-font-size-xs, 11px);
   }
   .app-tabs { display: flex; gap: var(--mw-space-1, 4px); align-items: center; }
+  .app-tab { white-space: nowrap; }
   .console-pages {
     display: flex; gap: var(--mw-space-3, 12px); align-items: center;
     margin-left: var(--mw-space-4, 16px);
@@ -68,9 +77,8 @@
   .console-alerts { color: var(--mw-text-subtle); white-space: nowrap; }
   .console-alerts[data-open="true"] { color: var(--mw-status-degraded); }
   .operator-chip {
-    order: 100;
     display: flex; align-items: center; gap: var(--mw-space-2, 8px);
-    margin: 0 0 0 auto;
+    flex: 0 0 auto; margin: 0; white-space: nowrap;
   }
   .operator-chip .chip {
     display: inline-flex; align-items: center; justify-content: center;
@@ -79,33 +87,61 @@
   }
 
   /* Main pane head (design brief §4): the 18 px title with its status pill, and a right-aligned
-     action group. */
+     action group that wraps under the title rather than pushing the page sideways. */
   .page-head {
-    display: flex; align-items: center; gap: var(--mw-space-3, 12px);
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--mw-space-3, 12px);
     margin: 0 0 var(--mw-space-4, 16px);
   }
   .page-head h2 { margin: 0; font-size: var(--mw-font-size-title, 18px); font-weight: 600; }
   .page-actions {
-    display: flex; gap: var(--mw-space-3, 12px); margin-left: auto;
+    display: flex; flex-wrap: wrap; gap: var(--mw-space-3, 12px); margin-left: auto;
     font-size: var(--mw-font-size-sm, 12px);
   }
   .page-actions a { color: var(--mw-text-muted); text-decoration: none; }
   .page-actions a:hover { color: var(--mw-text); }
 
-  /* Responsive (UI/UX §3). Nothing here scrolls sideways: the shell reflows instead. The menu
-     is a `<details>` so the narrow layout is a real disclosure widget with keyboard behaviour and
-     an accessible name the browser supplies — above the breakpoint the summary is hidden and the
-     element is left open, which is the same markup serving both widths rather than two menus. */
   .shell-menu > summary { display: none; }
 
+  /* Responsive (UI/UX §3). Nothing here scrolls the page sideways: the shell reflows instead. */
   @media (max-width: 900px) {
-    .masthead { flex-wrap: wrap; row-gap: var(--mw-space-2, 8px); }
-    .console-pages { margin-left: 0; }
-    .operator-chip { margin-left: auto; }
-    .masthead > .field { order: 0; }
+    .topnav { flex: 0 0 auto; margin-left: auto; }
+    .topnav > summary {
+      display: flex; align-items: center; gap: var(--mw-space-2, 8px);
+      height: 30px; padding: 0 var(--mw-space-3, 12px);
+      list-style: none; cursor: pointer;
+      border: 1px solid var(--mw-border); border-radius: var(--mw-radius-sm, 6px);
+      background: var(--mw-surface);
+      font-size: var(--mw-font-size-sm, 12px); font-weight: 600;
+    }
+    .topnav > summary::-webkit-details-marker { display: none; }
+    .topnav[open] > summary { background: var(--mw-accent-soft); }
+    .topnav-body {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 6;
+      flex-direction: column; align-items: stretch; gap: var(--mw-space-3, 12px);
+      padding: var(--mw-space-3, 12px);
+      background: var(--mw-surface);
+      border: 1px solid var(--mw-border);
+      border-radius: 0 0 var(--mw-radius-md, 8px) var(--mw-radius-md, 8px);
+      box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+    }
+    .app-tabs, .console-pages {
+      flex-direction: column; align-items: stretch; gap: 2px; margin: 0;
+    }
+    .console-pages { padding-top: var(--mw-space-3, 12px); border-top: 1px solid var(--mw-border); }
+    .app-tab, .console-pages a, .console-page-stub, .console-alerts {
+      padding: var(--mw-space-2, 8px);
+      border-radius: var(--mw-radius-sm, 6px);
+    }
+    .topnav-theme {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 0; padding-top: var(--mw-space-3, 12px); border-top: 1px solid var(--mw-border);
+    }
+    .topnav-theme label {
+      position: static; width: auto; height: auto; overflow: visible; clip-path: none;
+      font-size: var(--mw-font-size-sm, 12px); color: var(--mw-text-muted);
+    }
 
-    /* "Just the values" (the artboard's meters are a wide-screen affordance): the tracks and the
-       separators go, the strip wraps instead of scrolling, and every number stays. */
+    /* "Just the values": the meter tracks and separators go, the strip wraps, every number stays. */
     .telemetry-bar {
       height: auto;
       flex-wrap: wrap;
@@ -116,8 +152,10 @@
     }
     .telemetry-track, .telemetry-sep { display: none; }
 
-    .shell-body { flex-direction: column; gap: var(--mw-space-3, 12px); }
-    .shell-side { width: 100%; }
+    /* `stretch`, not the wide layout's `flex-start`: in a column, `flex-start` sizes the main pane
+       to its widest content — one long log line — and that width is what scrolled the page. */
+    .shell-body { flex-direction: column; align-items: stretch; gap: var(--mw-space-3, 12px); }
+    .shell-side, .shell-main { width: 100%; }
     .shell-menu > summary {
       display: block;
       padding: var(--mw-space-2, 8px);
@@ -129,7 +167,6 @@
       font-weight: 600;
     }
     .shell-menu[open] > summary { margin-bottom: var(--mw-space-2, 8px); }
-    /* Two columns of links rather than a 200 px column of them down a phone screen. */
     .shell-menu .side-nav ul { display: grid; grid-template-columns: 1fr 1fr; }
   }
   .docs-tree-level { list-style: none; margin: 0; padding-left: var(--mw-space-4, 16px); }
@@ -147,7 +184,12 @@
 
 {% block navigation %}{# superseded by the app tabs above and the left menu below #}{% endblock %}
 
+{% block theme_control %}{# rendered inside the topnav below, not beside it #}{% endblock %}
+
 {% block header_extra %}
+<details class="topnav" open>
+<summary>&#9776; Menu</summary>
+<div class="topnav-body">
 <nav class="app-tabs" aria-label="Applications">
   {% for view in views %}
   {{ app_tab(view.name, "/apps/" ~ view.name, status=view.pill | pill_status, selected=(active_app == view.name)) }}
@@ -163,6 +205,16 @@
   {% endfor %}
   <span class="console-alerts" data-open="false" title="alerts arrive at row W9">⚠ —</span>
 </nav>
+<div class="field topnav-theme">
+  <label for="mw-theme-select">Theme</label>
+  <select id="mw-theme-select" data-theme-select data-theme-storage-key="{{ theme_storage_key }}">
+    <option value="system">System</option>
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
+</div>
+</div>
+</details>
 {% if principal.source == "session" %}
 <form method="post" action="/logout" class="operator-chip">
   <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
@@ -180,8 +232,10 @@
     {# Open in the markup, so a narrow viewport with no JavaScript gets the whole menu rather than
        a control it cannot work; the script below closes it once, on a narrow screen only. #}
     <details class="shell-menu" open>
-      <summary>{{ menu_label | default("Menu") }}</summary>
-      {{ side_nav(nav_sections, footer=nav_footer) }}
+      {# Named for the section it opens ("LoadCoach", "Console") — the top bar's button is already
+         "Menu", and two buttons with one name on a phone is a guess the operator has to make. #}
+      <summary>{{ (nav_sections[0].title if nav_sections and nav_sections[0].title is defined and nav_sections[0].title else "Pages") | title }} &#9662;</summary>
+      {{ side_nav(nav_sections) }}
       {% if side_nav_stubs %}
       <ul class="side-nav-stub">
         {% for stub in side_nav_stubs %}
@@ -189,6 +243,7 @@
         {% endfor %}
       </ul>
       {% endif %}
+      {% if nav_footer %}<p class="side-nav-footer">{{ nav_footer }}</p>{% endif %}
     </details>
   </div>
   <div class="shell-main">
@@ -230,12 +285,22 @@
   // viewport actually crosses the breakpoint — a menu the operator closed by hand stays closed
   // until then, which a `resize` handler that reasserted the state on every pixel would undo.
   (function () {
-    var menu = document.querySelector(".shell-menu");
-    if (!menu || !window.matchMedia) { return; }
+    if (!window.matchMedia) { return; }
+    var menus = document.querySelectorAll(".shell-menu, .topnav");
     var wide = window.matchMedia("(min-width: 901px)");
-    var apply = function (event) { menu.open = event.matches; };
+    var apply = function (event) {
+      menus.forEach(function (menu) { menu.open = event.matches; });
+    };
     apply(wide);
     if (wide.addEventListener) { wide.addEventListener("change", apply); }
+    // A dropdown that stays open after the operator clicks elsewhere is the unprofessional part;
+    // only the top bar's, and only while it is a dropdown.
+    var topnav = document.querySelector(".topnav");
+    document.addEventListener("click", function (event) {
+      if (topnav && !wide.matches && topnav.open && !topnav.contains(event.target)) {
+        topnav.open = false;
+      }
+    });
   })();
 
   // RESIDENT and QUEUE are WeightRoomGym-specific meters (design brief §4), not MirrorWall's

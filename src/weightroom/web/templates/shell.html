@@ -1,6 +1,17 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import card, status_dot, table %}
 {% block title %}Overview — WeightRoomGym{% endblock %}
+{% block extra_head %}
+<style>
+  [data-table="console-applications"] td { white-space: nowrap; }
+  /* A phone keeps the three columns an operator acts on; the unit name is on the application's
+     own page and the version is in its tab's tooltip, so neither is lost — only not repeated. */
+  @media (max-width: 600px) {
+    [data-table="console-applications"] th:nth-child(n+4),
+    [data-table="console-applications"] td:nth-child(n+4) { display: none; }
+  }
+</style>
+{% endblock %}
 
 {# A cell that is a link has to reach the table macro as markup, and a macro's output is the one
    thing Jinja will not escape a second time — hence a macro rather than a `| safe` string, which

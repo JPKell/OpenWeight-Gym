@@ -215,7 +215,7 @@ async def _telemetry_frames(request: Request, *, after_id: int) -> AsyncIterator
     next_heartbeat = time.monotonic() + _HEARTBEAT_SECONDS
     while not await request.is_disconnected():
         batch = await asyncio.to_thread(read_since, database, after_id=last_id)
-        queue = service.queue_snapshot() if service is not None else None
+        queue = service.queue_snapshot() if service is not None and batch else None
         for row in batch:
             yield sample_frame(row, queue=queue)
             last_id = row.id

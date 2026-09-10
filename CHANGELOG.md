@@ -8,6 +8,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ### Fixed
 
+- The console no longer floods LoadCoach with `GET /api/v1/system/status`. Every telemetry
+  stream read LoadCoach's queue on each pass of its poll loop — five a second per stream, two
+  streams per tab — until LoadCoach's rate limiter answered 429 and its journal filled with
+  `request.rate_limited`. The sampler now reads it once per tick and every stream, page and
+  `/system/status` call shares that read.
+- The per-application Overview's log pane showed raw JSON envelopes: MirrorWall's `log_pane` swaps
+  each frame's data in as-is. It now uses the same pane `/logs` does, which is a classic script
+  (a module script has no `document.currentScript`) with its own toolbar rather than MirrorWall's
+  stacked `.field` form layout.
 - The log stream stops reconnecting once it is over. An `EventSource` cannot tell a stream the
   server ended from a connection that dropped, so it retried both — and a host with no
   `journalctl` ended the stream the same way on every retry, which is the repeated `GET` on
@@ -26,10 +35,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   chip at the right edge. The strip opts into MirrorWall's inline meters for all four fields.
 - The console Overview lists the four applications as a dense table with status dots, uptime,
   version and unit, in place of the bulleted links row W3 shipped.
-- The shell reflows instead of scrolling sideways. Below 900 px the left menu is a `<details>`
-  disclosure (open, with its summary hidden, above it — one markup for both widths), the telemetry
-  strip wraps and drops its meter tracks to values only, and the top bar wraps rather than
-  scrolling.
+- The shell reflows instead of scrolling sideways, verified in headless Chrome at 1440, 900 and
+  390 px on `/`, `/apps/loadcoach` and `/logs` with no element scrolling horizontally. Below
+  900 px the top bar's tabs, console pages and theme control collapse into a *Menu* dropdown
+  (one `<details>`, open with its summary hidden above the breakpoint, closing on an outside click);
+  the left menu is a disclosure named for its section; the telemetry strip wraps and shows values
+  without meter tracks; the main pane stretches instead of sizing to its widest line; and the
+  Overview table drops its version and unit columns below 600 px. The side menu's version footer
+  now sits after the unbuilt pages rather than between them.
 
 ## [0.5.0] — 2026-09-10
 

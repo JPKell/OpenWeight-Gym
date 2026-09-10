@@ -1,5 +1,5 @@
 {% extends "_shell.html" %}
-{% from "mirrorwall/components.html" import badge, card, kv_list, table, log_pane, empty_state %}
+{% from "mirrorwall/components.html" import badge, card, kv_list, table, empty_state %}
 {% block title %}{{ view.name }} — WeightRoomGym{% endblock %}
 {% block page_content %}
 <h2>Overview {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
@@ -52,7 +52,11 @@ outside the range WeightRoomGym {{ product_version }} speaks to
 {% endif %}
 
 <h3>Log</h3>
-{{ log_pane("overview-log", stream_url="/api/v1/apps/" ~ view.name ~ "/logs/stream", label="journalctl --user -u " ~ view.unit) }}
+{# WeightRoomGym's own pane, the one /logs uses, rather than MirrorWall's `log_pane`: that macro
+   swaps each SSE frame's data into the page as-is (`sse-swap`), and this stream's frames are
+   SetSpec JSON envelopes, not rendered lines — the pane showed raw JSON. #}
+{% set stream_url = "/api/v1/apps/" ~ view.name ~ "/logs/stream" %}
+{% include "_log_pane.html" %}
 <p><a href="/api/v1/apps/{{ view.name }}/logs">Journal history as JSON</a> ·
    <code>wr-gym logs {{ view.name }} --follow</code></p>
 {% endblock %}

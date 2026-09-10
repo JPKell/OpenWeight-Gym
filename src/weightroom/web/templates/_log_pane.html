@@ -5,15 +5,28 @@
    reason the server's subscription is bounded on the server: a pane that keeps every line of a
    chatty unit is a tab that eventually stops scrolling. #}
 <section class="log-pane" aria-label="Live log">
-  <div class="field">
+  <div class="log-pane-bar">
     <strong>Live log</strong>
     <span class="muted" data-log-status>connecting…</span>
-    <label class="field"><input type="checkbox" data-log-follow checked> Follow</label>
-    <button type="button" data-log-clear>Clear</button>
+    <label class="log-pane-follow"><input type="checkbox" data-log-follow checked> Follow</label>
+    <button type="button" data-log-clear data-variant="quiet">Clear</button>
   </div>
   <ol class="log-lines" data-log-stream="{{ stream_url }}" data-log-max="{{ max_lines | default(500) }}" tabindex="0"></ol>
 </section>
 <style>
+  /* Its own toolbar class, not MirrorWall's `.field`: that is a form field — a stacked label over a
+     full-width control — which turned one checkbox and a button into a column of oversized
+     controls. */
+  .log-pane-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--mw-space-3, 12px);
+    padding: var(--mw-space-2, 8px) var(--mw-space-3, 12px);
+    border-bottom: 1px solid var(--mw-border);
+    font-size: var(--mw-font-size-sm, 12px);
+  }
+  .log-pane-bar [data-log-status] { margin-right: auto; }
+  .log-pane-follow { display: inline-flex; align-items: center; gap: var(--mw-space-1, 4px); margin: 0; }
+  .log-pane-follow input { width: auto; height: auto; margin: 0; }
+  .log-pane-bar button { width: auto; }
   .log-pane .log-lines {
     list-style: none; margin: 0; padding: var(--space-2, .5rem);
     max-height: 24rem; overflow-y: auto;
@@ -31,7 +44,11 @@
   .log-pane .log-lines li[data-level="warning"] { color: var(--color-warning, #ffc76b); }
   .log-pane .log-lines li.notice-line { opacity: .75; font-style: italic; }
 </style>
-<script type="module">
+<script>
+// A classic script, not a module: `document.currentScript` is null inside a module script, and
+// every lookup below starts from it. The IIFE keeps the `const`s out of the global lexical scope,
+// where a second pane on the same page would redeclare them.
+(() => {
   const pane = document.currentScript.parentElement.querySelector("[data-log-stream]");
   const status = document.currentScript.parentElement.querySelector("[data-log-status]");
   const follow = document.currentScript.parentElement.querySelector("[data-log-follow]");
@@ -82,4 +99,5 @@
     }
   });
   window.addEventListener("beforeunload", () => source.close());
+})();
 </script>
