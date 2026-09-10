@@ -24,7 +24,7 @@ from weightroom.services.ollama import (
     resident_models,
     restart_ollama,
 )
-from weightroom.web.csrf import render_form_page
+from weightroom.web.routes.apps import render_shell_page
 from weightroom.web.session import CurrentOperator
 
 __all__ = ["operator_user", "router", "ui_router"]
@@ -130,7 +130,7 @@ def restart(request: Request, principal: CurrentOperator) -> dict[str, object]:
 def ollama_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
     """The §2.1 checklist, the residency table, and the restart button or the command."""
     report = _report(request)
-    return render_form_page(
+    return render_shell_page(
         request,
         "ollama.html",
         page="ollama",

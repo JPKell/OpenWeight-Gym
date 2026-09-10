@@ -1,7 +1,7 @@
-{% extends "mirrorwall/base.html" %}
+{% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, card, kv_list %}
 {% block title %}{{ view.name }} — WeightRoomGym{% endblock %}
-{% block content %}
+{% block page_content %}
 <h2>{{ view.name }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
 <p class="muted">The full control surface for {{ view.name }} — models, runs, settings, database —
 arrives at W3 and W4. This page is the unit: what it is doing, and the three buttons.

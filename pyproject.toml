@@ -32,9 +32,11 @@ dependencies = [
     "baseaicore>=0.4.2,<0.5",
     "setspec>=0.6,<0.7",
     "weightsdb>=0.2.1,<0.3",
-    # 0.3 is the MirrorWall release the design brief (docs/apps/weightroom/design.md) asks for; the
-    # range admits 0.2.2 so the skeleton resolves today and W3 raises the floor when 0.3 publishes.
-    "mirrorwall>=0.2.2,<0.4",
+    # 0.3 is the MirrorWall release the design brief (docs/apps/weightroom/design.md) asks for.
+    # Row W3 raises the floor to it; mirrorwall 0.3.0 is prepared but not yet published
+    # (WM_HANDOFF.md), so this venv pins an editable path install of ../py/MirrorWall instead of
+    # a PyPI version until then — TODO: re-pin `pip install mirrorwall==0.3.0` once it publishes.
+    "mirrorwall>=0.3,<0.4",
     "sweatmeter>=0.4,<0.5",
     # Read-only provider calls only — residency (`/api/ps`) and discovery — through the suite's one
     # provider client rather than a second Ollama client in this repository (ADR-0123 rule 5).

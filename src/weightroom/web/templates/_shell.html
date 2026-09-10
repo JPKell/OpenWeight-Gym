@@ -1,0 +1,82 @@
+{# _shell.html — the design brief's shell (design.md §4): top bar, telemetry strip, left menu.
+
+   Every operator-facing page extends this instead of "mirrorwall/base.html" directly; login,
+   the error page and the standalone trust page are the three exceptions (no session, or no
+   shell context to show) and keep extending the base template themselves.
+
+   `render_shell_page` (web/routes/apps.py) is what supplies `views`, `active_app`,
+   `nav_sections`, `nav_footer` and the telemetry context every page here reads; a page that
+   calls `render_form_page` directly instead will hit StrictUndefined immediately, which is the
+   point — a page inside the shell with no shell context is a defect, not a page missing a dot. #}
+{% extends "mirrorwall/base.html" %}
+{% from "mirrorwall/components.html" import app_tab, side_nav %}
+
+{% block head %}
+<style>
+  /* The 200px sidebar grid the design brief asks for (design.md §2, §4) — MirrorWall's own
+     layout.css deliberately leaves this to the application (its side_nav rules style the menu's
+     contents, not the page grid around it). */
+  .shell-body { display: flex; gap: var(--mw-space-5, 20px); align-items: flex-start; }
+  .shell-side { width: var(--mw-sidebar-w, 200px); flex: 0 0 auto; }
+  .shell-main { flex: 1 1 auto; min-width: 0; }
+  .side-nav-stub { list-style: none; margin: var(--mw-space-2, 8px) 0 0; padding: 0; }
+  .side-nav-stub li {
+    padding: 4px var(--mw-space-2, 8px);
+    color: var(--mw-text-subtle);
+    font-size: var(--mw-font-size-sm, 12px);
+  }
+  .app-tabs { display: flex; gap: var(--mw-space-2, 8px); align-items: center; }
+  .console-pages { display: flex; gap: var(--mw-space-3, 12px); align-items: center; }
+  .console-page-stub { color: var(--mw-text-subtle); font-size: var(--mw-font-size-sm, 12px); }
+  .operator-chip { display: flex; align-items: center; gap: var(--mw-space-2, 8px); margin-left: auto; }
+  .operator-chip .chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--mw-accent-soft); font-size: var(--mw-font-size-xs, 11px); font-weight: 600;
+  }
+</style>
+{% block extra_head %}{% endblock %}
+{% endblock %}
+
+{% block navigation %}{# superseded by the app tabs above and the left menu below #}{% endblock %}
+
+{% block header_extra %}
+<nav class="app-tabs" aria-label="Applications">
+  {% for view in views %}
+  {{ app_tab(view.name, "/apps/" ~ view.name, status=view.pill | pill_status, selected=(active_app == view.name)) }}
+  {% endfor %}
+</nav>
+<nav class="console-pages" aria-label="Console">
+  {% for page in console_pages %}
+  <span class="console-page-stub" title="coming in phase {{ page.phase }}">{{ page.label }}</span>
+  {% endfor %}
+  <span class="console-page-stub" title="alerts arrive at row W9">⚠ —</span>
+</nav>
+{% if principal.source == "session" %}
+<form method="post" action="/logout" class="operator-chip">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <span class="chip" title="{{ principal.username }}">{{ principal.username[:2] | upper }}</span>
+  <button type="submit" data-variant="quiet">Log out</button>
+</form>
+{% else %}
+<span class="muted operator-chip" title="No operator account: loopback is open until wr-gym setup runs">open loopback</span>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="shell-body">
+  <div class="shell-side">
+    {{ side_nav(nav_sections, footer=nav_footer) }}
+    {% if side_nav_stubs %}
+    <ul class="side-nav-stub">
+      {% for stub in side_nav_stubs %}
+      <li title="{{ stub.title }}">{{ stub.label }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  <div class="shell-main">
+    {% block page_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

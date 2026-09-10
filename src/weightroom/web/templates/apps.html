@@ -1,7 +1,7 @@
-{% extends "mirrorwall/base.html" %}
+{% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, empty_state %}
 {% block title %}Applications — WeightRoomGym{% endblock %}
-{% block content %}
+{% block page_content %}
 <h2>Applications</h2>
 <p class="muted">The four applications as <code>systemd --user</code> units WeightRoomGym wrote.
 A unit's state comes from systemd; the version comes from the application's own

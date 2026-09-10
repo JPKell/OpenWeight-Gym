@@ -1,7 +1,7 @@
-{% extends "mirrorwall/base.html" %}
+{% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, card, empty_state %}
 {% block title %}Ollama — WeightRoomGym{% endblock %}
-{% block content %}
+{% block page_content %}
 <h2>Ollama
   {{ badge(report.state, tone="success" if report.state == "active" else "neutral") }}
   {{ badge(("safe: " ~ report.passing ~ "/" ~ report.total) if report.safe else (report.passing ~ "/" ~ report.total ~ " memory-safety checks"),

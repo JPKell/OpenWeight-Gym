@@ -1,22 +1,10 @@
-{% extends "mirrorwall/base.html" %}
+{% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, card %}
 {% block title %}Overview — WeightRoomGym{% endblock %}
-{% block header_extra %}
-{% if principal.source == "session" %}
-<form method="post" action="/logout" class="field" style="margin-left:auto">
-  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
-  <span class="muted">{{ principal.username }}</span>
-  <button type="submit">Log out</button>
-</form>
-{% else %}
-<span class="muted" title="No operator account: loopback is open until wr-gym setup runs">open loopback</span>
-{% endif %}
-{% endblock %}
-{% block content %}
+{% block page_content %}
 <h2>Overview</h2>
-<p class="muted">Phase 2: the five units, process control, the journal live and unified, the
-Ollama pane and the audit page are here. The telemetry strip and the real shell arrive at W3,
-settings and the doctor at W4.</p>
+<p class="muted">Row W3: the shell, the telemetry strip and the per-application Overview pages
+are here. Settings and the doctor arrive at W4.</p>
 <ul class="card-grid">
   {{ card("Bind", bind_host, note="server.host") }}
   {{ card("Certificate", (tls_days_left ~ " days") if tls_days_left is not none else "—", note="leaf days left; wr-gym tls show") }}

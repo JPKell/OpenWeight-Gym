@@ -50,9 +50,15 @@ from weightroom.web.csrf import render_form_page
 from weightroom.web.session import CurrentOperator
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Sequence
+    from collections.abc import AsyncIterator, Mapping, Sequence
 
-__all__ = ["CONTROL_VERBS", "router", "ui_router", "views_for_request"]
+__all__ = [
+    "CONTROL_VERBS",
+    "render_shell_page",
+    "router",
+    "ui_router",
+    "views_for_request",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +89,72 @@ def views_for_request(request: Request, *, refresh: str | None = None) -> tuple[
         client=state.http,
         now=_now(),
         refresh=refresh,
+    )
+
+
+def _telemetry_meters(request: Request) -> list[dict[str, object]]:
+    """The strip's two WeightRoomGym-specific meters: RESIDENT and QUEUE (design brief §4).
+
+    Rendered from the last sample at page load; unlike the strip's generic CPU/GPU/RAM fields
+    (wired live by MirrorWall's own ``telemetry.js``) these two do not refresh in place until an
+    operator navigates again — the one corner this row cut on the strip's "moving once a second"
+    claim, since only the values sweatmeter itself measures update live. Documented in the W3
+    handoff rather than silently short of the design brief.
+    """
+    from mirrorwall import bytes_human
+
+    service = getattr(request.app.state, "telemetry", None)
+    resident_text = "—"
+    queue_text = "—"
+    if service is not None:
+        snapshot = service.latest()
+        if snapshot is not None and snapshot.gpus:
+            gpu = snapshot.gpus[0]
+            resident_text = bytes_human(gpu.vram_used_bytes)
+        queue = service.queue_snapshot()
+        if queue is not None and queue.get("active") is not None:
+            depth = queue.get("depth_by_state") or {}
+            waiting = depth.get("queued") if isinstance(depth, dict) else None
+            queue_text = f"{queue['active']} active" + (
+                f" · {waiting} waiting" if waiting is not None else ""
+            )
+    return [
+        {"label": "RESIDENT", "value_text": resident_text},
+        {"label": "QUEUE", "value_text": queue_text},
+    ]
+
+
+def render_shell_page(
+    request: Request,
+    template_name: str,
+    /,
+    *,
+    nav_sections: Sequence[Mapping[str, Any]] | None = None,
+    nav_footer: str | None = None,
+    active_app: str | None = None,
+    side_nav_stubs: Sequence[Mapping[str, str]] = (),
+    **context: Any,
+) -> HTMLResponse:
+    """Render a page inside the shell: the tabs, the strip and the left menu (design brief §4).
+
+    Every HTML page but login, the error page and the standalone trust page goes through this —
+    those three render before or outside a session and extend ``mirrorwall/base.html`` directly,
+    never the shell.
+    """
+    from weightroom.web.rendering import CONSOLE_SIDE_NAV
+
+    return render_form_page(
+        request,
+        template_name,
+        views=views_for_request(request),
+        active_app=active_app,
+        nav_sections=nav_sections if nav_sections is not None else CONSOLE_SIDE_NAV,
+        nav_footer=nav_footer,
+        side_nav_stubs=side_nav_stubs,
+        show_telemetry_bar=True,
+        telemetry_stream_url="/api/v1/system/telemetry/stream",
+        telemetry_meters=_telemetry_meters(request),
+        **context,
     )
 
 
@@ -326,22 +398,27 @@ def unified_log_stream(
 @ui_router.get("/apps", summary="The applications page", response_class=HTMLResponse)
 def apps_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
     """Every application with its pill, uptime, version and the three buttons."""
-    return render_form_page(
-        request, "apps.html", page="apps", principal=principal, views=views_for_request(request)
-    )
+    return render_shell_page(request, "apps.html", page="apps", principal=principal)
 
 
 @ui_router.get("/apps/{app}", summary="One application's page", response_class=HTMLResponse)
 def app_page(request: Request, principal: CurrentOperator, app: str) -> HTMLResponse:
     """One application: the pill, the figures, the controls and the live log pane."""
     name = require_app(app)
-    return render_form_page(
+    from weightroom.web.rendering import app_side_nav, app_side_nav_stubs
+
+    view = _view(request, name)
+    return render_shell_page(
         request,
         "app.html",
         page="apps",
         principal=principal,
-        view=_view(request, name),
+        view=view,
         applications=APPLICATIONS,
+        active_app=name,
+        nav_sections=app_side_nav(name),
+        nav_footer=f"{name} {view.version or '—'}",
+        side_nav_stubs=app_side_nav_stubs(name),
     )
 
 
@@ -365,7 +442,7 @@ def control_from_page(
 @ui_router.get("/logs", summary="The unified log page", response_class=HTMLResponse)
 def logs_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
     """One pane over every unit's journal at once."""
-    return render_form_page(
+    return render_shell_page(
         request,
         "logs.html",
         page="logs",

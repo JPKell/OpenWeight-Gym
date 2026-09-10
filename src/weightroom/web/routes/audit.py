@@ -11,7 +11,7 @@ from mirrorwall import clamp_limit, paginated_response
 from weightroom.config import APPLICATIONS
 from weightroom.domain.audit import ACTIONS
 from weightroom.services.audit import get_audit, list_audit
-from weightroom.web.csrf import render_form_page
+from weightroom.web.routes.apps import render_shell_page
 from weightroom.web.session import CurrentOperator
 
 __all__ = ["router", "ui_router"]
@@ -96,7 +96,7 @@ def audit_page(
         action=_blank_to_none(action),
         since=parsed_since,
     )
-    return render_form_page(
+    return render_shell_page(
         request,
         "audit.html",
         page="audit",

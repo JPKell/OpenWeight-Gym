@@ -10,8 +10,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
 from weightroom.services.tls import host_identity
-from weightroom.web.csrf import render_form_page
 from weightroom.web.rendering import trust_context
+from weightroom.web.routes.apps import render_shell_page
 from weightroom.web.session import CurrentOperator
 
 __all__ = ["ui_router"]
@@ -24,7 +24,7 @@ def trust_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
     """The root's fingerprint, its download and the per-OS steps."""
     app = request.app
     identity = getattr(app.state, "identity", None) or host_identity()
-    return render_form_page(
+    return render_shell_page(
         request,
         "trust.html",
         page="trust",

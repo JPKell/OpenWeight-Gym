@@ -24,11 +24,11 @@ from weightroom.services.tls import TlsPaths, TlsStatus, tls_status
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-__all__ = ["health_report", "system_status"]
+__all__ = ["APP_STATUS_DOT", "health_report", "system_status"]
 
 _SEVERITY = {"not_configured": 0, "ok": 1, "degraded": 2, "unavailable": 3}
 
-_APP_STATUS: dict[str, str] = {
+APP_STATUS_DOT: dict[str, str] = {
     "ok": "ok",
     "starting": "degraded",
     "stopped": "stopped",
@@ -44,7 +44,7 @@ def _app_component(view: AppView) -> dict[str, Any]:
     detail = view.pill if view.error is None else f"{view.pill} ({view.error})"
     return _component(
         f"app:{view.name}",
-        _APP_STATUS.get(view.pill, "unknown"),
+        APP_STATUS_DOT.get(view.pill, "unknown"),
         detail,
         unit=view.unit,
         unit_state=view.unit_state,
