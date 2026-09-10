@@ -1,0 +1,85 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state %}
+{% block title %}{{ app }} tokens — WeightRoomGym{% endblock %}
+{% block page_content %}
+<h2>Tokens</h2>
+<p class="muted">{{ app }}'s API tokens, through its own
+<code>{{ app }} token list|create|revoke</code> — a token is minted in <em>local</em> mode against
+the application's own database, so there is no HTTP surface for the console to call.
+<a href="/api/v1/apps/{{ app }}/tokens">JSON</a></p>
+
+{% if error %}<p class="notice" role="alert"><strong>Refused.</strong> {{ error }}</p>{% endif %}
+{% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+
+{% if secret %}
+<div class="notice" role="alert">
+  <p><strong>{{ secret_name }} — copy it now.</strong> This is the only time it is shown. Nothing
+  in WeightRoomGym stores it: not the database, not the audit row, not a log. A lost token is
+  revoked and re-minted.</p>
+  <pre><code>{{ secret }}</code></pre>
+</div>
+{% endif %}
+
+{% if surface == "config" %}
+<p class="notice">{{ app }}'s bearer tokens are a <strong>configuration key</strong>,
+<code>auth.tokens</code>, not a database table — so they are edited where every other key is:
+on <a href="/apps/{{ app }}/settings">its settings page</a>, behind the operator's password
+(it is a security key). This page does not invent a second place to keep them.</p>
+{% elif surface == "none" %}
+<p class="notice">{{ app }} has no API tokens at all.</p>
+{% elif reason %}
+<p class="notice">{{ reason }}</p>
+{% else %}
+{% if tokens %}
+<table id="tokens" data-density="dense">
+  <caption>Every token {{ app }} knows, revoked ones included. Never the token itself.</caption>
+  <thead><tr>
+    <th scope="col">Name</th><th scope="col">Scope</th><th scope="col">Created</th>
+    <th scope="col">Expires</th><th scope="col"></th>
+  </tr></thead>
+  <tbody>
+  {% for token in tokens %}
+  <tr>
+    <th scope="row"><code>{{ token.name }}</code></th>
+    <td>{{ token.scope or "—" }}</td>
+    <td class="muted">{{ token.created_at or "—" }}</td>
+    <td class="muted">{{ token.expires_at or "—" }}</td>
+    <td>
+      {% if token.revoked %}{{ badge("revoked", tone="neutral") }}
+      {% else %}
+      <form method="post" action="/apps/{{ app }}/tokens/revoke" class="field">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+        <input type="hidden" name="name" value="{{ token.name }}">
+        <button type="submit" data-variant="quiet">Revoke</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{{ empty_state(app ~ " has no tokens yet.") }}
+{% endif %}
+
+<h3>Create a token</h3>
+<form method="post" action="/apps/{{ app }}/tokens">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <div class="field">
+    <label for="token-name">Name <span class="field-hint">Also the job or feedback source
+    {{ app }} records against it.</span></label>
+    <input id="token-name" name="name" required>
+  </div>
+  <div class="field">
+    <label for="token-scope">Scope <span class="field-hint">{{ app }}'s own vocabulary, passed
+    through unread — it refuses one it does not know, in its own words.</span></label>
+    <input id="token-scope" name="scope" value="read">
+  </div>
+  <div class="field">
+    <label for="token-expiry">Expires in (days) <span class="field-hint">Optional.</span></label>
+    <input id="token-expiry" name="expires_days" type="number" min="1">
+  </div>
+  <button type="submit">Create</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -239,8 +239,10 @@ application's `PUT /api/v1/settings` and are marked *live*; every other key save
 through `tomlkit`, is validated by `<app> config validate --file` before the rename, and
 leaves the page in *pending restart* until the application restarts. Keys in `security_keys`
 prompt for the operator's password (a five-minute re-authentication window) and say *security
-key* on their audit row. A raw TOML editor for the whole file exists beside the form, under the
-same validate-before-write and the same re-authentication for security keys.
+key* on their audit row. A raw TOML editor for the whole file is one click from the form, on
+`/apps/{app}/settings/raw`, under the same validate-before-write and the same re-authentication
+for security keys — its own page rather than a section of the form because it shows the file
+verbatim, secrets included, and this console is reachable from the LAN by design (row W4).
 
 ### 7.5 Docs viewer
 

@@ -49,11 +49,13 @@ from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, 
 from weightroom.web.rendering import templates
 from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
+from weightroom.web.routes import doctor as doctor_routes
 from weightroom.web.routes import ollama as ollama_routes
 from weightroom.web.routes import session as session_routes
 from weightroom.web.routes import settings as settings_routes
 from weightroom.web.routes import shell as shell_routes
 from weightroom.web.routes import system as system_routes
+from weightroom.web.routes import tokens as tokens_routes
 from weightroom.web.routes import trust as trust_routes
 
 if TYPE_CHECKING:
@@ -308,6 +310,8 @@ def create_app(
     app.include_router(apps_routes.router, prefix="/api/v1")
     app.include_router(audit_routes.router, prefix="/api/v1")
     app.include_router(settings_routes.router, prefix="/api/v1")
+    app.include_router(tokens_routes.router, prefix="/api/v1")
+    app.include_router(doctor_routes.router, prefix="/api/v1")
     app.include_router(ollama_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
@@ -315,6 +319,8 @@ def create_app(
     app.include_router(apps_routes.ui_router)
     app.include_router(audit_routes.ui_router)
     app.include_router(settings_routes.ui_router)
+    app.include_router(tokens_routes.ui_router)
+    app.include_router(doctor_routes.ui_router)
     app.include_router(ollama_routes.ui_router)
     app.include_router(system_routes.ui_router)
 

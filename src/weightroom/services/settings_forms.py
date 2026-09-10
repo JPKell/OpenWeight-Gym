@@ -690,13 +690,33 @@ def live_settings(
             headers=headers,
             timeout=_LIVE_TIMEOUT_SECONDS,
         )
-        body = response.json()
-    except (httpx.HTTPError, ValueError) as exc:
+    except httpx.HTTPError as exc:
         return {}, f"{app} is running but did not answer GET /api/v1/settings: {exc}"
+    if response.status_code >= 400:  # noqa: PLR2004 — the HTTP error boundary
+        # The application's own words, never a rewrite: a `401 UNAUTHORIZED` here means this
+        # console has no token for it ([apps.<app>] api_key_file, ADR-0126 rule 8), which is a
+        # different fix from a malformed answer and must not be reported as one.
+        return {}, f"{app} refused GET /api/v1/settings: {_error_message(response)}"
+    try:
+        body = response.json()
+    except ValueError as exc:
+        return {}, f"{app}'s GET /api/v1/settings did not answer JSON: {exc}"
     values = body.get("settings") if isinstance(body, Mapping) else None
     if not isinstance(values, Mapping):
         return {}, f"{app}'s GET /api/v1/settings answered an unexpected shape."
     return {str(key): value for key, value in values.items()}, None
+
+
+def _error_message(response: httpx.Response) -> str:
+    """An application's own refusal text out of the suite's error envelope."""
+    try:
+        body = response.json()
+    except ValueError:
+        return f"{response.status_code} {response.text[:200]}"
+    error = body.get("error") if isinstance(body, Mapping) else None
+    if isinstance(error, Mapping) and error.get("message"):
+        return f"{response.status_code} {error['message']}"
+    return str(response.status_code)
 
 
 def _pending_restart(path: Path, view: AppView | None, *, now: float) -> bool:

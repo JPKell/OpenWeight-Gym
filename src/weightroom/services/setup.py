@@ -69,8 +69,15 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-TOKEN_SCOPES: dict[str, str] = {"loadcoach": "write", "promptcadence": "write,approve"}
-"""ADR-0126 rule 8: which applications get a token, and with which scope."""
+TOKEN_SCOPES: dict[str, str] = {"loadcoach": "admin", "promptcadence": "admin,approve"}
+"""ADR-0126 rule 8: which applications get a token, and with which scope.
+
+``admin`` rather than ``write`` since **ADR-0130** — WeightRoomGym's application tokens carry
+admin scope: both applications' ``PUT /api/v1/settings`` requires it, and ADR-0127 rule 4
+routes every runtime-changeable key through exactly that endpoint. An install made before that
+record keeps its narrower token and is refused in the application's own words, and
+``wr-gym doctor`` says so.
+"""
 
 _ENV_ALLOWLIST = ("PATH", "HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "LANG")
 _OUTPUT_CAP = 64 * 1024

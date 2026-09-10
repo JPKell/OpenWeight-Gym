@@ -6,6 +6,74 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-09
+
+Row W4: Phase 4 of the development plan — every application's settings editable from the console
+through its own schema and its own validation, the doctor, and per-application token pages.
+Prepared, not tagged, not pushed, not published.
+
+### Added
+- **Settings forms generated from each application's schema document** (`services/settings_forms.py`,
+  ADR-0127 rule 3): `<app> config schema --json` is read (a subprocess for the four, in process
+  for WeightRoomGym's own), cached 60 s, and turned into a form model — type, bounds, default,
+  description, current value, `source`, *shadowed*, and the runtime and security sets. **No key of
+  any application is named in this repository**; a field added to an application appears on the
+  next read. The key list is the document's own three sets rather than a walk of `json_schema`,
+  which is what makes LoadCoach's database-only `queue.paused`, IdeaPress's eleven
+  `models.stages.<stage>` bindings and PromptCadence's `[tiers.<name>]` instances render at all.
+- **The write paths** (`services/config_files.py`): ADR-0117's sequence applied to every key of
+  every application's file from outside the process that owns it — refuse a stale `base_mtime`
+  (`st_mtime_ns`, exact in JSON), round-trip with `tomlkit` so every comment and untouched line
+  survives, validate the candidate through `<app> config validate --file`, then `fsync` and
+  rename with the previous file kept as `config.toml.bak`.
+- `GET /apps/{app}/settings/schema` · `GET|PUT /apps/{app}/settings` ·
+  `POST /apps/{app}/settings/validate` · `GET /apps/{app}/config`, with per-key outcomes
+  (`applied`, `written`, `unchanged`, `refused`) and the refusing party's own words;
+  `GET|PUT /settings` for the console's own runtime keys (ADR-0100's shape).
+- **Pages**: `/apps/{app}/settings` for each of the four, `/settings` for WeightRoomGym itself
+  from its own verb, and `/apps/{app}/settings/raw` — the whole-file editor, deliberately on its
+  own page because it shows the file's secrets verbatim.
+- ***Pending restart*** and the restart button, derived from the file's modification time against
+  the unit's uptime rather than stored, so a restart made from a terminal is seen and a console
+  restart does not lose the state.
+- **`wr-gym doctor` and the Doctor page** (`services/doctor.py`): one finding per rule with a
+  severity, the evidence it actually read and the command that fixes it — `MEMORY_SAFETY.md` §2.1
+  (Ollama's daemon) and §2.2 (each unit's memory cap), an application off loopback and Ollama on
+  `0.0.0.0` (`LAN_ACCESS.md` §1 and §5), versions and schema revisions in range, TLS expiry,
+  lingering, the polkit rule, free space under each data root, and the `[server]` block the
+  retired `expose_on_lan.sh` left behind. **Every fix is printed and none is run**; the command
+  exits `1` on a failure or a warning and `0` on a notice.
+- **Tokens pages** (`services/tokens.py`): `token list|create|revoke` through each application's
+  own CLI. A new token's secret is shown once, on the page that minted it, and is stored nowhere.
+  LoadCoach and PromptCadence have the verb; FreeWeight's tokens are `auth.tokens` on its settings
+  page and the page says so; IdeaPress has none.
+- `settings.validate`, `token.create` and `token.revoke` join the closed audit vocabulary.
+- **[ADR-0130](docs/adr/0130-weightroomgyms-application-tokens-carry-admin-scope.md)**: the
+  wizard's tokens carry `admin` (`{"loadcoach": "admin", "promptcadence": "admin,approve"}`).
+  Found demonstrating Phase 4 criterion 1 on the reference machine — ADR-0126 rule 8 chose
+  `write` before the settings page existed, and both applications' `PUT /settings` requires
+  `admin`, so every runtime key was readable and none was writable. `wr-gym doctor` reports an
+  install whose token is narrower and prints the two commands that re-issue it.
+
+### Changed
+- **Re-authentication for a security key is the session, not a token** (ADR-0127 rule 6). api.md
+  §2 sketched a `reauth` token on the write body; W1 already implements the window as a stamp on
+  the session row, and a second credential in the DOM would be strictly worse on a LAN-facing
+  page with nothing to gain. The page posts the password with the change; the window opens and is
+  spent in the same request. `docs/apps/weightroom/api.md` is amended to match.
+- An application's side nav links the pages this build serves and says where a page that is
+  deliberately somebody else's lives — a provider registration stays in the application's own
+  ADR-0117 form.
+
+### Fixed
+- `services/ollama.py`: a polkit-grant probe against an unmigrated or unreadable audit trail
+  answers `unknown` instead of raising, so `wr-gym doctor` runs on a fresh install.
+- `services/overview.py`: IdeaPress calls `config show --json`'s block `settings` where the other
+  three call it `values`, so its Overview could not find its database and fell back to the dashed
+  figures. Both spellings are read. Found by the doctor's revision rule on the reference machine.
+- The `settings.write` audit row's flag is `touched_security`, not `security_key`: the redactor
+  blanks any parameter whose name matches `key`, and a redacted boolean reads like a caught leak.
+
 ## [0.3.0] — 2026-09-09
 
 Row W3: Phase 3 of the development plan — the telemetry sampler, the real shell over MirrorWall

@@ -115,6 +115,15 @@ def _restart_for_settings(console: Console) -> Any:  # noqa: ANN401
     return console.post_form("/apps/loadcoach/restart-for-settings", {})
 
 
+def _token_create(console: Console) -> Any:  # noqa: ANN401
+    """A refusal — the fake application has no `token` verb — and still exactly one row."""
+    return console.post_form("/apps/loadcoach/tokens", {"name": "laptop", "scope": "read"})
+
+
+def _token_revoke(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/apps/loadcoach/tokens/revoke", {"name": "laptop"})
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -134,6 +143,8 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/settings"): _own_settings_form,
     ("POST", "/apps/{app}/settings/raw"): _settings_raw,
     ("POST", "/apps/{app}/restart-for-settings"): _restart_for_settings,
+    ("POST", "/apps/{app}/tokens"): _token_create,
+    ("POST", "/apps/{app}/tokens/revoke"): _token_revoke,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 

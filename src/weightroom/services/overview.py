@@ -195,7 +195,11 @@ def _database_url(settings: Settings, app: str) -> tuple[str | None, str | None]
         return None, result.failure_text
     try:
         body = json.loads(result.stdout)
-        url = body["values"]["storage"]["database_url"]
+        # IdeaPress calls the block `settings`; the other three call it `values`. Both are its
+        # own `config show`, and this console reads whichever the application printed rather
+        # than making the odd one out wrong (found on the reference machine at row W4).
+        block = body.get("values") if "values" in body else body["settings"]
+        url = block["storage"]["database_url"]
     except (json.JSONDecodeError, KeyError, TypeError):
         return None, "config show --json did not answer the expected shape"
     return (str(url) if url else None), (None if url else "no database configured")

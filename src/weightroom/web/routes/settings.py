@@ -33,7 +33,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.concurrency import run_in_threadpool
 
-from weightroom.config import APPLICATIONS
+from weightroom.domain.units import UNIT_APPLICATIONS
 from weightroom.services.apps import AppUnknown, AppView, bearer_token
 from weightroom.services.audit import record
 from weightroom.services.auth import ReauthRequired, reauthenticate, require_fresh_reauth
@@ -59,8 +59,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["settings"])
 ui_router = APIRouter(tags=["ui"], include_in_schema=False)
 
-SETTINGS_APPS: Final[tuple[str, ...]] = (*APPLICATIONS, "weightroom")
-"""The four, and the console itself — whose own keys are edited exactly the same way."""
+SETTINGS_APPS: Final[tuple[str, ...]] = UNIT_APPLICATIONS
+"""The four, and the console itself — whose own keys are edited exactly the same way.
+
+The same five ``wr-gym units sync`` writes units for, read from the one list rather than
+assembled a second time here."""
 
 _SETTINGS_TIMEOUT_SECONDS: Final = 5.0
 
@@ -289,7 +292,9 @@ def _audit_write(
             "applied": list(result.keys_with("applied")),
             "written": list(result.keys_with("written")),
             "refused": [one.key for one in refused],
-            "security_key": security,
+            # Not `security_key`: the audit redactor blanks any parameter whose name matches
+            # `key`, and a redacted boolean reads like a leak that was caught rather than a flag.
+            "touched_security": security,
             "raw_editor": raw,
         },
         message="; ".join(f"{one.key}: {one.message}" for one in refused) or None,

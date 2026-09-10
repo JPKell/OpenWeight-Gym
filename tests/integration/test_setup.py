@@ -77,7 +77,9 @@ def test_setup_from_nothing_creates_tls_account_hosts_bind_and_tokens_by_referen
     assert report.tls.startswith("created")
     assert operator_count(database) == 1 and report.account == "created operator 'jordan'"
     assert report.allowed_hosts == ("jordan-main", "jordan-main.local", "10.77.10.84", "fd00::5")
-    assert report.tokens["loadcoach"].startswith("scope write →")
+    # ADR-0130: admin, because ADR-0127 rule 4 routes every runtime key through `PUT /settings`,
+    # which both LoadCoach and PromptCadence require `admin` for.
+    assert report.tokens["loadcoach"].startswith("scope admin →")
     assert report.tokens["promptcadence"] == "not installed; no token"
     secret = secrets_dir() / "loadcoach.token"
     assert secret.read_text() == "lc_secret_token\n"

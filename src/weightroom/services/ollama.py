@@ -293,9 +293,16 @@ def last_grant_state(database: Database | None) -> GrantState:
     """
     if database is None:
         return "unknown"
+    from sqlalchemy.exc import SQLAlchemyError
+
     from weightroom.services.audit import list_audit
 
-    rows, _more = list_audit(database, limit=1, action="ollama.restart")
+    try:
+        rows, _more = list_audit(database, limit=1, action="ollama.restart")
+    except SQLAlchemyError:
+        # A trail that cannot be read — an unmigrated database under `wr-gym doctor` on a fresh
+        # install — is "not known", which is what this function already answers for "not tried".
+        return "unknown"
     if not rows:
         return "unknown"
     return {"ok": "permitted", "refused": "not_permitted"}.get(rows[0].outcome, "unknown")  # type: ignore[return-value]
