@@ -1,6 +1,5 @@
 {#- One message. Model text arrives here only as message.html (services/chat.py render_reply);
-    thinking, cards and halts only as escaped text or tojson. No chat template marks anything safe.
-    The role line is a div: the shell makes every <header> sticky. -#}
+    thinking, cards and halts only as escaped text or tojson. No chat template marks anything safe. -#}
 <article class="chat-message chat-{{ message.role }}" id="m-{{ message.id }}" data-message-id="{{ message.id }}"
          {%- if message.in_progress %} data-streaming="true"{% endif %}>
   <div class="chat-role muted">{{ "You" if message.role == "user" else ("Reply" if message.role == "assistant" else message.role) }}

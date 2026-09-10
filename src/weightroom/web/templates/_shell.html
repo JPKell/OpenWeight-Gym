@@ -33,7 +33,9 @@
      the row never wraps, never scrolls and never overlaps. Each group is rendered twice, inline
      and inside Menu, and exactly one copy is displayed at any width: `display: none` also takes
      the other copy out of the accessibility tree, so a screen reader never hears a link twice. */
-  header { position: sticky; top: 0; z-index: 5; background: var(--mw-bg); }
+  /* MirrorWall's page header only: a bare `header` also pinned every <header> inside page
+     content over the top bar (found at W6). */
+  body > header { position: sticky; top: 0; z-index: 5; background: var(--mw-bg); }
   .masthead {
     position: relative;
     align-items: center;

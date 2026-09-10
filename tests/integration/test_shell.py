@@ -160,3 +160,15 @@ def test_every_page_still_carries_the_shell_with_every_application_stopped(
         assert response.text.count('class="app-tab"') == 4, path
     page = console.client.get("/apps/loadcoach", headers={"Accept": "text/html"}).text
     assert "stopped" in page
+
+
+def test_only_the_page_header_is_sticky(tmp_path: Path) -> None:
+    """A <header> inside page content must not inherit the top bar's sticky rule.
+
+    A bare ``header`` selector pinned every chat message's role line over the top bar (row W6).
+    """
+    console = _console(tmp_path)
+    console.login()
+    page = console.client.get("/", headers={"Accept": "text/html"}).text
+    assert "body > header { position: sticky" in page
+    assert not re.search(r"(?m)^\s*header \{ position: sticky", page)
