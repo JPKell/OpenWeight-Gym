@@ -1,27 +1,57 @@
 """weightroom.services.health — the one health report the API and the CLI share (spec §17).
 
 Components: ``database``, ``tls`` (days to expiry, degraded under ``renew_before_days``),
-``units`` (systemd — not configured until W2) and one ``app:<name>`` per application, ``unknown``
-until W2 reads the units and the APIs. Overall status is the worst of the components WeightRoomGym
-itself needs — the database and the certificate; a stopped or unknown application never drops
-it below ``ok`` (api.md §1).
+``units`` (whether systemd is reachable at all) and one ``app:<name>`` per application. Overall
+status is the worst of the components WeightRoomGym itself needs — the database and the
+certificate; a stopped or unknown application never drops it below ``ok`` (api.md §1), because a
+console whose own health goes red when the operator deliberately stops an application is a
+console whose health nobody reads.
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from baseaicore.timeutil import to_rfc3339
 
 from weightroom.__about__ import __version__
 from weightroom.config import APPLICATIONS, Settings
+from weightroom.services.apps import AppView
 from weightroom.services.database import Database, database_health
 from weightroom.services.tls import TlsPaths, TlsStatus, tls_status
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 __all__ = ["health_report", "system_status"]
 
 _SEVERITY = {"not_configured": 0, "ok": 1, "degraded": 2, "unavailable": 3}
+
+_APP_STATUS: dict[str, str] = {
+    "ok": "ok",
+    "starting": "degraded",
+    "stopped": "stopped",
+    "failed": "degraded",
+    "version mismatch": "degraded",
+    "not installed": "unknown",
+    "unsupported": "unknown",
+}
+"""A pill to the health vocabulary spec §17 uses (``ok``/``degraded``/``stopped``/``unknown``)."""
+
+
+def _app_component(view: AppView) -> dict[str, Any]:
+    detail = view.pill if view.error is None else f"{view.pill} ({view.error})"
+    return _component(
+        f"app:{view.name}",
+        _APP_STATUS.get(view.pill, "unknown"),
+        detail,
+        unit=view.unit,
+        unit_state=view.unit_state,
+        version=view.version,
+        version_verdict=view.verdict,
+        uptime_seconds=view.uptime_seconds,
+    )
 
 
 def _component(name: str, status: str, detail: str, **data: Any) -> dict[str, Any]:
@@ -62,6 +92,7 @@ def health_report(
     database: Database | None,
     tls: TlsStatus | None,
     now: datetime | None = None,
+    views: Sequence[AppView] | None = None,
 ) -> dict[str, Any]:
     """The ``GET /health`` body and ``wr-gym health``'s report.
 
@@ -70,20 +101,33 @@ def health_report(
         database: The serving handle; ``None`` opens one for this check alone (the CLI).
         tls: The runtime's certificate status; ``None`` reads the directory (the CLI).
         now: The clock.
+        views: The applications as W2's inventory sees them; ``None`` (a caller with no systemd
+            boundary to hand) leaves each ``unknown`` rather than guessing.
 
     Returns:
         ``status``, ``application``, ``version``, ``checked_at`` and ``components`` in a stable
         order: ``database``, ``tls``, ``units``, then ``app:<name>`` for each application.
     """
     instant = now or datetime.now(UTC)
+    if views is None:
+        units = _component("units", "not_configured", "no systemd boundary was supplied")
+        app_components = [
+            _component(f"app:{name}", "unknown", "not read on this call") for name in APPLICATIONS
+        ]
+    elif all(view.unit_state == "unsupported" for view in views):
+        units = _component("units", "not_configured", "unsupported on this host: no systemctl")
+        app_components = [_app_component(view) for view in views]
+    else:
+        written = sum(1 for view in views if view.unit_state != "absent")
+        units = _component(
+            "units", "ok", f"systemd reachable; {written} of {len(views)} units written"
+        )
+        app_components = [_app_component(view) for view in views]
     components = [
         _database_component(settings, database),
         _tls_component(settings, tls, now=instant),
-        _component("units", "not_configured", "process control arrives at W2"),
-        *(
-            _component(f"app:{name}", "unknown", "reported from W2 (units and the API)")
-            for name in APPLICATIONS
-        ),
+        units,
+        *app_components,
     ]
     required = [component for component in components if component["name"] in ("database", "tls")]
     overall = max((component["status"] for component in required), key=lambda s: _SEVERITY[s])
@@ -97,26 +141,46 @@ def health_report(
 
 
 def system_status(
-    settings: Settings, *, tls: TlsStatus | None, now: datetime | None = None
+    settings: Settings,
+    *,
+    tls: TlsStatus | None,
+    now: datetime | None = None,
+    views: Sequence[AppView] | None = None,
+    ollama: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """The ``GET /system/status`` machine view (spec §17), with ``null`` for what W1 cannot know.
+    """The ``GET /system/status`` machine view (spec §17), with ``null`` for what is not known.
 
     Every figure a later phase fills in is ``None`` here — never ``0`` (ADR-0016).
     """
     instant = now or datetime.now(UTC)
+    by_name = {view.name: view for view in views or ()}
     return {
         "checked_at": to_rfc3339(instant),
         "applications": {
-            name: {
-                "state": "unknown",
-                "version": None,
-                "api_version": None,
-                "db_revision": None,
-                "known": None,
-            }
+            name: (
+                {
+                    "state": by_name[name].pill,
+                    "unit_state": by_name[name].unit_state,
+                    "version": by_name[name].version,
+                    "api_version": by_name[name].api_version,
+                    "uptime_seconds": by_name[name].uptime_seconds,
+                    "db_revision": None,
+                    "known": None,
+                }
+                if name in by_name
+                else {
+                    "state": "unknown",
+                    "unit_state": None,
+                    "version": None,
+                    "api_version": None,
+                    "uptime_seconds": None,
+                    "db_revision": None,
+                    "known": None,
+                }
+            )
             for name in APPLICATIONS
         },
-        "ollama": None,
+        "ollama": ollama,
         "telemetry": None,
         "costs_today": None,
         "alerts_open": None,

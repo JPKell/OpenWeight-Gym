@@ -1,0 +1,81 @@
+{# The live log pane: an SSE stream into a bounded list.
+
+   MirrorWall 0.3 ships a `log_pane` component (row WM); until the four applications adopt it at
+   WM2 this is WeightRoomGym's own, deliberately small. It is bounded on the client for the same
+   reason the server's subscription is bounded on the server: a pane that keeps every line of a
+   chatty unit is a tab that eventually stops scrolling. #}
+<section class="log-pane" aria-label="Live log">
+  <div class="field">
+    <strong>Live log</strong>
+    <span class="muted" data-log-status>connecting…</span>
+    <label class="field"><input type="checkbox" data-log-follow checked> Follow</label>
+    <button type="button" data-log-clear>Clear</button>
+  </div>
+  <ol class="log-lines" data-log-stream="{{ stream_url }}" data-log-max="{{ max_lines | default(500) }}" tabindex="0"></ol>
+</section>
+<style>
+  .log-pane .log-lines {
+    list-style: none; margin: 0; padding: var(--space-2, .5rem);
+    max-height: 24rem; overflow-y: auto;
+    background: var(--color-surface-sunken, #11151a); color: var(--color-text, #dde3ea);
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: .8125rem; line-height: 1.45; border-radius: var(--radius-md, 6px);
+  }
+  .log-pane .log-lines li { display: flex; gap: .75rem; white-space: pre-wrap; word-break: break-word; }
+  .log-pane .log-lines li .at { opacity: .55; flex: 0 0 auto; }
+  .log-pane .log-lines li .who { opacity: .8; flex: 0 0 auto; }
+  .log-pane .log-lines li[data-level="err"],
+  .log-pane .log-lines li[data-level="crit"],
+  .log-pane .log-lines li[data-level="alert"],
+  .log-pane .log-lines li[data-level="emerg"] { color: var(--color-danger, #ff8080); }
+  .log-pane .log-lines li[data-level="warning"] { color: var(--color-warning, #ffc76b); }
+  .log-pane .log-lines li.notice-line { opacity: .75; font-style: italic; }
+</style>
+<script type="module">
+  const pane = document.currentScript.parentElement.querySelector("[data-log-stream]");
+  const status = document.currentScript.parentElement.querySelector("[data-log-status]");
+  const follow = document.currentScript.parentElement.querySelector("[data-log-follow]");
+  const clear = document.currentScript.parentElement.querySelector("[data-log-clear]");
+  const maximum = Number(pane.dataset.logMax || 500);
+  clear.addEventListener("click", () => { pane.replaceChildren(); });
+
+  const append = (line, level, notice) => {
+    const item = document.createElement("li");
+    if (level) { item.dataset.level = level; }
+    if (notice) { item.classList.add("notice-line"); }
+    for (const [cls, text] of line) {
+      const span = document.createElement("span");
+      span.className = cls;
+      span.textContent = text;
+      item.appendChild(span);
+    }
+    pane.appendChild(item);
+    while (pane.childElementCount > maximum) { pane.removeChild(pane.firstElementChild); }
+    if (follow.checked) { pane.scrollTop = pane.scrollHeight; }
+  };
+
+  const source = new EventSource(pane.dataset.logStream);
+  source.addEventListener("open", () => { status.textContent = "live"; });
+  source.addEventListener("error", () => { status.textContent = "reconnecting…"; });
+  source.addEventListener("log", (event) => {
+    const payload = JSON.parse(event.data).payload;
+    const at = new Date(payload.at).toLocaleTimeString();
+    append([["at", at], ["who", payload.app || payload.unit], ["msg", payload.message]], payload.level, false);
+  });
+  source.addEventListener("log.dropped", (event) => {
+    const payload = JSON.parse(event.data).payload;
+    append([["msg", `— dropped ${payload.dropped} lines (this pane fell behind) —`]], null, true);
+  });
+  source.addEventListener("log.closed", () => {
+    status.textContent = "reader ended";
+    append([["msg", "— the journal reader ended —"]], null, true);
+  });
+  source.addEventListener("error", (event) => {
+    if (event.data) {
+      const payload = JSON.parse(event.data).payload;
+      status.textContent = payload.code;
+      append([["msg", `— ${payload.code}: ${payload.message} —`]], "err", true);
+    }
+  });
+  window.addEventListener("beforeunload", () => source.close());
+</script>

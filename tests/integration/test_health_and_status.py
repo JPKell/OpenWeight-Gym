@@ -29,8 +29,44 @@ def test_health_needs_a_session_and_names_every_component(console: Console) -> N
     by_name = {component["name"]: component for component in body["components"]}
     assert by_name["database"]["status"] == "ok"
     assert by_name["tls"]["status"] == "ok" and by_name["tls"]["data"]["days_to_expiry"] >= 397
-    assert by_name["units"]["status"] == "not_configured"
+    # W2: systemd is reachable (the console's fake host), and no application is installed in
+    # this fixture, so each is `unknown` — not installed is not the same fact as stopped.
+    assert by_name["units"]["status"] == "ok"
+    assert "0 of 4 units written" in by_name["units"]["detail"]
     assert all(by_name[f"app:{name}"]["status"] == "unknown" for name in APPLICATIONS)
+    assert all(by_name[f"app:{name}"]["detail"] == "not installed" for name in APPLICATIONS)
+
+
+def test_a_host_without_systemd_reports_units_not_configured(tmp_path: Path) -> None:
+    """ADR-0125 rule 7: the roll-up stays ``ok`` and the console keeps serving."""
+    from weightroom.services.processes import FakeSystemdController
+
+    console = build_console(tmp_path, systemd=FakeSystemdController(supported=False))
+    console.login()
+    body = console.client.get("/api/v1/health").json()
+    by_name = {component["name"]: component for component in body["components"]}
+    assert body["status"] == "ok"
+    assert by_name["units"]["status"] == "not_configured"
+    assert "no systemctl" in by_name["units"]["detail"]
+
+
+def test_a_stopped_application_never_drops_the_roll_up(tmp_path: Path) -> None:
+    from weightroom.services.processes import FakeSystemdController
+
+    executable = tmp_path / "loadcoach"
+    executable.write_text("#!/bin/sh\nexit 0\n")
+    executable.chmod(0o755)
+    console = build_console(
+        tmp_path,
+        extra_toml=f'[apps.loadcoach]\nexecutable = "{executable}"\n',
+        systemd=FakeSystemdController(states={"loadcoach.service": "inactive"}),
+    )
+    console.login()
+    body = console.client.get("/api/v1/health").json()
+    by_name = {component["name"]: component for component in body["components"]}
+    assert body["status"] == "ok"
+    assert by_name["app:loadcoach"]["status"] == "stopped"
+    assert by_name["app:loadcoach"]["data"]["unit_state"] == "inactive"
 
 
 def test_tls_degrades_the_roll_up_under_thirty_days_but_an_unknown_app_never_does(
@@ -58,7 +94,8 @@ def test_system_status_reports_unknown_and_null_never_zero(console: Console) -> 
     console.login()
     body = console.client.get("/api/v1/system/status").json()
     assert set(body["applications"]) == set(APPLICATIONS)
-    assert all(app["state"] == "unknown" for app in body["applications"].values())
+    assert all(app["state"] == "not installed" for app in body["applications"].values())
+    assert all(app["version"] is None for app in body["applications"].values())
     for key in ("ollama", "telemetry", "costs_today", "alerts_open", "jobs_running", "doctor_last"):
         assert body[key] is None
     assert body["tls_days_to_expiry"] >= 397

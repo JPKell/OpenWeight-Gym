@@ -16,6 +16,7 @@ from sqlalchemy import func, select
 
 from tests.support import JSON_HEADERS, PASSWORD, USERNAME, Console, api_routes, build_console
 from weightroom.infrastructure.db.models import AuditLog
+from weightroom.services.processes import FakeSystemdController
 
 STATE_CHANGING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
@@ -46,12 +47,29 @@ def _json_reauth(console: Console) -> Any:  # noqa: ANN401
     return console.client.post("/api/v1/reauth", json={"password": PASSWORD}, headers=JSON_HEADERS)
 
 
+def _unit(verb: str) -> Exercise:
+    """One successful control call against the fake host the console was built over."""
+
+    def exercise(console: Console) -> Any:  # noqa: ANN401
+        return console.client.post(f"/api/v1/apps/loadcoach/{verb}", headers=JSON_HEADERS)
+
+    return exercise
+
+
+def _control_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/apps/loadcoach/control", {"verb": "restart"})
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
     ("POST", "/api/v1/login"): _json_login,
     ("POST", "/api/v1/logout"): _json_logout,
     ("POST", "/api/v1/reauth"): _json_reauth,
+    ("POST", "/api/v1/apps/{app}/start"): _unit("start"),
+    ("POST", "/api/v1/apps/{app}/stop"): _unit("stop"),
+    ("POST", "/api/v1/apps/{app}/restart"): _unit("restart"),
+    ("POST", "/apps/{app}/control"): _control_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 
@@ -71,7 +89,16 @@ def _rows(console: Console) -> int:
 
 @pytest.fixture
 def console(tmp_path: Path) -> Console:
-    return build_console(tmp_path)
+    # A fake host where loadcoach is installed and its unit exists, so the control routes have
+    # something to act on and each writes exactly one row.
+    executable = tmp_path / "loadcoach"
+    executable.write_text("#!/bin/sh\nexit 0\n")
+    executable.chmod(0o755)
+    return build_console(
+        tmp_path,
+        extra_toml=f'[apps.loadcoach]\nexecutable = "{executable}"\n',
+        systemd=FakeSystemdController(states={"loadcoach.service": "active"}),
+    )
 
 
 def test_every_state_changing_route_has_an_exercise(console: Console) -> None:

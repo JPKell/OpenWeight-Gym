@@ -1,0 +1,54 @@
+{% extends "mirrorwall/base.html" %}
+{% from "mirrorwall/components.html" import badge, card, kv_list %}
+{% block title %}{{ view.name }} — WeightRoomGym{% endblock %}
+{% block content %}
+<h2>{{ view.name }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+<p class="muted">The full control surface for {{ view.name }} — models, runs, settings, database —
+arrives at W3 and W4. This page is the unit: what it is doing, and the three buttons.
+<a href="/api/v1/apps/{{ view.name }}">JSON</a> ·
+<a href="/api/v1/apps/{{ view.name }}/health">health</a></p>
+
+<ul class="card-grid">
+  {{ card("State", view.pill, note=view.unit_state) }}
+  {{ card("Uptime", view.uptime_seconds | duration_human, note="since the unit last became active") }}
+  {{ card("Version", view.version or "—", note=("WeightRoomGym speaks " ~ view.supported_range) if view.supported_range else None) }}
+  {{ card("Restarts", view.restarts if view.restarts is not none else "—", note="NRestarts") }}
+</ul>
+
+{% if view.unit_state == "unsupported" %}
+<p class="notice">Process control is <strong>unsupported on this host</strong>: there is no
+<code>systemctl</code> on <code>PATH</code>. Every other page works (ADR-0125 rule 7).</p>
+{% elif not view.installed %}
+<p class="notice">{{ view.name }} is <strong>not installed</strong> — no executable was found, so
+it has no unit. Set <code>[apps.{{ view.name }}] executable</code> in WeightRoomGym's
+configuration and run <code>wr-gym units sync</code>.</p>
+{% else %}
+<form method="post" action="/apps/{{ view.name }}/control" class="field">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit" name="verb" value="start" {% if view.running %}disabled{% endif %}>Start</button>
+  <button type="submit" name="verb" value="stop" {% if not view.running %}disabled{% endif %}>Stop</button>
+  <button type="submit" name="verb" value="restart" {% if not view.running %}disabled{% endif %}>Restart</button>
+</form>
+{% endif %}
+
+{% if view.verdict not in ("ok", "unreadable") %}
+<p class="notice">{{ view.name }} reports version <strong>{{ view.version }}</strong>, which is
+outside the range WeightRoomGym {{ product_version }} speaks to
+(<code>{{ view.supported_range }}</code>). Its pages are degraded by name rather than guessed at
+(<code>APP_VERSION_MISMATCH</code>, spec §19).</p>
+{% endif %}
+
+{{ kv_list([
+  {"label": "Unit", "value": view.unit},
+  {"label": "Executable", "value": view.executable or "—"},
+  {"label": "API", "value": view.base_url or "—"},
+  {"label": "API version", "value": view.api_version or "—"},
+  {"label": "Last API error", "value": view.error or "—"},
+]) }}
+
+{% with stream_url = "/api/v1/apps/" ~ view.name ~ "/logs/stream" %}
+  {% include "_log_pane.html" %}
+{% endwith %}
+<p><a href="/api/v1/apps/{{ view.name }}/logs">Journal history as JSON</a> ·
+   <code>wr-gym logs {{ view.name }} --follow</code></p>
+{% endblock %}

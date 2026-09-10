@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
+import httpx
 from baseaicore import SuiteError, new_id
 from fastapi import FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
@@ -35,11 +36,15 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from weightroom.__about__ import __version__
 from weightroom.config import LOOPBACK_HOSTS, Settings, resolve_config_path
+from weightroom.services.apps import VersionCache
 from weightroom.services.database import Database
+from weightroom.services.journal import JournalReader
+from weightroom.services.processes import SubprocessSystemdController
 from weightroom.web.csrf import render_form_page
 from weightroom.web.hosts import resolve_allowed_hosts
 from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, SameOriginMiddleware
 from weightroom.web.rendering import templates
+from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
 from weightroom.web.routes import session as session_routes
 from weightroom.web.routes import shell as shell_routes
@@ -64,6 +69,19 @@ STATUS_BY_CODE: dict[str, int] = {
     "AUDIT_NOT_FOUND": status.HTTP_404_NOT_FOUND,
     "SETTING_CONFIG_ONLY": status.HTTP_403_FORBIDDEN,
     "SETTING_UNKNOWN": status.HTTP_400_BAD_REQUEST,
+    "APP_UNKNOWN": status.HTTP_404_NOT_FOUND,
+    # 409: the application exists and the request was well formed; the *host* is in a state
+    # that makes the action impossible, and the operator fixes it by installing or starting.
+    "APP_NOT_INSTALLED": status.HTTP_409_CONFLICT,
+    "APP_STOPPED": status.HTTP_409_CONFLICT,
+    "APP_VERSION_MISMATCH": status.HTTP_409_CONFLICT,
+    # 502: something WeightRoomGym drives answered badly or not at all — the application's API,
+    # systemd, journalctl. The console is working; the thing behind it is not.
+    "APP_UNREACHABLE": status.HTTP_502_BAD_GATEWAY,
+    "UNIT_ACTION_FAILED": status.HTTP_502_BAD_GATEWAY,
+    # 501: this host cannot do it at all, and no retry will help (ADR-0125 rule 7).
+    "UNIT_UNSUPPORTED": status.HTTP_501_NOT_IMPLEMENTED,
+    "OLLAMA_RESTART_NOT_PERMITTED": status.HTTP_403_FORBIDDEN,
     "MISDIRECTED_REQUEST": 421,
     "PAYLOAD_TOO_LARGE": status.HTTP_413_CONTENT_TOO_LARGE,
     "CONFIGURATION_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -73,7 +91,7 @@ STATUS_BY_CODE: dict[str, int] = {
     "DATABASE_UNAVAILABLE": status.HTTP_503_SERVICE_UNAVAILABLE,
     "INTERNAL_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
 }
-"""Spec §13's codes to HTTP statuses, for the ones Phase 1 raises."""
+"""Spec §13's codes to HTTP statuses, for the ones Phases 1 and 2 raise."""
 
 _CODE_BY_HTTP_STATUS: dict[int, str] = {
     404: "NOT_FOUND",
@@ -198,6 +216,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     finally:
         database.close()
         app.state.database = None
+        app.state.http.close()
 
 
 def create_app(
@@ -206,6 +225,8 @@ def create_app(
     tls: TlsStatus | None = None,
     identity: HostIdentity | None = None,
     config_path: Path | None = None,
+    controller: Any | None = None,
+    journal: Any | None = None,
 ) -> FastAPI:
     """Build the FastAPI application for the given settings.
 
@@ -215,6 +236,10 @@ def create_app(
             ``None`` in tests that never serve TLS.
         identity: The host's names and addresses, for the trust page's URLs.
         config_path: The file the settings came from.
+        controller: The systemd boundary; the real one when ``None``. Injected so a test builds
+            a console over a fake host rather than over the developer's own session manager
+            (spec §20 criterion 10: the suite passes with no systemd).
+        journal: The ``journalctl`` boundary, injected for the same reason.
 
     Returns:
         The app. Pure: opens nothing; the database handle is created by the lifespan.
@@ -231,6 +256,11 @@ def create_app(
     app.state.identity = identity
     app.state.config_path = config_path if config_path is not None else resolve_config_path()
     app.state.database = None
+    app.state.controller = controller if controller is not None else SubprocessSystemdController()
+    app.state.journal = journal if journal is not None else JournalReader()
+    app.state.versions = VersionCache()
+    # Pooled, and it opens nothing until the first request; the lifespan closes it.
+    app.state.http = httpx.Client(follow_redirects=False, trust_env=False)
 
     # Starlette wraps in reverse order of these calls; the stack from the outside in is the
     # module docstring's order.
@@ -250,10 +280,12 @@ def create_app(
 
     app.include_router(system_routes.router, prefix="/api/v1")
     app.include_router(session_routes.router, prefix="/api/v1")
+    app.include_router(apps_routes.router, prefix="/api/v1")
     app.include_router(audit_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
+    app.include_router(apps_routes.ui_router)
     app.include_router(audit_routes.ui_router)
 
     mount_static(app, environment=templates())

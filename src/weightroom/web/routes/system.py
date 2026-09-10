@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from weightroom.__about__ import __version__
 from weightroom.services.health import health_report, system_status
+from weightroom.web.routes.apps import views_for_request
 from weightroom.web.session import CurrentOperator, now_of
 
 __all__ = ["API_VERSION", "SCHEMA_VERSION", "router"]
@@ -37,7 +38,11 @@ async def health(request: Request, principal: CurrentOperator) -> JSONResponse:
     """The health report; ``200`` for ok/degraded, ``503`` when the database is unavailable."""
     app = request.app
     report = health_report(
-        app.state.settings, database=app.state.database, tls=app.state.tls, now=now_of(request)
+        app.state.settings,
+        database=app.state.database,
+        tls=app.state.tls,
+        now=now_of(request),
+        views=views_for_request(request),
     )
     return JSONResponse(
         status_code=503 if report["status"] == "unavailable" else 200, content=report
@@ -48,4 +53,9 @@ async def health(request: Request, principal: CurrentOperator) -> JSONResponse:
 async def status(request: Request, principal: CurrentOperator) -> dict[str, object]:
     """Spec §17's machine view; every figure a later phase fills in is ``null`` here."""
     app = request.app
-    return system_status(app.state.settings, tls=app.state.tls, now=now_of(request))
+    return system_status(
+        app.state.settings,
+        tls=app.state.tls,
+        now=now_of(request),
+        views=views_for_request(request),
+    )

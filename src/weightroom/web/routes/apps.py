@@ -1,0 +1,374 @@
+"""weightroom.web.routes.apps — the four applications: state, control, health and the journal.
+
+api.md §2. Three shapes of route live here and they are deliberately not merged:
+
+* ``/api/v1/apps…`` — JSON, for a script and for the pages' own fetches.
+* ``/apps…`` — the pages, and **one** form-post control route rather than three. A browser form
+  cannot send a method other than ``GET`` or ``POST``, so the three verbs would have needed three
+  paths that differ only in a word; one path with a validated ``verb`` field is the same
+  guarantee with a third of the surface, and one entry in the audit-route registry.
+* ``/api/v1/…/logs/stream`` — server-sent events (ADR-0004: SSE, never WebSockets).
+
+Every state-changing route writes exactly one ``audit_log`` row, including the ones that fail:
+spec §11 contract 2 is *every action*, and an action systemd refused is the one an operator most
+wants to find in the trail.
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+from typing import TYPE_CHECKING, Annotated, Any, Final, Literal
+
+import anyio
+from fastapi import APIRouter, Form, Request, Response, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
+from mirrorwall import Event, format_frame
+from setspec import GeneratorInfo
+
+from weightroom.__about__ import __version__
+from weightroom.config import APPLICATIONS
+from weightroom.domain.units import unit_name
+from weightroom.services.apps import (
+    AppNotInstalled,
+    AppView,
+    app_health,
+    inventory,
+    require_app,
+    unit_statuses,
+    view_for,
+)
+from weightroom.services.audit import record
+from weightroom.services.journal import (
+    DEFAULT_FOLLOW_BACKFILL,
+    DEFAULT_PAGE_LIMIT,
+    JOURNAL_PAGE_CAP,
+    JournalReader,
+)
+from weightroom.services.processes import UnitActionFailed, UnitUnsupported
+from weightroom.web.csrf import render_form_page
+from weightroom.web.session import CurrentOperator
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Sequence
+
+__all__ = ["CONTROL_VERBS", "router", "ui_router", "views_for_request"]
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["apps"])
+ui_router = APIRouter(tags=["ui"], include_in_schema=False)
+
+CONTROL_VERBS: Final[frozenset[str]] = frozenset({"start", "stop", "restart"})
+"""What the console drives. ``enable``/``disable`` are the wizard's, not a button's."""
+
+_HEARTBEAT_SECONDS: Final = 15.0
+_POLL_SECONDS: Final = 0.025
+"""Half of this is the median added latency per line; spec §15 budgets 50 ms end to end."""
+
+_GENERATOR = GeneratorInfo(name="weightroom", version=__version__)
+
+
+def _now() -> float:
+    return time.monotonic()
+
+
+def views_for_request(request: Request, *, refresh: str | None = None) -> tuple[AppView, ...]:
+    """Every application as this request sees it; ``/health`` and ``/system/status`` share it."""
+    state = request.app.state
+    return inventory(
+        state.settings,
+        controller=state.controller,
+        cache=state.versions,
+        client=state.http,
+        now=_now(),
+        refresh=refresh,
+    )
+
+
+def _view(request: Request, app: str, *, refresh: bool = False) -> AppView:
+    state = request.app.state
+    statuses = unit_statuses(state.controller, [app])
+    return view_for(
+        state.settings,
+        app,
+        status=None if statuses is None else statuses.get(unit_name(app)),
+        cache=state.versions,
+        client=state.http,
+        now=_now(),
+        refresh=refresh,
+    )
+
+
+@router.get("/apps", summary="The four applications")
+def list_apps(request: Request, principal: CurrentOperator) -> JSONResponse:
+    """Each application's install, unit, version and negotiated verdict."""
+    return JSONResponse(content={"apps": [view.as_json() for view in views_for_request(request)]})
+
+
+@router.get("/apps/{app}", summary="One application")
+def get_app(request: Request, principal: CurrentOperator, app: str) -> JSONResponse:
+    """One application's view; ``404 APP_UNKNOWN`` for a name that is not one of the four."""
+    return JSONResponse(content=_view(request, require_app(app)).as_json())
+
+
+@router.get("/apps/{app}/health", summary="The application's own health, proxied")
+def get_app_health(request: Request, principal: CurrentOperator, app: str) -> JSONResponse:
+    """The application's own ``/api/v1/health`` verbatim, with ``source`` naming who answered."""
+    name = require_app(app)
+    view = _view(request, name)
+    return JSONResponse(
+        content=app_health(request.app.state.settings, name, view, client=request.app.state.http)
+    )
+
+
+def _control(request: Request, principal: CurrentOperator, app: str, verb: str) -> dict[str, Any]:
+    """Run one verb against one application's unit, audit it, and report the new state.
+
+    Raises:
+        AppUnknown: Not one of the four.
+        AppNotInstalled: No executable, so no unit to drive.
+        UnitUnsupported: This host has no systemd.
+        UnitActionFailed: systemd ran and refused; its own message is carried through.
+    """
+    name = require_app(app)
+    if verb not in CONTROL_VERBS:
+        message = f"{verb!r} is not a control verb; the three are {sorted(CONTROL_VERBS)}"
+        raise ValueError(message)
+    state = request.app.state
+    unit = unit_name(name)
+    before = _view(request, name)
+    if not before.installed:
+        raise AppNotInstalled(
+            f"{name} is not installed, so it has no unit. Set [apps.{name}] executable, then "
+            f"run `wr-gym units sync`.",
+            details={"app": name, "unit": unit},
+        )
+    result = state.controller.act(unit, verb)
+    audit_id = record(
+        state.database,
+        action=f"unit.{verb}",
+        actor="operator",
+        outcome="ok" if result.ok else "failed",
+        operator_id=principal.operator_id,
+        app=name,
+        target=unit,
+        params={"verb": verb},
+        message=None if result.ok else result.failure_text,
+        request_id=getattr(request.state, "request_id", None),
+    )
+    if not result.ok:
+        raise UnitActionFailed(
+            f"systemctl {verb} {unit} failed: {result.failure_text}",
+            details={
+                "app": name,
+                "unit": unit,
+                "audit_id": audit_id,
+                "stderr": result.stderr.strip(),
+            },
+        )
+    state.versions.forget(name)
+    after = _view(request, name, refresh=False)
+    return {"audit_id": audit_id, "unit": unit, "state": after.pill, "unit_state": after.unit_state}
+
+
+@router.post("/apps/{app}/start", status_code=status.HTTP_202_ACCEPTED, summary="Start")
+def start_app(request: Request, principal: CurrentOperator, app: str) -> dict[str, Any]:
+    """``systemctl --user start <app>.service``; ``202`` with the audit id and the new state."""
+    return _control(request, principal, app, "start")
+
+
+@router.post("/apps/{app}/stop", status_code=status.HTTP_202_ACCEPTED, summary="Stop")
+def stop_app(request: Request, principal: CurrentOperator, app: str) -> dict[str, Any]:
+    """``systemctl --user stop <app>.service``."""
+    return _control(request, principal, app, "stop")
+
+
+@router.post("/apps/{app}/restart", status_code=status.HTTP_202_ACCEPTED, summary="Restart")
+def restart_app(request: Request, principal: CurrentOperator, app: str) -> dict[str, Any]:
+    """``systemctl --user restart <app>.service``."""
+    return _control(request, principal, app, "restart")
+
+
+@router.get("/apps/{app}/logs", summary="Journal history")
+def app_logs(
+    request: Request,
+    principal: CurrentOperator,
+    app: str,
+    since: str | None = None,
+    until: str | None = None,
+    level: str | None = None,
+    q: str | None = None,
+    limit: int = DEFAULT_PAGE_LIMIT,
+    cursor: str | None = None,
+) -> JSONResponse:
+    """One page of the application's journal, newest first, capped at 5 000 rows."""
+    name = require_app(app)
+    reader: JournalReader = request.app.state.journal
+    page = reader.history(
+        [unit_name(name)],
+        since=since,
+        until=until,
+        level=level,
+        query=q,
+        limit=min(limit, JOURNAL_PAGE_CAP),
+        cursor=cursor,
+    )
+    return JSONResponse(content={"app": name, **page.as_json()})
+
+
+async def _log_frames(
+    reader: JournalReader, units: Sequence[str], *, backfill: int
+) -> AsyncIterator[str]:
+    """Replay the tail, then stream live, telling the client whenever it fell behind.
+
+    The subscription is MirrorWall's bounded queue: it drops the **oldest** undelivered line and
+    counts it. A browser that stalls therefore costs a fixed amount of memory and loses old
+    lines, and is told exactly how many — a log pane with a silent hole in it is worse than one
+    that says *dropped 412 lines*.
+    """
+    sequence = 0
+    reported_drops = 0
+    try:
+        with reader.follow(units, backfill=backfill) as subscription:
+            last_beat = time.monotonic()
+            while True:
+                # Checked every pass, not only when the queue drains: a producer fast enough to
+                # keep the queue full is exactly the one that drops lines, and a client that
+                # only heard about it once the flood stopped would have been reading a log with
+                # a silent hole for the whole flood.
+                dropped = subscription.dropped
+                if dropped > reported_drops:
+                    sequence += 1
+                    yield format_frame(
+                        Event(
+                            sequence=sequence,
+                            type="log.dropped",
+                            payload={"dropped": dropped - reported_drops, "total": dropped},
+                        ),
+                        generator=_GENERATOR,
+                    )
+                    reported_drops = dropped
+                event = subscription.poll()
+                if event is None:
+                    now = time.monotonic()
+                    if now - last_beat >= _HEARTBEAT_SECONDS:
+                        yield ": heartbeat\n\n"
+                        last_beat = now
+                    await anyio.sleep(_POLL_SECONDS)
+                    continue
+                sequence += 1
+                yield format_frame(
+                    Event(sequence=sequence, type=event.type, payload=event.payload),
+                    generator=_GENERATOR,
+                )
+                if event.type == "log.closed":
+                    return
+    except UnitUnsupported as exc:
+        yield format_frame(
+            Event(
+                sequence=sequence + 1,
+                type="error",
+                payload={"code": exc.code, "message": exc.message},
+            ),
+            generator=_GENERATOR,
+        )
+
+
+def _stream(reader: JournalReader, units: Sequence[str], *, backfill: int) -> StreamingResponse:
+    return StreamingResponse(
+        _log_frames(reader, units, backfill=backfill),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-store",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.get("/apps/{app}/logs/stream", summary="Live journal, one application")
+def app_log_stream(
+    request: Request, principal: CurrentOperator, app: str, backfill: int = DEFAULT_FOLLOW_BACKFILL
+) -> StreamingResponse:
+    """SSE of one application's journal: ``log``, ``log.dropped``, ``log.closed``."""
+    name = require_app(app)
+    return _stream(
+        request.app.state.journal, [unit_name(name)], backfill=max(0, min(backfill, 1000))
+    )
+
+
+@router.get("/logs/stream", summary="Live journal, several applications at once")
+def unified_log_stream(
+    request: Request,
+    principal: CurrentOperator,
+    apps: str | None = None,
+    backfill: int = DEFAULT_FOLLOW_BACKFILL,
+) -> StreamingResponse:
+    """SSE across several units, WeightRoomGym's own included; each frame names its ``app``.
+
+    ``apps`` is a comma-separated list; absent means all five. An unknown name is refused rather
+    than silently dropped — a unified stream missing one application looks identical to one whose
+    application is quiet.
+    """
+    wanted = [name.strip() for name in (apps or "").split(",") if name.strip()]
+    chosen = wanted or [*APPLICATIONS, "weightroom"]
+    for name in chosen:
+        if name != "weightroom":
+            require_app(name)
+    return _stream(
+        request.app.state.journal,
+        [unit_name(name) for name in chosen],
+        backfill=max(0, min(backfill, 1000)),
+    )
+
+
+@ui_router.get("/apps", summary="The applications page", response_class=HTMLResponse)
+def apps_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+    """Every application with its pill, uptime, version and the three buttons."""
+    return render_form_page(
+        request, "apps.html", page="apps", principal=principal, views=views_for_request(request)
+    )
+
+
+@ui_router.get("/apps/{app}", summary="One application's page", response_class=HTMLResponse)
+def app_page(request: Request, principal: CurrentOperator, app: str) -> HTMLResponse:
+    """One application: the pill, the figures, the controls and the live log pane."""
+    name = require_app(app)
+    return render_form_page(
+        request,
+        "app.html",
+        page="apps",
+        principal=principal,
+        view=_view(request, name),
+        applications=APPLICATIONS,
+    )
+
+
+@ui_router.post("/apps/{app}/control", summary="Start, stop or restart from the page")
+def control_from_page(
+    request: Request,
+    principal: CurrentOperator,
+    app: str,
+    verb: Annotated[Literal["start", "stop", "restart"], Form()],
+) -> Response:
+    """The one form-post control route; see this module's docstring for why there is one.
+
+    The verb is a ``Literal``, so a field outside the three is a ``400 VALIDATION_ERROR`` from
+    FastAPI's own validation rather than an exception this handler has to invent a code for.
+    """
+    name = require_app(app)
+    _control(request, principal, name, verb)
+    return RedirectResponse(f"/apps/{name}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@ui_router.get("/logs", summary="The unified log page", response_class=HTMLResponse)
+def logs_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+    """One pane over every unit's journal at once."""
+    return render_form_page(
+        request,
+        "logs.html",
+        page="logs",
+        principal=principal,
+        applications=[*APPLICATIONS, "weightroom"],
+    )

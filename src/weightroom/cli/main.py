@@ -11,6 +11,7 @@ from typing import Annotated
 
 import typer
 
+from weightroom.cli.commands import apps as apps_commands
 from weightroom.cli.commands import audit as audit_commands
 from weightroom.cli.commands import config as config_commands
 from weightroom.cli.commands import db as db_commands
@@ -68,4 +69,6 @@ app.add_typer(db_commands.app, name="db", help="Database migration and maintenan
 app.add_typer(tls_commands.app, name="tls", help="The certificate authority and the leaf.")
 app.add_typer(operator_commands.app, name="operator", help="The operator account.")
 app.add_typer(audit_commands.app, name="audit", help="The audit trail.")
+app.add_typer(apps_commands.app, name="apps", help="The four applications, from the terminal.")
+app.command(name="logs", help="Print or follow an application's journal.")(apps_commands.logs)
 app.add_typer(units_commands.app, name="units", help="The systemd --user units (ADR-0125).")

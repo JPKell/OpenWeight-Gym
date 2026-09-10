@@ -1,0 +1,48 @@
+{% extends "mirrorwall/base.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state %}
+{% block title %}Applications — WeightRoomGym{% endblock %}
+{% block content %}
+<h2>Applications</h2>
+<p class="muted">The four applications as <code>systemd --user</code> units WeightRoomGym wrote.
+A unit's state comes from systemd; the version comes from the application's own
+<code>/api/v1/version</code>, re-checked every five minutes. <a href="/api/v1/apps">JSON</a></p>
+<table id="apps">
+  <caption>One row per application; the buttons write an audit row.</caption>
+  <thead>
+    <tr><th scope="col">Application</th><th scope="col">State</th><th scope="col">Uptime</th>
+        <th scope="col">Restarts</th><th scope="col">Version</th><th scope="col">Unit</th>
+        <th scope="col">Actions</th></tr>
+  </thead>
+  <tbody>
+  {% for view in views %}
+    <tr>
+      <th scope="row"><a href="/apps/{{ view.name }}">{{ view.name }}</a></th>
+      <td>{{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</td>
+      <td>{{ view.uptime_seconds | duration_human }}</td>
+      <td>{{ view.restarts if view.restarts is not none else "—" }}</td>
+      <td>{% if view.version %}{{ view.version }}{% if view.verdict not in ("ok", "unreadable") %}
+            {{ badge(view.verdict, tone="danger", title="WeightRoomGym speaks " ~ view.supported_range) }}
+          {% endif %}{% else %}—{% endif %}</td>
+      <td><code>{{ view.unit }}</code></td>
+      <td>
+        {% if view.installed and view.unit_state != "unsupported" %}
+        <form method="post" action="/apps/{{ view.name }}/control" class="field">
+          <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+          <button type="submit" name="verb" value="start" {% if view.running %}disabled{% endif %}>Start</button>
+          <button type="submit" name="verb" value="stop" {% if not view.running %}disabled{% endif %}>Stop</button>
+          <button type="submit" name="verb" value="restart" {% if not view.running %}disabled{% endif %}>Restart</button>
+        </form>
+        {% elif view.unit_state == "unsupported" %}
+        <span class="muted">unsupported on this host</span>
+        {% else %}
+        <span class="muted">not installed</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7">{{ empty_state("No applications are configured.") }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p><a href="/logs">One log pane over all five units</a> · <a href="/ollama">Ollama</a></p>
+{% endblock %}

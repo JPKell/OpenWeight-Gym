@@ -2,7 +2,7 @@
 
 The real shell — the four tabs with status dots, the telemetry strip, the left menus — is
 Phase 3 over MirrorWall 0.3 (design brief §3). Until then this page says what is here and what
-is not.
+is not, with each application's live pill beside its name.
 """
 
 from __future__ import annotations
@@ -10,8 +10,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
-from weightroom.config import APPLICATIONS
 from weightroom.web.csrf import render_form_page
+from weightroom.web.routes.apps import views_for_request
 from weightroom.web.session import CurrentOperator
 
 __all__ = ["ui_router"]
@@ -28,7 +28,7 @@ def shell(request: Request, principal: CurrentOperator) -> HTMLResponse:
         "shell.html",
         page="shell",
         principal=principal,
-        applications=APPLICATIONS,
+        views=views_for_request(request),
         tls_days_left=None if tls is None else tls.days_left,
         bind_host=request.app.state.settings.server.host,
     )

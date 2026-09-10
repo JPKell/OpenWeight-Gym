@@ -15,6 +15,8 @@ from mirrorwall import CSRF_COOKIE_NAME
 from weightroom.config import Settings, load_settings
 from weightroom.services.auth import create_operator
 from weightroom.services.database import Database, ensure_ready
+from weightroom.services.journal import JournalReader
+from weightroom.services.processes import FakeSystemdController
 from weightroom.services.tls import HostIdentity, TlsStatus, init_tls
 from weightroom.web.app import create_app
 
@@ -32,6 +34,7 @@ class Console:
     database: Database
     client: TestClient
     tls: TlsStatus | None = None
+    host: FakeSystemdController | None = None
     now: datetime = field(default_factory=lambda: datetime(2026, 9, 9, 12, 0, tzinfo=UTC))
 
     def advance(self, **delta: float) -> None:
@@ -67,8 +70,14 @@ def build_console(
     account: bool = True,
     host: str = "127.0.0.1",
     extra_toml: str = "",
+    systemd: FakeSystemdController | None = None,
+    journal: JournalReader | None = None,
 ) -> Console:
-    """A console on a fresh SQLite file with the CA issued and, by default, one operator."""
+    """A console on a fresh SQLite file with the CA issued and, by default, one operator.
+
+    The systemd boundary is a fake by default and the journal reader is given no ``journalctl``,
+    so no test reaches the developer's own session manager (spec §20 criterion 10).
+    """
     tmp_path.mkdir(parents=True, exist_ok=True)
     file = tmp_path / "console.toml"
     lines = [f'[server]\nhost = "{host}"\n']
@@ -86,10 +95,25 @@ def build_console(
     if account:
         create_operator(database, username=USERNAME, password=PASSWORD, now=now)
     tls = init_tls(settings, identity=IDENTITY, now=now)
-    app = create_app(settings, tls=tls, identity=IDENTITY, config_path=file)
+    controller = systemd if systemd is not None else FakeSystemdController()
+    reader = journal if journal is not None else JournalReader(which=lambda _name: None)
+    app = create_app(
+        settings,
+        tls=tls,
+        identity=IDENTITY,
+        config_path=file,
+        controller=controller,
+        journal=reader,
+    )
     # The lifespan would open its own handle; tests share this one and never enter the lifespan.
     app.state.database = database
-    console = Console(settings=settings, database=database, client=TestClient(app), tls=tls)
+    console = Console(
+        settings=settings,
+        database=database,
+        client=TestClient(app),
+        tls=tls,
+        host=controller,
+    )
     app.state.clock = lambda: console.now
     console.client = TestClient(app, base_url="https://localhost", follow_redirects=False)
     return console

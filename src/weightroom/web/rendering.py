@@ -22,21 +22,46 @@ if TYPE_CHECKING:
     from weightroom.config import Settings
     from weightroom.services.tls import HostIdentity, TlsStatus
 
-__all__ = ["NAV_ITEMS", "render", "templates", "trust_context"]
+__all__ = ["NAV_ITEMS", "PILL_TONES", "pill_tone", "render", "templates", "trust_context"]
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 NAV_ITEMS: tuple[dict[str, str], ...] = (
     {"key": "shell", "href": "/", "label": "Overview"},
+    {"key": "apps", "href": "/apps", "label": "Applications"},
+    {"key": "ollama", "href": "/ollama", "label": "Ollama"},
+    {"key": "logs", "href": "/logs", "label": "Logs"},
     {"key": "audit", "href": "/audit", "label": "Audit"},
     {"key": "trust", "href": "/trust", "label": "Trust"},
 )
 
 
+PILL_TONES: dict[str, str] = {
+    "ok": "success",
+    "starting": "warning",
+    "stopped": "neutral",
+    "failed": "danger",
+    "version mismatch": "danger",
+    "not installed": "neutral",
+    "unsupported": "neutral",
+}
+"""How :attr:`~weightroom.services.apps.AppView.pill` colours.
+
+*stopped* and *not installed* are **neutral**, not warnings: an operator who has deliberately
+stopped an application should not be shown a page of amber. Only a state nobody chose — a failed
+unit, a version outside the range — is coloured as a problem.
+"""
+
+
+def pill_tone(pill: str) -> str:
+    """The badge tone for a status pill; unknown words are neutral rather than alarming."""
+    return PILL_TONES.get(pill, "neutral")
+
+
 @lru_cache(maxsize=1)
 def templates() -> Environment:
     """Return the process-wide Jinja environment, building it on first use."""
-    return create_template_environment(
+    environment = create_template_environment(
         app_template_dirs=(_TEMPLATES_DIR,),
         globals_={
             "product_name": "WeightRoomGym",
@@ -45,6 +70,8 @@ def templates() -> Environment:
             "theme_storage_key": "weightroom-theme",
         },
     )
+    environment.filters["pill_tone"] = pill_tone
+    return environment
 
 
 def render(template_name: str, /, **context: Any) -> str:

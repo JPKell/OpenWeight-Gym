@@ -14,8 +14,9 @@
 {% endblock %}
 {% block content %}
 <h2>Overview</h2>
-<p class="muted">Phase 1: HTTPS, the login and the audit trail are here. Process control arrives at
-W2, the telemetry strip and the real shell at W3, settings and the doctor at W4.</p>
+<p class="muted">Phase 2: the five units, process control, the journal live and unified, the
+Ollama pane and the audit page are here. The telemetry strip and the real shell arrive at W3,
+settings and the doctor at W4.</p>
 <ul class="card-grid">
   {{ card("Bind", bind_host, note="server.host") }}
   {{ card("Certificate", (tls_days_left ~ " days") if tls_days_left is not none else "—", note="leaf days left; wr-gym tls show") }}
@@ -23,9 +24,12 @@ W2, the telemetry strip and the real shell at W3, settings and the doctor at W4.
 </ul>
 <h3>Applications</h3>
 <ul>
-{% for app in applications %}
-  <li>{{ app }} {{ badge("unknown", tone="neutral", title="reported at W2") }}</li>
+{% for view in views %}
+  <li><a href="/apps/{{ view.name }}">{{ view.name }}</a>
+      {{ badge(view.pill, tone=view.pill | pill_tone, title=view.unit_state) }}
+      <span class="muted">{{ view.uptime_seconds | duration_human }}{% if view.version %} · {{ view.version }}{% endif %}</span></li>
 {% endfor %}
 </ul>
-<p><a href="/audit">Audit trail</a> · <a href="/trust">Trust this CA on another device</a></p>
+<p><a href="/apps">Applications</a> · <a href="/logs">Logs</a> · <a href="/ollama">Ollama</a> ·
+   <a href="/audit">Audit trail</a> · <a href="/trust">Trust this CA on another device</a></p>
 {% endblock %}

@@ -28,6 +28,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 __all__ = [
     "APPLICATIONS",
+    "DEFAULT_APP_PORTS",
     "EXAMPLE_CONFIG_TOML",
     "ENV_PREFIX",
     "LOOPBACK_HOSTS",
@@ -317,6 +318,15 @@ class AppSettings(BaseModel):
     )
 
 
+DEFAULT_APP_PORTS: dict[str, int] = {
+    "freeweight": 8765,
+    "loadcoach": 8766,
+    "ideapress": 8767,
+    "promptcadence": 8768,
+}
+"""Each application's own loopback port, as its spec fixes it."""
+
+
 def _app_defaults(port: int) -> AppSettings:
     return AppSettings(base_url=f"http://127.0.0.1:{port}")
 
@@ -330,6 +340,24 @@ class AppsSettings(BaseModel):
     loadcoach: AppSettings = Field(default_factory=lambda: _app_defaults(8766))
     ideapress: AppSettings = Field(default_factory=lambda: _app_defaults(8767))
     promptcadence: AppSettings = Field(default_factory=lambda: _app_defaults(8768))
+
+    @model_validator(mode="after")
+    def _fill_default_base_urls(self) -> AppsSettings:
+        """Give every application its own port back when the file named only its siblings.
+
+        Configuration standards §1: overriding is per **leaf**, not per section. A default that
+        lives only in a section's ``default_factory`` breaks that rule silently — writing
+        ``[apps.loadcoach] executable = "…"`` would otherwise leave ``base_url`` empty, and the
+        console would report LoadCoach as unreachable while the operator looked at a file that
+        never mentioned a URL. Found at row W2 against a partial ``[apps.loadcoach]`` table.
+        """
+        for name, port in DEFAULT_APP_PORTS.items():
+            block: AppSettings = getattr(self, name)
+            if not block.base_url:
+                setattr(
+                    self, name, block.model_copy(update={"base_url": f"http://127.0.0.1:{port}"})
+                )
+        return self
 
 
 class HostSettings(BaseModel):

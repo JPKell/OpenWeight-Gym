@@ -210,3 +210,28 @@ def test_tolerant_load_reports_unknown_keys_at_any_depth(tmp_path: Path) -> None
 def test_settings_model_forbids_extra_everywhere() -> None:
     with pytest.raises(Exception, match="extra"):
         Settings.model_validate({"tls": {"leaf_days": 1, "x": 2}})
+
+
+def test_a_partial_apps_table_keeps_the_applications_own_port(tmp_path: Path) -> None:
+    """Configuration standards §1: overriding is per leaf, not per section (found at row W2)."""
+    file = tmp_path / "config.toml"
+    file.write_text('[apps.loadcoach]\nexecutable = "/opt/bin/loadcoach"\n', encoding="utf-8")
+    settings = load_settings(config_path=file).settings
+    assert settings.apps.loadcoach.executable == "/opt/bin/loadcoach"
+    assert settings.apps.loadcoach.base_url == "http://127.0.0.1:8766"
+    assert settings.apps.freeweight.base_url == "http://127.0.0.1:8765"
+
+
+def test_an_explicit_base_url_still_wins(tmp_path: Path) -> None:
+    file = tmp_path / "config.toml"
+    file.write_text('[apps.ideapress]\nbase_url = "http://127.0.0.1:9999"\n', encoding="utf-8")
+    settings = load_settings(config_path=file).settings
+    assert settings.apps.ideapress.base_url == "http://127.0.0.1:9999"
+
+
+def test_the_port_table_matches_the_declared_defaults() -> None:
+    from weightroom.config import DEFAULT_APP_PORTS, Settings
+
+    defaults = Settings()
+    for name, port in DEFAULT_APP_PORTS.items():
+        assert getattr(defaults.apps, name).base_url == f"http://127.0.0.1:{port}"
