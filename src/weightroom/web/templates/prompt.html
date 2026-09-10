@@ -1,0 +1,56 @@
+{% extends "_shell.html" %}
+{% block title %}{{ prompt_id }} — {{ app | app_label }} — WeightRoom{% endblock %}
+{% block extra_head %}
+<style>
+  .prompt-editor textarea { width: 100%; min-height: 28em; }
+  .prompt-diff, .prompt-shipped { max-height: 40em; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2><code>{{ prompt_id }}</code></h2>
+  <div class="page-actions">
+    <a href="/apps/{{ app }}/prompts">All {{ app | app_label }} prompts</a>
+    <a href="/api/v1/apps/{{ app }}/prompts/{{ prompt_id }}">JSON</a>
+  </div>
+</div>
+{% if error %}<p class="notice" role="alert"><strong><code>{{ error.code }}</code></strong> {{ error.message }}</p>{% endif %}
+{% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+{% if detail %}
+<p class="notice">{{ detail.rule }}</p>
+<p>Shipped version <strong>{{ detail.shipped.version }}</strong> · <code>{{ detail.shipped_sha256 }}</code>.
+{% if detail.override %}Override version <strong>{{ detail.override.version }}</strong> at
+<code>{{ detail.override_path }}</code> · <code>{{ detail.override_sha256 }}</code>.
+{% elif not detail.has_override_file %}No override: {{ app | app_label }} renders the shipped record.{% endif %}</p>
+{% if detail.override_problem %}
+<p class="notice" role="alert">The override at <code>{{ detail.override_path }}</code> does not load:
+{{ detail.override_problem }}</p>
+{% endif %}
+
+{% if detail.diff %}
+<h3>Diff against the shipped record</h3>
+<pre class="mono prompt-diff">{{ detail.diff | join("\n") }}</pre>
+{% endif %}
+
+<h3>{{ "Edit the override" if detail.has_override_file else "Override it" }}</h3>
+<form method="post" action="/apps/{{ app }}/prompts/{{ prompt_id }}" class="prompt-editor">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <label class="field">The whole record, as JSON
+    <textarea name="record" class="mono" spellcheck="false">{{ editor_text }}</textarea>
+  </label>
+  <p class="muted">Validated with the loader {{ app | app_label }} itself runs before anything is
+  written. Give the override its own <code>version</code> and a <code>metadata.change_reason</code>, so
+  what rendered it says which prompt it was.</p>
+  <button type="submit">Validate and write the override</button>
+</form>
+{% if detail.has_override_file %}
+<form method="post" action="/apps/{{ app }}/prompts/{{ prompt_id }}/delete">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit">Delete the override</button>
+</form>
+{% endif %}
+
+<h3>The shipped record</h3>
+<pre class="mono prompt-shipped">{{ detail.shipped | json_pretty }}</pre>
+{% endif %}
+{% endblock %}

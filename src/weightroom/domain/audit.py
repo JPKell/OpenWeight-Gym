@@ -63,6 +63,8 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "catalog.dropin",
         "catalog.delete",
         "prompt.override",
+        # W9. Removing an override, so the application renders its shipped record again.
+        "prompt.delete",
         "job.run",
         # W9. Enqueueing a job is a person's action (the run itself is `job.run`, actor `job`);
         # so are cancelling one and changing a schedule's cron, parameters or enabled flag.

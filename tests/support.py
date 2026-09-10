@@ -9,7 +9,7 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
@@ -22,6 +22,9 @@ from weightroom.services.journal import JournalReader
 from weightroom.services.processes import FakeSystemdController
 from weightroom.services.tls import HostIdentity, TlsStatus, init_tls
 from weightroom.web.app import create_app
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 IDENTITY = HostIdentity("jordan-main", ("10.77.10.84",))
 USERNAME = "jordan"
@@ -196,6 +199,94 @@ def fake_application(
     )
     executable.chmod(0o755)
     return executable, config_path, body
+
+
+HELLO_RECORD: dict[str, Any] = {
+    "prompt_id": "stages.hello",
+    "version": "1.0.0",
+    "schema_version": "1.0",
+    "purpose": "The smallest bounded task: greet the reader of a titled document.",
+    "task": "diagnostics.hello",
+    "capability": "instruction_following",
+    "system": "You are a terse assistant. Answer in one short sentence.",
+    "template": "Greet the reader of a document titled {{ title }} in one sentence.",
+    "variables": {
+        "title": {"type": "string", "required": True, "description": "The document's title."}
+    },
+    "response": {"format": "text", "json_schema_ref": None, "expectations": ["One sentence."]},
+    "metadata": {"change_reason": "First version.", "owner": "ideapress"},
+}
+"""IdeaPress's own ``stages.hello`` record, shape for shape: the smallest the loader takes."""
+
+
+def prompt_application(
+    tmp_path: Path,
+    app: str,
+    records: Sequence[Mapping[str, Any]],
+    *,
+    fallback: Path | None = None,
+    whole_record: bool = True,
+) -> Path:
+    """An executable answering ``<app> prompts list|show`` as FreeWeight or IdeaPress prints them.
+
+    FreeWeight's listing is an object with ``prompts`` and its ``show`` a summary with the whole
+    record under ``record`` (``whole_record=False`` is a FreeWeight from before row W9, which
+    printed none); IdeaPress's listing is a bare list and its ``show`` the record itself. Any other
+    verb is
+    handed to ``fallback`` when one is given, so a test can layer this over
+    :func:`fake_application`.
+    """
+    from setspec.prompts import prompt_record_hash
+
+    directory = tmp_path / f"{app}-prompts"
+    directory.mkdir(parents=True, exist_ok=True)
+    entries = [
+        {
+            "prompt_id": record["prompt_id"],
+            "version": record["version"],
+            "purpose": record["purpose"],
+            "sha256": prompt_record_hash(record),
+            "source": "pack",
+        }
+        for record in records
+    ]
+    listing: Any = (
+        {"pack_id": f"{app}.core", "prompts": entries} if app == "freeweight" else entries
+    )
+    (directory / "list.json").write_text(json.dumps(listing), encoding="utf-8")
+    lines = [
+        "#!/bin/sh",
+        'if [ "$1" = "prompts" ] && [ "$2" = "list" ]; then',
+        f"  cat {directory / 'list.json'}",
+        "  exit 0",
+        "fi",
+    ]
+    for index, record in enumerate(records):
+        shown: dict[str, Any] = dict(record)
+        if app == "freeweight":
+            shown = {key: record[key] for key in ("prompt_id", "version", "purpose", "template")}
+            if whole_record:
+                shown["record"] = dict(record)
+        show_file = directory / f"show-{index}.json"
+        show_file.write_text(json.dumps(shown), encoding="utf-8")
+        wanted = f'[ "$3" = "{record["prompt_id"]}" ]'
+        lines += [
+            f'if [ "$1" = "prompts" ] && [ "$2" = "show" ] && {wanted}; then',
+            f"  cat {show_file}",
+            "  exit 0",
+            "fi",
+        ]
+    lines += [
+        'if [ "$1" = "prompts" ]; then',
+        '  echo "Error: No prompt $3 (PROMPT_NOT_FOUND)" >&2',
+        "  exit 2",
+        "fi",
+        f'exec {fallback} "$@"' if fallback is not None else "exit 0",
+    ]
+    executable = directory / app
+    executable.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    executable.chmod(0o755)
+    return executable
 
 
 DATABASE_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "databases"

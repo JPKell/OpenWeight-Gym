@@ -60,7 +60,7 @@ Index `(expires_at)`.
 | `actor` | text | `operator` \| `job` \| `alerts` \| `cli` |
 | `at` | timestamp | |
 | `app` | text, null | `freeweight` … \| `weightroom` \| `ollama` \| `host` |
-| `action` | text | `unit.start`, `settings.write`, `db.guarded_write`, `db.dry_run`, `db.query`, `db.curated`, `catalog.pull`, `prompt.override`, `job.run`, `job.enqueue`, `job.cancel`, `job.schedule`, `alert.ack`, `login`, `logout`, `tls.rotate`, … a closed vocabulary asserted by test |
+| `action` | text | `unit.start`, `settings.write`, `db.guarded_write`, `db.dry_run`, `db.query`, `db.curated`, `catalog.pull`, `prompt.override`, `prompt.delete`, `job.run`, `job.enqueue`, `job.cancel`, `job.schedule`, `alert.ack`, `login`, `logout`, `tls.rotate`, … a closed vocabulary asserted by test |
 | `target` | text, null | the unit, key list, table, model ref, prompt id, job id |
 | `params` | json | redacted: tokens, passwords and URL credentials replaced before the row is written |
 | `outcome` | text | `pending` \| `ok` \| `failed` \| `refused` |

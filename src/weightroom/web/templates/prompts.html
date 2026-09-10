@@ -1,0 +1,29 @@
+{% extends "_shell.html" %}
+{% block title %}Prompts — {{ app | app_label }} — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>{{ app | app_label }} prompts</h2>
+  <div class="page-actions"><a href="/api/v1/apps/{{ app }}/prompts">JSON</a></div>
+</div>
+{% if error %}<p class="notice" role="alert"><strong><code>{{ error.code }}</code></strong> {{ error.message }}</p>{% endif %}
+{% if pack %}
+<p class="muted">The pack {{ app | app_label }} ships, from its own <code>prompts list</code>, and the
+overrides in <code>{{ pack.override_directory }}</code> (prompt standards §6). An override is a whole
+prompt record, validated against the record schema before it is written; the application renders it
+in place of the shipped record and marks what used it <code>user_override</code>.</p>
+<p class="notice">{{ pack.rule }}</p>
+<table data-density="dense">
+  <thead><tr><th scope="col">Prompt</th><th scope="col">Version</th><th scope="col">Override</th><th scope="col">Purpose</th></tr></thead>
+  <tbody>
+  {% for entry in pack.entries %}
+  <tr>
+    <th scope="row"><a href="/apps/{{ app }}/prompts/{{ entry.prompt_id }}"><code>{{ entry.prompt_id }}</code></a></th>
+    <td>{{ entry.version }}</td>
+    <td>{% if entry.override_problem %}<strong>does not load</strong>: {{ entry.override_problem }}{% elif entry.overridden %}override {{ entry.override_version }}{% else %}—{% endif %}</td>
+    <td>{{ entry.purpose }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

@@ -16,6 +16,7 @@ import pytest
 from sqlalchemy import func, select
 
 from tests.support import (
+    HELLO_RECORD,
     JSON_HEADERS,
     PASSWORD,
     USERNAME,
@@ -25,6 +26,7 @@ from tests.support import (
     fake_application,
     fill_rows,
     fixture_database,
+    prompt_application,
 )
 from weightroom.infrastructure.db.models import AuditLog
 from weightroom.services.db_reader import effective_database_url
@@ -622,6 +624,52 @@ def _alert_ack_form(console: Console) -> Any:  # noqa: ANN401
     return console.post_form(f"/alerts/{_open_alert(console)}/acknowledge", {"next": "/alerts"})
 
 
+def _override_record() -> dict[str, Any]:
+    import copy
+
+    body = copy.deepcopy(HELLO_RECORD)
+    body["version"] = "1.1.0"
+    body["metadata"]["change_reason"] = "An audit exercise's override."
+    return body
+
+
+def _existing_override() -> None:
+    """An override written straight to disk, so only the deletion's own row is counted."""
+    from weightroom.services.prompts import canonical_text, override_path
+
+    path = override_path("ideapress", "stages.hello")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(canonical_text(_override_record()), encoding="utf-8")
+
+
+def _prompt_put_json(console: Console) -> Any:  # noqa: ANN401
+    return console.client.put(
+        "/api/v1/apps/ideapress/prompts/stages.hello",
+        json={"record": _override_record()},
+        headers=JSON_HEADERS,
+    )
+
+
+def _prompt_delete_json(console: Console) -> Any:  # noqa: ANN401
+    _existing_override()
+    return console.client.delete(
+        "/api/v1/apps/ideapress/prompts/stages.hello/override", headers=JSON_HEADERS
+    )
+
+
+def _prompt_write_form(console: Console) -> Any:  # noqa: ANN401
+    import json
+
+    return console.post_form(
+        "/apps/ideapress/prompts/stages.hello", {"record": json.dumps(_override_record())}
+    )
+
+
+def _prompt_delete_form(console: Console) -> Any:  # noqa: ANN401
+    _existing_override()
+    return console.post_form("/apps/ideapress/prompts/stages.hello/delete", {})
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -686,6 +734,10 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/jobs/schedules/{schedule_id}"): _jobs_schedule_form,
     ("POST", "/api/v1/alerts/{alert_id}/acknowledge"): _alert_ack_json,
     ("POST", "/alerts/{alert_id}/acknowledge"): _alert_ack_form,
+    ("PUT", "/api/v1/apps/{app}/prompts/{prompt_id}"): _prompt_put_json,
+    ("DELETE", "/api/v1/apps/{app}/prompts/{prompt_id}/override"): _prompt_delete_json,
+    ("POST", "/apps/{app}/prompts/{prompt_id}"): _prompt_write_form,
+    ("POST", "/apps/{app}/prompts/{prompt_id}/delete"): _prompt_delete_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 
@@ -720,6 +772,8 @@ def console(tmp_path: Path) -> Console:
     ideapress, _config, _document = fake_application(
         tmp_path, "ideapress", database_url=f"sqlite:///{ideapress_database}"
     )
+    # And a prompt pack, answered before the fake's own verbs, for the prompt editor's routes.
+    ideapress = prompt_application(tmp_path, "ideapress", [HELLO_RECORD], fallback=ideapress)
     return build_console(
         tmp_path / "console",
         extra_toml=(

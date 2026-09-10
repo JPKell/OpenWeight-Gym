@@ -16,6 +16,7 @@ EXPECTED_SEED = {
     ("freeweight", "0010"),  # migration 0005, row WA1
     ("loadcoach", "0015"),
     ("ideapress", "0010"),
+    ("ideapress", "0011"),  # migration 0008, row W9
     ("promptcadence", "0011"),
 }
 

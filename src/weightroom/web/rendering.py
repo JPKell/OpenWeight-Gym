@@ -73,6 +73,7 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
         "Evidence",
         "Goals",
         "Adapters",
+        "Prompts",
         "Settings",
         "Provider",
         "Tokens",
@@ -99,6 +100,7 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
         "Units",
         "Workflows",
         "Backends",
+        "Prompts",
         "Settings",
         "Logs",
         "Database",
@@ -138,6 +140,7 @@ _PAGE_HREF: dict[str, str] = {
     "Overview": "/apps/{app}",
     "Settings": "/apps/{app}/settings",
     "Tokens": "/apps/{app}/tokens",
+    "Prompts": "/apps/{app}/prompts",
     "Database": "/apps/{app}/database",
 }
 """Where a built page lives; anything absent is still a stub."""

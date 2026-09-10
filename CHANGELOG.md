@@ -42,6 +42,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   the banner — the newest unacknowledged alert with its evidence and an acknowledge button, polled
   every five seconds — and the top bar's ⚠ count links to the Alerts page and its history, which
   is kept for ever. Nothing is sent anywhere.
+- **The prompt editor** (row W9, `services/prompts.py`, `/apps/{app}/prompts`, migration `0008`):
+  FreeWeight's and IdeaPress's shipped packs, read through their own `prompts list|show`, joined
+  with the overrides under `$XDG_CONFIG_HOME/<app>/prompts/`. An override is a whole record: the
+  editor validates it with `setspec.prompts.load_record` — the loader the application itself runs —
+  on a candidate beside the real path before it replaces anything, refuses one that declares another
+  `prompt_id`, names a prompt the pack does not ship, or would not load, diffs it against the shipped
+  record, shows an override on disk that would not load, and deletes it to restore the shipped
+  prompt. Each application's own rule is shown beside the editor (FreeWeight's
+  `--allow-prompt-override`, IdeaPress's restart); LoadCoach and PromptCadence, with no `prompts`
+  command, are named as such. Every write is a `prompt.override` or `prompt.delete` audit row.
+  Migration `0008` makes IdeaPress `0011` (`attempts.prompt_source`, row W9) a known revision.
 - **The model catalog** (row W8, `services/catalog.py`, `/catalog`): FreeWeight's and LoadCoach's
   models joined by canonical identity — the only two applications with a models table at all —
   with per-application enabled state (ADR-0118), evidence freshness (always FreeWeight's own),

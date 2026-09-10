@@ -59,10 +59,10 @@ value is `404 APP_UNKNOWN`.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /apps/{app}/prompts` | The shipped pack (`prompt_id`, version, sha256) joined with overrides in effect |
-| `GET /apps/{app}/prompts/{id}` | The shipped record, the override if any, and a unified diff |
-| `PUT /apps/{app}/prompts/{id}` | Writes the override record after validation against the record schema; the response says where it was written and that runs will be marked `user_override` |
-| `DELETE /apps/{app}/prompts/{id}/override` | Removes the override |
+| `GET /apps/{app}/prompts` | `{"app", "override_directory", "rule", "prompts": [{"prompt_id", "version", "sha256", "purpose", "overridden", "override_version", "override_problem"}]}` — the shipped pack from the application's own `prompts list`, joined with the override files. FreeWeight and IdeaPress only; LoadCoach and PromptCadence, which have no `prompts` command, are `404 NOT_FOUND` by name |
+| `GET /apps/{app}/prompts/{id}` | The shipped record, its `shipped_sha256`, the override and its `override_sha256` if any, `override_path`, `override_problem` (why an override on disk would not load), the application's `rule`, and a unified `diff`. A prompt the pack does not ship is `404 NOT_FOUND` |
+| `PUT /apps/{app}/prompts/{id}` | `{"record": {…}}` — the whole record, validated with the application's own loader (`setspec.prompts.load_record`) before it is written; `400 VALIDATION_ERROR` in the loader's words, or for a record that declares another `prompt_id` or a prompt shipped in several versions. The response is the detail plus `written` (the path) and `marked: "user_override"`; one `prompt.override` audit row |
+| `DELETE /apps/{app}/prompts/{id}/override` | Removes the override, so the application renders the shipped record (after a restart, for IdeaPress); `404 NOT_FOUND` when there is none; one `prompt.delete` audit row |
 
 ## 5. Ollama, catalog, costs
 

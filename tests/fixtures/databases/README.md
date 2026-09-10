@@ -14,7 +14,8 @@ database-page tests written at W7 read it.
 | `freeweight-0010.sqlite3` | FreeWeight | `0010` (known head, row WA1) | none |
 | `freeweight-0009.sqlite3` | FreeWeight | `0009` (still known) | none |
 | `loadcoach-0015.sqlite3` | LoadCoach | `0015` (known head) | none |
-| `ideapress-0010.sqlite3` | IdeaPress | `0010` (known head) | none |
+| `ideapress-0011.sqlite3` | IdeaPress | `0011` (known head, row W9: `attempts.prompt_source`) | none |
+| `ideapress-0010.sqlite3` | IdeaPress | `0010` (still known) | none |
 | `promptcadence-0011.sqlite3` | PromptCadence | `0011` (known head) | none |
 | `loadcoach-unknown-9999.sqlite3` | LoadCoach | `9999` (not a real revision) | none |
 

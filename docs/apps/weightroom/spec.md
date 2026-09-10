@@ -366,13 +366,20 @@ The banner, on every page and polled every five seconds, shows the newest unackn
 (`memory cap fired · ollama.service` with its journal line) and how many more; acknowledge records
 the operator and time; history keeps every alert's events. No outbound channel.
 
-**Prompts:** each application's shipped pack read from its installed package (`<app> prompts
-list|show`) and its overrides under `$XDG_CONFIG_HOME/<app>/prompts/`
-([Prompt Standards §6](../../standards/prompt-management-standards.md)); the editor writes an
-override record, validates it against the record schema (`setspec.prompts`), diffs it against
-the shipped version, and shows where an override is in effect. Deleting an override restores the
-shipped prompt. FreeWeight's rule that a benchmark refuses an overridden prompt without
-`--allow-prompt-override` is shown beside the editor, not bypassed.
+**Prompts:** the shipped pack of each application that has one — FreeWeight, and IdeaPress, which
+loads overrides and marks its attempts `prompt_source: user_override` since row W9 — read through
+its own `prompts list|show` (`--shipped` on IdeaPress, whose plain listing is what a stage renders;
+FreeWeight's `show --json` carries the whole record under `record`), and its overrides at
+`$XDG_CONFIG_HOME/<app>/prompts/<prompt_id>.json`
+([Prompt Standards §6](../../standards/prompt-management-standards.md)). LoadCoach and
+PromptCadence ship prompt records but no `prompts` command and read no override directory, so their
+prompts are not editable here, and the console says so by name. The editor validates a candidate
+with `setspec.prompts.load_record` — the loader the application itself runs — before it writes one,
+diffs it against the shipped record, and shows which prompts are overridden and any override on
+disk that would not load. Deleting an override restores the shipped prompt. Each application's rule
+is shown beside the editor, not bypassed: FreeWeight's benchmark refuses an overridden prompt
+without `--allow-prompt-override`; IdeaPress reads its pack once and needs a restart for an
+override to take effect.
 
 ## 8. Inputs
 

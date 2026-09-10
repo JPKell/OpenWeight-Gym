@@ -64,6 +64,7 @@ from weightroom.web.routes import docs as docs_routes
 from weightroom.web.routes import doctor as doctor_routes
 from weightroom.web.routes import jobs as jobs_routes
 from weightroom.web.routes import ollama as ollama_routes
+from weightroom.web.routes import prompts as prompts_routes
 from weightroom.web.routes import session as session_routes
 from weightroom.web.routes import settings as settings_routes
 from weightroom.web.routes import shell as shell_routes
@@ -412,6 +413,7 @@ def create_app(
     app.include_router(backups_routes.router, prefix="/api/v1")
     app.include_router(jobs_routes.router, prefix="/api/v1")
     app.include_router(alerts_routes.router, prefix="/api/v1")
+    app.include_router(prompts_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
@@ -430,6 +432,7 @@ def create_app(
     app.include_router(backups_routes.ui_router)
     app.include_router(jobs_routes.ui_router)
     app.include_router(alerts_routes.ui_router)
+    app.include_router(prompts_routes.ui_router)
 
     mount_static(app, environment=templates(), extra_dirs={"/app-static": APP_STATIC_DIR})
     return app
