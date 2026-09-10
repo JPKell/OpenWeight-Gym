@@ -63,7 +63,11 @@ WeightRoomGym; the backup listing from each application's `backups/`; `CHANGELOG
 Plan Phase 8 criteria 1–4 on the reference machine: the catalog listing every model once; a
 disable visible in `loadcoach route explain` as `model_disabled`; a small pull with progress; a
 GGUF drop-in appearing after refresh; PromptCadence's today against its ceiling with an
-unpriced count; a LoadCoach backup landing in LoadCoach's own `backups/`.
+unpriced count; a LoadCoach backup landing in LoadCoach's own `backups/`. And FreeWeight's own
+deletion through the console (ADR-0134 rule 2; operator, 2026-09-10): one run previewed, its
+selector typed and deleted, against a FreeWeight serving a **copy** of its database — never the
+operator's real one — with the `db.curated` audit row pasted into the handoff. W7 exercised it
+against a mocked FreeWeight only (`history/handoffs/W7_HANDOFF.md` §8).
 
 ## Finish line
 

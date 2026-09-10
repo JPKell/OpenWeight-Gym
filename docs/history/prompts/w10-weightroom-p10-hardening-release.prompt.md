@@ -43,6 +43,17 @@ symlink" (what still resolves through `~/ai/suite/docs`).
   byte-identical copies report *stale* (seven at W7, all `cmp`-identical). No CI job runs the
   script and no other repository has one. While rewriting the `docs` references, pick one rule,
   make the script and `CLAUDE.md` say the same thing, and leave every mirror passing it.
+* **WR-α is declared by this row** (operator, 2026-09-10). The phone step W1 left open
+  (`history/handoffs/W1_HANDOFF.md` §7 item 1) is part of Gate D's independent-device run: HTTPS
+  with the console's CA trusted, login, the four tabs with their dots, the strip moving, an
+  application started and stopped. WR-α is recorded together with WR-1.0.
+* **WeightRoomGym's CI stays red until MirrorWall publishes** (operator, 2026-09-10: WR-β was
+  declared on local gates rather than cutting a tag early). `requirements/ci.lock` pins
+  `mirrorwall==0.2.2` while the templates need MirrorWall after `v0.3.0` (`app_tab`,
+  `product_href`, `theme_control`, `mw:telemetry`, the multipart CSRF fix); every test job has
+  failed on GitHub since W3. With the arc's releases: MirrorWall's next version first, then
+  `pyproject.toml`'s floor raised to it (W3's `TODO`), the lock re-cut, and CI green before
+  `1.0.0` is tagged.
 
 ## Gates
 

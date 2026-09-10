@@ -214,7 +214,8 @@ SAN (openssl)    DNS:jordan-main, DNS:jordan-main.local, DNS:localhost, IP:10.77
 ## 7. Open for the operator
 
 1. Run the phone step (§5) on a real device and append the result to this handoff; **verified
-   on: (none yet)**.
+   on: (none yet)**. *Operator, 2026-09-10: folded into W10's independent-device verification;
+   WR-α is declared there.*
 2. ~~Then tag `v0.1.0`, push, approve the PyPI environment (§6).~~ **Done 2026-09-09, before
    the phone step**, with a wrinkle: `v0.1.0` was placed on `9b17d0b`, which predates
    `release.yml` (added in `96abe6b` after the row closed), so it released nothing; `v0.1.1`

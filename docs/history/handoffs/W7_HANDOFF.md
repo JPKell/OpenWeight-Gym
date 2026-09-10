@@ -262,8 +262,12 @@ Built on `main` in `0.7.0`, which is still unreleased.
    is `security` and carries the run and row counts and FreeWeight's backup path. No FreeWeight
    release.
 3. **Guarded-write backups expire after 90 days** (`0` for never). Built at W8; its kickoff says so.
-4. **WR-β waits for a pushed `main` and a green db-matrix job on GitHub** (§6 items 5 and 7); the
-   milestone map says so.
+4. **WR-β is declared on local gates** (§6 items 5 and 7; settled in a second interview the same
+   day). The push came (10:03 PDT) and CI answered: every WeightRoomGym test job fails on GitHub,
+   and has since W3, because `requirements/ci.lock` pins `mirrorwall==0.2.2` while the templates
+   need MirrorWall after `v0.3.0` (`UndefinedError: … does not export the requested name
+   'app_tab'`). Green needs a MirrorWall release and tags are held until the arc ends, so the
+   operator declared WR-β on this row's local evidence; W10's kickoff carries the re-pin.
 5. **The mirror-rule conflict waits for W10** (§6 item 6). The seven FreeWeight mirrors are
    `cmp`-identical to the canonical files; `sync_docs.py` turns links that leave FreeWeight's copy
    into plain text, so exact copies report stale. W10's kickoff carries it.
