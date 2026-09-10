@@ -73,3 +73,26 @@ def test_todays_suite_versions_are_all_inside_the_range() -> None:
         ("promptcadence", "1.3.3"),
     ):
         assert version_verdict(app, version) == "ok", app
+
+
+def test_both_version_payload_shapes_the_suite_answers_with_are_read() -> None:
+    """Found live at row W2: FreeWeight and LoadCoach nest, IdeaPress and PromptCadence do not."""
+    from weightroom.services.apps import _read_version_payload
+
+    nested = {
+        "application": {"name": "loadcoach", "version": "1.3.1", "git_commit": None},
+        "api": {"current": "v1", "supported": ["v1"], "deprecated": []},
+        "schemas": {},
+    }
+    assert _read_version_payload(nested) == ("1.3.1", "v1")
+
+    flat = {
+        "application": "promptcadence",
+        "version": "1.3.3",
+        "api_version": "v1",
+        "schema_version": "1",
+    }
+    assert _read_version_payload(flat) == ("1.3.3", "v1")
+
+    assert _read_version_payload({"nothing": "useful"}) == (None, None)
+    assert _read_version_payload({"application": {"name": "x"}}) == (None, None)

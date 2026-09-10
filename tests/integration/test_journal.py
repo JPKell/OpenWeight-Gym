@@ -142,9 +142,11 @@ def test_filters_become_journalctl_options_and_the_query_is_matched_literally(ho
     argv = _argvs(log)[0]
     assert argv[argv.index("--since") + 1] == "-1h"
     assert argv[argv.index("--until") + 1] == "now"
-    assert argv[argv.index("-p") + 1] == "4"
     assert argv[argv.index("--grep") + 1] == r"a\[0\]"
     assert "--case-sensitive=no" in argv
+    # The severity filter is applied here, not by journalctl: see `history`'s docstring.
+    assert "-p" not in argv
+    assert argv[argv.index("-n") + 1] == "30"  # three wanted, over-fetched ten to one
 
 
 def test_several_units_become_several_u_options(host: Path) -> None:
@@ -287,3 +289,66 @@ def test_a_refused_follow_does_not_consume_a_slot(host: Path) -> None:
             pass
     with reader.follow(["loadcoach.service"], backfill=0) as subscription:
         assert subscription is not None
+
+
+def test_a_suite_json_log_line_is_unwrapped_and_keeps_its_own_severity() -> None:
+    """Every application logs JSON to stdout, so the journal files even an ERROR at priority 6."""
+    entry = parse_entry(
+        {
+            "__CURSOR": "s=1;i=1",
+            "__REALTIME_TIMESTAMP": "1789000000000000",
+            "PRIORITY": "6",
+            "_SYSTEMD_USER_UNIT": "loadcoach.service",
+            "MESSAGE": json.dumps(
+                {
+                    "timestamp": "2026-09-10T01:44:28.581Z",
+                    "level": "ERROR",
+                    "logger": "uvicorn.error",
+                    "message": "[Errno 98] address already in use",
+                    "loadcoach_version": "1.3.1",
+                }
+            ),
+        }
+    )
+    assert entry is not None
+    assert entry.text == "[Errno 98] address already in use"
+    assert entry.level == "err"  # the record's own severity, not the transport's
+    assert entry.priority == 6  # the journal's, unchanged and still reported
+    assert entry.logger == "uvicorn.error"
+    body = entry.as_json()
+    assert body["message"] == "[Errno 98] address already in use"
+    assert body["raw"] is not None and body["raw"].startswith("{")
+
+
+def test_a_line_that_is_not_ours_is_left_exactly_as_the_journal_holds_it() -> None:
+    for message in ("Started loadcoach.service.", "{not json", '{"a": 1}', "{}"):
+        entry = parse_entry(
+            {"__CURSOR": "s=1;i=1", "__REALTIME_TIMESTAMP": "1789000000000000", "MESSAGE": message}
+        )
+        assert entry is not None
+        assert entry.text == message
+        assert entry.record_level is None
+        assert entry.as_json()["raw"] is None
+
+
+def test_the_severity_filter_matches_an_applications_own_error(host: Path) -> None:
+    """`journalctl -p err` would return none of these; the filter is applied on the true level."""
+    reader, log = _install(host, count=0)
+    script = host / "bin" / "journalctl"
+    script.write_text(
+        f"#!{sys.executable}\n"
+        "import json, sys\n"
+        f"open({str(log)!r}, 'a').write(json.dumps(sys.argv[1:]) + '\\n')\n"
+        "for index, level in enumerate(['INFO', 'ERROR', 'INFO', 'WARNING', 'ERROR']):\n"
+        "    body = json.dumps({'level': level, 'logger': 'x', 'message': level.lower()})\n"
+        "    print(json.dumps({'__CURSOR': 's=a;i=%d' % index,\n"
+        "                      '__REALTIME_TIMESTAMP': '1789000000000000',\n"
+        "                      'PRIORITY': '6', '_SYSTEMD_USER_UNIT': 'loadcoach.service',\n"
+        "                      'MESSAGE': body}))\n",
+        encoding="utf-8",
+    )
+    script.chmod(0o755)
+    page = reader.history(["loadcoach.service"], level="err", limit=10)
+    assert [line.text for line in page.lines] == ["error", "error"]
+    unfiltered = reader.history(["loadcoach.service"], limit=10)
+    assert len(unfiltered.lines) == 5

@@ -39,6 +39,7 @@ NAV_ITEMS: tuple[dict[str, str], ...] = (
 PILL_TONES: dict[str, str] = {
     "ok": "success",
     "starting": "warning",
+    "stopping": "warning",
     "stopped": "neutral",
     "failed": "danger",
     "version mismatch": "danger",

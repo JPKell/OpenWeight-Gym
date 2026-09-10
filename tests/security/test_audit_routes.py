@@ -60,6 +60,14 @@ def _control_form(console: Console) -> Any:  # noqa: ANN401
     return console.post_form("/apps/loadcoach/control", {"verb": "restart"})
 
 
+def _ollama_restart(console: Console) -> Any:  # noqa: ANN401
+    return console.client.post("/api/v1/ollama/restart", headers=JSON_HEADERS)
+
+
+def _ollama_restart_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/ollama/restart", {})
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -70,6 +78,8 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/api/v1/apps/{app}/stop"): _unit("stop"),
     ("POST", "/api/v1/apps/{app}/restart"): _unit("restart"),
     ("POST", "/apps/{app}/control"): _control_form,
+    ("POST", "/api/v1/ollama/restart"): _ollama_restart,
+    ("POST", "/ollama/restart"): _ollama_restart_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 

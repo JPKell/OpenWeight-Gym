@@ -445,3 +445,101 @@ def test_the_unified_page_names_every_unit_and_streams_from_one_place(tmp_path: 
     assert 'data-log-stream="/api/v1/logs/stream"' in page
     for name in ("freeweight", "loadcoach", "ideapress", "promptcadence", "weightroom"):
         assert name in page
+
+
+def test_the_audit_page_filters_by_application_action_and_date(tmp_path: Path) -> None:
+    console = _console(
+        tmp_path, systemd=FakeSystemdController(states={"loadcoach.service": "active"})
+    )
+    console.login()
+    console.client.post("/api/v1/apps/loadcoach/restart", headers=JSON_HEADERS)
+
+    page = console.client.get("/audit?action=unit.restart", headers={"Accept": "text/html"})
+    assert page.status_code == 200
+    assert "unit.restart" in page.text
+    assert 'value="unit.restart" selected' in page.text
+    assert "login" not in page.text.split("<tbody")[-1]
+
+    empty = console.client.get("/audit?app=ideapress", headers={"Accept": "text/html"})
+    assert "No rows match these filters" in empty.text
+    assert "Clear the filters" in empty.text
+
+
+def test_the_audit_page_ignores_an_unparseable_date_rather_than_refusing(tmp_path: Path) -> None:
+    console = _console(tmp_path)
+    console.login()
+    page = console.client.get("/audit?since=yesterday", headers={"Accept": "text/html"})
+    assert page.status_code == 200
+    assert "is not a date or timestamp" in page.text
+    assert "login" in page.text
+
+
+def test_the_audit_page_since_filter_selects_by_instant(tmp_path: Path) -> None:
+    console = _console(tmp_path)
+    console.login()
+    past = console.client.get("/audit?since=2026-09-08", headers={"Accept": "text/html"})
+    assert "login" in past.text
+    future = console.client.get("/audit?since=2026-09-10", headers={"Accept": "text/html"})
+    assert "No rows match these filters" in future.text
+
+
+@respx.mock
+def test_activating_reads_as_starting_not_stopped(tmp_path: Path) -> None:
+    """Found live at row W2: LoadCoach sat in `activating` for seconds and the pill said stopped."""
+    console = _console(
+        tmp_path, systemd=FakeSystemdController(states={"loadcoach.service": "activating"})
+    )
+    console.login()
+    body = console.client.get("/api/v1/apps/loadcoach").json()
+    assert body["unit_state"] == "activating"
+    assert body["state"] == "starting"
+    page = console.client.get("/apps", headers={"Accept": "text/html"}).text
+    assert "status-warning" in page
+
+
+@respx.mock
+def test_deactivating_reads_as_stopping(tmp_path: Path) -> None:
+    console = _console(
+        tmp_path, systemd=FakeSystemdController(states={"loadcoach.service": "deactivating"})
+    )
+    console.login()
+    assert console.client.get("/api/v1/apps/loadcoach").json()["state"] == "stopping"
+
+
+@respx.mock
+def test_the_nested_version_shape_negotiates(running: Console) -> None:
+    respx.get(f"{LOADCOACH_URL}/api/v1/version").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "application": {"name": "loadcoach", "version": "1.3.1", "git_commit": None},
+                "api": {"current": "v1", "supported": ["v1"], "deprecated": []},
+            },
+        )
+    )
+    running.login()
+    body = running.client.get("/api/v1/apps/loadcoach").json()
+    assert body["version"] == "1.3.1"
+    assert body["api_version"] == "v1"
+    assert body["version_verdict"] == "ok"
+    assert body["state"] == "ok"
+
+
+@respx.mock
+def test_a_failed_probe_is_not_cached_so_a_starting_application_is_seen_when_it_comes_up(
+    running: Console,
+) -> None:
+    """Found live at row W2: caching the refusal showed *starting* long after it had started."""
+    route = respx.get(f"{LOADCOACH_URL}/api/v1/version").mock(
+        side_effect=[
+            httpx.ConnectError("still binding"),
+            httpx.Response(200, json={"application": "loadcoach", "version": "1.3.1"}),
+        ]
+    )
+    running.login()
+    assert running.client.get("/api/v1/apps/loadcoach").json()["state"] == "starting"
+    assert running.client.get("/api/v1/apps/loadcoach").json()["version"] == "1.3.1"
+    assert route.call_count == 2
+    # The success *is* cached.
+    running.client.get("/api/v1/apps/loadcoach")
+    assert route.call_count == 2

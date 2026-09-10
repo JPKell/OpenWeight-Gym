@@ -1,0 +1,11 @@
+Id=ollama.service
+ActiveState=active
+SubState=running
+MemoryHigh=23622320128
+MemoryMax=25769803776
+MemorySwapMax=0
+ManagedOOMMemoryPressure=kill
+ManagedOOMMemoryPressureLimit=2147483648
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin OLLAMA_HOST=0.0.0.0:11434 OLLAMA_CONTEXT_LENGTH=8192 OLLAMA_MAX_LOADED_MODELS=1
+FragmentPath=/etc/systemd/system/ollama.service
+DropInPaths=/etc/systemd/system/ollama.service.d/override.conf

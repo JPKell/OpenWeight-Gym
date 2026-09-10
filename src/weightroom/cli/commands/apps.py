@@ -26,7 +26,7 @@ _JSON = Annotated[bool, typer.Option("--json", help="Print JSON instead of a tab
 
 @app.command("status")
 def status(config: _CONFIG = None, json_output: _JSON = False) -> None:
-    """The four applications in one table.
+    """The four applications and Ollama in one table.
 
     Example:
         wr-gym apps status
@@ -36,6 +36,8 @@ def status(config: _CONFIG = None, json_output: _JSON = False) -> None:
 
     from weightroom.cli._backend import load_settings_or_exit
     from weightroom.services.apps import VersionCache, inventory
+    from weightroom.services.journal import JournalReader
+    from weightroom.services.ollama import ollama_client, ollama_report
     from weightroom.services.processes import SubprocessSystemdController
 
     loaded = load_settings_or_exit(config)
@@ -48,8 +50,19 @@ def status(config: _CONFIG = None, json_output: _JSON = False) -> None:
             client=client,
             now=time.monotonic(),
         )
+        with ollama_client(loaded.settings) as ollama_transport:
+            ollama = ollama_report(
+                loaded.settings,
+                controller=controller,
+                client=ollama_transport,
+                journal=JournalReader(),
+            )
     if json_output:
-        typer.echo(json.dumps({"apps": [view.as_json() for view in views]}, indent=2))
+        typer.echo(
+            json.dumps(
+                {"apps": [view.as_json() for view in views], "ollama": ollama.as_json()}, indent=2
+            )
+        )
         return
     header = f"{'application':<16}{'state':<18}{'uptime':<12}{'version':<12}unit"
     typer.echo(header)
@@ -58,7 +71,10 @@ def status(config: _CONFIG = None, json_output: _JSON = False) -> None:
         typer.echo(
             f"{view.name:<16}{view.pill:<18}{uptime:<12}{view.version or '—':<12}{view.unit}"
         )
-    typer.echo("ollama          (gate C adds the row; `wr-gym doctor` at W4)")
+    checks = f"{ollama.passing}/{ollama.total} memory-safety checks"
+    typer.echo(f"{'ollama':<16}{ollama.state:<18}{'—':<12}{'—':<12}{ollama.unit}  {checks}")
+    if not ollama.safe and ollama.state != "unsupported":
+        typer.echo(f"                 fix: {ollama.apply_script}")
 
 
 def logs(

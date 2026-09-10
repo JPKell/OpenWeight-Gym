@@ -1,10 +1,20 @@
-"""The version the package declares is the one this row ships."""
+"""The version the package declares is the one this row ships, and the CHANGELOG says so."""
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import weightroom
 
+VERSION = "0.2.0"
+"""Row W2 prepares ``0.2.0`` (unpublished)."""
 
-def test_version_is_the_phase_1_release() -> None:
-    """Row W1 prepares ``0.1.0`` (unpublished)."""
-    assert weightroom.__version__ == "0.1.0"
+
+def test_version_is_the_phase_2_release() -> None:
+    assert weightroom.__version__ == VERSION
+
+
+def test_the_changelog_has_an_entry_for_it() -> None:
+    """Packaging standards §4: a user-visible change is a CHANGELOG entry, not just a bump."""
+    changelog = (Path(__file__).resolve().parents[2] / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert f"## [{VERSION}]" in changelog

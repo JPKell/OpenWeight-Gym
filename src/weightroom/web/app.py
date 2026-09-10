@@ -39,6 +39,7 @@ from weightroom.config import LOOPBACK_HOSTS, Settings, resolve_config_path
 from weightroom.services.apps import VersionCache
 from weightroom.services.database import Database
 from weightroom.services.journal import JournalReader
+from weightroom.services.ollama import ollama_client
 from weightroom.services.processes import SubprocessSystemdController
 from weightroom.web.csrf import render_form_page
 from weightroom.web.hosts import resolve_allowed_hosts
@@ -46,6 +47,7 @@ from weightroom.web.limits import BodySizeLimitMiddleware, RateLimitMiddleware, 
 from weightroom.web.rendering import templates
 from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
+from weightroom.web.routes import ollama as ollama_routes
 from weightroom.web.routes import session as session_routes
 from weightroom.web.routes import shell as shell_routes
 from weightroom.web.routes import system as system_routes
@@ -217,6 +219,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         database.close()
         app.state.database = None
         app.state.http.close()
+        app.state.ollama_http.close()
 
 
 def create_app(
@@ -259,8 +262,11 @@ def create_app(
     app.state.controller = controller if controller is not None else SubprocessSystemdController()
     app.state.journal = journal if journal is not None else JournalReader()
     app.state.versions = VersionCache()
-    # Pooled, and it opens nothing until the first request; the lifespan closes it.
+    # Pooled, and both open nothing until the first request; the lifespan closes them. The
+    # Ollama one is separate because ModelRack's provider issues relative paths against whatever
+    # client it is handed, so that client must carry Ollama's own base URL.
     app.state.http = httpx.Client(follow_redirects=False, trust_env=False)
+    app.state.ollama_http = ollama_client(settings)
 
     # Starlette wraps in reverse order of these calls; the stack from the outside in is the
     # module docstring's order.
@@ -282,11 +288,13 @@ def create_app(
     app.include_router(session_routes.router, prefix="/api/v1")
     app.include_router(apps_routes.router, prefix="/api/v1")
     app.include_router(audit_routes.router, prefix="/api/v1")
+    app.include_router(ollama_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
     app.include_router(apps_routes.ui_router)
     app.include_router(audit_routes.ui_router)
+    app.include_router(ollama_routes.ui_router)
 
     mount_static(app, environment=templates())
     return app

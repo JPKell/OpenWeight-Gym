@@ -61,6 +61,7 @@ __all__ = [
     "JournalPage",
     "JournalReader",
     "TooManyFollowers",
+    "unwrap_suite_log",
     "priority_for_level",
 ]
 
@@ -78,6 +79,8 @@ MAX_CONCURRENT_FOLLOWS: Final = 16
 
 _FOLLOW_TIMEOUT_SECONDS: Final = 5.0
 _HISTORY_TIMEOUT_SECONDS: Final = 30.0
+_FILTER_OVERFETCH: Final = 10
+"""How many rows a severity-filtered page reads for each row it wants."""
 
 PRIORITY_NAMES: Final[dict[int, str]] = {
     0: "emerg",
@@ -139,6 +142,51 @@ def _message_text(raw: Any) -> str:  # noqa: ANN401 — the journal's own JSON, 
     return "" if raw is None else str(raw)
 
 
+_SUITE_LEVELS: Final[dict[str, str]] = {
+    "CRITICAL": "crit",
+    "FATAL": "crit",
+    "ERROR": "err",
+    "WARNING": "warning",
+    "WARN": "warning",
+    "INFO": "info",
+    "DEBUG": "debug",
+}
+
+
+def unwrap_suite_log(message: str) -> tuple[str, str | None, str | None]:
+    """Unwrap a suite JSON log record, if that is what this line is.
+
+    Every application in the suite logs one JSON object per line to stdout, so the journal holds
+    the whole document as the message and records its priority as ``info`` — stdout has no
+    severity. Two consequences, both of which this fixes: a log pane would render a wall of JSON,
+    and an application's own ``ERROR`` would be invisible to a severity filter, because the
+    *transport's* priority is 6 whatever the record says.
+
+    Args:
+        message: The journal's message text.
+
+    Returns:
+        ``(text, level, logger)`` — the record's own message, its own level as one of
+        :data:`PRIORITY_NAMES`, and the logger name; ``(message, None, None)`` for a line that is
+        not one of ours, which is left exactly as the journal holds it.
+    """
+    if not message.startswith("{") or '"message"' not in message:
+        return message, None, None
+    try:
+        record = json.loads(message)
+    except json.JSONDecodeError:
+        return message, None, None
+    if not isinstance(record, dict) or not isinstance(record.get("message"), str):
+        return message, None, None
+    level = _SUITE_LEVELS.get(str(record.get("level", "")).upper())
+    logger_name = record.get("logger")
+    return (
+        record["message"],
+        level,
+        str(logger_name) if isinstance(logger_name, str) else None,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class JournalLine:
     """One journal entry, in the fields a log pane shows.
@@ -146,11 +194,15 @@ class JournalLine:
     Attributes:
         cursor: systemd's own opaque position, the unit of paging and of resumption.
         at: When it was logged, from ``__REALTIME_TIMESTAMP`` (microseconds since the epoch).
-        priority: The syslog priority, 0–7.
+        priority: The syslog priority the *journal* recorded, 0–7.
         unit: The unit it came from, user or system.
-        message: The text.
+        message: The text exactly as the journal holds it — a suite application's whole JSON
+            record, when that is what it wrote.
         pid: The process, where the journal recorded one.
         identifier: ``SYSLOG_IDENTIFIER`` — usually the command's name.
+        text: What a pane shows: the record's own message for a suite log line, else ``message``.
+        record_level: The record's own severity, where it has one; see :func:`unwrap_suite_log`.
+        logger: The record's own logger name, where it has one.
     """
 
     cursor: str
@@ -160,11 +212,19 @@ class JournalLine:
     message: str
     pid: int | None = None
     identifier: str = ""
+    text: str = ""
+    record_level: str | None = None
+    logger: str | None = None
 
     @property
     def level(self) -> str:
-        """The priority's name — ``err``, ``warning``, ``info``."""
-        return PRIORITY_NAMES.get(self.priority, "info")
+        """The line's severity: the record's own where it has one, else the journal's priority.
+
+        A suite application writes JSON to stdout, which the journal necessarily files at
+        ``info``; the record's own ``ERROR`` is the true answer and is what the pane colours and
+        what an operator means by *show me the errors*.
+        """
+        return self.record_level or PRIORITY_NAMES.get(self.priority, "info")
 
     @property
     def app(self) -> str:
@@ -180,7 +240,9 @@ class JournalLine:
             "level": self.level,
             "unit": self.unit,
             "app": self.app,
-            "message": self.message,
+            "message": self.text or self.message,
+            "raw": self.message if self.text != self.message else None,
+            "logger": self.logger,
             "pid": self.pid,
             "identifier": self.identifier,
         }
@@ -203,15 +265,31 @@ def parse_entry(raw: Mapping[str, Any]) -> JournalLine | None:
     priority_raw = raw.get("PRIORITY", "6")
     priority = int(priority_raw) if isinstance(priority_raw, str) and priority_raw.isdigit() else 6
     pid_raw = raw.get("_PID", "")
-    unit = raw.get("_SYSTEMD_USER_UNIT") or raw.get("_SYSTEMD_UNIT") or ""
+    # `USER_UNIT`/`UNIT` first. A message the service manager logs *about* a unit — "Started
+    # loadcoach.service", "Failed with result 'exit-code'" — is emitted by `init.scope`, so the
+    # underscored trusted fields name the manager rather than the unit the line is about, and a
+    # per-application pane would label every one of those lines `init.scope`. The non-underscored
+    # fields are the ones journalctl itself matches `-u` against. Found live at row W2.
+    message = _message_text(raw.get("MESSAGE"))
+    text, record_level, logger_name = unwrap_suite_log(message)
+    unit = (
+        raw.get("USER_UNIT")
+        or raw.get("UNIT")
+        or raw.get("_SYSTEMD_USER_UNIT")
+        or raw.get("_SYSTEMD_UNIT")
+        or ""
+    )
     return JournalLine(
         cursor=cursor,
         at=datetime.fromtimestamp(microseconds / 1_000_000, tz=UTC),
         priority=min(max(priority, 0), 7),
         unit=str(unit),
-        message=_message_text(raw.get("MESSAGE")),
+        message=message,
         pid=int(pid_raw) if isinstance(pid_raw, str) and pid_raw.isdigit() else None,
         identifier=str(raw.get("SYSLOG_IDENTIFIER", "")),
+        text=text,
+        record_level=record_level,
+        logger=logger_name,
     )
 
 
@@ -310,7 +388,12 @@ class JournalReader:
             scope: ``user`` for the applications, ``system`` for Ollama.
             since: ``journalctl --since`` — ``"-1h"``, ``"2026-09-09 12:00"``.
             until: ``journalctl --until``.
-            level: A level name or number; entries at that priority **and more severe**.
+            level: A level name or number; entries at that severity **and more severe**.
+                Applied here rather than by ``journalctl -p``: a suite application writes JSON to
+                stdout, so the journal files even its ``ERROR`` records at priority 6 and ``-p
+                err`` would return none of them. The reader over-fetches and filters on each
+                line's true severity, so a filtered page can come back short of ``limit`` — which
+                is why ``next_cursor`` is decided by the *fetched* window, not the filtered one.
             query: Free text. Matched literally: the string is escaped before it reaches
                 ``--grep``, so an operator searching for ``a[0]`` finds ``a[0]`` and does not
                 accidentally write a character class.
@@ -327,19 +410,21 @@ class JournalReader:
                 is not in a group that may read this unit's journal.
         """
         wanted = max(1, min(limit, JOURNAL_PAGE_CAP))
+        threshold = priority_for_level(level)
+        # Over-fetch when filtering, because the filter is applied here and not by journalctl.
+        fetch = (
+            min(wanted * _FILTER_OVERFETCH, JOURNAL_PAGE_CAP) if threshold is not None else wanted
+        )
         argv = self._base_argv(units, scope=scope)
         # One extra row when resuming: `--cursor` is inclusive, so the first row of a resumed
         # page is the last row of the previous one.
-        argv += ["--reverse", "-n", str(wanted + (1 if cursor else 0))]
+        argv += ["--reverse", "-n", str(fetch + (1 if cursor else 0))]
         if cursor:
             argv += ["--cursor", cursor]
         if since:
             argv += ["--since", since]
         if until:
             argv += ["--until", until]
-        priority = priority_for_level(level)
-        if priority is not None:
-            argv += ["-p", str(priority)]
         if query:
             argv += ["--case-sensitive=no", "--grep", re.escape(query)]
         result = self._runner(argv, self._environment(), _HISTORY_TIMEOUT_SECONDS)
@@ -351,12 +436,18 @@ class JournalReader:
         ]
         if cursor and lines and lines[0].cursor == cursor:
             lines = lines[1:]
+        # The cursor tracks the window that was *read*, so paging never skips an entry that the
+        # severity filter happened to exclude on this page.
+        last_read = lines[-1].cursor if len(lines) >= fetch else None
+        if threshold is not None:
+            lines = [line for line in lines if _NAME_TO_PRIORITY[line.level] <= threshold]
         page = tuple(lines[:wanted])
-        return JournalPage(
-            lines=page,
-            next_cursor=page[-1].cursor if len(page) == wanted else None,
-            capped=limit > JOURNAL_PAGE_CAP,
+        next_cursor = (
+            last_read
+            if threshold is not None
+            else (page[-1].cursor if len(page) == wanted else None)
         )
+        return JournalPage(lines=page, next_cursor=next_cursor, capped=limit > JOURNAL_PAGE_CAP)
 
     @contextmanager
     def follow(

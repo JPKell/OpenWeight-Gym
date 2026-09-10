@@ -5,6 +5,33 @@
 <h2>Audit trail</h2>
 <p class="muted">Every action the console took: who, when, what, the outcome. Secrets are redacted
 before a row is written. <a href="/api/v1/audit">JSON</a></p>
+<form method="get" action="/audit" class="filter-bar">
+  <label class="field">Application
+    <select name="app">
+      <option value="">any</option>
+      {% for name in applications %}
+      <option value="{{ name }}"{% if selected.app == name %} selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="field">Action
+    <select name="action">
+      <option value="">any</option>
+      {% for name in actions %}
+      <option value="{{ name }}"{% if selected.action == name %} selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="field">Since
+    <input type="date" name="since" value="{{ selected.since }}">
+  </label>
+  <label class="field">Rows
+    <input type="number" name="limit" min="1" max="200" value="{{ selected.limit }}">
+  </label>
+  <button type="submit">Filter</button>
+  <a href="/audit">Clear</a>
+</form>
+{% if since_problem %}<p class="notice">{{ since_problem }}</p>{% endif %}
 {% if rows %}
 {% set columns = [{"label": "At"}, {"label": "Actor"}, {"label": "Action"}, {"label": "App"}, {"label": "Target"}, {"label": "Outcome"}, {"label": "Message"}, {"label": "Params"}] %}
 {% set table_rows = [] %}
@@ -22,6 +49,9 @@ before a row is written. <a href="/api/v1/audit">JSON</a></p>
 {% endfor %}
 {{ table(columns, table_rows, caption="Newest first; the API pages further back.", table_id="audit", complete=not has_more, row_count=rows | length) }}
 {% else %}
-{{ empty_state("Nothing has been recorded yet. The first login writes the first row.") }}
+{{ empty_state("No rows match these filters." if (selected.app or selected.action or selected.since)
+                else "Nothing has been recorded yet. The first login writes the first row.",
+               action_label="Clear the filters" if (selected.app or selected.action or selected.since) else None,
+               action_href="/audit") }}
 {% endif %}
 {% endblock %}

@@ -1,0 +1,86 @@
+{% extends "mirrorwall/base.html" %}
+{% from "mirrorwall/components.html" import badge, card, empty_state %}
+{% block title %}Ollama — WeightRoomGym{% endblock %}
+{% block content %}
+<h2>Ollama
+  {{ badge(report.state, tone="success" if report.state == "active" else "neutral") }}
+  {{ badge(("safe: " ~ report.passing ~ "/" ~ report.total) if report.safe else (report.passing ~ "/" ~ report.total ~ " memory-safety checks"),
+           tone="success" if report.safe else "danger") }}
+</h2>
+<p class="muted">Ollama is a <strong>system</strong> unit its own installer wrote. WeightRoomGym
+reads it — <code>systemctl show {{ report.unit }}</code>, <code>/api/ps</code> through ModelRack,
+and the journal where the operator's groups permit it — and restarts it only through a polkit
+rule a root user installed (ADR-0125 rules 4–5). <a href="/api/v1/ollama">JSON</a></p>
+
+<h3>Memory safety — <code>MEMORY_SAFETY.md</code> §2.1</h3>
+{% if report.state == "unsupported" %}
+<p class="notice">Unsupported on this host: there is no <code>systemctl</code>. Every other page
+works (ADR-0125 rule 7).</p>
+{% endif %}
+<table id="memory-safety">
+  <caption>Each line of the checklist, with what this unit actually says.</caption>
+  <thead><tr><th scope="col"></th><th scope="col">Setting</th><th scope="col">Found</th>
+             <th scope="col">Expected</th><th scope="col">Protects against</th></tr></thead>
+  <tbody>
+  {% for finding in report.findings %}
+    <tr>
+      <td>{{ badge(finding.outcome, tone={"pass": "success", "fail": "danger"}.get(finding.outcome, "neutral")) }}</td>
+      <th scope="row"><code>{{ finding.key }}</code></th>
+      <td><code>{{ finding.found }}</code></td>
+      <td><code>{{ finding.expected }}</code></td>
+      <td class="muted">{{ finding.why }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if not report.safe %}
+<p class="notice">This unit is not configured the way <code>MEMORY_SAFETY.md</code> §2.1 asks.
+The fix is one script, and WeightRoomGym <strong>prints it rather than running it</strong> —
+it edits a file under <code>/etc</code> and this console is never root:</p>
+<pre><code>{{ report.apply_script }}</code></pre>
+{% endif %}
+
+<h3>Resident models</h3>
+{% if report.residency_error %}
+<p class="muted">Ollama's API did not answer: <code>{{ report.residency_error }}</code></p>
+{% elif report.residency %}
+<ul class="card-grid">
+{% for entry in report.residency %}
+  {{ card(entry.name, entry.vram_bytes | bytes_human, note=("context " ~ (entry.context_length or "—"))) }}
+{% endfor %}
+</ul>
+{% else %}
+{{ empty_state("Nothing is loaded." if report.state == "active" else "The daemon is not running.") }}
+{% endif %}
+
+<h3>Journal</h3>
+<p>{% if report.journal_readable %}
+  <code>journalctl -u {{ report.unit }}</code> is readable by this operator.
+{% else %}
+  <strong>Journal not readable.</strong> <code>{{ report.journal_detail }}</code>
+  Reading a system unit's journal needs membership of <code>systemd-journal</code> or
+  <code>adm</code>; the rest of this pane works without it (ADR-0125 rule 4).
+{% endif %}</p>
+
+<h3>Restart</h3>
+<p class="muted">Restart is
+{% if report.grant == "permitted" %}<strong>permitted</strong> — the last attempt succeeded.
+{% elif report.grant == "not_permitted" %}<strong>not permitted</strong> — the last attempt was refused by polkit.
+{% else %}<strong>not yet known</strong> — nothing has been tried. Pressing the button is how this
+console finds out: polkit will not answer a question about a unit and a verb from a caller that is
+not root, and the rule file is unreadable to the operator, so the outcome of an attempt is the only
+honest probe (row W2).{% endif %}</p>
+<form method="post" action="/ollama/restart" class="field">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit" {% if report.state == "unsupported" %}disabled{% endif %}>Restart Ollama</button>
+</form>
+<details>
+  <summary>The polkit rule, if it is refused</summary>
+  <p>A <strong>unit and a verb</strong> are granted, not a command — a sudoers line would grant
+  <code>systemctl</code> itself, and this console is reachable from the LAN.</p>
+  <p>Save as <code>{{ rule_path }}</code>:</p>
+  <pre><code>{{ rule_text }}</code></pre>
+  <p>Install it as root:</p>
+  <pre><code>{{ install_command }}</code></pre>
+</details>
+{% endblock %}

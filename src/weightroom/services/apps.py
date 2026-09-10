@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import threading
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
@@ -179,6 +180,12 @@ class VersionCache:
             if fresh and held is not None:
                 return held
         answer = probe()
+        if answer.version is None:
+            # A failure is not cached. The unit has to be *active* for a probe to happen at all,
+            # so an application whose API is not answering yet is one that is starting — and
+            # holding that answer for five minutes would show *starting* on a console that had
+            # long since come up. Found on the reference machine at row W2.
+            return answer
         with self._lock:
             self._entries[app] = answer
         return answer
@@ -236,13 +243,23 @@ class AppView:
 
     @property
     def pill(self) -> str:
-        """The one word the tab's status pill shows."""
+        """The one word the tab's status pill shows.
+
+        ``activating`` and ``deactivating`` are their own words, not *stopped*. systemd holds a
+        unit in ``activating`` for as long as its process takes to come up, and an operator shown
+        *stopped* there presses Start a second time — found on the reference machine at row W2,
+        where LoadCoach spent several seconds activating.
+        """
         if self.unit_state == "unsupported":
             return "unsupported"
         if not self.installed:
             return "not installed"
         if self.unit_state == "failed":
             return "failed"
+        if self.unit_state == "activating":
+            return "starting"
+        if self.unit_state == "deactivating":
+            return "stopping"
         if not self.running:
             return "stopped"
         if self.verdict not in {"ok", "unreadable"}:
@@ -272,6 +289,39 @@ class AppView:
         }
 
 
+def _read_version_payload(body: Mapping[str, Any]) -> tuple[str | None, str | None]:
+    """Read either shape the suite's ``GET /api/v1/version`` currently answers with.
+
+    There are two, and they disagree (found on the reference machine at row W2):
+
+    * **Nested** — FreeWeight and LoadCoach: ``{"application": {"name", "version", "git_commit"},
+      "api": {"current", "supported", "deprecated"}, "schemas": {…}}``.
+    * **Flat** — IdeaPress, PromptCadence and WeightRoomGym itself: ``{"application": "<name>",
+      "version": "…", "api_version": "v1", "schema_version": "1"}``.
+
+    WeightRoomGym reads both rather than picking one and calling the other two applications
+    broken: it is the console, not the arbiter, and a version route that a console cannot parse
+    is a console that reports a healthy application as unreachable. Converging the two is a
+    documentation defect for its own row — see ``W2_HANDOFF.md``.
+
+    Args:
+        body: The decoded response.
+
+    Returns:
+        ``(version, api_version)``, either of which may be ``None`` when the payload does not
+        carry it.
+    """
+    application = body.get("application")
+    if isinstance(application, Mapping):
+        version = application.get("version")
+        api = body.get("api")
+        current = api.get("current") if isinstance(api, Mapping) else None
+        return (str(version) if version else None, str(current) if current else None)
+    version = body.get("version")
+    api_version = body.get("api_version")
+    return (str(version) if version else None, str(api_version) if api_version else None)
+
+
 def _probe_version(settings: Settings, app: str, *, client: httpx.Client) -> VersionProbe:
     """Ask one application what it is. Never raises: a refusal is an answer."""
     import time
@@ -296,11 +346,10 @@ def _probe_version(settings: Settings, app: str, *, client: httpx.Client) -> Ver
         return VersionProbe(None, None, now, error=type(exc).__name__ + ": " + str(exc)[:200])
     if not isinstance(body, dict):
         return VersionProbe(None, None, now, error="the version endpoint answered a non-object")
-    return VersionProbe(
-        version=str(body.get("version")) if body.get("version") else None,
-        api_version=str(body.get("api_version")) if body.get("api_version") else None,
-        checked_at=now,
-    )
+    version, api_version = _read_version_payload(body)
+    if version is None:
+        return VersionProbe(None, None, now, error="the version endpoint named no version")
+    return VersionProbe(version=version, api_version=api_version, checked_at=now)
 
 
 def view_for(

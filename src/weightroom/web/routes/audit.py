@@ -2,17 +2,36 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from mirrorwall import clamp_limit, paginated_response
 
+from weightroom.config import APPLICATIONS
+from weightroom.domain.audit import ACTIONS
 from weightroom.services.audit import get_audit, list_audit
 from weightroom.web.csrf import render_form_page
 from weightroom.web.session import CurrentOperator
 
 __all__ = ["router", "ui_router"]
+
+
+def _blank_to_none(value: str | None) -> str | None:
+    """An empty select box means *no filter*, not a filter on the empty string."""
+    return value or None
+
+
+def _parse_since(value: str | None) -> tuple[datetime | None, str | None]:
+    """``2026-09-09`` or a full ISO timestamp; anything else is ignored, with the reason."""
+    if not value:
+        return None, None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None, f"{value!r} is not a date or timestamp; the filter was ignored"
+    return (parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)), None
+
 
 router = APIRouter(tags=["audit"])
 ui_router = APIRouter(tags=["ui"], include_in_schema=False)
@@ -54,9 +73,43 @@ def audit_detail(request: Request, principal: CurrentOperator, audit_id: str) ->
 
 
 @ui_router.get("/audit", summary="The audit page", response_class=HTMLResponse)
-def audit_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
-    """The newest fifty rows, with the filters the API takes."""
-    rows, has_more = list_audit(request.app.state.database, limit=50)
+def audit_page(
+    request: Request,
+    principal: CurrentOperator,
+    app: str | None = None,
+    action: str | None = None,
+    since: str | None = None,
+    limit: int | None = None,
+) -> HTMLResponse:
+    """A filtered page of the trail: by application, by action, and from an instant.
+
+    ``since`` is accepted as a date or a full timestamp because that is what an operator types.
+    A value that is neither is ignored with a note rather than refused: a filter box is not a
+    place to make somebody re-enter a whole query over a typo.
+    """
+    effective = clamp_limit(limit or 50)
+    parsed_since, since_problem = _parse_since(since)
+    rows, has_more = list_audit(
+        request.app.state.database,
+        limit=effective,
+        app=_blank_to_none(app),
+        action=_blank_to_none(action),
+        since=parsed_since,
+    )
     return render_form_page(
-        request, "audit.html", page="audit", rows=rows, has_more=has_more, principal=principal
+        request,
+        "audit.html",
+        page="audit",
+        rows=rows,
+        has_more=has_more,
+        principal=principal,
+        applications=[*APPLICATIONS, "weightroom", "ollama", "host"],
+        actions=sorted(ACTIONS),
+        selected={
+            "app": app or "",
+            "action": action or "",
+            "since": since or "",
+            "limit": effective,
+        },
+        since_problem=since_problem,
     )
