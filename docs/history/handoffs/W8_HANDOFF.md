@@ -149,7 +149,19 @@ performance"` **1242 passed**, coverage **89.98 %** (floor 85 %; `services/costs
 
 * **W9** hosts the pull as a real queued job (`catalog_pull` is already a reserved audit action
   and a `PullRegistry` shape to migrate off of) and builds the jobs/alerts/prompt-editor
-  infrastructure this row explicitly defers.
+  infrastructure this row explicitly defers. **Operator decision, 2026-09-10:** W9 also designs
+  WeightRoomGym's own restore as a job kind — stop the unit, restore, restart — rather than
+  leaving it CLI-only forever (§5 item 3's question; the queue W9 builds is exactly the mechanism
+  that can hold its own restart across the restore, which a request-scoped route cannot).
+* **The reference-machine demonstration of Phase 8's four criteria** (§4) is deferred to W9 or
+  W10, not run separately (operator, 2026-09-10) — whichever row next needs the reference machine
+  live should fold it in rather than a dedicated pass.
+* **The three doc gaps in §2** (api.md's `{ref:path}` note, `packages/loadledger/spec.md`'s
+  `PER_DAY`-always-populated line, and documenting *why* WeightRoomGym talks to Ollama directly
+  for pulls) are bundled into W10's documentation pass, not fixed ahead of it (operator,
+  2026-09-10).
+* **IdeaPress's Costs row showing no app-wide ceiling verdict** (§4) ships as-is; no run/project
+  lookup affordance is added (operator, 2026-09-10).
 * **W10** should fold in: the api.md note about `{ref:path}` (§2 item 2), a `packages/loadledger/
   spec.md` §11 line about `PER_DAY` being populated unconditionally (§2 item 4), and the OpenAPI
   snapshot picking up nine new routes (`/catalog*`, `/costs*`, `/backups`, `/db/status|backup|
