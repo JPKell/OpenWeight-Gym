@@ -206,9 +206,9 @@ def list_tokens(
     payload = _run(settings, app, ["list", "--json"], runner=runner)
     rows: Any = payload
     if isinstance(payload, dict):
-        # LoadCoach answers `{"tokens": […]}`, PromptCadence `{"items": […]}` (its own paginated
-        # envelope). Neither is wrong and this console reconciles neither: it reads the list
-        # wherever it is and leaves the records as they came (spec §11 contract 9).
+        # `{"items": […]}` since ADR-0131 (LoadCoach 1.4.0 renamed its `tokens`). The old name
+        # is read too, for one console major: the console and the applications upgrade on
+        # different days (ADR-0129 rule 3). Records are left as they came (spec §11 contract 9).
         rows = next((payload[key] for key in ("tokens", "items", "results") if key in payload), [])
     if not isinstance(rows, list):
         return ()

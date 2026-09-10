@@ -165,6 +165,18 @@ Error: provider unavailable (PROVIDER_UNAVAILABLE)
 
 Secrets always render as `********`.
 
+`config show --json` is one document whose effective configuration is the `values` block, beside
+the resolved `config_path` and the per-leaf `sources`:
+
+```json
+{"config_path": "/home/op/.config/<app>/config.toml",
+ "sources": {"server.port": "file"},
+ "values": {"server": {"port": 8765}}}
+```
+
+Additional top-level fields are allowed; `values` is not renamed
+([ADR-0131](../adr/0131-cli-json-shapes-converge-on-values-and-items.md)).
+
 ---
 
 ## 10. Health and diagnostics
@@ -185,6 +197,9 @@ thing a support conversation asks for.
 ## 11. Scriptability
 
 * Stable field names between `--json` output and the HTTP API — one vocabulary.
+* A `--json` listing uses the HTTP API's collection envelope, `{"items": […]}`, with `page` and
+  `total` where the command pages — never a noun of its own (`{"tokens": […]}`)
+  ([ADR-0131](../adr/0131-cli-json-shapes-converge-on-values-and-items.md)).
 * Stable exit codes.
 * No interactive fallback.
 * Idempotent where the operation permits it (`db upgrade` on a current database is a no-op with exit 0).
