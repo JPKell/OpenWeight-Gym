@@ -169,6 +169,7 @@ an ADR is superseded rather than edited.
 | [0132](0132-loadcoach-streams-thinking-deltas-as-their-own-frame.md) | LoadCoach streams thinking deltas live as their own enveloped `thinking` frame (1.5.0) | Accepted |
 | [0133](0133-the-guard-follows-foreign-keys-observes-stopped-twice-and-binds-a-write-to-its-dry-run.md) | The guard follows foreign keys into the never-writable list, observes *stopped* as unit and port, reads the URL from `config show`, and binds a write to its dry run | Accepted |
 | [0134](0134-event-logs-go-with-their-deleted-parent-freeweight-deletes-its-own-results-and-guarded-write-backups-expire.md) | A cascaded delete may remove an event log's rows, FreeWeight's own deletion API is the curated path for its results, and guarded-write backups expire after 90 days | Accepted |
+| [0135](0135-a-minor-that-feeds-a-checked-hash-is-read-at-its-own-minor.md) | `benchmark.result` and `benchmark.run_summary` gain a `1.1` carrying `adapters_registered`; a `1.0` reader refuses a document that states it, so a reader of one adopts the `V1_1In` name | Accepted |
 
 ## Writing a new ADR
 

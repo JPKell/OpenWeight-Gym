@@ -9,6 +9,9 @@ unchanged, the mechanism is not).
 **Relates to:** [ADR-0022](0022-capability-evidence-record-contract.md) (the frozen record whose
 minor this is), [ADR-0032](0032-judge-validity-and-user-capability-namespace.md) (the *pre*-freeze
 additive precedent this record distinguishes itself from).
+**Amended by:** [ADR-0135](0135-a-minor-that-feeds-a-checked-hash-is-read-at-its-own-minor.md) — a
+minor whose field feeds a hash the frozen class recomputes is refused by that class's readers when
+the field is stated.
 **Source:** SetSpec Phase 6 (`setspec 0.5.0`), the first genuine post-freeze minor in the suite.
 
 ## Context

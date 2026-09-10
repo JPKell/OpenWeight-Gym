@@ -206,6 +206,9 @@ Rules:
 
 1. `schema_version` is `"MAJOR.MINOR"`. **Major** = breaking. **Minor** = additive.
 2. Readers accept any minor within a supported major, including minors newer than they know.
+   One named exception: a minor whose new field feeds a hash the older minor's model recomputes
+   is refused by that older reader whenever the field is stated — `benchmark.result` and
+   `benchmark.run_summary` `1.1` ([ADR-0135](../adr/0135-a-minor-that-feeds-a-checked-hash-is-read-at-its-own-minor.md)).
 3. Readers reject an unsupported major with `SCHEMA_VERSION_UNSUPPORTED`, naming both versions.
    They never "try their best".
 4. Readers **preserve unknown fields** on round-trip. Each payload type has a strict outbound model
