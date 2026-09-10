@@ -19,11 +19,19 @@ Prepared, not tagged, not pushed, not published.
   tables it names and the tables it writes, and refuses `CREATE`, `ALTER`, `DROP`, `PRAGMA`,
   `VACUUM`, `ATTACH`, `BEGIN` and every other non-DML keyword by name, and any second statement;
   the foreign-key reach that makes a cascade into a locked table a write.
-- **ADR-0133**: the guard follows foreign keys into the never-writable list (`DELETE FROM runs` is
-  refused in FreeWeight: it cascades into `run_events`); `sqlite_*` and `pg_*` are never written;
+- **ADR-0133**: the guard follows foreign keys into the never-writable list (`DELETE FROM projects`
+  is refused in IdeaPress: it cascades into `stage_runs`); `sqlite_*` and `pg_*` are never written;
   *stopped* is the unit **and** the port; the database URL is `config show --json`'s effective
   value; a write is bound to its dry run by a digest and rolled back if its counts differ; condition
   5 has its own code, `GUARD_AUDIT_FAILED`.
+- **ADR-0134** (the operator's review of W7): a cascaded delete may remove an event log's rows —
+  `DELETE FROM runs` takes its `run_events` with it — while a statement naming an event log, or a
+  cascade that edits one, is still refused, and an edit reached by a second path is never hidden
+  behind the delete. FreeWeight's own deletion of stored results (its `delete-preview` and
+  `DELETE /database/results`) is offered on its database page and above the guard on `runs`,
+  `run_tests`, `samples` and `metric_values` — previewed, the selector typed, re-authenticated —
+  through `POST /api/v1/apps/{app}/db/delete-results`. Guarded-write backups expire after 90 days,
+  from row W8.
 - **The reader** (`services/db_reader.py`): each application's database opened unpooled and
   read-only (`mode=ro`; `default_transaction_read_only` with a 30 s `statement_timeout`) and
   checked against `known_revisions` (`SCHEMA_UNKNOWN` by name); tables with row counts and their
@@ -31,13 +39,13 @@ Prepared, not tagged, not pushed, not published.
   rows.
 - **The guarded write** (`services/db_guard.py`): the typed names, the unit and the port, the
   repeated dry run, a backup through `weightsdb.backup` into
-  `<data>/backups/<app>/<utc>-guarded-write.sqlite3` (mode 0600, never rotated), the `pending` audit
+  `<data>/backups/<app>/<utc>-guarded-write.sqlite3` (mode 0600; expired after 90 days from row W8, ADR-0134), the `pending` audit
   row carrying the backup path, the statement on its own short-lived connection, the row completed.
   A crash between the pending row and the statement leaves the row `pending` (tested).
 - **The applications' own operations** (`services/db_curated.py`): `db status|backup|upgrade|restore`
   and FreeWeight's `db vacuum`; a restore needs the unit stopped, the name typed and
   re-authentication. Per-table operations as data: LoadCoach's and PromptCadence's content
-  retention, and a plain statement that FreeWeight's delete-by-model does not exist.
+  retention, and FreeWeight's own deletion of stored results over its API (ADR-0134).
 - Routes `GET …/db/revision`, `…/db/tables`, `…/db/tables/{t}`, `…/db/status`, `…/db/backups` and
   `POST …/db/query`, `…/db/write/dry-run`, `…/db/write`, `…/db/backup`, `…/db/upgrade`,
   `…/db/restore`; pages `/database`, `/apps/{app}/database` (own operations, tables, console) and

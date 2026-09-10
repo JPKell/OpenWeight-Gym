@@ -132,7 +132,7 @@ def test_update_routing_decisions_is_refused_by_name(tmp_path: Path) -> None:
 def test_the_table_page_runs_the_guard_dialog_end_to_end(tmp_path: Path) -> None:
     console = _console(tmp_path)
     page = console.client.get("/apps/freeweight/database/samples", headers=HTML).text
-    assert "is not in FreeWeight 1.2 (ADR-0133)" in page  # the curated operation, first
+    assert 'href="/apps/freeweight/database#delete-results">Delete stored results' in page
     assert page.index("own operations for samples") < page.index("Raw write — the guard")
     dried = console.post_form("/apps/freeweight/database/samples/write/dry-run", {"sql": SQL})
     assert "<strong>3 rows</strong>, rolled back." in dried.text
@@ -210,4 +210,70 @@ def test_the_applications_own_operations_run_first_and_restore_is_guarded(tmp_pa
         "refused",
         "refused",
         "ok",
+    ]
+
+
+def test_freeweights_own_deletion_is_previewed_typed_reauthenticated_and_audited(
+    tmp_path: Path, respx_mock: Any
+) -> None:
+    import json
+
+    import httpx
+
+    console = _console(tmp_path, state="active")  # FreeWeight's own deletion runs with it up
+    respx_mock.get("http://127.0.0.1:9/api/v1/version").mock(
+        side_effect=httpx.ConnectError("closed")  # the shell's version probe
+    )
+    preview = {
+        "selection": {"scope": "model", "selector": "qwen3"},
+        "run_ids": ["01RUN"],
+        "run_count": 1,
+        "removed_counts": {"runs": 1, "run_events": 4},
+        "preserved_counts": {"models": 1},
+        "total_rows": 5,
+        "token": "tok",
+        "will_backup": False,
+    }
+    respx_mock.post("http://127.0.0.1:9/api/v1/database/delete-preview").mock(
+        return_value=httpx.Response(200, json=preview)
+    )
+    stale_token = {"error": {"code": "DATABASE_ERROR", "message": "stale token"}}
+    deleted = respx_mock.delete("http://127.0.0.1:9/api/v1/database/results").mock(
+        side_effect=[
+            httpx.Response(200, json={"run_count": 1, "total_rows": 5, "backup_path": None}),
+            httpx.Response(400, json=stale_token),
+        ]
+    )
+    page = console.client.get("/apps/freeweight/database/runs", headers=HTML).text
+    assert page.index("Delete stored results") < page.index("Raw write — the guard")
+    shown = console.post_form(
+        "/apps/freeweight/database/curated",
+        {"verb": "delete-results", "scope": "model", "selector": "qwen3"},
+    ).text
+    assert 'name="token" value="tok"' in shown and "Type <code>qwen3</code>" in shown
+    route = "/api/v1/apps/freeweight/db/delete-results"
+    body = {"scope": "model", "selector": "qwen3", "token": "tok", "typed": "qwen3"}
+    assert _post(console, route, body).json()["error"]["code"] == "REAUTH_REQUIRED"
+    _post(console, "/api/v1/reauth", {"password": PASSWORD})
+    mistyped = _post(console, route, {**body, "typed": "qwen"})
+    assert (mistyped.status_code, mistyped.json()["error"]["code"]) == (400, "VALIDATION_ERROR")
+    done = _post(console, route, body).json()
+    assert (done["verb"], done["ok"], done["output"]["total_rows"]) == ("delete-results", True, 5)
+    assert json.loads(deleted.calls.last.request.content) == {
+        "scope": "model",
+        "selector": "qwen3",
+        "token": "tok",
+    }
+    refused = _post(console, route, body).json()
+    assert (refused["ok"], refused["error"]) == (False, "freeweight refused: stale token")
+    other = _post(console, "/api/v1/apps/loadcoach/db/delete-results", {"scope": "model"})
+    assert other.json()["error"]["code"] == "VALIDATION_ERROR"
+    rows, _more = list_audit(console.database, limit=10, action="db.curated")
+    assert [(row.app, row.target, row.outcome, row.security) for row in rows] == [
+        ("loadcoach", "delete-results", "refused", False),
+        ("freeweight", "delete-results", "failed", True),
+        ("freeweight", "delete-results", "ok", True),
+        ("freeweight", "delete-results", "refused", True),
+        ("freeweight", "delete-results", "refused", True),
+        ("freeweight", "delete-preview", "ok", False),
     ]

@@ -6,10 +6,10 @@ preview, confirmation and integrity checks apply, and a raw write is what remain
 fits. The console runs the verb the way an operator at the terminal would, under the subprocess
 discipline of ``services/processes.py``, and shows what the application printed.
 
-**What each table is offered is data**, below, and it names what does not exist as plainly as
-what does. ``freeweight db delete --model``, which ADR-0123 and ADR-0124 cite, is not in FreeWeight
-1.2 (ADR-0133); the tables it would have covered say so above their guard, rather than the console
-pretending with a guarded ``DELETE`` of its own.
+**What each table is offered is data**, below. FreeWeight's deletion of stored results is its own
+HTTP API (``POST /api/v1/database/delete-preview``, ``DELETE /api/v1/database/results``), called
+here with FreeWeight's preview token (ADR-0134 rule 2); the ``freeweight db delete --model`` that
+ADR-0123 and ADR-0124 cite was never built, and is not.
 """
 
 from __future__ import annotations
@@ -18,10 +18,11 @@ import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Final
 
+import httpx
 from baseaicore import SuiteError
 
 from weightroom.domain.guard import GuardAppRunning
-from weightroom.services.apps import AppNotInstalled
+from weightroom.services.apps import AppNotInstalled, bearer_token
 from weightroom.services.db_guard import observe
 from weightroom.services.processes import child_environment, executable_for, run_command
 
@@ -34,11 +35,13 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CURATED_TIMEOUT_SECONDS",
+    "RESULTS_DELETION",
     "TABLE_OPERATIONS",
     "VERBS",
     "CuratedRefused",
     "CuratedResult",
     "TableOperation",
+    "delete_results",
     "run_curated",
     "verbs_for",
 ]
@@ -76,6 +79,13 @@ VERBS: Final[Mapping[str, Mapping[str, tuple[str, ...]]]] = {
 """Each application's own ``db`` verbs with the flags its CLI accepts, read off each ``--help`` at
 row W7 (FreeWeight 1.2, LoadCoach 1.5, IdeaPress 1.5, PromptCadence 1.3)."""
 
+RESULTS_DELETION: Final[Mapping[str, tuple[str, ...]]] = {
+    "freeweight": ("model", "run", "suite", "before", "all"),
+}
+"""The applications whose API deletes stored results, and the scopes it accepts (FreeWeight's
+``DeletionScope``). Everything else about a deletion — what it removes, the backup at 1 000 rows,
+the token — is the application's."""
+
 
 @dataclass(frozen=True, slots=True)
 class TableOperation:
@@ -92,11 +102,11 @@ class TableOperation:
     href: str | None = None
 
 
-_DELETE_BY_MODEL = TableOperation(
-    "Delete a model's measurements",
-    "freeweight db delete --model, which ADR-0124 points to, is not in FreeWeight 1.2 (ADR-0133). "
-    "A run's samples and run tests can be deleted under the guard; its runs cannot, because they "
-    "cascade into run_events.",
+_FREEWEIGHT_DELETION = TableOperation(
+    "Delete stored results",
+    "FreeWeight's own deletion by model, run, suite or date: previewed, confirmed with its token, "
+    "backed up first at 1 000 rows, and never a model or machine row (ADR-0134).",
+    "/apps/freeweight/database#delete-results",
 )
 _LOADCOACH_RETENTION = TableOperation(
     "Content retention",
@@ -113,7 +123,7 @@ _PROMPTCADENCE_RETENTION = TableOperation(
 
 TABLE_OPERATIONS: Final[Mapping[str, Mapping[str, tuple[TableOperation, ...]]]] = {
     "freeweight": dict.fromkeys(
-        ("samples", "run_tests", "runs", "metric_values"), (_DELETE_BY_MODEL,)
+        ("samples", "run_tests", "runs", "metric_values"), (_FREEWEIGHT_DELETION,)
     ),
     "loadcoach": dict.fromkeys(("jobs", "job_events"), (_LOADCOACH_RETENTION,)),
     "ideapress": {},
@@ -126,22 +136,23 @@ TABLE_OPERATIONS: Final[Mapping[str, Mapping[str, tuple[TableOperation, ...]]]] 
 
 
 class CuratedRefused(SuiteError):
-    """A curated operation the application does not offer, or a restore asked for wrongly."""
+    """A curated operation the application does not offer, or one asked for wrongly."""
 
     code: ClassVar[str] = "VALIDATION_ERROR"
 
 
 @dataclass(frozen=True, slots=True)
 class CuratedResult:
-    """What the application's own verb did.
+    """What the application's own operation did.
 
     Attributes:
         app: The application.
-        verb: ``status``, ``backup``, ``vacuum``, ``upgrade`` or ``restore``.
-        argv: What ran.
-        ok: Whether it exited 0.
+        verb: ``status``, ``backup``, ``vacuum``, ``upgrade``, ``restore``, ``delete-preview`` or
+            ``delete-results``.
+        argv: What ran — the command line, or the HTTP method and URL.
+        ok: Whether it exited 0, or answered 2xx.
         output: Its JSON when it printed JSON, its text otherwise, ``None`` when it printed nothing.
-        error: Its own failure text when it did not exit 0.
+        error: Its own failure text when it did not succeed.
     """
 
     app: str
@@ -247,4 +258,93 @@ def run_curated(
         ok=result.ok,
         output=output,
         error=None if result.ok else result.failure_text,
+    )
+
+
+def delete_results(
+    settings: Settings,
+    client: httpx.Client,
+    app: str,
+    *,
+    scope: str,
+    selector: str = "",
+    token: str = "",
+    typed: str = "",
+) -> CuratedResult:
+    """Preview, or perform, the application's own deletion of stored results over its API.
+
+    Without ``token`` this asks for the preview — what would go, what is kept, and the token.
+    With one it sends the deletion, which the application refuses unless the token matches a fresh
+    preview of the same selection (ADR-0134 rule 2). The caller re-authenticates first.
+
+    Args:
+        settings: The validated settings, for the base URL and the token file.
+        client: The console's HTTP client.
+        app: The application; only those in :data:`RESULTS_DELETION`.
+        scope: One of the application's scopes.
+        selector: The scope's argument; empty for ``all``.
+        token: The preview's token; empty to preview.
+        typed: The typed confirmation — the selector, or ``all`` for scope ``all``.
+
+    Returns:
+        A :class:`CuratedResult` with verb ``delete-preview`` or ``delete-results``, ``argv`` the
+        method and URL, and the application's JSON. A refusal by the application, or no answer, is
+        ``ok`` false in its own words — not an exception.
+
+    Raises:
+        CuratedRefused: The application deletes no results, the scope is not one it accepts, or a
+            deletion's typed confirmation is not the selector.
+    """
+    scopes = RESULTS_DELETION.get(app)
+    if scopes is None:
+        raise CuratedRefused(
+            f"{app} offers no deletion of stored results over its API.", details={"app": app}
+        )
+    if scope not in scopes:
+        raise CuratedRefused(
+            f"{app} deletes results by {', '.join(scopes)}, not {scope!r}.",
+            details={"app": app, "scope": scope},
+        )
+    chosen = selector.strip()
+    body: dict[str, Any] = {"scope": scope, "selector": chosen or None}
+    if token:
+        expected = chosen or "all"
+        if typed.strip() != expected:
+            raise CuratedRefused(
+                f"Type {expected} to delete these results: the deletion cannot be undone except "
+                "from a backup.",
+                details={"app": app, "typed": typed},
+            )
+        body["token"] = token
+        verb, method, path = "delete-results", "DELETE", "/api/v1/database/results"
+    else:
+        verb, method, path = "delete-preview", "POST", "/api/v1/database/delete-preview"
+    url = f"{getattr(settings.apps, app).base_url.rstrip('/')}{path}"
+    headers = {}
+    bearer = bearer_token(settings, app)
+    if bearer:
+        headers["Authorization"] = f"Bearer {bearer}"
+    try:
+        response = client.request(
+            method, url, json=body, headers=headers, timeout=CURATED_TIMEOUT_SECONDS
+        )
+    except httpx.HTTPError as exc:
+        return CuratedResult(
+            app, verb, (method, url), ok=False, output=None, error=f"{app} did not answer: {exc}"
+        )
+    try:
+        answer: Any = response.json()
+    except ValueError:
+        answer = None
+    if response.is_success:
+        return CuratedResult(app, verb, (method, url), ok=True, output=answer, error=None)
+    error = answer.get("error") if isinstance(answer, dict) else None
+    message = error.get("message") if isinstance(error, dict) else None
+    return CuratedResult(
+        app,
+        verb,
+        (method, url),
+        ok=False,
+        output=None,
+        error=f"{app} refused: {message}" if message else f"{app} answered {response.status_code}.",
     )

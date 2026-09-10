@@ -18,8 +18,8 @@
 <h3>{{ app | app_label }}'s own operations for {{ table_name }}</h3>
 <ul>
   {% for one in operations %}
-  <li><strong>{{ one.label }}</strong> — {{ one.note }}
-  {% if one.href %}<a href="{{ one.href }}">Settings</a>{% else %}{{ badge("not offered", tone="neutral") }}{% endif %}</li>
+  <li><strong>{% if one.href %}<a href="{{ one.href }}">{{ one.label }}</a>{% else %}{{ one.label }}{% endif %}</strong>
+  — {{ one.note }}{% if not one.href %} {{ badge("not offered", tone="neutral") }}{% endif %}</li>
   {% endfor %}
 </ul>
 {% endif %}

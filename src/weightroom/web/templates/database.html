@@ -67,6 +67,51 @@ as an operator at the terminal would, so {{ app | app_label }}'s own checks appl
   </form>
 </details>
 {% endif %}
+{% if deletion_scopes %}
+{% set previewed = curated.output if curated and curated.verb == "delete-preview" and curated.ok else none %}
+<details id="delete-results"{{ " open" if previewed is not none else "" }}>
+  <summary>Delete stored results</summary>
+  <p class="muted">{{ app | app_label }}'s own deletion (ADR-0134): it previews exactly what goes and
+  what is kept, backs up first at 1 000 rows or more, and never deletes a model or machine row. It
+  runs with {{ app | app_label }} up.</p>
+  <form method="post" action="/apps/{{ app }}/database/curated">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="verb" value="delete-results">
+    <div class="field">
+      <label for="delete-scope">Scope</label>
+      <select id="delete-scope" name="scope">
+        {% for one in deletion_scopes %}<option value="{{ one }}">{{ one }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="delete-selector">Selector <span class="field-hint">A model reference, a run ULID or
+      prefix, a suite key, or an RFC 3339 instant; empty for all.</span></label>
+      <input id="delete-selector" name="selector" class="mono" spellcheck="false">
+    </div>
+    <button type="submit">Preview</button>
+  </form>
+  {% if previewed is not none and previewed.run_count %}
+  {% set confirm = previewed.selection.selector or "all" %}
+  <form method="post" action="/apps/{{ app }}/database/curated">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="verb" value="delete-results">
+    <input type="hidden" name="scope" value="{{ previewed.selection.scope }}">
+    <input type="hidden" name="selector" value="{{ previewed.selection.selector or '' }}">
+    <input type="hidden" name="token" value="{{ previewed.token }}">
+    <div class="field">
+      <label for="delete-typed">Type <code>{{ confirm }}</code> <span class="field-hint">{{ previewed.run_count }}
+      run{{ "" if previewed.run_count == 1 else "s" }}, {{ previewed.total_rows }} rows{{ "; backed up first" if previewed.will_backup else "" }}.</span></label>
+      <input id="delete-typed" name="name_typed" autocomplete="off" spellcheck="false" required>
+    </div>
+    <div class="field">
+      <label for="delete-password">Password</label>
+      <input id="delete-password" name="password" type="password" autocomplete="current-password">
+    </div>
+    <button type="submit" data-variant="danger">Delete {{ previewed.total_rows }} rows</button>
+  </form>
+  {% endif %}
+</details>
+{% endif %}
 {% if backups %}
 <h4>Guarded-write backups</h4>
 <ul class="mono">

@@ -154,21 +154,60 @@ def test_deleting_samples_reaches_their_children_and_no_locked_table() -> None:
     require_writable("freeweight", statement, reached)
 
 
-def test_deleting_runs_reaches_run_events_and_is_refused_with_the_path() -> None:
+def test_deleting_runs_removes_their_run_events_with_them_and_is_not_refused() -> None:
+    # ADR-0134 rule 1: the events go with the run they describe; no stream is left to replay.
     statement = classify("DELETE FROM runs WHERE id = 'x'")
     reached = reach(statement.written, statement.events, FREEWEIGHT_KEYS)
     assert [one.table for one in reached][:2] == ["run_events", "run_tests"]
     assert reached[-1].path == ("runs", "run_tests", "samples", "calibration_samples")
-    with pytest.raises(GuardTableLocked) as refused:
-        require_writable("freeweight", statement, reached)
-    assert refused.value.details["via"] == ["runs", "run_events"]
-    assert refused.value.details["action"] == "ON DELETE CASCADE"
-    assert "runs → run_events" in refused.value.message
     assert reached[0].as_json() == {
         "table": "run_events",
         "path": ["runs", "run_events"],
         "action": "ON DELETE CASCADE",
     }
+    require_writable("freeweight", statement, reached)
+
+
+def test_a_cascade_that_edits_an_event_log_is_refused_with_the_path() -> None:
+    keys = (*FREEWEIGHT_KEYS, ForeignKey("run_events", "samples", on_delete="SET NULL"))
+    statement = classify("DELETE FROM samples WHERE id = 'x'")
+    with pytest.raises(GuardTableLocked) as refused:
+        require_writable("freeweight", statement, reach(statement.written, statement.events, keys))
+    assert refused.value.details["via"] == ["samples", "run_events"]
+    assert refused.value.details["action"] == "ON DELETE SET NULL"
+    assert "samples → run_events" in refused.value.message
+    update = classify("UPDATE runs SET id = 'y' WHERE id = 'x'")
+    cascading = (ForeignKey("run_events", "runs", on_delete="CASCADE", on_update="CASCADE"),)
+    with pytest.raises(GuardTableLocked, match="ON UPDATE CASCADE"):
+        require_writable("freeweight", update, reach(update.written, update.events, cascading))
+
+
+def test_an_edit_is_never_hidden_behind_a_delete_of_the_same_event_log() -> None:
+    keys = (*FREEWEIGHT_KEYS, ForeignKey("run_events", "samples", on_delete="SET NULL"))
+    statement = classify("DELETE FROM runs WHERE id = 'x'")
+    reached = reach(statement.written, statement.events, keys)
+    events = next(one for one in reached if one.table == "run_events")
+    assert (events.path, events.action) == (
+        ("runs", "run_tests", "samples", "run_events"),
+        "ON DELETE SET NULL",
+    )
+    with pytest.raises(GuardTableLocked, match="run_events"):
+        require_writable("freeweight", statement, reached)
+
+
+def test_a_cascade_into_queue_state_or_a_decision_record_is_still_refused() -> None:
+    ideapress = (
+        ForeignKey("stage_runs", "projects", on_delete="CASCADE"),
+        ForeignKey("stage_events", "stage_runs", on_delete="CASCADE"),
+    )
+    projects = classify("DELETE FROM projects WHERE id = 'x'")
+    with pytest.raises(GuardTableLocked) as refused:
+        require_writable("ideapress", projects, reach(projects.written, projects.events, ideapress))
+    assert refused.value.details["class"] == "Queue and lease state"
+    plans = classify("DELETE FROM plans WHERE id = 'x'")
+    approvals = (ForeignKey("plan_approvals", "plans", on_delete="CASCADE"),)
+    with pytest.raises(GuardTableLocked, match="plan_approvals"):
+        require_writable("promptcadence", plans, reach(plans.written, plans.events, approvals))
 
 
 def test_an_update_follows_only_update_actions_and_an_insert_reaches_nothing() -> None:

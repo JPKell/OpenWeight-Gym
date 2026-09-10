@@ -291,17 +291,17 @@ def test_counts_that_change_under_the_statement_roll_it_back_and_fail_the_row(
     assert rig.count() == 6  # the statement was rolled back; only the other writer's row landed
 
 
-def test_a_statement_that_cascades_into_a_locked_table_is_refused_with_its_path(
+def test_a_locked_table_named_is_refused_and_a_run_takes_its_event_log_with_it(
     tmp_path: Path,
 ) -> None:
     rig = _rig(tmp_path)
-    with pytest.raises(GuardTableLocked) as refused:
-        rig.dry("DELETE FROM runs WHERE id = 'x'")
-    assert refused.value.details["via"] == ["runs", "run_events"]
+    dry = rig.dry("DELETE FROM runs WHERE id = 'x'")  # ADR-0134 rule 1, on the real schema
+    events = next(one for one in dry.reached if one.table == "run_events")
+    assert (events.path, events.action) == (("runs", "run_events"), "ON DELETE CASCADE")
     with pytest.raises(GuardTableLocked, match="models is never writable"):
         rig.dry("UPDATE models SET name = 'x'")
-    with pytest.raises(GuardTableLocked):
-        rig.write("DELETE FROM runs WHERE id = 'x'", typed=("runs",), dry_run_id="x")
+    with pytest.raises(GuardTableLocked, match="run_events is never writable"):
+        rig.write("DELETE FROM run_events WHERE id = 'x'", typed=("run_events",), dry_run_id="x")
     assert [(row.outcome, _code(row)) for row in rig.rows()] == [("refused", "GUARD_TABLE_LOCKED")]
 
 
@@ -400,8 +400,10 @@ def test_postgresql_dry_run_reach_and_write(
             backups=tmp_path / "backups",
         )
         dry = rig.dry()
-        with pytest.raises(GuardTableLocked, match="runs → run_events"):
-            rig.dry("DELETE FROM runs")
+        runs = rig.dry("DELETE FROM runs")  # the reach reflected on PostgreSQL; ADR-0134 rule 1
+        assert [(one.table, one.action) for one in runs.reached] == [
+            ("run_events", "ON DELETE CASCADE")
+        ]
         result = rig.write(dry_run_id=str(dry.dry_run_id))
         with engine.connect() as connection:
             left = connection.execute(text("SELECT count(*) FROM samples")).scalar_one()

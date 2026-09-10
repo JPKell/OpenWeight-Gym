@@ -4,6 +4,9 @@
 **Amends:** [ADR-0124](0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)
 — its *Mechanics* and its never-writable list, additively and only in the stricter direction
 (nothing ADR-0124 refuses becomes allowed), and one sentence: where the connection string is read.
+**Amended by:** [ADR-0134](0134-event-logs-go-with-their-deleted-parent-freeweight-deletes-its-own-results-and-guarded-write-backups-expire.md)
+— rule 1 no longer refuses a cascaded *delete* into an event log, and the second *Negative*
+consequence (a model's runs) is answered by FreeWeight's own deletion API.
 **Relates to:** [ADR-0123](0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
 rules 3 and 5, [ADR-0127](0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md)
 rule 1 (the document, which carries a key's source and not its resolved default),

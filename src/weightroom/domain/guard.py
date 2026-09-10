@@ -755,6 +755,8 @@ class Reach:
 
 
 _ACTING: Final = frozenset({"CASCADE", "SET NULL", "SET DEFAULT"})
+_REMOVED: Final = "ON DELETE CASCADE"
+_EVENT_LOGS: Final = "Event logs"
 
 
 def reach(
@@ -768,10 +770,12 @@ def reach(
         keys: Every foreign key in the database.
 
     Returns:
-        Each reached table once, by its shortest path, written tables excluded. A cascaded delete
-        is followed onward as a delete; a row nulled, defaulted or cascade-updated is followed
-        onward as an update. Actions that change no row — ``RESTRICT``, ``NO ACTION`` — reach
-        nothing: they make the dry run fail instead.
+        Each reached table once, by its shortest path, written tables excluded — except that a
+        table a cascaded delete removes rows from and another action edits is reported by the
+        first path that edits it, so an edit is never hidden behind a delete (ADR-0134). A
+        cascaded delete is followed onward as a delete; a row nulled, defaulted or
+        cascade-updated is followed onward as an update. Actions that change no row —
+        ``RESTRICT``, ``NO ACTION`` — reach nothing: they make the dry run fail instead.
     """
     written_set = set(written)
     queue: deque[tuple[str, str, tuple[str, ...]]] = deque(
@@ -786,7 +790,11 @@ def reach(
             if key.parent != table or action not in _ACTING:
                 continue
             onward = (*path, key.child)
-            if key.child not in written_set and key.child not in found:
+            known = found.get(key.child)
+            removed = f"ON {event} {action}" == _REMOVED
+            if key.child not in written_set and (
+                known is None or (known.action == _REMOVED and not removed)
+            ):
                 found[key.child] = Reach(key.child, onward, f"ON {event} {action}")
             next_event = "DELETE" if event == "DELETE" and action == "CASCADE" else "UPDATE"
             if (key.child, next_event) not in seen:
@@ -797,6 +805,10 @@ def reach(
 
 def require_writable(app: str, statement: Statement, reached: Sequence[Reach] = ()) -> None:
     """Refuse a write into a never-writable table, named or reached.
+
+    One reach is not refused (ADR-0134): an event log whose rows a cascaded delete removes. The
+    row the events describe goes in the same statement, so no replay is left to corrupt; a
+    cascade that edits an event row, and any statement naming an event log, still refuses.
 
     Args:
         app: The application whose database it is.
@@ -817,7 +829,7 @@ def require_writable(app: str, statement: Statement, reached: Sequence[Reach] = 
             )
     for one in reached:
         lock = lock_for(app, one.table)
-        if lock is not None:
+        if lock is not None and not (lock.name == _EVENT_LOGS and one.action == _REMOVED):
             raise GuardTableLocked(
                 f"This statement reaches {one.table} through {' → '.join(one.path)} "
                 f"({one.action}), and {one.table} is never writable from WeightRoomGym "

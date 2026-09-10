@@ -374,6 +374,22 @@ def _db_curated_form(console: Console) -> Any:  # noqa: ANN401
     return console.post_form("/apps/ideapress/database/curated", {"verb": "backup"})
 
 
+def _db_delete_results_json(console: Console) -> Any:  # noqa: ANN401
+    """FreeWeight's own preview, mocked on its default port so no real FreeWeight is reached."""
+    import httpx
+    import respx
+
+    with respx.mock() as router:
+        router.post("http://127.0.0.1:8765/api/v1/database/delete-preview").mock(
+            return_value=httpx.Response(200, json={"run_count": 0, "token": "t"})
+        )
+        return console.client.post(
+            "/api/v1/apps/freeweight/db/delete-results",
+            json={"scope": "model", "selector": "m"},
+            headers=JSON_HEADERS,
+        )
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -417,6 +433,7 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/api/v1/apps/{app}/db/backup"): _db_curated("backup"),
     ("POST", "/api/v1/apps/{app}/db/upgrade"): _db_curated("upgrade"),
     ("POST", "/api/v1/apps/{app}/db/restore"): _db_restore_json,
+    ("POST", "/api/v1/apps/{app}/db/delete-results"): _db_delete_results_json,
     ("POST", "/apps/{app}/database/curated"): _db_curated_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""

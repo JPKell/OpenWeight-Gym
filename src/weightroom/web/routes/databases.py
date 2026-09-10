@@ -32,8 +32,10 @@ from weightroom.services.apps import require_app
 from weightroom.services.audit import record
 from weightroom.services.auth import Principal, require_fresh_reauth
 from weightroom.services.db_curated import (
+    RESULTS_DELETION,
     TABLE_OPERATIONS,
     CuratedResult,
+    delete_results,
     run_curated,
     verbs_for,
 )
@@ -97,6 +99,17 @@ class RestoreBody(BaseModel):
 
     file: str = Field(max_length=_NAME_MAX_CHARS)
     name_typed: str = Field(default="", max_length=64)
+
+
+class DeleteResultsBody(BaseModel):
+    """``POST …/db/delete-results`` (api.md §3): preview without ``token``, then the deletion."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    scope: str = Field(max_length=16)
+    selector: str = Field(default="", max_length=_NAME_MAX_CHARS)
+    token: str = Field(default="", max_length=_NAME_MAX_CHARS)
+    typed: str = Field(default="", max_length=_NAME_MAX_CHARS)
 
 
 def open_for(request: Request, app: str, *, require_known: bool = True) -> AppDatabase:
@@ -256,16 +269,41 @@ def _audited_curated(
     *,
     source: str = "",
     name_typed: str = "",
+    scope: str = "",
+    selector: str = "",
+    token: str = "",
 ) -> CuratedResult:
-    """One of the application's own ``db`` verbs, and one ``db.curated`` row for it."""
+    """One of the application's own operations, and one ``db.curated`` row for it.
+
+    ``delete-results`` is FreeWeight's deletion over its API (ADR-0134 rule 2): the preview
+    without ``token``; with it the deletion, typed in ``name_typed``, re-authenticated and marked
+    ``security``. Every other verb is the application's ``db`` CLI; ``restore`` re-authenticates.
+    """
     state = request.app.state
-    restore = verb == "restore"
+    deleting = verb == "delete-results"
+    security = verb == "restore" or (deleting and bool(token))
+    params: dict[str, Any] = (
+        {"verb": verb, "scope": scope, "selector": selector}
+        if deleting
+        else {"verb": verb, "source": source}
+    )
     try:
-        if restore:
+        if security:
             require_fresh_reauth(principal, now=now_of(request), auth=state.settings.auth)
-        result = run_curated(
-            state.settings, state.controller, app, verb, source=source, name_typed=name_typed
-        )
+        if deleting:
+            result = delete_results(
+                state.settings,
+                state.http,
+                app,
+                scope=scope,
+                selector=selector,
+                token=token,
+                typed=name_typed,
+            )
+        else:
+            result = run_curated(
+                state.settings, state.controller, app, verb, source=source, name_typed=name_typed
+            )
     except SuiteError as exc:
         _audit(
             request,
@@ -274,21 +312,25 @@ def _audited_curated(
             "db.curated",
             outcome="refused",
             target=verb,
-            params={"verb": verb, "source": source},
+            params=params,
             message=exc.message,
-            security=restore,
+            security=security,
         )
         raise
+    answer = result.output if deleting and isinstance(result.output, dict) else {}
+    if answer:
+        params |= {"run_count": answer.get("run_count"), "total_rows": answer.get("total_rows")}
     _audit(
         request,
         principal,
         app,
         "db.curated",
         outcome="ok" if result.ok else "failed",
-        target=verb,
-        params={"verb": verb, "source": source, "argv": list(result.argv)},
+        target=result.verb,
+        params={**params, "argv": list(result.argv)},
         message=result.error,
-        security=restore,
+        security=security,
+        backup_path=answer.get("backup_path"),
     )
     return result
 
@@ -426,6 +468,26 @@ def post_restore(
     return JSONResponse(content=result.as_json())
 
 
+@router.post(
+    "/apps/{app}/db/delete-results", summary="The application's own deletion of stored results"
+)
+def post_delete_results(
+    request: Request, principal: CurrentOperator, app: str, body: DeleteResultsBody
+) -> JSONResponse:
+    """FreeWeight's preview without ``token``; with it, typed and re-authenticated, the deletion."""
+    result = _audited_curated(
+        request,
+        principal,
+        require_app(app),
+        "delete-results",
+        name_typed=body.typed,
+        scope=body.scope,
+        selector=body.selector,
+        token=body.token,
+    )
+    return JSONResponse(content=result.as_json())
+
+
 # --- Pages ------------------------------------------------------------------------------------
 
 
@@ -478,6 +540,7 @@ def _database_page(request: Request, principal: Principal, app: str, **extra: An
         app,
         "database.html",
         verbs=verbs_for(app),
+        deletion_scopes=RESULTS_DELETION.get(app, ()),
         backups=list_backups(app),
         **_tables_context(request, app),
         **context,
@@ -534,17 +597,31 @@ def curated_from_page(
     app: str,
     verb: Annotated[str, Form(max_length=32)] = "",
     file: Annotated[str, Form(max_length=_NAME_MAX_CHARS)] = "",
-    name_typed: Annotated[str, Form(max_length=64)] = "",
+    name_typed: Annotated[str, Form(max_length=_NAME_MAX_CHARS)] = "",
     password: Annotated[str, Form(max_length=_NAME_MAX_CHARS)] = "",
+    scope: Annotated[str, Form(max_length=16)] = "",
+    selector: Annotated[str, Form(max_length=_NAME_MAX_CHARS)] = "",
+    token: Annotated[str, Form(max_length=_NAME_MAX_CHARS)] = "",
 ) -> HTMLResponse:
-    """``db backup``, ``db vacuum``, ``db upgrade`` or — stopped, typed, re-authenticated —
-    ``db restore``; what the application printed comes back on the page."""
+    """``db backup``, ``db vacuum``, ``db upgrade``; ``db restore`` stopped, typed and
+    re-authenticated; or FreeWeight's ``delete-results`` — the preview, then the deletion typed and
+    re-authenticated. What the application answered comes back on the page."""
     name = require_app(app)
     acting = (reauthenticated(request, principal, password) or principal) if password else principal
     result: CuratedResult | None = None
     error: SuiteError | None = None
     try:
-        result = _audited_curated(request, acting, name, verb, source=file, name_typed=name_typed)
+        result = _audited_curated(
+            request,
+            acting,
+            name,
+            verb,
+            source=file,
+            name_typed=name_typed,
+            scope=scope,
+            selector=selector,
+            token=token,
+        )
     except SuiteError as exc:
         error = exc
     return _database_page(request, acting, name, curated=result, curated_error=error)

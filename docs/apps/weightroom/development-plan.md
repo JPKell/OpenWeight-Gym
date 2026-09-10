@@ -323,7 +323,9 @@ the raw editor with the reason.
   dry run, the typed names, the pending → ok audit row, the single-statement write on its own
   connection.
 * Curated operations wired per table (FreeWeight delete-by-model with preview, retention
-  settings, vacuum, backup, upgrade, restore).
+  settings, vacuum, backup, upgrade, restore). (After row W7: FreeWeight's deletion is its own API,
+  `POST /database/delete-preview` then `DELETE /database/results` with the preview's token —
+  ADR-0134 rule 2; no application has a `db delete --model` verb.)
 * Pages: tables, grid, console, the guard dialog with live verdicts.
 
 **Tests**
@@ -363,7 +365,7 @@ the raw editor with the reason.
   from FreeWeight; residency; `ollama pull` as a `catalog_pull` job with streamed progress and a
   free-space check; GGUF drop-in with magic-byte and containment checks then `models refresh`;
   enable/disable per application; delete with cleanup (preview, typed confirm, `ollama rm` or the
-  file, each application's `db delete --model`).
+  file, FreeWeight's own deletion API — ADR-0134 rule 2; no application has `db delete --model`).
 * `services/costs.py`: `loadledger.sql` reads from PromptCadence's and IdeaPress's databases,
   balances per window against configured ceilings, unpriced counts everywhere.
 * Backups and migrations pages: `db status|backup|upgrade|restore` per application as curated

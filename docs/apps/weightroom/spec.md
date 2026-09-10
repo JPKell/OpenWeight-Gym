@@ -287,13 +287,16 @@ against WeightRoomGym's known-revision map ([ADR-0123](../../adr/0123-weightroom
 rule 3); a paginated, sortable, filterable row grid per table; a SQL console that runs
 `SELECT`s on a read-only connection with a 30 s timeout and a 10 000-row cap. **Curated
 operations** are listed first on every table that has one — retention settings, backup, vacuum,
-upgrade, restore; FreeWeight's delete-by-model is named there as not offered by FreeWeight 1.2 —
-and call the owning application. **Raw writes** (a statement, a row edit, a row delete) open the
+upgrade, restore, and FreeWeight's own deletion of stored results over its API (previewed, the
+selector typed, re-authenticated; [ADR-0134](../../adr/0134-event-logs-go-with-their-deleted-parent-freeweight-deletes-its-own-results-and-guarded-write-backups-expire.md)
+rule 2) — and call the owning application. **Raw writes** (a statement, a row edit, a row delete) open the
 guard: the unit's state and the port are checked, the dry run's count, the statement and what the
 database's foreign keys reach are shown, the table names are typed, a backup is taken, the audit
 row is written, the statement runs, the audit row is completed ([ADR-0124](../../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md),
 in [ADR-0133](../../adr/0133-the-guard-follows-foreign-keys-observes-stopped-twice-and-binds-a-write-to-its-dry-run.md)'s
-order). Never-writable tables, named or reached by a cascade, show the lock and the reason.
+order). Never-writable tables, named or reached by a cascade, show the lock and the reason — except
+an event log whose rows a cascaded delete removes with their parent (ADR-0134 rule 1). A guarded
+write's backup is kept 90 days by default, then removed (ADR-0134 rule 3, from row W8).
 SQLite and PostgreSQL both, from the application's own effective `storage.database_url`
 (`sqlite:///`, `postgresql+psycopg://`), printed by its own `config show --json` (ADR-0133 rule 4)
 — never typed twice.
@@ -306,7 +309,8 @@ residency, size and context. Actions: `ollama pull <name>` as a job with streame
 GGUF drop-in (a file upload or a path on the host copied into the configured llama.cpp
 `model_directory`, then that application's `models refresh`); enable/disable per application
 (`POST /models/{ref}/enabled` on each); delete with cleanup — `ollama rm` or the file, then
-each application's `db delete --model` where it exists, previewed and confirmed per
+FreeWeight's own deletion of the model's results (`scope=model` through its API, ADR-0134 rule 2 —
+no application has a `db delete --model` verb), previewed and confirmed per
 [Database Standards §8](../../standards/database-standards.md).
 
 **Costs:** LoadLedger balances read from PromptCadence's and IdeaPress's mounted tables
