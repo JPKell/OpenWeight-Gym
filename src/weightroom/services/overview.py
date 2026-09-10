@@ -28,16 +28,20 @@ tables the primary table reads when it does not.
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
 
-from sqlalchemy import MetaData, Table, func, select, text
+from sqlalchemy import MetaData, Table, func, select
 
 from weightroom.services.apps import bearer_token
 from weightroom.services.database import Database
-from weightroom.services.processes import child_environment, executable_for, run_command
+from weightroom.services.db_reader import (
+    effective_database_url,
+    known_revision,
+    open_read_only,
+    read_revision,
+)
 
 if TYPE_CHECKING:
     import httpx
@@ -49,7 +53,6 @@ __all__ = ["Figure", "Overview", "OverviewTable", "overview_for"]
 
 logger = logging.getLogger(__name__)
 
-_CONFIG_SHOW_TIMEOUT_SECONDS: Final = 5.0
 _STATUS_TIMEOUT_SECONDS: Final = 3.0
 _TABLE_ROW_LIMIT: Final = 10
 _TABLE_COLUMN_LIMIT: Final = 6
@@ -178,56 +181,11 @@ def _fetch_status(
     return body if isinstance(body, dict) else None
 
 
-def _database_url(settings: Settings, app: str) -> tuple[str | None, str | None]:
-    """``<app> config show --json``'s ``values.storage.database_url`` (data model §4's "CLI" path).
-
-    Returns:
-        ``(url, None)`` on success, ``(None, reason)`` otherwise — never raises: a stopped
-        application with no readable configuration is a state this page renders, not an error.
-    """
-    executable = executable_for(settings, app)
-    if executable is None:
-        return None, "not installed"
-    result = run_command(
-        [executable, "config", "show", "--json"], child_environment(), _CONFIG_SHOW_TIMEOUT_SECONDS
-    )
-    if not result.ok:
-        return None, result.failure_text
-    try:
-        body = json.loads(result.stdout)
-        # `values` since ADR-0131 (IdeaPress 1.5.0 renamed its `settings`). The old name is read
-        # too, for one console major: the console and the applications upgrade on different
-        # days (ADR-0129 rule 3). Found on the reference machine at row W4.
-        block = body.get("values") if "values" in body else body["settings"]
-        url = block["storage"]["database_url"]
-    except (json.JSONDecodeError, KeyError, TypeError):
-        return None, "config show --json did not answer the expected shape"
-    return (str(url) if url else None), (None if url else "no database configured")
-
-
 def _reflect(engine: Any, name: str) -> Table | None:  # noqa: ANN401 — a SQLAlchemy Engine
     try:
         return Table(name, MetaData(), autoload_with=engine)
     except Exception:  # noqa: BLE001 — an unknown or unreadable table renders "—", not a crash
         return None
-
-
-def _read_revision(engine: Any) -> str | None:  # noqa: ANN401 — a SQLAlchemy Engine
-    try:
-        with engine.connect() as connection:
-            row = connection.execute(text("SELECT version_num FROM alembic_version")).first()
-    except Exception:  # noqa: BLE001 — no alembic_version table is "not known", not a crash
-        return None
-    return str(row[0]) if row else None
-
-
-def _known_revision(database: Database, app: str, revision: str | None) -> bool:
-    if revision is None:
-        return False
-    from weightroom.infrastructure.db.models import KnownRevision
-
-    with database.read() as session:
-        return session.get(KnownRevision, {"app": app, "revision": revision}) is not None
 
 
 def _figures_from_database(engine: Any, app: str) -> tuple[Figure, ...]:  # noqa: ANN401
@@ -308,7 +266,7 @@ def overview_for(
         figures_resolved = False
         figures = ()  # filled from the database below, or left dashed if that fails too
 
-    database_url, database_error = _database_url(settings, app)
+    database_url, database_error = effective_database_url(settings, app)
     if database_url is None:
         table = _empty_table(app, message=f"No database reachable: {database_error}.")
         if not figures_resolved:
@@ -319,10 +277,11 @@ def overview_for(
             table=table,
         )
 
-    other = Database.from_url(database_url)
+    # Read-only, like every connection to another application's database (ADR-0124).
+    other = open_read_only(database_url)
     try:
-        revision = _read_revision(other.engine)
-        known = revision is not None and _known_revision(database, app, revision)
+        revision = read_revision(other)
+        known = known_revision(database, app, revision)
         if revision is not None and not known:
             table = _empty_table(
                 app,
@@ -333,13 +292,13 @@ def overview_for(
             )
             table_phrase = f"schema at revision {revision} is not known"
         else:
-            table = _table_from_database(other.engine, app)
+            table = _table_from_database(other, app)
             table_phrase = f"the database at revision {revision}"
         figures_from_database = known and not figures_resolved
         if not figures_resolved:
-            figures = _figures_from_database(other.engine, app) if known else _dash_figures(app)
+            figures = _figures_from_database(other, app) if known else _dash_figures(app)
     finally:
-        other.close()
+        other.dispose()
     return Overview(
         *_compose(
             figures_from_api, table_phrase=table_phrase, figures_from_database=figures_from_database

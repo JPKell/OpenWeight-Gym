@@ -22,6 +22,7 @@ from tests.support import (
     api_routes,
     build_console,
     fake_application,
+    fixture_database,
 )
 from weightroom.infrastructure.db.models import AuditLog
 from weightroom.services.processes import FakeSystemdController
@@ -276,6 +277,18 @@ def _chat_decide_form(console: Console) -> Any:  # noqa: ANN401
         )
 
 
+def _db_query_json(console: Console) -> Any:  # noqa: ANN401
+    return console.client.post(
+        "/api/v1/apps/loadcoach/db/query",
+        json={"sql": "SELECT count(*) FROM feedback"},
+        headers=JSON_HEADERS,
+    )
+
+
+def _db_query_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/apps/loadcoach/database/query", {"sql": "SELECT 1"})
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -310,6 +323,8 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
         "/api/v1/chat/conversations/{conversation_id}/approvals/{approval_id}",
     ): _chat_decide_json,
     ("POST", "/chat/{conversation_id}/approvals/{approval_id}"): _chat_decide_form,
+    ("POST", "/api/v1/apps/{app}/db/query"): _db_query_json,
+    ("POST", "/apps/{app}/database/query"): _db_query_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 
@@ -333,7 +348,11 @@ def console(tmp_path: Path) -> Console:
     # something to act on and each writes exactly one row.
     # A real executable answering ADR-0127's two verbs, so the settings routes have a document
     # and a file to act on rather than degrading to "not installed" and auditing a refusal.
-    executable, _config, _document = fake_application(tmp_path, "loadcoach")
+    # And a `config show` naming a copy of LoadCoach's fixture database, for the console routes.
+    database = fixture_database(tmp_path, "loadcoach-0015")
+    executable, _config, _document = fake_application(
+        tmp_path, "loadcoach", database_url=f"sqlite:///{database}"
+    )
     return build_console(
         tmp_path / "console",
         extra_toml=f'[apps.loadcoach]\nexecutable = "{executable}"\n',

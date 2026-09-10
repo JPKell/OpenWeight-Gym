@@ -459,12 +459,16 @@ def _revision_findings(settings: Settings, database: Database | None) -> list[Fi
     """Each application's schema revision is one this console knows (``SCHEMA_UNKNOWN``)."""
     if database is None:
         return []
-    from weightroom.services.database import Database as OtherDatabase
-    from weightroom.services.overview import _database_url, _known_revision, _read_revision
+    from weightroom.services.db_reader import (
+        effective_database_url,
+        known_revision,
+        open_read_only,
+        read_revision,
+    )
 
     findings = []
     for app in APPLICATIONS:
-        url, reason = _database_url(settings, app)
+        url, reason = effective_database_url(settings, app)
         if url is None:
             findings.append(
                 Finding(
@@ -477,12 +481,12 @@ def _revision_findings(settings: Settings, database: Database | None) -> list[Fi
                 )
             )
             continue
-        other = OtherDatabase.from_url(url)
+        other = open_read_only(url)
         try:
-            revision = _read_revision(other.engine)
-            known = _known_revision(database, app, revision)
+            revision = read_revision(other)
+            known = known_revision(database, app, revision)
         finally:
-            other.close()
+            other.dispose()
         findings.append(
             Finding(
                 rule=f"revision.{app}",

@@ -50,6 +50,7 @@ class AuditRow:
     backup_path: str | None = None
     dry_run_count: int | None = None
     actual_count: int | None = None
+    statement: str | None = None
 
     def as_json(self) -> dict[str, Any]:
         """The api.md §7 shape."""
@@ -69,6 +70,7 @@ class AuditRow:
             "backup_path": self.backup_path,
             "dry_run_count": self.dry_run_count,
             "actual_count": self.actual_count,
+            "statement": self.statement,
         }
 
 
@@ -86,6 +88,10 @@ def record(
     message: str | None = None,
     security: bool = False,
     request_id: str | None = None,
+    statement: str | None = None,
+    backup_path: str | None = None,
+    dry_run_count: int | None = None,
+    actual_count: int | None = None,
 ) -> str:
     """Append one row and return its id.
 
@@ -102,6 +108,10 @@ def record(
         message: The failure or refusal text.
         security: True for a security-key change or a guarded write.
         request_id: The request the action belongs to.
+        statement: The SQL a database action ran or refused, verbatim (ADR-0124 condition 5).
+        backup_path: The guarded write's backup, written before the statement runs.
+        dry_run_count: The rows the rolled-back dry run reported.
+        actual_count: The rows the statement itself reported.
 
     Returns:
         The new row's ULID.
@@ -131,6 +141,10 @@ def record(
                 message=message,
                 security=security,
                 request_id=request_id,
+                statement=statement,
+                backup_path=backup_path,
+                dry_run_count=dry_run_count,
+                actual_count=actual_count,
             )
         )
     return row_id
@@ -177,6 +191,7 @@ def _to_row(row: AuditLog, username: str | None) -> AuditRow:
         backup_path=row.backup_path,
         dry_run_count=row.dry_run_count,
         actual_count=row.actual_count,
+        statement=row.statement,
     )
 
 

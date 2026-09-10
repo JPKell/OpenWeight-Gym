@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -135,6 +137,7 @@ def fake_application(
     config_toml: str = "",
     document: dict[str, Any] | None = None,
     schema_exit: int = 0,
+    database_url: str | None = None,
 ) -> tuple[Path, Path, dict[str, Any]]:
     """An executable that answers ADR-0127's two verbs, over a real config file in ``tmp_path``.
 
@@ -148,6 +151,8 @@ def fake_application(
         config_toml: The config file's initial text.
         document: An override for the document; the committed fixture otherwise.
         schema_exit: What `config schema` exits with — non-zero exercises the degraded page.
+        database_url: What `config show --json` names as the effective `storage.database_url`
+            (row W7's reader); without it the verb prints nothing, as a broken application might.
 
     Returns:
         ``(executable, config_path, document)``.
@@ -162,9 +167,19 @@ def fake_application(
     body["config_path"] = str(config_path)
     document_file = directory / "schema.json"
     document_file.write_text(json.dumps(body), encoding="utf-8")
+    show_file = directory / "show.json"
+    show_file.write_text(
+        json.dumps({"values": {"storage": {"database_url": database_url}}}), encoding="utf-8"
+    )
+    show = (
+        f'if [ "$1" = "config" ] && [ "$2" = "show" ]; then\n  cat {show_file}\n  exit 0\nfi\n'
+        if database_url is not None
+        else ""
+    )
     executable = directory / app
     executable.write_text(
         "#!/bin/sh\n"
+        f"{show}"
         'if [ "$1" = "config" ] && [ "$2" = "schema" ]; then\n'
         f"  cat {document_file}\n"
         f"  exit {schema_exit}\n"
@@ -181,6 +196,47 @@ def fake_application(
     )
     executable.chmod(0o755)
     return executable, config_path, body
+
+
+DATABASE_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "databases"
+
+
+def fixture_database(tmp_path: Path, name: str) -> Path:
+    """A private copy of a committed fixture database (``freeweight-0009``, …).
+
+    Tests read and fill the copy, never the committed file: even a read-only open of a WAL
+    database leaves ``-shm``/``-wal`` files beside it.
+    """
+    target = tmp_path / "databases" / f"{name}.sqlite3"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(DATABASE_FIXTURES / f"{name}.sqlite3", target)
+    return target
+
+
+def fill_rows(path: Path, table: str, rows: list[dict[str, Any]]) -> None:
+    """Insert ``rows`` into a SQLite file, filling every ``NOT NULL`` column a row leaves out.
+
+    Foreign keys are not enforced (plain ``sqlite3`` leaves them off), so a test states only the
+    columns it asserts on.
+    """
+    connection = sqlite3.connect(path)
+    try:
+        declared = connection.execute(f"PRAGMA table_info({table})").fetchall()
+        for row in rows:
+            values = dict(row)
+            for _index, name, kind, not_null, default, _key in declared:
+                if not_null and default is None and name not in values:
+                    numeric = any(word in str(kind).upper() for word in ("INT", "FLOAT", "REAL"))
+                    values[name] = 0 if numeric or "BOOL" in str(kind).upper() else "x"
+            names = ", ".join(values)
+            marks = ", ".join("?" for _value in values)
+            connection.execute(
+                f"INSERT INTO {table} ({names}) VALUES ({marks})",  # noqa: S608 — test data
+                tuple(values.values()),
+            )
+        connection.commit()
+    finally:
+        connection.close()
 
 
 def api_routes(app: Any) -> list[tuple[str, APIRoute]]:  # noqa: ANN401 — a FastAPI app

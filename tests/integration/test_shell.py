@@ -132,9 +132,10 @@ def test_an_applications_side_nav_names_its_built_pages_and_the_unbuilt_ones(
     # Built at W4, so they are links now, not stubs.
     assert 'href="/apps/loadcoach/settings"' in page
     assert 'href="/apps/loadcoach/tokens"' in page
-    # Database is scheduled (W7); a page with no row yet says so honestly; and a page that is
-    # deliberately somebody else's says where it lives instead of naming a row (W4).
-    assert 'title="coming in phase W7"' in page
+    # Database is built (W7), so a link; a page with no row yet says so honestly; and a page that
+    # is deliberately somebody else's says where it lives instead of naming a row (W4).
+    assert 'href="/apps/loadcoach/database"' in page
+    assert 'title="coming in phase W7"' not in page
     assert "not yet scheduled" in page
     assert "ADR-0117" in page
 
@@ -143,8 +144,8 @@ def test_the_console_pages_are_named_and_inert_until_their_rows_land(tmp_path: P
     console = _console(tmp_path)
     console.login()
     page = console.client.get("/", headers={"Accept": "text/html"}).text
-    for label, phase in (("Database", "W7"), ("Jobs", "W9")):
-        assert f'title="coming in phase {phase}">{label}' in page
+    assert 'title="coming in phase W9">Jobs' in page
+    assert '<a href="/database">Database</a>' in page  # built at W7
     assert 'href="/chat"' in page  # Chat is built (W6)
     # Docs (row W5) is built: a real link, not a stub — tests/integration/test_docs_routes.py
     # proves the page itself; this only guards the top-bar wiring.

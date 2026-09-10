@@ -1,0 +1,6 @@
+<p class="notice" role="alert"><strong>Schema at revision {{ revision.found or "none" }} is not known to
+WeightRoom {{ console_version }}</strong> (<code>SCHEMA_UNKNOWN</code>; known:
+{{ revision.known | join(", ") or "none" }}). This application's database pages are degraded by name
+rather than read against a schema this console was not written for (ADR-0123 rule 3); its
+API-sourced pages are unaffected. Upgrade <code>wr-gym</code>, or run <code>{{ app }} db status</code>
+to see where the schema moved.</p>

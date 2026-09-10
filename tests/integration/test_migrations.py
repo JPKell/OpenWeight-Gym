@@ -28,13 +28,16 @@ def _head() -> str:
 
 def _assert_parity(parity: ParityResult) -> None:
     """``docs_index`` (migration 0003) is real DDL, not an ORM model — FTS5's own bookkeeping
-    tables (:data:`FTS5_SHADOW_TABLES`) are the one expected difference from ``Base.metadata``."""
+    tables (:data:`FTS5_SHADOW_TABLES`) on SQLite and the GIN index over its ``tsvector`` on
+    PostgreSQL are the expected differences from ``Base.metadata``. (The PostgreSQL one went
+    unnoticed from W5 until W7 ran this leg against a real server.)"""
     if parity.matches:
         return
     remaining = [
         line
         for line in parity.diff.splitlines()
         if not any(f"'{table}'" in line for table in FTS5_SHADOW_TABLES)
+        and "'ix_docs_index_search_vector'" not in line
     ]
     assert not remaining, "\n".join(remaining)
 

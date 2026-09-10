@@ -30,7 +30,7 @@ from weightroom.services.telemetry import (
     sample_frame,
     sparkline_svg,
 )
-from weightroom.web.routes.apps import render_shell_page, views_for_request
+from weightroom.web.routes.apps import render_shell_page, revision_pairs, views_for_request
 from weightroom.web.session import CurrentOperator, now_of
 
 if TYPE_CHECKING:
@@ -117,6 +117,9 @@ def _telemetry_summary(request: Request) -> dict[str, object] | None:
 async def status(request: Request, principal: CurrentOperator) -> dict[str, object]:
     """Spec §17's machine view; every figure a later phase fills in is ``null`` here."""
     app = request.app
+    # Each revision read may launch `<app> config show` (cached a minute) and opens a database:
+    # blocking work, kept off the event loop.
+    revisions = await asyncio.to_thread(revision_pairs, request)
     return system_status(
         app.state.settings,
         tls=app.state.tls,
@@ -124,6 +127,7 @@ async def status(request: Request, principal: CurrentOperator) -> dict[str, obje
         views=views_for_request(request),
         ollama=_ollama_summary(request),
         telemetry=_telemetry_summary(request),
+        revisions=revisions,
     )
 
 

@@ -1,0 +1,60 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import empty_state, pagination %}
+{% block title %}{{ table_name }} — {{ app | app_label }} database — WeightRoom{% endblock %}
+{% block page_content %}
+<h2><a href="/apps/{{ app }}/database">Database</a> / <code>{{ table_name }}</code></h2>
+
+{% if unavailable %}
+<p class="notice" role="alert"><strong>No database to read.</strong> {{ unavailable }}</p>
+{% elif not revision.is_known %}
+{% include "_schema_unknown.html" %}
+{% else %}
+{% if lock %}
+<p class="notice"><strong>{{ table_name }} is never writable from WeightRoom (ADR-0124)</strong> —
+{{ lock.name }}: {{ lock.reason }}.</p>
+{% endif %}
+{% if grid_error %}<p class="notice" role="alert">{{ grid_error }}</p>{% endif %}
+{% if grid %}
+<form method="get" action="{{ clear_href }}" class="filter-bar">
+  <label class="field">Column
+    <select name="column">
+      <option value="">—</option>
+      {% for one in grid.columns %}<option value="{{ one.name }}"{{ " selected" if grid.column == one.name else "" }}>{{ one.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field">Contains <input name="filter" value="{{ grid.contains or '' }}"></label>
+  <label class="field">Sort
+    <select name="sort">
+      <option value="">primary key</option>
+      {% for one in grid.columns %}<option value="{{ one.name }}"{{ " selected" if grid.sort == one.name else "" }}>{{ one.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field"><input type="checkbox" name="desc" value="true"{{ " checked" if grid.descending else "" }}> Descending</label>
+  <button type="submit">Apply</button>
+  <a href="{{ clear_href }}">Clear</a>
+</form>
+{% if grid.rows %}
+<div class="table-scroll">
+<table id="db-grid" data-density="dense" data-complete="false">
+  <thead><tr>
+    {% for one in grid.columns %}
+    <th scope="col"{{ ' class="numeric"' | safe if one.numeric else "" }}>{{ one.name }}<br><span class="muted mono">{{ one.type }}{{ " · key" if one.primary_key else "" }}</span></th>
+    {% endfor %}
+  </tr></thead>
+  <tbody>
+  {% for row in grid.rows %}
+  <tr>{% for cell in row %}<td class="mono{{ ' numeric' if grid.columns[loop.index0].numeric else '' }}">{{ cell | cell_text }}</td>{% endfor %}</tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{{ pagination(previous_href=previous_href, next_href=next_href,
+              summary="page " ~ grid.page ~ " of " ~ (grid.pages if grid.pages is not none else "—") ~ " · " ~ (grid.total if grid.total is not none else "—") ~ " rows") }}
+{% else %}
+{{ empty_state("No rows match this filter." if grid.contains else "No rows in " ~ table_name ~ ".") }}
+{% endif %}
+{% endif %}
+<p class="muted">From {{ app | app_label }}'s database at revision {{ revision.found }}, read-only.
+<a href="/api/v1/apps/{{ app }}/db/tables/{{ table_name | urlencode }}">JSON</a></p>
+{% endif %}
+{% endblock %}

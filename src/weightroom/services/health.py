@@ -22,7 +22,7 @@ from weightroom.services.database import Database, database_health
 from weightroom.services.tls import TlsPaths, TlsStatus, tls_status
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 __all__ = ["APP_STATUS_DOT", "health_report", "system_status"]
 
@@ -148,13 +148,17 @@ def system_status(
     views: Sequence[AppView] | None = None,
     ollama: dict[str, Any] | None = None,
     telemetry: dict[str, Any] | None = None,
+    revisions: Mapping[str, tuple[str | None, bool | None]] | None = None,
 ) -> dict[str, Any]:
     """The ``GET /system/status`` machine view (spec §17), with ``null`` for what is not known.
 
-    Every figure a later phase fills in is ``None`` here — never ``0`` (ADR-0016).
+    Every figure a later phase fills in is ``None`` here — never ``0`` (ADR-0016). ``revisions``
+    is each application's ``(alembic_version, known)``, ``(None, None)`` where its database could
+    not be read.
     """
     instant = now or datetime.now(UTC)
     by_name = {view.name: view for view in views or ()}
+    read = dict(revisions or {})
     return {
         "checked_at": to_rfc3339(instant),
         "applications": {
@@ -165,8 +169,8 @@ def system_status(
                     "version": by_name[name].version,
                     "api_version": by_name[name].api_version,
                     "uptime_seconds": by_name[name].uptime_seconds,
-                    "db_revision": None,
-                    "known": None,
+                    "db_revision": read.get(name, (None, None))[0],
+                    "known": read.get(name, (None, None))[1],
                 }
                 if name in by_name
                 else {

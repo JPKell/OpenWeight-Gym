@@ -79,7 +79,8 @@ def test_the_never_writable_data_is_adr_0124s_table_plus_the_engine_catalog() ->
 
 def _fixture_tables(app: str) -> set[str]:
     path = FIXTURES / f"{app}-{KNOWN[app]}.sqlite3"
-    connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    # immutable: a committed file nothing writes; plain mode=ro would leave -shm/-wal beside it.
+    connection = sqlite3.connect(f"file:{path}?mode=ro&immutable=1", uri=True)
     try:
         rows = connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         return {str(row[0]) for row in rows}

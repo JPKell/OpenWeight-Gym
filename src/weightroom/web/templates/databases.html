@@ -1,0 +1,31 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge %}
+{% block title %}Databases — WeightRoom{% endblock %}
+{% block page_content %}
+<h2>Databases</h2>
+<p class="muted">Each application's own database, located through its own
+<code>config show --json</code> and opened read-only to read its revision. WeightRoom owns none of
+them (ADR-0123 rule 2).</p>
+<div class="table-scroll">
+<table id="databases" data-density="dense">
+  <thead><tr>
+    <th scope="col">Application</th><th scope="col">Revision</th><th scope="col">Schema</th>
+    <th scope="col">Database</th>
+  </tr></thead>
+  <tbody>
+  {% for one in databases %}
+  <tr>
+    <th scope="row"><a href="/apps/{{ one.app }}/database">{{ one.app | app_label }}</a></th>
+    {% if one.revision %}
+    <td class="mono">{{ one.revision.found or "none" }}</td>
+    <td>{% if one.revision.is_known %}{{ badge("known", tone="success") }}{% else %}{{ badge("not known", tone="danger", title="SCHEMA_UNKNOWN — known: " ~ (one.revision.known | join(", "))) }}{% endif %}</td>
+    <td class="mono">{{ one.revision.database_url }}</td>
+    {% else %}
+    <td>—</td><td>{{ badge("unavailable", tone="neutral") }}</td><td class="muted">{{ one.reason }}</td>
+    {% endif %}
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -49,6 +49,11 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "chat.approve",
         "chat.deny",
         "db.guarded_write",
+        # W7. The console's one SELECT: nothing moves, but what was read, and by whom, is the
+        # trail's. A refused statement is a row too.
+        "db.query",
+        # W7. A guarded write's rolled-back dry run: the count the operator is about to confirm.
+        "db.dry_run",
         "db.curated",
         "catalog.pull",
         "prompt.override",

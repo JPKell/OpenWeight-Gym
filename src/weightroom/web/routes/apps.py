@@ -55,6 +55,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CONTROL_VERBS",
     "render_shell_page",
+    "revision_pairs",
     "router",
     "ui_router",
     "views_for_request",
@@ -173,16 +174,50 @@ def _view(request: Request, app: str, *, refresh: bool = False) -> AppView:
     )
 
 
+def revision_pairs(
+    request: Request, apps: Sequence[str] = APPLICATIONS
+) -> dict[str, tuple[str | None, bool | None]]:
+    """Each application's ``(alembic_version, known)``; ``(None, None)`` where it cannot be read.
+
+    Row W7 fills api.md §2's ``db_revision`` and ``known`` with this, through the same read-only
+    reader and the same minute-long URL cache the database pages use.
+    """
+    from weightroom.services.db_reader import revision_summary
+
+    state = request.app.state
+    pairs: dict[str, tuple[str | None, bool | None]] = {}
+    for app in apps:
+        revision, _reason = revision_summary(
+            state.settings, state.database, app, urls=state.database_urls, now=_now()
+        )
+        pairs[app] = (None, None) if revision is None else (revision.found, revision.is_known)
+    return pairs
+
+
+def _with_revision(
+    view: AppView, revisions: Mapping[str, tuple[str | None, bool | None]]
+) -> dict[str, Any]:
+    payload = view.as_json()
+    payload["db_revision"], payload["known"] = revisions.get(view.name, (None, None))
+    return payload
+
+
 @router.get("/apps", summary="The four applications")
 def list_apps(request: Request, principal: CurrentOperator) -> JSONResponse:
-    """Each application's install, unit, version and negotiated verdict."""
-    return JSONResponse(content={"apps": [view.as_json() for view in views_for_request(request)]})
+    """Each application's install, unit, version, negotiated verdict and schema revision."""
+    revisions = revision_pairs(request)
+    return JSONResponse(
+        content={"apps": [_with_revision(view, revisions) for view in views_for_request(request)]}
+    )
 
 
 @router.get("/apps/{app}", summary="One application")
 def get_app(request: Request, principal: CurrentOperator, app: str) -> JSONResponse:
     """One application's view; ``404 APP_UNKNOWN`` for a name that is not one of the four."""
-    return JSONResponse(content=_view(request, require_app(app)).as_json())
+    name = require_app(app)
+    return JSONResponse(
+        content=_with_revision(_view(request, name), revision_pairs(request, (name,)))
+    )
 
 
 @router.get("/apps/{app}/health", summary="The application's own health, proxied")

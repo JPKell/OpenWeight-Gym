@@ -15,6 +15,7 @@ from mirrorwall import create_template_environment
 
 from weightroom.__about__ import __version__
 from weightroom.config import APP_LABELS
+from weightroom.services.db_reader import cell_text
 from weightroom.services.health import APP_STATUS_DOT
 from weightroom.services.tls import trust_steps
 
@@ -54,7 +55,7 @@ NAV_ITEMS: tuple[dict[str, str], ...] = (
 CONSOLE_PAGES: tuple[dict[str, str], ...] = (
     {"label": "Chat", "href": "/chat"},
     {"label": "Docs", "href": "/docs"},
-    {"label": "Database", "phase": "W7"},
+    {"label": "Database", "href": "/database"},
     {"label": "Jobs", "phase": "W9"},
 )
 """The console's own top-bar pages (design brief §4): a built one carries ``href``, an unbuilt
@@ -115,9 +116,7 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
 }
 """Spec §7.3's menu, per application. Only ``Overview`` is built before W4–W9 land the rest."""
 
-_PAGE_PHASE: dict[str, str] = {
-    "Database": "W7",
-}
+_PAGE_PHASE: dict[str, str] = {}
 """Where a still-unbuilt page's kickoff already names a row; everything else is not yet
 scheduled in ``roadmap/weightroom-work.md`` (a documentation gap W3 noted rather than invented
 an answer to — the handoffs record it)."""
@@ -136,6 +135,7 @@ _PAGE_HREF: dict[str, str] = {
     "Overview": "/apps/{app}",
     "Settings": "/apps/{app}/settings",
     "Tokens": "/apps/{app}/tokens",
+    "Database": "/apps/{app}/database",
 }
 """Where a built page lives; anything absent is still a stub."""
 
@@ -277,6 +277,7 @@ def templates() -> Environment:
     environment.filters["pill_tone"] = pill_tone
     environment.filters["pill_status"] = pill_status
     environment.filters["app_label"] = app_label
+    environment.filters["cell_text"] = cell_text
     return environment
 
 

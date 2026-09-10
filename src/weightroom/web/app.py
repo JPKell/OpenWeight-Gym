@@ -39,6 +39,7 @@ from weightroom.config import LOOPBACK_HOSTS, Settings, data_dir, resolve_config
 from weightroom.services.apps import VersionCache
 from weightroom.services.chat import ChatRunner, recover_interrupted
 from weightroom.services.database import Database
+from weightroom.services.db_reader import DatabaseUrlCache
 from weightroom.services.journal import JournalReader
 from weightroom.services.ollama import ollama_client
 from weightroom.services.processes import SubprocessSystemdController
@@ -51,6 +52,7 @@ from weightroom.web.rendering import templates
 from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
 from weightroom.web.routes import chat as chat_routes
+from weightroom.web.routes import databases as databases_routes
 from weightroom.web.routes import docs as docs_routes
 from weightroom.web.routes import doctor as doctor_routes
 from weightroom.web.routes import ollama as ollama_routes
@@ -94,6 +96,11 @@ STATUS_BY_CODE: dict[str, int] = {
     "APP_NOT_INSTALLED": status.HTTP_409_CONFLICT,
     "APP_STOPPED": status.HTTP_409_CONFLICT,
     "APP_VERSION_MISMATCH": status.HTTP_409_CONFLICT,
+    # 409, as the version mismatch: the database is fine and so is the request; this console was
+    # not written against that schema revision, and a WeightRoomGym upgrade is the fix.
+    "SCHEMA_UNKNOWN": status.HTTP_409_CONFLICT,
+    # 400: the statement itself is refused by name — not one SELECT, not one DML statement.
+    "GUARD_STATEMENT_REFUSED": status.HTTP_400_BAD_REQUEST,
     # 502: something WeightRoomGym drives answered badly or not at all — the application's API,
     # systemd, journalctl. The console is working; the thing behind it is not.
     "APP_UNREACHABLE": status.HTTP_502_BAD_GATEWAY,
@@ -309,6 +316,9 @@ def create_app(
     # One schema document per application, re-read every 60 s (api.md §2). Each read launches
     # `<app> config schema --json`, so without it every element of a settings page would.
     app.state.schemas = SchemaCache()
+    # Each application's effective database URL, from `<app> config show --json`, for 60 s — the
+    # database pages, `GET /apps` and the machine view all ask (services/db_reader.py).
+    app.state.database_urls = DatabaseUrlCache()
     # Pooled, and both open nothing until the first request; the lifespan closes them. The
     # Ollama one is separate because ModelRack's provider issues relative paths against whatever
     # client it is handed, so that client must carry Ollama's own base URL.
@@ -341,6 +351,7 @@ def create_app(
     app.include_router(doctor_routes.router, prefix="/api/v1")
     app.include_router(ollama_routes.router, prefix="/api/v1")
     app.include_router(docs_routes.router, prefix="/api/v1")
+    app.include_router(databases_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
@@ -353,6 +364,7 @@ def create_app(
     app.include_router(ollama_routes.ui_router)
     app.include_router(system_routes.ui_router)
     app.include_router(docs_routes.ui_router)
+    app.include_router(databases_routes.ui_router)
 
     mount_static(app, environment=templates(), extra_dirs={"/app-static": APP_STATIC_DIR})
     return app
