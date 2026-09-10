@@ -289,25 +289,37 @@ def overview_for(
         The Overview. Never raises: every failure path renders ``—`` or an empty table instead.
     """
     figures: tuple[Figure, ...]
+    # `figures_from_api` is only true of a *successful* call — it drives both which branch fills
+    # the figures below and how the footer is worded. `figures_resolved` is broader: also true
+    # when the application is running and reachable but its status call failed, so that case
+    # renders dashes (the API is the only source running/reachable implies) rather than quietly
+    # substituting the database's numbers for what the application itself could not answer.
     if view.running and view.reachable:
         body = _fetch_status(settings, app, view, client=client)
+        figures_from_api = body is not None
+        figures_resolved = True
         figures = _dash_figures(app) if body is None else _figures_from_status(app, body)
     else:
+        figures_from_api = False
+        figures_resolved = False
         figures = ()  # filled from the database below, or left dashed if that fails too
 
     database_url, database_error = _database_url(settings, app)
     if database_url is None:
         table = _empty_table(app, message=f"No database reachable: {database_error}.")
-        if not figures:
+        if not figures_resolved:
             figures = _dash_figures(app)
-        source = "api" if (view.running and view.reachable) else "none"
-        detail = "from the API" if source == "api" else f"unavailable: {database_error}"
-        return Overview(source=source, source_detail=detail, figures=figures, table=table)
+        return Overview(
+            *_compose(figures_from_api, table_phrase=f"unavailable: {database_error}"),
+            figures=figures,
+            table=table,
+        )
 
     other = Database.from_url(database_url)
     try:
         revision = _read_revision(other.engine)
-        if revision is not None and not _known_revision(database, app, revision):
+        known = revision is not None and _known_revision(database, app, revision)
+        if revision is not None and not known:
             table = _empty_table(
                 app,
                 message=(
@@ -315,19 +327,44 @@ def overview_for(
                     "database-sourced pages degrade by name; API-sourced figures are unaffected."
                 ),
             )
-            if not figures:
-                figures = _dash_figures(app)
-            source = "api" if (view.running and view.reachable) else "none"
-            detail = (
-                "from the API" if source == "api" else f"schema at revision {revision} is not known"
-            )
-            return Overview(source=source, source_detail=detail, figures=figures, table=table)
-        table = _table_from_database(other.engine, app)
-        if not figures:
-            figures = _figures_from_database(other.engine, app)
-            source, detail = "database", f"from the database at revision {revision}"
+            table_phrase = f"schema at revision {revision} is not known"
         else:
-            source, detail = "api", "from the API"
+            table = _table_from_database(other.engine, app)
+            table_phrase = f"the database at revision {revision}"
+        figures_from_database = known and not figures_resolved
+        if not figures_resolved:
+            figures = _figures_from_database(other.engine, app) if known else _dash_figures(app)
     finally:
         other.close()
-    return Overview(source=source, source_detail=detail, figures=figures, table=table)
+    return Overview(
+        *_compose(
+            figures_from_api, table_phrase=table_phrase, figures_from_database=figures_from_database
+        ),
+        figures=figures,
+        table=table,
+    )
+
+
+def _compose(
+    figures_from_api: bool, *, table_phrase: str, figures_from_database: bool = False
+) -> tuple[str, str]:
+    """The ``(source, source_detail)`` pair, naming both halves when they actually differ.
+
+    The primary table is always database-sourced (this module's docstring); the figures are not,
+    so a running application's footer says which is which rather than the single word "api"
+    implying the table came from there too. ``table_phrase`` is a complete clause on its own
+    ("the database at revision 15", "schema at revision 9999 is not known",
+    "unavailable: exited 1") so it reads correctly both standalone and after "table:".
+    """
+    if figures_from_api:
+        detail = f"figures from the API; table: {table_phrase}"
+    elif figures_from_database:
+        detail = f"from {table_phrase}"
+    else:
+        detail = table_phrase
+    # Sentence-cased here, not with Jinja's `capitalize` filter, which lowercases the rest of
+    # the string too and would turn "API" into "api".
+    return (
+        "api" if figures_from_api else "database" if figures_from_database else "none",
+        detail[:1].upper() + detail[1:],
+    )

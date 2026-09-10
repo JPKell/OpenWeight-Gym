@@ -45,6 +45,10 @@ def test_the_telemetry_strip_is_on_every_page_with_the_stream_url(tmp_path: Path
     assert 'data-telemetry-url="/api/v1/system/telemetry/stream"' in page
     assert "RESIDENT" in page
     assert "QUEUE" in page
+    # The two WeightRoomGym-specific meters refresh live off the same stream telemetry.js uses
+    # for the generic fields (meter() has no live hook of its own to wire them through).
+    assert 'meterValue("RESIDENT")' in page
+    assert 'meterValue("QUEUE")' in page
 
 
 def test_an_applications_side_nav_names_overview_and_the_unbuilt_pages(tmp_path: Path) -> None:

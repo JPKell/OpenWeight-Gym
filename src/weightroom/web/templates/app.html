@@ -3,7 +3,7 @@
 {% block title %}{{ view.name }} — WeightRoomGym{% endblock %}
 {% block page_content %}
 <h2>Overview {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
-<p class="muted">{{ overview.source_detail | capitalize }}.
+<p class="muted">{{ overview.source_detail }}.
 <a href="/api/v1/apps/{{ view.name }}">JSON</a> ·
 <a href="/api/v1/apps/{{ view.name }}/health">health</a></p>
 

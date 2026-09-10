@@ -95,11 +95,11 @@ def views_for_request(request: Request, *, refresh: str | None = None) -> tuple[
 def _telemetry_meters(request: Request) -> list[dict[str, object]]:
     """The strip's two WeightRoomGym-specific meters: RESIDENT and QUEUE (design brief §4).
 
-    Rendered from the last sample at page load; unlike the strip's generic CPU/GPU/RAM fields
-    (wired live by MirrorWall's own ``telemetry.js``) these two do not refresh in place until an
-    operator navigates again — the one corner this row cut on the strip's "moving once a second"
-    claim, since only the values sweatmeter itself measures update live. Documented in the W3
-    handoff rather than silently short of the design brief.
+    This is only the *initial* render, for the first paint before any SSE frame has arrived;
+    ``_shell.html``'s own script updates both meters live off the same
+    ``/system/telemetry/stream`` connection telemetry.js already uses for the generic fields,
+    matched by their label text since MirrorWall's ``meter()`` macro has no live-update hook of
+    its own for a two-field, one-consumer addition (design brief §5).
     """
     from mirrorwall import bytes_human
 

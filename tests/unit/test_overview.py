@@ -110,6 +110,10 @@ def test_running_and_reachable_reads_figures_from_the_api_and_the_table_from_the
     )
 
     assert overview.source == "api"
+    # The primary table is database-sourced even while running (§2.1 of the module's own
+    # docstring), so the footer names both halves rather than implying the table came from the
+    # API too — and preserves "API" rather than lower-casing it.
+    assert overview.source_detail == "Figures from the API; table: the database at revision 0015"
     figures = {f.label: f.value for f in overview.figures}
     assert figures["Active"] == "3"
     assert figures["Starving"] == "False"

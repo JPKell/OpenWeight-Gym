@@ -103,5 +103,55 @@
       });
     });
   })();
+
+  // RESIDENT and QUEUE are WeightRoomGym-specific meters (design brief §4), not MirrorWall's
+  // generic telemetry_bar fields, so telemetry.js does not refresh them. `meter()` (MirrorWall
+  // 0.3) has no live-update hook of its own — matched by their label text instead of forking the
+  // macro for two fields. A second EventSource to the same stream (mirrorwallSse.connect opens
+  // one per call, and telemetry.js already owns the first) is the cost of not touching MirrorWall
+  // for a WeightRoomGym-only behaviour.
+  (function () {
+    var GB = 1024 * 1024 * 1024;
+    var EM_DASH = "—";
+    var bar = document.getElementById("mw-telemetry-bar");
+    if (!bar || !window.mirrorwallSse) { return; }
+    var url = bar.getAttribute("data-telemetry-url");
+    if (!url) { return; }
+
+    function meterValue(label) {
+      var meters = bar.querySelectorAll(".meter");
+      for (var i = 0; i < meters.length; i++) {
+        var labelEl = meters[i].querySelector(".meter-label");
+        if (labelEl && labelEl.textContent === label) {
+          return meters[i].querySelector(".meter-value");
+        }
+      }
+      return null;
+    }
+
+    var residentEl = meterValue("RESIDENT");
+    var queueEl = meterValue("QUEUE");
+    if (!residentEl && !queueEl) { return; }
+
+    window.mirrorwallSse.connect(url, {
+      "telemetry.sampled": function (payload) {
+        var data = payload.data || payload;
+        if (residentEl) {
+          var gpus = data.gpus || [];
+          var used = gpus.length ? gpus[0].vram_used_bytes : null;
+          residentEl.textContent = (used === null || used === undefined) ? EM_DASH : (used / GB).toFixed(1) + " GB";
+        }
+        if (queueEl) {
+          var queue = data.queue;
+          if (queue && queue.active !== null && queue.active !== undefined) {
+            var waiting = queue.depth_by_state && queue.depth_by_state.queued;
+            queueEl.textContent = queue.active + " active" + (waiting === null || waiting === undefined ? "" : " · " + waiting + " waiting");
+          } else {
+            queueEl.textContent = EM_DASH;
+          }
+        }
+      }
+    });
+  })();
 </script>
 {% endblock %}
