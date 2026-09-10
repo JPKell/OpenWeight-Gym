@@ -30,6 +30,12 @@ symlink" (what still resolves through `~/ai/suite/docs`).
   reference in scripts, prompts, `pyproject.toml` comments and the workspace `CLAUDE.md` is
   rewritten to `WeightRoom/docs` (the W0 handoff lists them); the operator confirms nothing else
   on the machine resolves through it before the `rm`.
+* Carried from W6 (operator, 2026-09-10; `history/handoffs/W6_HANDOFF.md` §8): PromptCadence's
+  `trajectory show` names the approver by its token's name, in text and `--json`, so plan Phase 6
+  criterion 2 passes as written; PromptCadence emits `egress.evaluated` when it records an egress
+  decision; `promptcadence doctor` checks that LoadCoach answers and accepts the configured token,
+  and WeightRoomGym's doctor shows that check on PromptCadence's card. These ride a PromptCadence
+  minor released with the arc.
 
 ## Gates
 
