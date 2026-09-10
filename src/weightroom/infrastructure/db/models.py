@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     Float,
     ForeignKey,
     Index,
@@ -24,14 +25,19 @@ from sqlalchemy import (
     LargeBinary,
     MetaData,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from weightsdb import PortableJSON, UtcDateTime, ulid_primary_key
 
 __all__ = [
+    "Attachment",
     "AuditLog",
     "Base",
+    "Conversation",
     "KnownRevision",
+    "Message",
+    "MessageEvent",
     "Operator",
     "Session",
     "Setting",
@@ -170,3 +176,91 @@ class KnownRevision(Base):
     revision: Mapped[str] = mapped_column(String, primary_key=True)
     weightroom_version: Mapped[str] = mapped_column(String, nullable=False)
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
+class Conversation(Base):
+    """One chat, and the one backend it goes through (spec §7.6, §11 contract 6).
+
+    ``backend`` is a check constraint as well as a domain rule: a row naming a provider, or any
+    third value, cannot exist in this database however it was written (ADR-0045, ADR-0123 rule 4).
+    """
+
+    __tablename__ = "conversations"
+    __table_args__ = (
+        CheckConstraint("backend IN ('loadcoach', 'promptcadence')", name="backend"),
+        Index("ix_conversations_updated_at", "updated_at"),
+    )
+
+    id: Mapped[str] = ulid_primary_key()
+    backend: Mapped[str] = mapped_column(String, nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    task_profile: Mapped[str | None] = mapped_column(String, nullable=True)
+    model_override: Mapped[str | None] = mapped_column(String, nullable=True)
+    classification: Mapped[str | None] = mapped_column(String, nullable=True)
+    tier: Mapped[str | None] = mapped_column(String, nullable=True)
+    tools: Mapped[object | None] = mapped_column(PortableJSON, nullable=True)
+    remote_trajectory_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+
+
+class Message(Base):
+    """One turn. An assistant row holds the answer in ``text`` and never the thinking there."""
+
+    __tablename__ = "messages"
+    __table_args__ = (UniqueConstraint("conversation_id", "sequence"),)
+
+    id: Mapped[str] = ulid_primary_key()
+    conversation_id: Mapped[str] = mapped_column(
+        String(26), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False)
+    text: Mapped[str] = mapped_column(String, nullable=False, default="")
+    thinking: Mapped[str | None] = mapped_column(String, nullable=True)
+    routing: Mapped[object | None] = mapped_column(PortableJSON, nullable=True)
+    usage: Mapped[object | None] = mapped_column(PortableJSON, nullable=True)
+    cost: Mapped[object | None] = mapped_column(PortableJSON, nullable=True)
+    remote_job_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    remote_step_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    finish_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
+
+
+class MessageEvent(Base):
+    """One persisted frame of an assistant message's stream (ADR-0044, data model §2).
+
+    ``id`` is an autoincrement integer rather than a ULID — the telemetry table's exception, for
+    the telemetry table's reason: it is the SSE frame's ``id``, and a conversation's stream resumes
+    at ``id > Last-Event-ID`` with a numeric comparison across every message in it.
+    """
+
+    __tablename__ = "message_events"
+    __table_args__ = (UniqueConstraint("message_id", "sequence"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    message_id: Mapped[str] = mapped_column(
+        String(26), ForeignKey("messages.id", ondelete="CASCADE"), nullable=False
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    kind: Mapped[str] = mapped_column(String, nullable=False)
+    payload: Mapped[object] = mapped_column(PortableJSON, nullable=False)
+    at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+
+
+class Attachment(Base):
+    """A text or markdown file the operator added, stored under a generated name (spec §14)."""
+
+    __tablename__ = "attachments"
+
+    id: Mapped[str] = ulid_primary_key()
+    conversation_id: Mapped[str] = mapped_column(
+        String(26), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
+    )
+    filename: Mapped[str] = mapped_column(String, nullable=False)
+    stored_path: Mapped[str] = mapped_column(String, nullable=False)
+    media_type: Mapped[str] = mapped_column(String, nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
