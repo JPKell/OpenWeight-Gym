@@ -43,6 +43,18 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   without meter tracks; the main pane stretches instead of sizing to its widest line; and the
   Overview table drops its version and unit columns below 600 px. The side menu's version footer
   now sits after the unbuilt pages rather than between them.
+- The top bar collapses in two steps instead of wrapping or overlapping: below 1080 px the console
+  pages (Chat, Docs, Database, Jobs, alerts) move into a *Menu* dropdown, below 860 px the
+  application tabs follow. The theme control and log out moved into an operator menu at the right
+  edge, which is what the theme select used to collide with. The telemetry strip wraps rather
+  than scrolling at any width, and drops its meter tracks below 1080 px. Swept in headless Chrome
+  from 1400 px to 320 px in 10 px steps: no horizontal scroll, no overlapping top-bar item.
+- The header reads **WeightRoom** and links to the Overview; page titles and page text say
+  WeightRoom too. The distribution, CLI, certificates and documentation keep WeightRoomGym and
+  `wr-gym`.
+- Applications are displayed by their names — FreeWeight, LoadCoach, IdeaPress, PromptCadence —
+  in the tabs, the Menu, the Overview table, the side menu, and page titles and text. Routes,
+  units, CLI invocations and config sections keep the lowercase identifier.
 - W4's pages follow the same rule now that they sit in that shell: below 700 px the settings
   form, the doctor's findings and the token list stack each row into a card instead of scrolling
   the page, and a long config path or command wraps inside the main pane.

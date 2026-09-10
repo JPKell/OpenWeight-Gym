@@ -6,6 +6,7 @@ claims the brief's artboard makes, not the pixels MirrorWall's own snapshot test
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from tests.support import Console, build_console
@@ -34,8 +35,10 @@ def test_an_applications_own_tab_is_current_only_on_its_pages(tmp_path: Path) ->
     console.login()
     on_its_page = console.client.get("/apps/loadcoach", headers={"Accept": "text/html"}).text
     elsewhere = console.client.get("/apps", headers={"Accept": "text/html"}).text
-    assert 'aria-current="page"' in on_its_page
-    assert 'aria-current="page"' not in elsewhere
+    # On an element, not in the stylesheet — the shell's CSS names the same attribute selector.
+    current = re.compile(r"<a [^>]*aria-current=\"page\"")
+    assert current.search(on_its_page)
+    assert not current.search(elsewhere)
 
 
 def test_the_telemetry_strip_is_on_every_page_with_the_stream_url(tmp_path: Path) -> None:
@@ -74,8 +77,36 @@ def test_the_console_overview_lists_the_applications_as_a_dense_table(tmp_path: 
     page = console.client.get("/", headers={"Accept": "text/html"}).text
     assert 'data-table="console-applications"' in page
     assert 'data-density="dense"' in page
-    for name in ("freeweight", "loadcoach", "ideapress", "promptcadence"):
-        assert f'<a href="/apps/{name}">{name}</a>' in page, name
+    # Linked by the lowercase route, labelled with the display name.
+    for name, label in (
+        ("freeweight", "FreeWeight"),
+        ("loadcoach", "LoadCoach"),
+        ("ideapress", "IdeaPress"),
+        ("promptcadence", "PromptCadence"),
+    ):
+        assert f'<a href="/apps/{name}">{label}</a>' in page, name
+
+
+def test_the_top_bar_collapses_in_two_steps_and_the_brand_goes_home(tmp_path: Path) -> None:
+    """Console pages fold into Menu first, then the applications (operator, 2026-09-10).
+
+    Each group is rendered inline and again inside Menu; the stylesheet shows one copy per width.
+    What this proves is the structure the breakpoints rely on — the widths themselves were swept
+    in headless Chrome from 1400 px down to 350 px.
+    """
+    console = _console(tmp_path)
+    console.login()
+    page = console.client.get("/apps/loadcoach", headers={"Accept": "text/html"}).text
+    assert '<h1><a class="brand" href="/">WeightRoom <span class="version">' in page
+    assert page.count('class="app-tab"') == 4  # the inline tabs; Menu's copies are plain links
+    assert 'class="dropdown-group nav-more-apps"' in page
+    assert 'class="dropdown-group nav-more-console"' in page
+    assert re.search(r'<a href="/apps/loadcoach" aria-current="page">.*?LoadCoach</a>', page, re.S)
+    # One theme control, inside the operator menu, so theme.js has exactly one select to bind.
+    assert page.count("data-theme-select") == 1
+    assert page.index("data-theme-select") > page.index('class="dropdown user-menu"')
+    assert "@media (max-width: 1080px)" in page
+    assert "@media (max-width: 860px)" in page
 
 
 def test_an_applications_side_nav_names_its_built_pages_and_the_unbuilt_ones(

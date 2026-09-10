@@ -33,6 +33,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.concurrency import run_in_threadpool
 
+from weightroom.config import APP_LABELS
 from weightroom.domain.units import UNIT_APPLICATIONS
 from weightroom.services.apps import AppUnknown, AppView, bearer_token
 from weightroom.services.audit import record
@@ -496,7 +497,7 @@ def _render(
         show_raw=show_raw,
         active_app=None if own else app,
         nav_sections=CONSOLE_SIDE_NAV if own else app_side_nav(app, selected="Settings"),
-        nav_footer=None if own else f"{app} {form.version or '—'}",
+        nav_footer=None if own else f"{APP_LABELS.get(app, app)} {form.version or '—'}",
         side_nav_stubs=() if own else app_side_nav_stubs(app),
     )
 

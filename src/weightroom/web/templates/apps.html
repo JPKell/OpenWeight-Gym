@@ -1,9 +1,9 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, empty_state %}
-{% block title %}Applications — WeightRoomGym{% endblock %}
+{% block title %}Applications — WeightRoom{% endblock %}
 {% block page_content %}
 <h2>Applications</h2>
-<p class="muted">The four applications as <code>systemd --user</code> units WeightRoomGym wrote.
+<p class="muted">The four applications as <code>systemd --user</code> units WeightRoom wrote.
 A unit's state comes from systemd; the version comes from the application's own
 <code>/api/v1/version</code>, re-checked every five minutes. <a href="/api/v1/apps">JSON</a></p>
 <table id="apps">
@@ -21,7 +21,7 @@ A unit's state comes from systemd; the version comes from the application's own
       <td>{{ view.uptime_seconds | duration_human }}</td>
       <td>{{ view.restarts if view.restarts is not none else "—" }}</td>
       <td>{% if view.version %}{{ view.version }}{% if view.verdict not in ("ok", "unreadable") %}
-            {{ badge(view.verdict, tone="danger", title="WeightRoomGym speaks " ~ view.supported_range) }}
+            {{ badge(view.verdict, tone="danger", title="WeightRoom speaks " ~ view.supported_range) }}
           {% endif %}{% else %}—{% endif %}</td>
       <td><code>{{ view.unit }}</code></td>
       <td>

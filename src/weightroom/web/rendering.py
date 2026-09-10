@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 from mirrorwall import create_template_environment
 
 from weightroom.__about__ import __version__
+from weightroom.config import APP_LABELS
 from weightroom.services.health import APP_STATUS_DOT
 from weightroom.services.tls import trust_steps
 
@@ -151,6 +152,19 @@ def _built_pages(app_name: str) -> tuple[str, ...]:
     )
 
 
+def app_label(name: str) -> str:
+    """The display name of an application.
+
+    Args:
+        name: The lowercase identifier a route, unit or CLI uses (``loadcoach``).
+
+    Returns:
+        Its display name (``LoadCoach``), or ``name`` unchanged when it is not one the suite knows,
+        so an unexpected name still renders as itself rather than as nothing.
+    """
+    return APP_LABELS.get(name, name)
+
+
 def app_side_nav(app_name: str, *, selected: str = "Overview") -> tuple[dict[str, Any], ...]:
     """The section :func:`~mirrorwall.side_nav` renders for an application: its built pages.
 
@@ -160,7 +174,7 @@ def app_side_nav(app_name: str, *, selected: str = "Overview") -> tuple[dict[str
     """
     return (
         {
-            "title": app_name,
+            "title": app_label(app_name),
             "links": [
                 {
                     "label": label,
@@ -189,7 +203,7 @@ def app_side_nav_stubs(app_name: str) -> tuple[dict[str, str], ...]:
         if elsewhere is not None:
             title = elsewhere
         elif label == "Tokens":
-            title = f"{app_name} has no API tokens"
+            title = f"{app_label(app_name)} has no API tokens"
         else:
             phase = _PAGE_PHASE.get(label)
             title = f"coming in phase {phase}" if phase else "not yet scheduled"
@@ -242,7 +256,10 @@ def templates() -> Environment:
     environment = create_template_environment(
         app_template_dirs=(_TEMPLATES_DIR,),
         globals_={
-            "product_name": "WeightRoomGym",
+            # The name an operator reads. The distribution, CLI and ADRs keep WeightRoomGym/wr-gym;
+            # the header says WeightRoom and links home (operator decision, 2026-09-10).
+            "product_name": "WeightRoom",
+            "product_href": "/",
             "product_version": __version__,
             "nav_items": NAV_ITEMS,
             "console_pages": CONSOLE_PAGES,
@@ -255,6 +272,7 @@ def templates() -> Environment:
     )
     environment.filters["pill_tone"] = pill_tone
     environment.filters["pill_status"] = pill_status
+    environment.filters["app_label"] = app_label
     return environment
 
 

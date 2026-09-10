@@ -27,7 +27,7 @@ from mirrorwall import Event, format_frame
 from setspec import GeneratorInfo
 
 from weightroom.__about__ import __version__
-from weightroom.config import APPLICATIONS
+from weightroom.config import APP_LABELS, APPLICATIONS
 from weightroom.domain.units import unit_name
 from weightroom.services.apps import (
     AppNotInstalled,
@@ -436,7 +436,7 @@ def app_page(request: Request, principal: CurrentOperator, app: str) -> HTMLResp
         applications=APPLICATIONS,
         active_app=name,
         nav_sections=app_side_nav(name, selected="Overview"),
-        nav_footer=f"{name} {view.version or '—'}",
+        nav_footer=f"{APP_LABELS.get(name, name)} {view.version or '—'}",
         side_nav_stubs=app_side_nav_stubs(name),
     )
 

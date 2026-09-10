@@ -9,7 +9,7 @@
    calls `render_form_page` directly instead will hit StrictUndefined immediately, which is the
    point — a page inside the shell with no shell context is a defect, not a page missing a dot. #}
 {% extends "mirrorwall/base.html" %}
-{% from "mirrorwall/components.html" import app_tab, side_nav %}
+{% from "mirrorwall/components.html" import app_tab, side_nav, status_dot %}
 
 {% block head %}
 <style>
@@ -27,14 +27,12 @@
     cursor: default;
   }
 
-  /* Top bar (design brief §4): one 48 px row — brand, application tabs, console pages, alerts,
-     the theme control and the operator chip. Set here rather than in MirrorWall's masthead, which
-     is a wrap-friendly row sized for an application with a product title and nothing else.
-
-     The tabs, console pages and theme control sit in one `<details class="topnav">`. Above the
-     breakpoint it is open with its summary hidden, so it is simply the row; below it the summary
-     is the menu button and the body drops down over the page. One element serves both widths:
-     no duplicated links, and a real disclosure widget with keyboard behaviour the browser owns. */
+  /* Top bar (design brief §4): brand, application tabs, console pages, then the Menu dropdown and
+     the operator menu at the right edge. It collapses in two steps as the viewport narrows —
+     below 1080 px the console pages move into Menu, below 860 px the application tabs follow — so
+     the row never wraps, never scrolls and never overlaps. Each group is rendered twice, inline
+     and inside Menu, and exactly one copy is displayed at any width: `display: none` also takes
+     the other copy out of the accessibility tree, so a screen reader never hears a link twice. */
   header { position: sticky; top: 0; z-index: 5; background: var(--mw-bg); }
   .masthead {
     position: relative;
@@ -45,30 +43,19 @@
     gap: var(--mw-space-3, 12px);
   }
   .masthead h1 {
+    flex: 0 0 auto;
     margin: 0;
     font-size: var(--mw-font-size-base, 13px);
     font-weight: 600;
     white-space: nowrap;
   }
-  .topnav { flex: 1 1 auto; min-width: 0; }
-  .topnav > summary { display: none; }
-  .topnav-body { display: flex; align-items: center; gap: var(--mw-space-3, 12px); }
-  .topnav-theme { margin: 0 0 0 auto; }
-  /* The "Theme" word is visually hidden in the row (no room beside five groups) and shown in the
-     dropdown, where there is; the select keeps its accessible name at both widths. */
-  .topnav-theme label {
-    position: absolute; width: 1px; height: 1px; overflow: hidden;
-    clip-path: inset(50%); white-space: nowrap;
-  }
-  .topnav-theme select {
-    height: 26px; padding: 0 var(--mw-space-2, 8px);
-    font-size: var(--mw-font-size-xs, 11px);
-  }
-  .app-tabs { display: flex; gap: var(--mw-space-1, 4px); align-items: center; }
+  .masthead h1 .brand { color: var(--mw-text); text-decoration: none; }
+  .masthead h1 .brand:hover { color: var(--mw-accent); }
+  .app-tabs { display: flex; flex: 0 0 auto; gap: var(--mw-space-1, 4px); align-items: center; }
   .app-tab { white-space: nowrap; }
   .console-pages {
-    display: flex; gap: var(--mw-space-3, 12px); align-items: center;
-    margin-left: var(--mw-space-4, 16px);
+    display: flex; flex: 0 0 auto; gap: var(--mw-space-3, 12px); align-items: center;
+    margin-left: var(--mw-space-2, 8px);
     font-size: var(--mw-font-size-sm, 12px);
   }
   .console-pages a { color: var(--mw-text-muted); text-decoration: none; white-space: nowrap; }
@@ -76,14 +63,91 @@
   .console-page-stub { color: var(--mw-text-subtle); white-space: nowrap; }
   .console-alerts { color: var(--mw-text-subtle); white-space: nowrap; }
   .console-alerts[data-open="true"] { color: var(--mw-status-degraded); }
-  .operator-chip {
-    display: flex; align-items: center; gap: var(--mw-space-2, 8px);
-    flex: 0 0 auto; margin: 0; white-space: nowrap;
+
+  /* The two dropdowns. Menu holds whatever navigation has overflowed; the operator menu holds the
+     theme control and log out, so the row itself carries no form control that could collide. */
+  .masthead-end {
+    display: flex; flex: 0 0 auto; align-items: center; gap: var(--mw-space-2, 8px);
+    margin-left: auto;
   }
-  .operator-chip .chip {
+  .dropdown { position: relative; }
+  .dropdown > summary {
+    display: flex; align-items: center; gap: var(--mw-space-2, 8px);
+    height: 30px; padding: 0 var(--mw-space-3, 12px);
+    list-style: none; cursor: pointer; white-space: nowrap;
+    border: 1px solid var(--mw-border); border-radius: var(--mw-radius-sm, 6px);
+    background: var(--mw-surface);
+    font-size: var(--mw-font-size-sm, 12px); font-weight: 600;
+  }
+  .dropdown > summary::-webkit-details-marker { display: none; }
+  .dropdown[open] > summary { background: var(--mw-accent-soft); }
+  .dropdown-body {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 6;
+    display: flex; flex-direction: column; gap: var(--mw-space-3, 12px);
+    min-width: 220px;
+    max-width: calc(100vw - 2 * var(--mw-space-3, 12px));
+    padding: var(--mw-space-3, 12px);
+    background: var(--mw-surface);
+    border: 1px solid var(--mw-border);
+    border-radius: var(--mw-radius-md, 8px);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+  }
+  .dropdown-group { display: flex; flex-direction: column; gap: 2px; margin: 0; }
+  .dropdown-group a, .dropdown-group .console-page-stub, .dropdown-group .console-alerts {
+    display: flex; align-items: center; gap: var(--mw-space-1, 4px);
+    padding: var(--mw-space-2, 8px);
+    border-radius: var(--mw-radius-sm, 6px);
+    color: var(--mw-text-muted); text-decoration: none; white-space: nowrap;
+  }
+  .dropdown-group a:hover { background: var(--mw-surface-hover); color: var(--mw-text); }
+  .dropdown-group a[aria-current="page"] { background: var(--mw-accent-soft); color: var(--mw-text); }
+  .user-menu .chip {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 24px; height: 24px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
     background: var(--mw-accent-soft); font-size: var(--mw-font-size-xs, 11px); font-weight: 600;
+  }
+  .user-menu > summary { padding-left: var(--mw-space-1, 4px); }
+  .user-menu .field {
+    flex-direction: row; align-items: center; justify-content: space-between;
+    gap: var(--mw-space-3, 12px);
+  }
+  .user-menu .field label { margin: 0; font-size: var(--mw-font-size-sm, 12px); color: var(--mw-text-muted); }
+  .user-menu .field select {
+    width: auto; height: 26px; padding: 0 var(--mw-space-2, 8px);
+    font-size: var(--mw-font-size-xs, 11px);
+  }
+  .user-menu .dropdown-group + .dropdown-group {
+    padding-top: var(--mw-space-3, 12px); border-top: 1px solid var(--mw-border);
+  }
+  .user-menu form button { width: 100%; }
+  .user-menu-note { color: var(--mw-text-subtle); font-size: var(--mw-font-size-sm, 12px); }
+
+  /* Which copy shows. Wide: everything inline and no Menu at all. */
+  .nav-more, .nav-more-apps, .nav-more-console { display: none; }
+
+  /* The strip never scrolls: one row while it fits, a second row when it does not. */
+  .telemetry-bar {
+    height: auto;
+    min-height: var(--mw-telemetry-h, 34px);
+    flex-wrap: wrap;
+    row-gap: var(--mw-space-1, 4px);
+    overflow-x: visible;
+  }
+
+  @media (max-width: 1080px) {
+    .console-pages { display: none; }
+    .nav-more { display: block; }
+    .nav-more-console { display: flex; }
+    /* Values only from here down: the meter tracks are what made the strip wider than the row. */
+    .telemetry-track { display: none; }
+  }
+  @media (max-width: 860px) {
+    .app-tabs { display: none; }
+    .nav-more-apps { display: flex; }
+    .nav-more-console {
+      padding-top: var(--mw-space-3, 12px); border-top: 1px solid var(--mw-border);
+    }
+    .user-menu-name { display: none; }
   }
 
   /* Main pane head (design brief §4): the 18 px title with its status pill, and a right-aligned
@@ -105,55 +169,9 @@
      rather than wrap, since `code` has no break opportunity of its own. */
   .shell-main code { overflow-wrap: anywhere; }
 
-  /* Responsive (UI/UX §3). Nothing here scrolls the page sideways: the shell reflows instead. */
   @media (max-width: 900px) {
-    .topnav { flex: 0 0 auto; margin-left: auto; }
-    .topnav > summary {
-      display: flex; align-items: center; gap: var(--mw-space-2, 8px);
-      height: 30px; padding: 0 var(--mw-space-3, 12px);
-      list-style: none; cursor: pointer;
-      border: 1px solid var(--mw-border); border-radius: var(--mw-radius-sm, 6px);
-      background: var(--mw-surface);
-      font-size: var(--mw-font-size-sm, 12px); font-weight: 600;
-    }
-    .topnav > summary::-webkit-details-marker { display: none; }
-    .topnav[open] > summary { background: var(--mw-accent-soft); }
-    .topnav-body {
-      position: absolute; top: 100%; left: 0; right: 0; z-index: 6;
-      flex-direction: column; align-items: stretch; gap: var(--mw-space-3, 12px);
-      padding: var(--mw-space-3, 12px);
-      background: var(--mw-surface);
-      border: 1px solid var(--mw-border);
-      border-radius: 0 0 var(--mw-radius-md, 8px) var(--mw-radius-md, 8px);
-      box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
-    }
-    .app-tabs, .console-pages {
-      flex-direction: column; align-items: stretch; gap: 2px; margin: 0;
-    }
-    .console-pages { padding-top: var(--mw-space-3, 12px); border-top: 1px solid var(--mw-border); }
-    .app-tab, .console-pages a, .console-page-stub, .console-alerts {
-      padding: var(--mw-space-2, 8px);
-      border-radius: var(--mw-radius-sm, 6px);
-    }
-    .topnav-theme {
-      display: flex; align-items: center; justify-content: space-between;
-      margin: 0; padding-top: var(--mw-space-3, 12px); border-top: 1px solid var(--mw-border);
-    }
-    .topnav-theme label {
-      position: static; width: auto; height: auto; overflow: visible; clip-path: none;
-      font-size: var(--mw-font-size-sm, 12px); color: var(--mw-text-muted);
-    }
-
-    /* "Just the values": the meter tracks and separators go, the strip wraps, every number stays. */
-    .telemetry-bar {
-      height: auto;
-      flex-wrap: wrap;
-      row-gap: var(--mw-space-1, 4px);
-      column-gap: var(--mw-space-3, 12px);
-      padding: var(--mw-space-1, 4px) 0;
-      overflow-x: visible;
-    }
-    .telemetry-track, .telemetry-sep { display: none; }
+    .telemetry-sep { display: none; }
+    .telemetry-bar { column-gap: var(--mw-space-3, 12px); padding: var(--mw-space-1, 4px) 0; }
 
     /* `stretch`, not the wide layout's `flex-start`: in a column, `flex-start` sizes the main pane
        to its widest content — one long log line — and that width is what scrolled the page. */
@@ -222,18 +240,9 @@
 
 {% block navigation %}{# superseded by the app tabs above and the left menu below #}{% endblock %}
 
-{% block theme_control %}{# rendered inside the topnav below, not beside it #}{% endblock %}
+{% block theme_control %}{# rendered inside the operator menu below, not beside it #}{% endblock %}
 
-{% block header_extra %}
-<details class="topnav" open>
-<summary>&#9776; Menu</summary>
-<div class="topnav-body">
-<nav class="app-tabs" aria-label="Applications">
-  {% for view in views %}
-  {{ app_tab(view.name, "/apps/" ~ view.name, status=view.pill | pill_status, selected=(active_app == view.name)) }}
-  {% endfor %}
-</nav>
-<nav class="console-pages" aria-label="Console">
+{% macro console_page_links() %}
   {% for page in console_pages %}
   {% if page.href is defined %}
   <a href="{{ page.href }}">{{ page.label }}</a>
@@ -242,26 +251,58 @@
   {% endif %}
   {% endfor %}
   <span class="console-alerts" data-open="false" title="alerts arrive at row W9">⚠ —</span>
+{% endmacro %}
+
+{% block header_extra %}
+<nav class="app-tabs" aria-label="Applications">
+  {% for view in views %}
+  {{ app_tab(view.name | app_label, "/apps/" ~ view.name, status=view.pill | pill_status, selected=(active_app == view.name)) }}
+  {% endfor %}
 </nav>
-<div class="field topnav-theme">
-  <label for="mw-theme-select">Theme</label>
-  <select id="mw-theme-select" data-theme-select data-theme-storage-key="{{ theme_storage_key }}">
-    <option value="system">System</option>
-    <option value="light">Light</option>
-    <option value="dark">Dark</option>
-  </select>
+<nav class="console-pages" aria-label="Console">
+  {{ console_page_links() }}
+</nav>
+<div class="masthead-end">
+  <details class="dropdown nav-more">
+    <summary>&#9776; Menu</summary>
+    <div class="dropdown-body">
+      <nav class="dropdown-group nav-more-apps" aria-label="Applications">
+        {% for view in views %}
+        <a href="/apps/{{ view.name }}"{% if active_app == view.name %} aria-current="page"{% endif %}>{{ status_dot(view.pill | pill_status, label="") }}{{ view.name | app_label }}</a>
+        {% endfor %}
+      </nav>
+      <nav class="dropdown-group nav-more-console" aria-label="Console">
+        {{ console_page_links() }}
+      </nav>
+    </div>
+  </details>
+  <details class="dropdown user-menu">
+    {% if principal.source == "session" %}
+    <summary title="{{ principal.username }}"><span class="chip" aria-hidden="true">{{ principal.username[:2] | upper }}</span><span class="user-menu-name">{{ principal.username }}</span> &#9662;</summary>
+    {% else %}
+    <summary title="No operator account: loopback is open until wr-gym setup runs"><span class="chip" aria-hidden="true">&#8709;</span><span class="user-menu-name">open loopback</span> &#9662;</summary>
+    {% endif %}
+    <div class="dropdown-body">
+      <div class="dropdown-group field">
+        <label for="mw-theme-select">Theme</label>
+        <select id="mw-theme-select" data-theme-select data-theme-storage-key="{{ theme_storage_key }}">
+          <option value="system">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </div>
+      {% if principal.source == "session" %}
+      <form method="post" action="/logout" class="dropdown-group">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+        <button type="submit">Log out</button>
+      </form>
+      {% else %}
+      <p class="dropdown-group user-menu-note">No operator account: loopback is open until
+        <code>wr-gym setup</code> runs.</p>
+      {% endif %}
+    </div>
+  </details>
 </div>
-</div>
-</details>
-{% if principal.source == "session" %}
-<form method="post" action="/logout" class="operator-chip">
-  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
-  <span class="chip" title="{{ principal.username }}">{{ principal.username[:2] | upper }}</span>
-  <button type="submit" data-variant="quiet">Log out</button>
-</form>
-{% else %}
-<span class="muted operator-chip" title="No operator account: loopback is open until wr-gym setup runs">open loopback</span>
-{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -272,7 +313,7 @@
     <details class="shell-menu" open>
       {# Named for the section it opens ("LoadCoach", "Console") — the top bar's button is already
          "Menu", and two buttons with one name on a phone is a guess the operator has to make. #}
-      <summary>{{ (nav_sections[0].title if nav_sections and nav_sections[0].title is defined and nav_sections[0].title else "Pages") | title }} &#9662;</summary>
+      <summary>{{ nav_sections[0].title if nav_sections and nav_sections[0].title is defined and nav_sections[0].title else "Pages" }} &#9662;</summary>
       {{ side_nav(nav_sections) }}
       {% if side_nav_stubs %}
       <ul class="side-nav-stub">
@@ -318,26 +359,35 @@
     });
   })();
 
-  // The menu is one `<details>` at both widths: open and with its summary hidden above the
-  // breakpoint, a real disclosure below it. Only the transition is scripted, and only when the
-  // viewport actually crosses the breakpoint — a menu the operator closed by hand stays closed
-  // until then, which a `resize` handler that reasserted the state on every pixel would undo.
+  // The side menu is one `<details>` at both widths: open with its summary hidden above the
+  // breakpoint, a real disclosure below it. Scripted only when the viewport crosses it, so a menu
+  // the operator closed by hand stays closed until then.
   (function () {
-    if (!window.matchMedia) { return; }
-    var menus = document.querySelectorAll(".shell-menu, .topnav");
+    var side = document.querySelector(".shell-menu");
+    if (!side || !window.matchMedia) { return; }
     var wide = window.matchMedia("(min-width: 901px)");
-    var apply = function (event) {
-      menus.forEach(function (menu) { menu.open = event.matches; });
-    };
+    var apply = function (event) { side.open = event.matches; };
     apply(wide);
     if (wide.addEventListener) { wide.addEventListener("change", apply); }
-    // A dropdown that stays open after the operator clicks elsewhere is the unprofessional part;
-    // only the top bar's, and only while it is a dropdown.
-    var topnav = document.querySelector(".topnav");
+  })();
+
+  // The top bar's dropdowns close on a click outside, on Escape, and when the other one opens: a
+  // menu left hanging over the page after the operator has moved on is the overlap to avoid.
+  (function () {
+    var dropdowns = Array.prototype.slice.call(document.querySelectorAll(".masthead .dropdown"));
+    var closeAll = function (except) {
+      dropdowns.forEach(function (d) { if (d !== except) { d.open = false; } });
+    };
+    dropdowns.forEach(function (d) {
+      d.addEventListener("toggle", function () { if (d.open) { closeAll(d); } });
+    });
     document.addEventListener("click", function (event) {
-      if (topnav && !wide.matches && topnav.open && !topnav.contains(event.target)) {
-        topnav.open = false;
-      }
+      dropdowns.forEach(function (d) {
+        if (d.open && !d.contains(event.target)) { d.open = false; }
+      });
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") { closeAll(null); }
     });
   })();
 

@@ -74,6 +74,16 @@ LOOPBACK_HOSTS: frozenset[str] = frozenset({"127.0.0.1", "localhost", "::1"})
 APPLICATIONS: tuple[str, ...] = ("freeweight", "loadcoach", "ideapress", "promptcadence")
 """The four applications, in the suite's own order; ``{app}`` in every route is one of these."""
 
+APP_LABELS: dict[str, str] = {
+    "freeweight": "FreeWeight",
+    "loadcoach": "LoadCoach",
+    "ideapress": "IdeaPress",
+    "promptcadence": "PromptCadence",
+    "weightroom": "WeightRoom",
+}
+"""How each application's name is displayed. Its route, unit, CLI and config section keep the
+lowercase name; this is the word an operator reads, never an identifier anything parses."""
+
 SECURITY_SECTIONS: frozenset[str] = frozenset({"server", "tls", "auth", "apps", "host"})
 """Spec §12: every key under these sections is a security key — editable on WeightRoomGym's own
 settings page only after re-authentication, never through ``PUT /settings``."""

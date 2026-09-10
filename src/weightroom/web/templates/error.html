@@ -1,5 +1,5 @@
 {% extends "mirrorwall/base.html" %}
-{% block title %}{{ code }} — WeightRoomGym{% endblock %}
+{% block title %}{{ code }} — WeightRoom{% endblock %}
 {% block content %}
 <h2>{{ status_code }} · {{ code }}</h2>
 <div class="error-state" role="alert">
@@ -16,7 +16,7 @@
   {% elif status_code == 401 %}Log in first.
   {% elif status_code == 403 %}The request was refused: a stale form, or a cross-origin call.
   {% elif status_code == 429 %}Too many attempts from this address; wait a minute and retry.
-  {% elif status_code >= 500 %}A fault in WeightRoomGym or its database. Retry once; if it persists, quote the request ID.
+  {% elif status_code >= 500 %}A fault in WeightRoom or its database. Retry once; if it persists, quote the request ID.
   {% else %}The request was refused for the reason above; correct it and retry.
   {% endif %}
   </p>

@@ -1,6 +1,6 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import card, status_dot, table %}
-{% block title %}Overview — WeightRoomGym{% endblock %}
+{% block title %}Overview — WeightRoom{% endblock %}
 {% block extra_head %}
 <style>
   [data-table="console-applications"] td { white-space: nowrap; }
@@ -10,13 +10,18 @@
     [data-table="console-applications"] th:nth-child(n+4),
     [data-table="console-applications"] td:nth-child(n+4) { display: none; }
   }
+  /* The smallest phones keep name and status; uptime is one tap away on the application's page. */
+  @media (max-width: 360px) {
+    [data-table="console-applications"] th:nth-child(3),
+    [data-table="console-applications"] td:nth-child(3) { display: none; }
+  }
 </style>
 {% endblock %}
 
 {# A cell that is a link has to reach the table macro as markup, and a macro's output is the one
    thing Jinja will not escape a second time — hence a macro rather than a `| safe` string, which
    would hand the application name straight through unescaped. #}
-{% macro app_link(name) %}<a href="/apps/{{ name }}">{{ name }}</a>{% endmacro %}
+{% macro app_link(name) %}<a href="/apps/{{ name }}">{{ name | app_label }}</a>{% endmacro %}
 
 {% block page_content %}
 <div class="page-head">

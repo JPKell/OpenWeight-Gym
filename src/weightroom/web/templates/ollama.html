@@ -1,13 +1,13 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, card, empty_state %}
-{% block title %}Ollama — WeightRoomGym{% endblock %}
+{% block title %}Ollama — WeightRoom{% endblock %}
 {% block page_content %}
 <h2>Ollama
   {{ badge(report.state, tone="success" if report.state == "active" else "neutral") }}
   {{ badge(("safe: " ~ report.passing ~ "/" ~ report.total) if report.safe else (report.passing ~ "/" ~ report.total ~ " memory-safety checks"),
            tone="success" if report.safe else "danger") }}
 </h2>
-<p class="muted">Ollama is a <strong>system</strong> unit its own installer wrote. WeightRoomGym
+<p class="muted">Ollama is a <strong>system</strong> unit its own installer wrote. WeightRoom
 reads it — <code>systemctl show {{ report.unit }}</code>, <code>/api/ps</code> through ModelRack,
 and the journal where the operator's groups permit it — and restarts it only through a polkit
 rule a root user installed (ADR-0125 rules 4–5). <a href="/api/v1/ollama">JSON</a></p>
@@ -35,7 +35,7 @@ works (ADR-0125 rule 7).</p>
 </table>
 {% if not report.safe %}
 <p class="notice">This unit is not configured the way <code>MEMORY_SAFETY.md</code> §2.1 asks.
-The fix is one script, and WeightRoomGym <strong>prints it rather than running it</strong> —
+The fix is one script, and WeightRoom <strong>prints it rather than running it</strong> —
 it edits a file under <code>/etc</code> and this console is never root:</p>
 <pre><code>{{ report.apply_script }}</code></pre>
 {% endif %}

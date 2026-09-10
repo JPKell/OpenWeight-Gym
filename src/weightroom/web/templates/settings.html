@@ -1,6 +1,6 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, empty_state, json_viewer %}
-{% block title %}{{ app }} settings — WeightRoomGym{% endblock %}
+{% block title %}{{ app | app_label }} settings — WeightRoom{% endblock %}
 {% block page_content %}
 {% set is_own = app == "weightroom" %}
 <h2>Settings
@@ -10,7 +10,7 @@
 </h2>
 <p class="muted">Generated from
   <code>{% if is_own %}wr-gym{% else %}{{ app }}{% endif %} config schema --json</code>
-  {%- if form.version %} ({{ app }} {{ form.version }}){% endif %} — this console hardcodes no
+  {%- if form.version %} ({{ app | app_label }} {{ form.version }}){% endif %} — this console hardcodes no
   key of any application (ADR-0127 rule 3). File: <code>{{ form.config_path }}</code>{% if not
   form.config_exists %} <em>(does not exist yet; the first write creates it)</em>{% endif %}.
   <a href="/api/v1/apps/{{ app }}/settings">JSON</a> ·
@@ -30,14 +30,14 @@
 {% endif %}
 
 {% if form.document_error %}
-<p class="notice"><strong>{{ app }} could not describe its own configuration.</strong>
+<p class="notice"><strong>{{ app | app_label }} could not describe its own configuration.</strong>
   {{ form.document_error }} The form below is unavailable; the raw editor still works, under the
   same validate-before-write rules (development plan Phase 4).</p>
 {% endif %}
 
 {% if form.problems %}
 <div class="notice">
-  <p><strong>{{ app }} reports problems with its own file:</strong></p>
+  <p><strong>{{ app | app_label }} reports problems with its own file:</strong></p>
   <ul>{% for problem in form.problems %}<li>{{ problem }}</li>{% endfor %}</ul>
 </div>
 {% endif %}
@@ -45,17 +45,17 @@
 {% if form.pending_restart and not is_own %}
 <form method="post" action="/apps/{{ app }}/restart-for-settings" class="field">
   <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
-  <p class="muted"><code>{{ form.config_path }}</code> changed after {{ app }} started, so what is
+  <p class="muted"><code>{{ form.config_path }}</code> changed after {{ app | app_label }} started, so what is
   running is not what the file says. Restart to apply it.</p>
-  <button type="submit">Restart {{ app }}</button>
+  <button type="submit">Restart {{ app | app_label }}</button>
 </form>
 {% elif form.pending_restart and is_own %}
-<p class="notice">This file changed after WeightRoomGym started. It does not restart itself from
+<p class="notice">This file changed after WeightRoom started. It does not restart itself from
 its own page — run <code>systemctl --user restart weightroom</code> on the host.</p>
 {% endif %}
 
 {% if not form.running and not is_own and form.runtime_keys %}
-<p class="notice">{{ app }} is not running, so its <strong>live</strong> keys have no runtime path.
+<p class="notice">{{ app | app_label }} is not running, so its <strong>live</strong> keys have no runtime path.
 Each one below offers <em>save to the file instead</em>, which takes effect at the next start
 (ADR-0127 rule 4).</p>
 {% endif %}
