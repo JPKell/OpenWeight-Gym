@@ -141,3 +141,12 @@ def configure_logging(*, level: str = "INFO", log_format: str = "auto") -> None:
     logging.getLogger("sqlalchemy.engine").setLevel(
         os.environ.get("WEIGHTROOM_SQLALCHEMY_LOG_LEVEL", "WARNING")
     )
+    # httpx logs every request at INFO. The telemetry sampler and the version checks make routine
+    # calls to Ollama and the four applications, and a line per call buried everything else an
+    # operator reads; a failed read still shows where it matters (a `—` figure, a degraded
+    # component). `[logging] level = "DEBUG"` brings the lines back for an investigation — not an
+    # environment variable of its own: anything `WEIGHTROOM_`-prefixed is read as a configuration
+    # key, and an unknown one refuses startup.
+    if root.level > logging.DEBUG:
+        for name in ("httpx", "httpcore"):
+            logging.getLogger(name).setLevel(logging.WARNING)

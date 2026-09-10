@@ -30,6 +30,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ### Changed
 
+- Telemetry asks Ollama and LoadCoach nothing while nobody is looking. The host is still sampled
+  every tick — that is local and feeds history — but the residency read (`/api/ps`) and the queue
+  read (`/api/v1/system/status`) happen only while a page or stream is reading, renewed by every
+  stream frame and dropped fifteen seconds after the last, and then at most every five seconds
+  each. Measured before: sixty queue reads a minute in LoadCoach's journal and thirteen `/api/ps`
+  in Ollama's.
+- One telemetry stream per tab, not two: RESIDENT and QUEUE read the frame MirrorWall's
+  `telemetry.js` re-dispatches on the bar (`mw:telemetry`) instead of opening their own
+  `EventSource` to the same URL, halving the server's per-tab database polling.
+- httpx no longer logs every outgoing request unless `[logging] level` is `DEBUG`.
+- The header shows no version, on the login page or after it; the operator menu shows it.
 - The top bar is the artboard's single 48 px row (design brief §4): brand, application tabs,
   console pages, alerts, a compact theme control with a visually hidden label, and the operator
   chip at the right edge. The strip opts into MirrorWall's inline meters for all four fields.

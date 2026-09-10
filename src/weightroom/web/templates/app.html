@@ -31,7 +31,7 @@ configuration and run <code>wr-gym units sync</code>.</p>
 
 {% if view.verdict not in ("ok", "unreadable") %}
 <p class="notice">{{ view.name | app_label }} reports version <strong>{{ view.version }}</strong>, which is
-outside the range WeightRoom {{ product_version }} speaks to
+outside the range WeightRoom {{ console_version }} speaks to
 (<code>{{ view.supported_range }}</code>). Its pages are degraded by name rather than guessed at
 (<code>APP_VERSION_MISMATCH</code>, spec §19).</p>
 {% endif %}

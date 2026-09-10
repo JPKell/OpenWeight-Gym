@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 
 from tests.support import Console, build_console
+from weightroom.__about__ import __version__
 from weightroom.services.processes import FakeSystemdController
 
 
@@ -66,6 +67,9 @@ def test_the_strip_loads_the_modules_that_move_it(tmp_path: Path) -> None:
     page = console.client.get("/", headers={"Accept": "text/html"}).text
     assert "js/sse.js" in page
     assert "js/telemetry.js" in page
+    # One EventSource per tab: RESIDENT and QUEUE read telemetry.js's re-dispatched frame.
+    assert 'addEventListener("mw:telemetry"' in page
+    assert "mirrorwallSse.connect(" not in page
     # The artboard's inline meters, opted into by name; MirrorWall renders no track without them.
     for group in ("cpu", "ram", "gpu", "vram"):
         assert f'data-meter="{group}"' in page, group
@@ -97,7 +101,9 @@ def test_the_top_bar_collapses_in_two_steps_and_the_brand_goes_home(tmp_path: Pa
     console = _console(tmp_path)
     console.login()
     page = console.client.get("/apps/loadcoach", headers={"Accept": "text/html"}).text
-    assert '<h1><a class="brand" href="/">WeightRoom <span class="version">' in page
+    assert '<h1><a class="brand" href="/">WeightRoom</a></h1>' in page
+    assert 'class="version"' not in page  # no version in the header
+    assert f"WeightRoom {__version__}" in page[page.index('class="dropdown user-menu"') :]
     assert page.count('class="app-tab"') == 4  # the inline tabs; Menu's copies are plain links
     assert 'class="dropdown-group nav-more-apps"' in page
     assert 'class="dropdown-group nav-more-console"' in page

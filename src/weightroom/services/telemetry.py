@@ -20,9 +20,11 @@ through ModelRack — but refreshed on its own five-second cadence
 (:data:`RESIDENT_REFRESH_SECONDS`) and reused by every sample struck within that window, because
 asking Ollama once a second buys nothing an operator's eye can see and costs a process-local HTTP
 round trip on the sampler's own thread every tick. LoadCoach's queue depth is not persisted at
-all: it is a second application's live number, read fresh for ``/system/resident`` and for the
-SSE frame's payload (never written to a column), so a stale queue count in telemetry history
-cannot outlive the connection that showed it.
+all: it is a second application's live number, carried in the SSE frame's payload (never written
+to a column), so a stale queue count in telemetry history cannot outlive the connection that
+showed it. **Both upstream reads are demand-driven** (:data:`READER_IDLE_SECONDS`): with no page
+or stream reading, the sampler still samples the host — that is local and feeds history — but
+asks Ollama and LoadCoach nothing.
 
 **Downsampling is a sweep, not a read-time aggregation** (data model §2: "downsampled to one per
 minute by the sweep"): once a row has aged past an hour, the sweep keeps the newest row in each
@@ -52,7 +54,7 @@ from weightroom.infrastructure.db.models import TelemetrySample
 from weightroom.services.ollama import resident_models
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     import httpx
     from baseaicore import Measurement
@@ -84,6 +86,17 @@ _GENERATOR = GeneratorInfo(name="weightroom", version=__version__)
 
 RESIDENT_REFRESH_SECONDS: Final = 5.0
 """How often the sampler re-asks Ollama for residency; every other tick reuses the last answer."""
+
+QUEUE_REFRESH_SECONDS: Final = 5.0
+"""How often LoadCoach's queue depth is re-read while someone is reading it."""
+
+READER_IDLE_SECONDS: Final = 15.0
+"""How long after the last reader the sampler keeps making upstream calls.
+
+A telemetry stream reads once per sample and a page render once, so an open tab renews this every
+second; this long with no reader means no tab is open, and Ollama and LoadCoach are left alone
+until one is.
+"""
 
 SWEEP_INTERVAL_SECONDS: Final = 60.0
 """How often the retention/downsampling sweep runs — once a minute is the resolution it keeps."""
@@ -356,6 +369,7 @@ class TelemetryService:
             (ADR-0123 rule 5 — ModelRack's client, never a second Ollama client written here).
         app_client: The general-purpose pooled transport ``services/apps.py`` uses to reach the
             four applications, for the one absolute-URL read of LoadCoach's queue depth.
+        clock: Monotonic seconds, for the refresh and idle windows; injected by tests.
     """
 
     def __init__(
@@ -366,6 +380,7 @@ class TelemetryService:
         collector: TelemetryCollector | None = None,
         ollama_client: httpx.Client | None = None,
         app_client: httpx.Client | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         """Configure the sampler without starting its thread."""
         self._database = database
@@ -374,6 +389,9 @@ class TelemetryService:
         self._app_client = app_client if app_client is not None else ollama_client
         self._resident_cache = _ResidentCache()
         self._queue: dict[str, Any] | None = None
+        self._clock = clock
+        self._queue_read_at = float("-inf")
+        self._reader_at = float("-inf")
         self._sweep_lock = threading.Lock()
         self._last_sweep = 0.0
         collector = collector if collector is not None else build_collector()
@@ -384,16 +402,23 @@ class TelemetryService:
         )
 
     def _on_sample(self, snapshot: TelemetrySnapshot) -> None:
-        # LoadCoach's queue is read here, once per tick, and every reader shares the result. It
-        # used to be read by each reader instead — every pass of every open telemetry stream, five
-        # a second per stream — so the upstream call rate scaled with open tabs until LoadCoach's
-        # rate limiter answered 429 and its journal filled with `request.rate_limited`.
-        self._queue = self._read_queue()
+        now = self._clock()
+        # Upstream reads happen here, on the sampler thread, and every reader shares them — they
+        # used to be made per reader, five a second per open stream, until LoadCoach answered 429.
+        # They are also demand-driven: the host sample below is always taken, but Ollama and
+        # LoadCoach are asked nothing unless a page or stream has read within READER_IDLE_SECONDS,
+        # and then at most once per refresh window each. An idle console makes no HTTP calls.
+        watched = (now - self._reader_at) < READER_IDLE_SECONDS
+        if not watched:
+            self._queue = None
+        elif (now - self._queue_read_at) >= QUEUE_REFRESH_SECONDS:
+            self._queue = self._read_queue()
+            self._queue_read_at = now
         resident: list[dict[str, Any]] | None = None
-        if self._ollama_client is not None:
+        if self._ollama_client is not None and watched:
             try:
                 resident = self._resident_cache.get(
-                    self._settings, client=self._ollama_client, now=time.monotonic()
+                    self._settings, client=self._ollama_client, now=now
                 )
             except Exception:  # noqa: BLE001 — a residency hiccup never stops the sampler
                 logger.warning("telemetry.resident_read_failed", exc_info=True)
@@ -433,14 +458,18 @@ class TelemetryService:
         return self._sampler.latest()
 
     def queue_snapshot(self) -> dict[str, Any] | None:
-        """LoadCoach's queue depth as of the latest sample — never persisted, never fetched here.
+        """LoadCoach's queue depth as of the last read — never persisted, never fetched here.
+
+        Calling this is also how the sampler learns someone is looking: it renews the
+        :data:`READER_IDLE_SECONDS` window that both upstream reads depend on.
 
         Returns:
-            ``{"active", "depth_by_state"}`` from the sampler's last tick, or ``None`` before the
-            first tick, with no LoadCoach configured, or when the last read failed. A request never
-            triggers an upstream call of its own: the sampler makes one per interval however many
-            streams and pages are reading.
+            ``{"active", "depth_by_state"}`` from the latest read, or ``None`` before one, with no
+            LoadCoach configured, when the last read failed, or while nobody has been reading. A
+            request never triggers an upstream call of its own; the sampler makes at most one per
+            :data:`QUEUE_REFRESH_SECONDS` while readers keep asking.
         """
+        self._reader_at = self._clock()
         return self._queue
 
     def _read_queue(self) -> dict[str, Any] | None:

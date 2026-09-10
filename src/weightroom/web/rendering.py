@@ -260,7 +260,11 @@ def templates() -> Environment:
             # the header says WeightRoom and links home (operator decision, 2026-09-10).
             "product_name": "WeightRoom",
             "product_href": "/",
-            "product_version": __version__,
+            # No version in the header (operator, 2026-09-10). The login page is LAN-facing, and a
+            # version string there tells a stranger which advisories apply; the operator menu and
+            # the pages that compare versions read `console_version` instead.
+            "product_version": "",
+            "console_version": __version__,
             "nav_items": NAV_ITEMS,
             "console_pages": CONSOLE_PAGES,
             "theme_storage_key": "weightroom-theme",

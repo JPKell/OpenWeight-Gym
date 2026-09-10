@@ -300,6 +300,7 @@
       <p class="dropdown-group user-menu-note">No operator account: loopback is open until
         <code>wr-gym setup</code> runs.</p>
       {% endif %}
+      <p class="dropdown-group user-menu-note">WeightRoom {{ console_version }}</p>
     </div>
   </details>
 </div>
@@ -391,21 +392,16 @@
     });
   })();
 
-  // RESIDENT and QUEUE are WeightRoomGym-specific meters (design brief §4), not MirrorWall's
-  // generic telemetry_bar fields, so telemetry.js does not refresh them. `meter()` (MirrorWall
-  // 0.3) has no live-update hook of its own — matched by their label text instead of forking the
-  // macro for two fields. A second EventSource to the same stream (mirrorwallSse.connect opens
-  // one per call, and telemetry.js already owns the first) is the cost of not touching MirrorWall
-  // for a WeightRoomGym-only behaviour. It waits for DOMContentLoaded because `sse.js` is a
-  // deferred script: at inline-parse time `mirrorwallSse` does not exist yet, and the early
-  // return this used to take is why both meters held their first-paint value forever.
+  // RESIDENT and QUEUE are WeightRoom-specific meters (design brief §4), not MirrorWall's generic
+  // telemetry_bar fields, so telemetry.js does not refresh them; they are matched by label text
+  // rather than forking `meter()` for two fields. They read the frame telemetry.js re-dispatches
+  // on the bar (`mw:telemetry`) instead of opening a second EventSource to the same stream, which
+  // doubled the server's database polling per tab.
   document.addEventListener("DOMContentLoaded", function () {
     var GB = 1024 * 1024 * 1024;
     var EM_DASH = "—";
     var bar = document.getElementById("mw-telemetry-bar");
-    if (!bar || !window.mirrorwallSse) { return; }
-    var url = bar.getAttribute("data-telemetry-url");
-    if (!url) { return; }
+    if (!bar) { return; }
 
     function meterValue(label) {
       var meters = bar.querySelectorAll(".meter");
@@ -422,9 +418,8 @@
     var queueEl = meterValue("QUEUE");
     if (!residentEl && !queueEl) { return; }
 
-    window.mirrorwallSse.connect(url, {
-      "telemetry.sampled": function (payload) {
-        var data = payload.data || payload;
+    bar.addEventListener("mw:telemetry", function (event) {
+        var data = event.detail;
         if (residentEl) {
           var gpus = data.gpus || [];
           var used = gpus.length ? gpus[0].vram_used_bytes : null;
@@ -439,7 +434,6 @@
             queueEl.textContent = EM_DASH;
           }
         }
-      }
     });
   });
 </script>

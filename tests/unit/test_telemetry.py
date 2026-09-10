@@ -300,43 +300,58 @@ class TestTelemetryServiceLifecycle:
         service = self._service(database)
         assert service.queue_snapshot() is None
 
-    def test_readers_share_one_queue_read_per_sample(self, tmp_path_factory) -> None:  # type: ignore[no-untyped-def]
-        """Upstream calls scale with samples, never with readers.
+    def test_upstream_reads_follow_readers_and_are_capped(self, tmp_path_factory) -> None:  # type: ignore[no-untyped-def]
+        """Upstream calls scale with time while someone reads, never with readers, and stop when
+        nobody does.
 
-        Every open telemetry stream used to read LoadCoach's queue on each pass of its poll loop —
-        five a second per stream — until LoadCoach's rate limiter answered 429.
+        Every open telemetry stream used to read LoadCoach's queue on each pass of its poll loop,
+        five a second per stream, until LoadCoach's rate limiter answered 429; after that the
+        sampler still read it on every tick with no tab open at all.
         """
         import httpx
         import respx
 
         from weightroom.config import load_settings
+        from weightroom.services.telemetry import QUEUE_REFRESH_SECONDS, READER_IDLE_SECONDS
 
         database = _memory_db(tmp_path_factory)
         settings = load_settings(config_path=None).settings
         base_url = settings.apps.loadcoach.base_url.rstrip("/")
         collector = TelemetryCollector(host=NullHostReader(), gpu=NullGpuReader())
+        now = [1000.0]
+        status = {"active": 2, "depth_by_state": {"queued": 1}}
+
+        def tick(*, reader: bool) -> None:
+            now[0] += 1
+            if reader:
+                service.queue_snapshot()
+            service._on_sample(collector.snapshot())
+
         with respx.mock(assert_all_called=True) as router:
             route = router.get(f"{base_url}/api/v1/system/status").mock(
-                return_value=httpx.Response(
-                    200, json={"active": 2, "depth_by_state": {"queued": 1}}
-                )
+                return_value=httpx.Response(200, json=status)
             )
             with httpx.Client() as client:
                 service = TelemetryService(
-                    database, settings, collector=collector, app_client=client
+                    database, settings, collector=collector, app_client=client, clock=lambda: now[0]
                 )
-                assert (
-                    service.queue_snapshot() is None
-                )  # no tick yet, and no read triggered by asking
+                for _ in range(5):  # nobody reading: the host is sampled, LoadCoach is not asked
+                    tick(reader=False)
                 assert route.call_count == 0
 
-                service._on_sample(collector.snapshot())
-                for _ in range(50):
-                    assert service.queue_snapshot() == {
-                        "active": 2,
-                        "depth_by_state": {"queued": 1},
-                    }
+                tick(reader=True)  # a reader arrives: one read on the next tick ...
                 assert route.call_count == 1
+                for _ in range(50):  # ... shared by every reader
+                    assert service.queue_snapshot() == status
 
-                service._on_sample(collector.snapshot())
+                for _ in range(int(QUEUE_REFRESH_SECONDS) - 1):  # still reading: capped per window
+                    tick(reader=True)
+                assert route.call_count == 1
+                tick(reader=True)
                 assert route.call_count == 2
+
+                now[0] += READER_IDLE_SECONDS  # the reader leaves
+                for _ in range(10):
+                    tick(reader=False)
+                assert route.call_count == 2
+                assert service.queue_snapshot() is None
