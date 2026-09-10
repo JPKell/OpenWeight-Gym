@@ -97,7 +97,6 @@ def _docs_page(
     current_key: str | None,
     current_path: str | None = None,
     tree: TreeNode | None = None,
-    nav_footer: str | None = None,
     **context: Any,
 ) -> HTMLResponse:
     """A docs page inside the shell, with the section menu every docs page shares on the left."""
@@ -108,7 +107,6 @@ def _docs_page(
         template,
         principal=principal,
         nav_sections=_DOCS_NAV,
-        nav_footer=nav_footer,
         docs_sections=docs_sections(tree),
         docs_current_key=current_key,
         docs_current_path=current_path,
@@ -156,7 +154,6 @@ def docs_page_view(
         current_path=path,
         page=page,
         path=path,
-        nav_footer=path,
     )
 
 

@@ -30,6 +30,8 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ### Changed
 
+- A document page no longer repeats its path under the docs side menu (the breadcrumb already
+  shows it), and each top-level folder block in a section listing has space below it.
 - In a docs section's listing, each application's or package's folder heading is larger and
   ruled; a folder inside it (`guide/`) keeps the plain smaller heading with no rule.
 - The page body starts 16 px below the top bar and telemetry strip instead of touching them.

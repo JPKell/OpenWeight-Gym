@@ -280,6 +280,7 @@
   }
   .docs-files li { padding: 3px 0; break-inside: avoid; }
   .docs-folder { margin-top: var(--mw-space-4, 16px); }
+  .docs-folder:has(> h3) { padding-bottom: var(--mw-space-4, 16px); }  /* an app's or package's block */
   /* A section's own folders (an app, a package) are ruled and a step larger; a folder inside one
      (guide/) keeps the plain 14 px heading, so the listing reads as a hierarchy. */
   h3.docs-folder-title {
