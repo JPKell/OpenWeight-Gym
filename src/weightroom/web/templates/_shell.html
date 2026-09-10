@@ -25,7 +25,10 @@
   /* The 200px sidebar grid the design brief asks for (design.md §2, §4) — MirrorWall's own
      layout.css deliberately leaves this to the application (its side_nav rules style the menu's
      contents, not the page grid around it). */
-  .shell-body { display: flex; gap: var(--mw-space-5, 20px); align-items: flex-start; }
+  .shell-body {
+    display: flex; gap: var(--mw-space-5, 20px); align-items: flex-start;
+    padding-top: var(--mw-space-4, 16px);  /* clear of the top bar and strip's bottom border */
+  }
   .shell-side { width: var(--mw-sidebar-w, 200px); flex: 0 0 auto; }
   .shell-main { flex: 1 1 auto; min-width: 0; }
   .side-nav-stub { list-style: none; margin: 0; padding: 0; }

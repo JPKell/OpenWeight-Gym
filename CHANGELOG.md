@@ -30,6 +30,7 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ### Changed
 
+- The page body starts 16 px below the top bar and telemetry strip instead of touching them.
 - Each application's and package's own README and user documents (quickstart, api, operations,
   …) appear in the docs viewer under `apps/<name>/guide/` and `packages/<name>/guide/`. They
   are copied from the components by `docs/scripts/sync_component_docs.py`; `--check` reports
