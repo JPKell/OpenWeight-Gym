@@ -80,3 +80,28 @@
   </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+  // Phase 3 acceptance criterion 1: clicking any telemetry figure opens its history page
+  // (`/telemetry/history?figure=`). The strip's `[data-field]` spans are MirrorWall's own
+  // generic markup (telemetry_bar.html) and carry no href; this augments them in place rather
+  // than forking that template for one WeightRoomGym-specific behaviour.
+  (function () {
+    var bar = document.getElementById("mw-telemetry-bar");
+    if (!bar) { return; }
+    bar.querySelectorAll("[data-field]").forEach(function (el) {
+      el.style.cursor = "pointer";
+      el.setAttribute("tabindex", "0");
+      el.setAttribute("role", "link");
+      var go = function () {
+        window.location.href = "/telemetry/history?figure=" + encodeURIComponent(el.getAttribute("data-field"));
+      };
+      el.addEventListener("click", go);
+      el.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); go(); }
+      });
+    });
+  })();
+</script>
+{% endblock %}

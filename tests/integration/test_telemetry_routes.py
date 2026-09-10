@@ -175,6 +175,33 @@ def test_resident_reports_a_source_and_an_error_for_each_unreachable_side(tmp_pa
     assert body["loadcoach"]["error"]
 
 
+def test_the_history_page_renders_an_inline_svg_clicking_the_strip_would_open(
+    tmp_path: Path,
+) -> None:
+    console = _console(tmp_path)
+    console.login()
+    with console.database.write() as session:
+        session.add(
+            TelemetrySample(at=NOW, interval_ms=1000, gpu_index=0, gpu_vram_used_bytes=1_000_000)
+        )
+
+    page = console.client.get(
+        "/telemetry/history?figure=gpu_vram_used_bytes", headers={"Accept": "text/html"}
+    ).text
+    assert "<svg" in page and "polyline" in page
+    assert "1 sample." in page
+
+
+def test_the_history_page_falls_back_to_a_known_figure_for_a_bad_query(tmp_path: Path) -> None:
+    console = _console(tmp_path)
+    console.login()
+    response = console.client.get(
+        "/telemetry/history?figure=not-a-figure", headers={"Accept": "text/html"}
+    )
+    assert response.status_code == 200
+    assert "gpu_vram_used_bytes" in response.text
+
+
 def test_telemetry_routes_need_a_session(tmp_path: Path) -> None:
     console = build_console(tmp_path, host="10.77.10.84")
     for path in (

@@ -75,6 +75,7 @@ __all__ = [
     "sample_frame",
     "sample_to_json",
     "snapshot_to_row",
+    "sparkline_svg",
 ]
 
 logger = logging.getLogger(__name__)
@@ -236,6 +237,50 @@ def history_rows(
             .order_by(TelemetrySample.at.asc())
         ).all()
         return [(at, value) for at, value in rows]
+
+
+_SPARKLINE_WIDTH: Final = 640
+_SPARKLINE_HEIGHT: Final = 160
+_SPARKLINE_PAD: Final = 8
+
+
+def sparkline_svg(rows: Sequence[tuple[datetime, float | int | None]]) -> str | None:
+    """A server-rendered SVG polyline over ``rows`` — no chart library (ADR-0020 rule 5).
+
+    MirrorWall 0.3 does not vendor ECharts (design brief §5's seven components are the tokens,
+    the strip's meters, the tables, the log pane and the two navs — no chart container); building
+    that vendoring is not this row's job, so the history page's "clicking a figure opens its
+    history" (Phase 3 acceptance criterion 1) is a plain inline SVG line instead of the design
+    brief's eventual ECharts rendering, which a later row can replace behind the same URL.
+
+    Args:
+        rows: ``(at, value)`` pairs, ascending; a ``None`` value is a gap in the line, never
+            plotted as zero (ADR-0016).
+
+    Returns:
+        The ``<svg>...</svg>`` markup, or ``None`` when there is nothing to plot.
+    """
+    plottable = [(at, float(value)) for at, value in rows if value is not None]
+    if not plottable:
+        return None
+    values = [value for _at, value in plottable]
+    low, high = min(values), max(values)
+    span = (high - low) or 1.0
+    inner_w = _SPARKLINE_WIDTH - 2 * _SPARKLINE_PAD
+    inner_h = _SPARKLINE_HEIGHT - 2 * _SPARKLINE_PAD
+    count = len(plottable)
+    points = []
+    for index, (_at, value) in enumerate(plottable):
+        x = _SPARKLINE_PAD + (inner_w * index / (count - 1) if count > 1 else inner_w / 2)
+        y = _SPARKLINE_PAD + inner_h * (1 - (value - low) / span)
+        points.append(f"{x:.1f},{y:.1f}")
+    polyline = " ".join(points)
+    return (
+        f'<svg viewBox="0 0 {_SPARKLINE_WIDTH} {_SPARKLINE_HEIGHT}" role="img" '
+        f'aria-label="History from {low:g} to {high:g}" class="sparkline">'
+        f'<polyline points="{polyline}" fill="none" stroke="currentColor" stroke-width="2"/>'
+        f"</svg>"
+    )
 
 
 def downsample_and_retain(

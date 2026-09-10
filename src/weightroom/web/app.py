@@ -304,6 +304,7 @@ def create_app(
     app.include_router(apps_routes.ui_router)
     app.include_router(audit_routes.ui_router)
     app.include_router(ollama_routes.ui_router)
+    app.include_router(system_routes.ui_router)
 
     mount_static(app, environment=templates())
     return app

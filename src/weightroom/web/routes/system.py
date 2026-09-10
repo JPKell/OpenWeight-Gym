@@ -17,7 +17,7 @@ import time
 from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Query, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 
 from weightroom.__about__ import __version__
 from weightroom.services.health import health_report, system_status
@@ -28,14 +28,17 @@ from weightroom.services.telemetry import (
     history_rows,
     read_since,
     sample_frame,
+    sparkline_svg,
 )
-from weightroom.web.routes.apps import views_for_request
+from weightroom.web.routes.apps import render_shell_page, views_for_request
 from weightroom.web.session import CurrentOperator, now_of
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-__all__ = ["API_VERSION", "SCHEMA_VERSION", "router"]
+__all__ = ["API_VERSION", "SCHEMA_VERSION", "router", "ui_router"]
+
+ui_router = APIRouter(tags=["ui"], include_in_schema=False)
 
 API_VERSION = "v1"
 SCHEMA_VERSION = "1"
@@ -240,4 +243,31 @@ async def telemetry_stream(
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
+    )
+
+
+@ui_router.get("/telemetry/history", summary="One figure's history", response_class=HTMLResponse)
+def telemetry_history_page(
+    request: Request,
+    principal: CurrentOperator,
+    figure: str = "gpu_vram_used_bytes",
+    hours: float = 24.0,
+) -> HTMLResponse:
+    """What clicking a strip figure opens (Phase 3 acceptance criterion 1): a 24-hour line.
+
+    Plain inline SVG (:func:`~weightroom.services.telemetry.sparkline_svg`), not MirrorWall's
+    eventual ECharts container — see that function's own docstring for why.
+    """
+    chosen = figure if figure in FIGURE_COLUMNS else "gpu_vram_used_bytes"
+    rows = history_rows(request.app.state.database, figure=chosen, hours=hours)
+    return render_shell_page(
+        request,
+        "telemetry_history.html",
+        page="telemetry",
+        principal=principal,
+        figure=chosen,
+        figures=sorted(FIGURE_COLUMNS),
+        hours=hours,
+        svg=sparkline_svg(rows),
+        row_count=len(rows),
     )

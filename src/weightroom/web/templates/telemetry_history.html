@@ -1,0 +1,25 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import empty_state %}
+{% block title %}Telemetry history — WeightRoomGym{% endblock %}
+{% block page_content %}
+<h2>Telemetry history</h2>
+<p class="muted">{{ hours }}h of <code>{{ figure }}</code>, downsampled to one point per minute
+past the first hour (spec §7.7). <a href="/api/v1/system/telemetry/history?figure={{ figure }}&hours={{ hours }}">JSON</a></p>
+<form method="get" action="/telemetry/history" class="filter-bar" role="search">
+  <div class="field">
+    <label for="figure">Figure</label>
+    <select id="figure" name="figure">
+      {% for name in figures %}
+      <option value="{{ name }}"{% if name == figure %} selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit">Show</button>
+</form>
+{% if svg %}
+{{ svg | safe }}
+<p class="muted">{{ row_count }} sample{{ "" if row_count == 1 else "s" }}.</p>
+{% else %}
+{{ empty_state("No samples yet for " ~ figure ~ ".") }}
+{% endif %}
+{% endblock %}
