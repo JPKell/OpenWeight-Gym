@@ -43,6 +43,11 @@ venv/
 /logs/
 /backups/
 
+# The four applications' fixture databases (W7), each application's own convention
+# (FreeWeight's .gitignore carries the identical two lines): committed on purpose.
+!tests/fixtures/databases/
+!tests/fixtures/databases/*.sqlite3
+
 # ---- Secrets ----
 # Per Security Standards §8: secrets are never committed. The CA and leaf keys live under
 # ~/.config/wr-gym/tls/ (ADR-0126), never here.
