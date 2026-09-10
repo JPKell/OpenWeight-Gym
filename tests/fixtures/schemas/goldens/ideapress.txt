@@ -16,7 +16,7 @@
   --- inference.loadcoach.job_stages: array
   --- inference.loadcoach.max_data_classification: string
   --- inference.loadcoach.timeout_seconds: integer ≥ 1
-  L-- inference.mode: string {ollama,loadcoach,openai_compatible}
+  --- inference.mode: string {ollama,loadcoach,openai_compatible}
   --- inference.ollama.base_url: string
   --- inference.ollama.timeout_seconds: integer ≥ 1
   --- inference.openai_compatible.api_key_env: string
@@ -28,7 +28,7 @@
 [logging]
   --- logging.format: string {text,json}
   --- logging.include_content: boolean
-  L-- logging.level: string {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+  --- logging.level: string {DEBUG,INFO,WARNING,ERROR,CRITICAL}
 [models]
   --- models.stage_adapters: object
   L-- models.stages.audit_deep: string
