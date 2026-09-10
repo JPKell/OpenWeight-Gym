@@ -22,7 +22,15 @@ if TYPE_CHECKING:
 
     from weightroom.services.database import Database
 
-__all__ = ["AuditNotFound", "AuditRow", "get_audit", "list_audit", "record", "record_cli"]
+__all__ = [
+    "AuditNotFound",
+    "AuditRow",
+    "complete",
+    "get_audit",
+    "list_audit",
+    "record",
+    "record_cli",
+]
 
 
 class AuditNotFound(SuiteError):
@@ -172,6 +180,44 @@ def record_cli(
         message=message,
         security=security,
     )
+
+
+def complete(
+    database: Database,
+    audit_id: str,
+    *,
+    outcome: str,
+    actual_count: int | None = None,
+    message: str | None = None,
+) -> None:
+    """The trail's one update: a ``pending`` row becomes ``ok`` or ``failed`` (data model §2).
+
+    Written for ADR-0124 condition 5 — the guarded write's row is ``pending`` before its statement
+    runs and completed after, so a crash between the two leaves a row that says a write was
+    attempted.
+
+    Args:
+        database: The database handle.
+        audit_id: The pending row.
+        outcome: ``ok`` or ``failed``.
+        actual_count: The rows the statement reported.
+        message: The failure text.
+
+    Raises:
+        ValueError: ``outcome`` is neither, or the row is not ``pending`` — a completed row is
+            never rewritten.
+    """
+    if outcome not in {"ok", "failed"}:
+        message_text = f"a pending row completes as ok or failed, not {outcome!r}"
+        raise ValueError(message_text)
+    with database.write() as session:
+        row = session.get(AuditLog, audit_id)
+        if row is None or row.outcome != "pending":
+            message_text = f"audit row {audit_id!r} is not pending; the trail is append-only"
+            raise ValueError(message_text)
+        row.outcome = outcome
+        row.actual_count = actual_count
+        row.message = message
 
 
 def _to_row(row: AuditLog, username: str | None) -> AuditRow:

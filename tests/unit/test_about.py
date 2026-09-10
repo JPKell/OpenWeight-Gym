@@ -6,11 +6,11 @@ from pathlib import Path
 
 import weightroom
 
-VERSION = "0.6.0"
-"""Row W6 prepares ``0.6.0`` (unpublished)."""
+VERSION = "0.7.0"
+"""Row W7 prepares ``0.7.0`` (unpublished)."""
 
 
-def test_version_is_the_phase_6_release() -> None:
+def test_version_is_the_phase_7_release() -> None:
     assert weightroom.__version__ == VERSION
 
 

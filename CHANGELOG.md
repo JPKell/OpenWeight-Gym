@@ -6,6 +6,58 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-09-10
+
+Row W7: Phase 7 of the development plan — every application's database readable, a raw write only
+under ADR-0124's five conditions, and the applications' own database operations offered first.
+Prepared, not tagged, not pushed, not published.
+
+### Added
+- **The guard, pure** (`domain/guard.py`): ADR-0124's five conditions as a checklist with a verdict
+  per condition; the never-writable tables as data, compared by test against the record's own
+  table and against the four fixture databases; a SQL lexer that reads one statement's verb, the
+  tables it names and the tables it writes, and refuses `CREATE`, `ALTER`, `DROP`, `PRAGMA`,
+  `VACUUM`, `ATTACH`, `BEGIN` and every other non-DML keyword by name, and any second statement;
+  the foreign-key reach that makes a cascade into a locked table a write.
+- **ADR-0133**: the guard follows foreign keys into the never-writable list (`DELETE FROM runs` is
+  refused in FreeWeight: it cascades into `run_events`); `sqlite_*` and `pg_*` are never written;
+  *stopped* is the unit **and** the port; the database URL is `config show --json`'s effective
+  value; a write is bound to its dry run by a digest and rolled back if its counts differ; condition
+  5 has its own code, `GUARD_AUDIT_FAILED`.
+- **The reader** (`services/db_reader.py`): each application's database opened unpooled and
+  read-only (`mode=ro`; `default_transaction_read_only` with a 30 s `statement_timeout`) and
+  checked against `known_revisions` (`SCHEMA_UNKNOWN` by name); tables with row counts and their
+  lock; a typed, sorted, filtered page of 100 rows; the SQL console — one `SELECT`, 30 s, 10 000
+  rows.
+- **The guarded write** (`services/db_guard.py`): the typed names, the unit and the port, the
+  repeated dry run, a backup through `weightsdb.backup` into
+  `<data>/backups/<app>/<utc>-guarded-write.sqlite3` (mode 0600, never rotated), the `pending` audit
+  row carrying the backup path, the statement on its own short-lived connection, the row completed.
+  A crash between the pending row and the statement leaves the row `pending` (tested).
+- **The applications' own operations** (`services/db_curated.py`): `db status|backup|upgrade|restore`
+  and FreeWeight's `db vacuum`; a restore needs the unit stopped, the name typed and
+  re-authentication. Per-table operations as data: LoadCoach's and PromptCadence's content
+  retention, and a plain statement that FreeWeight's delete-by-model does not exist.
+- Routes `GET …/db/revision`, `…/db/tables`, `…/db/tables/{t}`, `…/db/status`, `…/db/backups` and
+  `POST …/db/query`, `…/db/write/dry-run`, `…/db/write`, `…/db/backup`, `…/db/upgrade`,
+  `…/db/restore`; pages `/database`, `/apps/{app}/database` (own operations, tables, console) and
+  `/apps/{app}/database/{table}` (the grid, the table's own operations first, the guard dialog).
+  The Database entries in the top bar and in every application's side nav are links now.
+- `db_revision` and `known` filled in `GET /apps`, `GET /apps/{app}` and `GET /system/status`.
+- Audit actions `db.query` and `db.dry_run`; `statement` on every audit row the API returns;
+  `services.audit.complete`, the trail's one update (`pending` to `ok` or `failed`).
+
+### Changed
+- The Overview table and the doctor's revision rule read the applications' databases through the
+  read-only reader. They had opened them with `weightsdb.create_engine_for`, which sets pragmas
+  and creates directories — writes against a file another application owns.
+- The re-authentication restamp moved from `web/routes/settings.py` to `web/session.py`, as W4
+  asked when a second caller arrived.
+
+### Fixed
+- The migration parity test's PostgreSQL leg expected FTS5's shadow tables but not `docs_index`'s
+  GIN index, and had failed against a real server since row W5.
+
 ## [0.6.0] — 2026-09-10
 
 Row W6: Phase 6 of the development plan — chat through LoadCoach and PromptCadence, thinking that

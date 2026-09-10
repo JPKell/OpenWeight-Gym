@@ -37,7 +37,7 @@ from weightroom.config import APP_LABELS
 from weightroom.domain.units import UNIT_APPLICATIONS
 from weightroom.services.apps import AppUnknown, AppView, bearer_token
 from weightroom.services.audit import record
-from weightroom.services.auth import ReauthRequired, reauthenticate, require_fresh_reauth
+from weightroom.services.auth import ReauthRequired, require_fresh_reauth
 from weightroom.services.config_files import parse_or_reason, write_config
 from weightroom.services.settings_forms import (
     SettingsForm,
@@ -46,7 +46,7 @@ from weightroom.services.settings_forms import (
     save_settings,
     settings_form,
 )
-from weightroom.web.session import CurrentOperator, now_of
+from weightroom.web.session import CurrentOperator, now_of, reauthenticated
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -218,24 +218,6 @@ def _refusal_text(app: str, response: httpx.Response) -> str:
     if isinstance(error, dict) and error.get("message"):
         return f"{app} refused: {error['message']}"
     return f"{app} refused with {response.status_code}."
-
-
-def _reauthenticated(request: Request, principal: Principal, password: str) -> Principal | None:
-    """Open the re-authentication window and return the **restamped** principal, or ``None``.
-
-    The principal this request was resolved with was read before the password arrived, so it
-    still carries the old ``reauth_at``; handing it to
-    :func:`~weightroom.services.auth.require_fresh_reauth` a moment later would refuse a password
-    that had just been accepted. The session row is the store; this is the same row, re-read.
-    """
-    from dataclasses import replace
-
-    now = now_of(request)
-    if not reauthenticate(
-        request.app.state.database, principal=principal, password=password, now=now
-    ):
-        return None
-    return replace(principal, reauth_at=now)
 
 
 def _notice(result: Any) -> str:  # noqa: ANN401 — a SaveResult, imported lazily
@@ -556,7 +538,7 @@ def _save_from_form(
     changes, problems = _submitted(raw, form)
     password = str(raw.get("password") or "")
     if password:
-        fresh = _reauthenticated(request, principal, password)
+        fresh = reauthenticated(request, principal, password)
         if fresh is None:
             return _render(request, principal, app, error="That password is not the operator's.")
         principal = fresh
@@ -632,7 +614,7 @@ def save_raw_from_page(
     state = request.app.state
     form, _view = form_for(request, name)
     if password:
-        fresh = _reauthenticated(request, principal, password)
+        fresh = reauthenticated(request, principal, password)
         if fresh is None:
             return _render(
                 request,

@@ -1,5 +1,5 @@
 {% extends "_shell.html" %}
-{% from "mirrorwall/components.html" import empty_state, pagination %}
+{% from "mirrorwall/components.html" import badge, empty_state, pagination %}
 {% block title %}{{ table_name }} — {{ app | app_label }} database — WeightRoom{% endblock %}
 {% block page_content %}
 <h2><a href="/apps/{{ app }}/database">Database</a> / <code>{{ table_name }}</code></h2>
@@ -9,6 +9,15 @@
 {% elif not revision.is_known %}
 {% include "_schema_unknown.html" %}
 {% else %}
+{% if operations %}
+<h3>{{ app | app_label }}'s own operations for {{ table_name }}</h3>
+<ul>
+  {% for one in operations %}
+  <li><strong>{{ one.label }}</strong> — {{ one.note }}
+  {% if one.href %}<a href="{{ one.href }}">Settings</a>{% else %}{{ badge("not offered", tone="neutral") }}{% endif %}</li>
+  {% endfor %}
+</ul>
+{% endif %}
 {% if lock %}
 <p class="notice"><strong>{{ table_name }} is never writable from WeightRoom (ADR-0124)</strong> —
 {{ lock.name }}: {{ lock.reason }}.</p>
@@ -53,6 +62,88 @@
 {% else %}
 {{ empty_state("No rows match this filter." if grid.contains else "No rows in " ~ table_name ~ ".") }}
 {% endif %}
+{% endif %}
+
+{% if not lock %}
+<section id="guard" aria-labelledby="guard-title">
+<h3 id="guard-title">Raw write — the guard (ADR-0124)</h3>
+<p class="muted">An operation above, where there is one, is the better path. A raw write runs one
+<code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code> or <code>REPLACE</code> only with
+{{ app | app_label }} stopped, after a dry run you confirm, a backup, every table typed, your
+password, and an audit row written before it runs.</p>
+{% set failure = guard.error %}
+{% if failure %}
+<p class="notice" role="alert"><strong><code>{{ failure.code }}</code>{{ " · condition " ~ failure.details.get("condition") if failure.details.get("condition") is not none else "" }}</strong>
+{{ failure.message }}</p>
+{% endif %}
+{% if guard.result %}
+<div class="notice" role="status">
+  <p><strong>Written: {{ guard.result.counts.rows }} row{{ "" if guard.result.counts.rows == 1 else "s" }}.</strong>
+  Backup <code>{{ guard.result.backup_path }}</code>; audit row
+  <a href="/api/v1/audit/{{ guard.result.audit_id }}"><code>{{ guard.result.audit_id }}</code></a>.</p>
+</div>
+{% endif %}
+<form method="post" action="{{ write_base }}/write/dry-run">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <div class="field">
+    <label for="guard-sql">Statement <span class="field-hint">One statement. CREATE, ALTER, DROP,
+    PRAGMA and VACUUM are refused by name.</span></label>
+    <textarea id="guard-sql" name="sql" rows="3" class="mono" spellcheck="false" required>{{ guard.sql }}</textarea>
+  </div>
+  <button type="submit">Dry run</button>
+</form>
+{% if guard.dry %}
+{% set dry = guard.dry %}
+<div id="guard-dry" role="region" aria-labelledby="guard-dry-title">
+  <h4 id="guard-dry-title">Dry run</h4>
+  <pre class="mono">{{ dry.statement.text }}</pre>
+  {% if dry.counts is not none %}
+  <p><strong>{{ dry.counts.rows }} row{{ "" if dry.counts.rows == 1 else "s" }}</strong>, rolled back.</p>
+  {% else %}
+  <p><strong>—</strong> Nothing ran: {{ app | app_label }} is not stopped ({{ dry.observation.evidence }}).</p>
+  {% endif %}
+  {% if dry.reached %}
+  <p>The database's foreign keys also change:</p>
+  <ul>
+    {% for one in dry.reached %}
+    <li><code>{{ one.table }}</code> — {{ one.action }}, via {{ one.path | join(" → ") }}{{ (": " ~ dry.counts.changes[one.table] ~ " rows") if dry.counts is not none and dry.counts.changes[one.table] is not none else "" }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <div class="table-scroll">
+  <table id="guard-checklist" data-density="dense">
+    <caption>ADR-0124's five conditions, as observed now.</caption>
+    <tbody>
+    {% for one in dry.conditions() %}
+    <tr>
+      <td>{{ badge(one.verdict, tone={"pass": "success", "fail": "danger", "pending": "neutral"}[one.verdict]) }}</td>
+      <th scope="row">{{ one.number }}. {{ one.title }}</th>
+      <td class="muted">{{ one.evidence }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if dry.counts is not none %}
+  <form method="post" action="{{ write_base }}/write">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="sql" value="{{ dry.statement.text }}">
+    <input type="hidden" name="dry_run_id" value="{{ dry.dry_run_id }}">
+    <div class="field">
+      <label for="guard-tables">Type every table the statement names <span class="field-hint">{{ dry.tables | join(", ") }}
+      — exactly, separated by spaces or commas.</span></label>
+      <input id="guard-tables" name="tables_typed" autocomplete="off" spellcheck="false" required>
+    </div>
+    <div class="field">
+      <label for="guard-password">Password <span class="field-hint">A raw write re-authenticates.</span></label>
+      <input id="guard-password" name="password" type="password" autocomplete="current-password">
+    </div>
+    <button type="submit" data-variant="danger">Write {{ dry.counts.rows }} row{{ "" if dry.counts.rows == 1 else "s" }}</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+</section>
 {% endif %}
 <p class="muted">From {{ app | app_label }}'s database at revision {{ revision.found }}, read-only.
 <a href="/api/v1/apps/{{ app }}/db/tables/{{ table_name | urlencode }}">JSON</a></p>

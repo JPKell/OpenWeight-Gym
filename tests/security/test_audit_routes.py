@@ -289,6 +289,91 @@ def _db_query_form(console: Console) -> Any:  # noqa: ANN401
     return console.post_form("/apps/loadcoach/database/query", {"sql": "SELECT 1"})
 
 
+_GUARD_SQL = "DELETE FROM units WHERE id = 'none'"
+"""The guard's exercises write IdeaPress, whose fake unit is absent and whose port is closed, so
+they pass condition 1 without touching LoadCoach, which the chat exercises mock on its real port."""
+
+
+def _fresh_reauth(console: Console) -> None:
+    """Stamp the session without POST /reauth, whose own row would be a second one."""
+    from sqlalchemy import update
+
+    from weightroom.infrastructure.db.models import Session as SessionRow
+
+    with console.database.write() as session:
+        session.execute(update(SessionRow).values(reauth_at=console.now))
+
+
+def _dry_run_id(console: Console) -> str:
+    """The digest from the service directly, so the exercise's own row is the only one counted."""
+    from typing import cast
+
+    from weightroom.services.db_guard import dry_run
+
+    state = cast(Any, console.client.app).state
+    dry = dry_run(
+        state.settings,
+        state.database,
+        state.controller,
+        "ideapress",
+        _GUARD_SQL,
+        urls=state.database_urls,
+        monotonic=0.0,
+    )
+    return str(dry.dry_run_id)
+
+
+def _db_dry_run_json(console: Console) -> Any:  # noqa: ANN401
+    return console.client.post(
+        "/api/v1/apps/ideapress/db/write/dry-run", json={"sql": _GUARD_SQL}, headers=JSON_HEADERS
+    )
+
+
+def _db_write_json(console: Console) -> Any:  # noqa: ANN401
+    _fresh_reauth(console)
+    return console.client.post(
+        "/api/v1/apps/ideapress/db/write",
+        json={"sql": _GUARD_SQL, "tables_typed": ["units"], "dry_run_id": _dry_run_id(console)},
+        headers=JSON_HEADERS,
+    )
+
+
+def _db_dry_run_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/apps/ideapress/database/units/write/dry-run", {"sql": _GUARD_SQL})
+
+
+def _db_write_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form(
+        "/apps/ideapress/database/units/write",
+        {
+            "sql": _GUARD_SQL,
+            "tables_typed": "units",
+            "dry_run_id": _dry_run_id(console),
+            "password": PASSWORD,
+        },
+    )
+
+
+def _db_curated(verb: str) -> Exercise:
+    def exercise(console: Console) -> Any:  # noqa: ANN401
+        return console.client.post(f"/api/v1/apps/ideapress/db/{verb}", headers=JSON_HEADERS)
+
+    return exercise
+
+
+def _db_restore_json(console: Console) -> Any:  # noqa: ANN401
+    _fresh_reauth(console)
+    return console.client.post(
+        "/api/v1/apps/ideapress/db/restore",
+        json={"file": "/tmp/ideapress-backup.sqlite3", "name_typed": "ideapress"},  # noqa: S108
+        headers=JSON_HEADERS,
+    )
+
+
+def _db_curated_form(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form("/apps/ideapress/database/curated", {"verb": "backup"})
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -325,6 +410,14 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/chat/{conversation_id}/approvals/{approval_id}"): _chat_decide_form,
     ("POST", "/api/v1/apps/{app}/db/query"): _db_query_json,
     ("POST", "/apps/{app}/database/query"): _db_query_form,
+    ("POST", "/api/v1/apps/{app}/db/write/dry-run"): _db_dry_run_json,
+    ("POST", "/api/v1/apps/{app}/db/write"): _db_write_json,
+    ("POST", "/apps/{app}/database/{table}/write/dry-run"): _db_dry_run_form,
+    ("POST", "/apps/{app}/database/{table}/write"): _db_write_form,
+    ("POST", "/api/v1/apps/{app}/db/backup"): _db_curated("backup"),
+    ("POST", "/api/v1/apps/{app}/db/upgrade"): _db_curated("upgrade"),
+    ("POST", "/api/v1/apps/{app}/db/restore"): _db_restore_json,
+    ("POST", "/apps/{app}/database/curated"): _db_curated_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 
@@ -353,9 +446,18 @@ def console(tmp_path: Path) -> Console:
     executable, _config, _document = fake_application(
         tmp_path, "loadcoach", database_url=f"sqlite:///{database}"
     )
+    # IdeaPress for the guard: its fake unit is absent and its base_url is a closed port, so
+    # condition 1 holds without depending on what runs on this machine.
+    ideapress_database = fixture_database(tmp_path, "ideapress-0010")
+    ideapress, _config, _document = fake_application(
+        tmp_path, "ideapress", database_url=f"sqlite:///{ideapress_database}"
+    )
     return build_console(
         tmp_path / "console",
-        extra_toml=f'[apps.loadcoach]\nexecutable = "{executable}"\n',
+        extra_toml=(
+            f'[apps.loadcoach]\nexecutable = "{executable}"\n'
+            f'[apps.ideapress]\nexecutable = "{ideapress}"\nbase_url = "http://127.0.0.1:9"\n'
+        ),
         systemd=FakeSystemdController(states={"loadcoach.service": "active"}),
     )
 

@@ -286,14 +286,17 @@ Per application: the table list with row counts and the application's `alembic_v
 against WeightRoomGym's known-revision map ([ADR-0123](../../adr/0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md)
 rule 3); a paginated, sortable, filterable row grid per table; a SQL console that runs
 `SELECT`s on a read-only connection with a 30 s timeout and a 10 000-row cap. **Curated
-operations** are listed first on every table that has one — FreeWeight's delete-by-model,
-retention settings, backup, vacuum, upgrade — and call the owning application. **Raw writes**
-(a statement, a row edit, a row delete) open the guard: the unit's state is checked, a backup is
-taken, the dry run's count and the statement are shown, the table name is typed, the audit row
-is written, the statement runs, the audit row is completed ([ADR-0124](../../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)).
-Never-writable tables show the lock and the reason. SQLite and PostgreSQL both, from the
-application's own effective `storage.database_url` (`sqlite:///`, `postgresql+psycopg://`), read
-from its schema document — never typed twice.
+operations** are listed first on every table that has one — retention settings, backup, vacuum,
+upgrade, restore; FreeWeight's delete-by-model is named there as not offered by FreeWeight 1.2 —
+and call the owning application. **Raw writes** (a statement, a row edit, a row delete) open the
+guard: the unit's state and the port are checked, the dry run's count, the statement and what the
+database's foreign keys reach are shown, the table names are typed, a backup is taken, the audit
+row is written, the statement runs, the audit row is completed ([ADR-0124](../../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md),
+in [ADR-0133](../../adr/0133-the-guard-follows-foreign-keys-observes-stopped-twice-and-binds-a-write-to-its-dry-run.md)'s
+order). Never-writable tables, named or reached by a cascade, show the lock and the reason.
+SQLite and PostgreSQL both, from the application's own effective `storage.database_url`
+(`sqlite:///`, `postgresql+psycopg://`), printed by its own `config show --json` (ADR-0133 rule 4)
+— never typed twice.
 
 ### 7.9 Catalog, costs, backups
 

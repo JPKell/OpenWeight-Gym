@@ -78,6 +78,7 @@ __all__ = [
     "read_revision",
     "revision_summary",
     "run_query",
+    "statement_deadline",
     "table_page",
 ]
 
@@ -245,7 +246,7 @@ def open_read_only(url: str, *, timeout_seconds: float = STATEMENT_TIMEOUT_SECON
 
 
 @contextmanager
-def _deadline(connection: Connection, seconds: float) -> Iterator[None]:
+def statement_deadline(connection: Connection, seconds: float) -> Iterator[None]:
     """Interrupt a SQLite statement that runs past ``seconds``; PostgreSQL enforces its own."""
     raw = connection.connection.driver_connection
     if not isinstance(raw, sqlite3.Connection):
@@ -494,7 +495,10 @@ def list_tables(handle: AppDatabase) -> tuple[TableInfo, ...]:
     """Every table with its row count and its lock, by name."""
     names = sorted(inspect(handle.engine).get_table_names())
     found: list[TableInfo] = []
-    with handle.engine.connect() as connection, _deadline(connection, handle.timeout_seconds):
+    with (
+        handle.engine.connect() as connection,
+        statement_deadline(connection, handle.timeout_seconds),
+    ):
         for name in names:
             try:
                 count: int | None = int(
@@ -686,7 +690,10 @@ def table_page(
         rows_statement.order_by(*ordering).limit(page_rows).offset((page - 1) * page_rows)
     )
     try:
-        with handle.engine.connect() as connection, _deadline(connection, handle.timeout_seconds):
+        with (
+            handle.engine.connect() as connection,
+            statement_deadline(connection, handle.timeout_seconds),
+        ):
             total = int(connection.execute(count_statement).scalar_one())
             rows = tuple(
                 tuple(_plain(value) for value in row) for row in connection.execute(rows_statement)
@@ -774,7 +781,10 @@ def run_query(
     statement = require_read(classify(sql))
     started = clock()
     try:
-        with handle.engine.connect() as connection, _deadline(connection, handle.timeout_seconds):
+        with (
+            handle.engine.connect() as connection,
+            statement_deadline(connection, handle.timeout_seconds),
+        ):
             # no_parameters: the text goes to the cursor alone. With an empty parameter list
             # psycopg reads every `%` as a placeholder, so `LIKE 'note 1%'` would be refused
             # (found by the PostgreSQL leg).

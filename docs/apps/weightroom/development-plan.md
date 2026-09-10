@@ -340,7 +340,10 @@ the raw editor with the reason.
 2. Try `DELETE FROM samples WHERE run_id = '…'` with FreeWeight running: the dialog shows
    condition 1 red and refuses. Stop FreeWeight, retry: backup taken (path shown), dry run
    `412 rows`, statement echoed, type `samples`, password, run — the audit row shows all of it and
-   `ls ~/.local/share/wr-gym/backups/freeweight/` shows the file.
+   `ls ~/.local/share/wr-gym/backups/freeweight/` shows the file. (Row W7: on FreeWeight's schema a
+   sample reaches its run through `run_tests`, so the statement that runs is
+   `DELETE FROM samples WHERE run_test_id IN (SELECT id FROM run_tests WHERE run_id = '…')` and the
+   names typed are `samples run_tests`; the dry run also shows what the foreign keys reach.)
 3. Try `UPDATE routing_decisions …`: refused, *never writable from WeightRoomGym (ADR-0124)*.
 
 **Known risks:** T2 in [risks](risks.md).

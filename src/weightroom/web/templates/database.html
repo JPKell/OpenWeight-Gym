@@ -18,6 +18,60 @@
   {"label": "Database", "value": revision.database_url},
 ]) }}
 
+<h3>{{ app | app_label }}'s own operations</h3>
+<p class="muted">Offered before anything raw (ADR-0123 rule 5): each runs <code>{{ app }} db …</code>
+as an operator at the terminal would, so {{ app | app_label }}'s own checks apply.
+<a href="/api/v1/apps/{{ app }}/db/status">db status</a> ·
+<a href="/api/v1/apps/{{ app }}/db/backups">guarded-write backups</a></p>
+{% if curated_error %}
+<p class="notice" role="alert"><strong><code>{{ curated_error.code }}</code></strong> {{ curated_error.message }}</p>
+{% endif %}
+{% if curated %}
+<div class="notice" role="status">
+  <p><code>{{ curated.argv | join(" ") }}</code> — {{ "done." if curated.ok else "failed: " ~ curated.error }}</p>
+  {% if curated.output is not none %}<pre class="mono">{{ curated.output if curated.output is string else (curated.output | json_pretty) }}</pre>{% endif %}
+</div>
+{% endif %}
+<div class="filter-bar">
+  {% for verb in verbs if verb not in ("status", "restore") %}
+  <form method="post" action="/apps/{{ app }}/database/curated">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <button type="submit" name="verb" value="{{ verb }}">db {{ verb }}</button>
+  </form>
+  {% endfor %}
+</div>
+{% if "restore" in verbs %}
+<details>
+  <summary>Restore from a backup</summary>
+  <form method="post" action="/apps/{{ app }}/database/curated">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="verb" value="restore">
+    <div class="field">
+      <label for="restore-file">Backup file <span class="field-hint">{{ app | app_label }} verifies it
+      before it replaces anything.</span></label>
+      <input id="restore-file" name="file" class="mono" spellcheck="false" required>
+    </div>
+    <div class="field">
+      <label for="restore-name">Type <code>{{ app }}</code> <span class="field-hint">A restore replaces
+      the whole database, with {{ app | app_label }} stopped.</span></label>
+      <input id="restore-name" name="name_typed" autocomplete="off" spellcheck="false" required>
+    </div>
+    <div class="field">
+      <label for="restore-password">Password</label>
+      <input id="restore-password" name="password" type="password" autocomplete="current-password">
+    </div>
+    <button type="submit" data-variant="danger">Restore</button>
+  </form>
+</details>
+{% endif %}
+{% if backups %}
+<h4>Guarded-write backups</h4>
+<ul class="mono">
+  {% for one in backups %}<li>{{ one.path }} <span class="muted">{{ one.size_bytes }} bytes</span></li>
+  {% endfor %}
+</ul>
+{% endif %}
+
 {% if not revision.is_known %}
 {% include "_schema_unknown.html" %}
 {% else %}

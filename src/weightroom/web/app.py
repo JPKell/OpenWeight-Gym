@@ -101,6 +101,15 @@ STATUS_BY_CODE: dict[str, int] = {
     "SCHEMA_UNKNOWN": status.HTTP_409_CONFLICT,
     # 400: the statement itself is refused by name — not one SELECT, not one DML statement.
     "GUARD_STATEMENT_REFUSED": status.HTTP_400_BAD_REQUEST,
+    # ADR-0124's conditions. 409 where a fact about the host or the data is what refuses — stop the
+    # application, re-run the dry run — 400 where the request is what is wrong, 403 where no
+    # request could ever succeed, 500 where WeightRoomGym itself could not do its part.
+    "GUARD_APP_RUNNING": status.HTTP_409_CONFLICT,
+    "GUARD_DRY_RUN_FAILED": status.HTTP_409_CONFLICT,
+    "GUARD_TABLE_MISMATCH": status.HTTP_400_BAD_REQUEST,
+    "GUARD_TABLE_LOCKED": status.HTTP_403_FORBIDDEN,
+    "GUARD_BACKUP_FAILED": status.HTTP_500_INTERNAL_SERVER_ERROR,
+    "GUARD_AUDIT_FAILED": status.HTTP_500_INTERNAL_SERVER_ERROR,
     # 502: something WeightRoomGym drives answered badly or not at all — the application's API,
     # systemd, journalctl. The console is working; the thing behind it is not.
     "APP_UNREACHABLE": status.HTTP_502_BAD_GATEWAY,
