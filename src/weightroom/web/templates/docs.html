@@ -1,17 +1,14 @@
 {% extends "_shell.html" %}
-{% from "_docs_tree.html" import tree_list %}
-{% block title %}Docs — WeightRoom{% endblock %}
+{% from "_docs_tree.html" import docs_side_menu, section_listing, search_form %}
+{% from "mirrorwall/components.html" import empty_state %}
+{% block title %}{{ section.label if section else "Docs" }} — WeightRoom{% endblock %}
+{% block side_menu %}{{ docs_side_menu(docs_sections, docs_current_key) }}{% endblock %}
 {% block page_content %}
-<h2>Documentation</h2>
-<p class="muted">Read-only: {{ root }}. <a href="/docs/adrs">ADR index</a></p>
-<form method="get" action="/docs/search" class="filter-bar" role="search">
-  <div class="field">
-    <label for="q">Search</label>
-    <input id="q" name="q" type="search" placeholder="never zero">
-  </div>
-  <button type="submit">Search</button>
-</form>
-<nav class="docs-tree" aria-label="Documentation tree">
-  {{ tree_list(tree) }}
-</nav>
+{{ search_form() }}
+{% if section %}
+<h2 class="docs-section-title">{{ section.label }}</h2>
+{{ section_listing(section.node) }}
+{% else %}
+{{ empty_state("The documentation root has no markdown files.") }}
+{% endif %}
 {% endblock %}

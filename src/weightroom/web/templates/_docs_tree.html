@@ -1,17 +1,68 @@
-{# _docs_tree.html — the recursive folder tree; one consumer (design brief §5), so it lives
-   here rather than as a MirrorWall macro. Self-recursion is ordinary Jinja: a macro may call
-   itself by name from within its own body. #}
-{% macro tree_list(node, current_path=None) %}
-<ul class="docs-tree-level">
-  {% for child in node.children %}
-  <li>
-    {% if child.is_dir %}
-    <span class="docs-tree-dir">{{ child.name }}</span>
-    {{ tree_list(child, current_path) }}
-    {% else %}
-    <a href="/docs/page?path={{ child.path }}"{% if child.path == current_path %} aria-current="page"{% endif %}>{{ child.name }}</a>
-    {% endif %}
-  </li>
+{# _docs_tree.html — the docs viewer's section menu, section listing and search form. One consumer
+   (design brief §5), so it lives here rather than as MirrorWall macros. #}
+
+{% macro folder_anchor(folder) %}docs-{{ folder.path | replace("/", "-") }}{% endmacro %}
+
+{# The left menu: every section, the selected one expanded to its folders.
+
+   Switching section swaps the side menu and the main pane together (htmx: the whole
+   `.shell-body` is selected out of the full page the link returns), so the top bar and the
+   telemetry stream above stay as they are. Without JavaScript the same links are ordinary page
+   loads. A folder link on a section's own page is an in-page anchor; on a document it goes to that
+   section's page at the folder, as a normal load so the browser scrolls to it. #}
+{% macro docs_side_menu(sections, current_key, current_path=None) %}
+<nav class="side-nav docs-nav" aria-label="Documentation sections"
+     hx-boost="true" hx-target=".shell-body" hx-select=".shell-body" hx-swap="outerHTML">
+  <p class="side-nav-title">Docs</p>
+  <ul>
+    {% for section in sections %}
+    {% set selected = section.key == current_key %}
+    <li>
+      <a href="{{ section.href }}"{% if selected %} aria-current="{{ 'page' if current_path is none else 'true' }}"{% endif %}>{{ section.label }}</a>
+      {% if selected %}
+      {% set folders = section.node.children | selectattr("is_dir") | list %}
+      {% if folders %}
+      <ul class="docs-nav-folders">
+        {% for folder in folders %}
+        {% if current_path is none %}
+        <li><a href="#{{ folder_anchor(folder) }}">{{ folder.name }}</a></li>
+        {% else %}
+        <li><a href="{{ section.href }}#{{ folder_anchor(folder) }}" hx-boost="false"{% if current_path.startswith(folder.path ~ "/") %} aria-current="true"{% endif %}>{{ folder.name }}</a></li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</nav>
+{% endmacro %}
+
+{# A section's contents: its own files, then each folder under a heading of its own name, nested
+   folders a heading level down. Documents open as full pages — they carry their own scripts
+   (mermaid) and outline. #}
+{% macro section_listing(node, level=3) %}
+{% set files = node.children | rejectattr("is_dir") | list %}
+{% if files %}
+<ul class="docs-files">
+  {% for file in files %}
+  <li><a href="/docs/page?path={{ file.path }}">{{ file.name }}</a></li>
   {% endfor %}
 </ul>
+{% endif %}
+{% for folder in node.children | selectattr("is_dir") %}
+<section class="docs-folder">
+  <h{{ level }} class="docs-folder-title" id="{{ folder_anchor(folder) }}">{{ folder.name }}</h{{ level }}>
+  {{ section_listing(folder, level + 1 if level < 6 else 6) }}
+</section>
+{% endfor %}
+{% endmacro %}
+
+{# Search with no heading: the field and the button. The label is for assistive technology only. #}
+{% macro search_form(q="") %}
+<form method="get" action="/docs/search" class="docs-search" role="search">
+  <input id="docs-q" name="q" type="search" value="{{ q }}" aria-label="Search the documentation" placeholder="Search the documentation">
+  <button type="submit">Search</button>
+</form>
 {% endmacro %}

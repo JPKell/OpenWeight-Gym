@@ -213,6 +213,9 @@
     }
     .shell-menu[open] > summary { margin-bottom: var(--mw-space-2, 8px); }
     .shell-menu .side-nav ul { display: grid; grid-template-columns: 1fr 1fr; }
+    /* The docs menu keeps one section per line, in order, with its folders under it; two columns
+       of sections scattered the order and pushed the expanded folders to one side. */
+    .shell-menu .docs-nav > ul { display: block; }
   }
 
   /* Phones: a hand-written dense table (the settings form, the doctor's findings, the token list —
@@ -249,12 +252,36 @@
       max-width: 100%;
     }
   }
-  .docs-tree-level { list-style: none; margin: 0; padding-left: var(--mw-space-4, 16px); }
-  .docs-tree > .docs-tree-level { padding-left: 0; }
-  .docs-tree-dir {
-    display: block; color: var(--mw-text-subtle);
-    font-size: var(--mw-font-size-xs, 11px); text-transform: uppercase; letter-spacing: 0.04em;
-    margin-top: var(--mw-space-2, 8px);
+  /* Docs viewer (_docs_tree.html): the section menu with the selected section's folders under it,
+     the bare search form, and a section's files grouped under one heading per folder. */
+  .docs-nav .docs-nav-folders {
+    margin: 2px 0 var(--mw-space-2, 8px) var(--mw-space-3, 12px);
+    padding-left: var(--mw-space-2, 8px);
+    border-left: 1px solid var(--mw-border);
+  }
+  .docs-nav .docs-nav-folders a { font-size: var(--mw-font-size-sm, 12px); color: var(--mw-text-muted); }
+  .docs-nav a[aria-current="true"] { background: var(--mw-accent-soft); color: var(--mw-text); }
+  .docs-search {
+    display: flex; gap: var(--mw-space-2, 8px); align-items: center;
+    max-width: 560px; margin: 0 0 var(--mw-space-4, 16px);
+  }
+  .docs-search input { flex: 1 1 auto; min-width: 0; }
+  .docs-search button { flex: 0 0 auto; width: auto; }
+  .docs-section-title {
+    margin: 0 0 var(--mw-space-3, 12px);
+    font-size: var(--mw-font-size-title, 18px); font-weight: 600;
+  }
+  .docs-files {
+    list-style: none; margin: 0 0 var(--mw-space-3, 12px); padding: 0;
+    columns: 3 220px; column-gap: var(--mw-space-5, 20px);
+  }
+  .docs-files li { padding: 3px 0; break-inside: avoid; }
+  .docs-folder { margin-top: var(--mw-space-4, 16px); }
+  .docs-folder-title {
+    margin: 0 0 var(--mw-space-2, 8px); padding-bottom: 4px;
+    border-bottom: 1px solid var(--mw-border);
+    font-size: 14px; font-weight: 600;
+    scroll-margin-top: 120px;  /* clears the sticky top bar and strip when a folder link scrolls here */
   }
   .docs-search-results { list-style: none; margin: 0; padding: 0; }
   .docs-search-results li { padding: var(--mw-space-3, 12px) 0; border-top: 1px solid var(--mw-border); }
@@ -342,6 +369,7 @@
       {# Named for the section it opens ("LoadCoach", "Console") — the top bar's button is already
          "Menu", and two buttons with one name on a phone is a guess the operator has to make. #}
       <summary>{{ nav_sections[0].title if nav_sections and nav_sections[0].title is defined and nav_sections[0].title else "Pages" }} &#9662;</summary>
+      {% block side_menu %}
       {{ side_nav(nav_sections) }}
       {% if side_nav_stubs %}
       <ul class="side-nav-stub">
@@ -350,6 +378,7 @@
         {% endfor %}
       </ul>
       {% endif %}
+      {% endblock %}
       {% if nav_footer %}<p class="side-nav-footer">{{ nav_footer }}</p>{% endif %}
     </details>
   </div>
@@ -391,12 +420,17 @@
   // breakpoint, a real disclosure below it. Scripted only when the viewport crosses it, so a menu
   // the operator closed by hand stays closed until then.
   (function () {
-    var side = document.querySelector(".shell-menu");
-    if (!side || !window.matchMedia) { return; }
+    if (!window.matchMedia) { return; }
     var wide = window.matchMedia("(min-width: 901px)");
-    var apply = function (event) { side.open = event.matches; };
-    apply(wide);
+    var apply = function () {
+      var side = document.querySelector(".shell-menu");
+      if (side) { side.open = wide.matches; }
+    };
+    apply();
     if (wide.addEventListener) { wide.addEventListener("change", apply); }
+    // The docs viewer swaps the side menu in with each section (htmx); on a phone, close it again
+    // so the section just chosen is what the operator sees.
+    document.body.addEventListener("htmx:afterSwap", apply);
   })();
 
   // The top bar's dropdowns close on a click outside, on Escape, and when the other one opens: a

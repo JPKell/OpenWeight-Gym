@@ -199,6 +199,84 @@ def build_tree(root: Path, *, current: Path | None = None) -> TreeNode:
     )
 
 
+SECTION_ORDER: tuple[str, ...] = (
+    "",
+    "apps",
+    "packages",
+    "standards",
+    "architecture",
+    "adr",
+    "roadmap",
+    "history",
+    "reviews",
+)
+"""The docs viewer's left menu, in the operator's order (2026-09-10). ``""`` is Home: the root's
+own files. A top-level folder not named here is appended after these, alphabetically, rather than
+hidden — a new folder should appear, not vanish."""
+
+_SECTION_LABELS: dict[str, str] = {"": "Home", "adr": "ADR"}
+
+
+@dataclass(frozen=True, slots=True)
+class DocSection:
+    """One entry in the docs viewer's left menu.
+
+    Attributes:
+        key: The top-level folder's name, or ``""`` for Home.
+        label: What the menu shows.
+        node: The folder's tree — for Home, the root with its folders left out.
+    """
+
+    key: str
+    label: str
+    node: TreeNode
+
+    @property
+    def href(self) -> str:
+        """The section's page: ``/docs`` for Home, ``/docs?section=<key>`` otherwise."""
+        return f"/docs?section={self.key}" if self.key else "/docs"
+
+
+def docs_sections(tree: TreeNode) -> tuple[DocSection, ...]:
+    """The left menu's sections, in :data:`SECTION_ORDER`.
+
+    Args:
+        tree: :func:`build_tree` of the docs root.
+
+    Returns:
+        Home first when the root has markdown files of its own, then each top-level folder that
+        has any markdown under it: the named ones in order, the rest alphabetically. A section is
+        looked up by name among these, never turned into a path.
+    """
+    home = TreeNode(
+        name="Home",
+        path="",
+        is_dir=True,
+        children=tuple(child for child in tree.children if not child.is_dir),
+    )
+    folders = {child.name: child for child in tree.children if child.is_dir}
+    keys = [key for key in SECTION_ORDER if key in folders]
+    keys += sorted((key for key in folders if key not in SECTION_ORDER), key=str.lower)
+    sections = [DocSection(key="", label="Home", node=home)] if home.children else []
+    for key in keys:
+        label = _SECTION_LABELS.get(key) or key.replace("-", " ").replace("_", " ").title()
+        sections.append(DocSection(key=key, label=label, node=folders[key]))
+    return tuple(sections)
+
+
+def section_of(path: str) -> str:
+    """The section a document belongs to.
+
+    Args:
+        path: A document's path relative to the docs root (``apps/loadcoach/spec.md``).
+
+    Returns:
+        Its top-level folder (``apps``), or ``""`` — Home — for a file in the root itself.
+    """
+    head, separator, _ = path.partition("/")
+    return head if separator else ""
+
+
 def _slugify(raw_text: str, *, seen: dict[str, int]) -> str:
     plain = html.unescape(_SLUG_TAG_RE.sub("", raw_text))
     plain = _SLUG_NONWORD_RE.sub("", plain).strip().lower()

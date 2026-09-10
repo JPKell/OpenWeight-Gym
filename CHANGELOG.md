@@ -30,6 +30,12 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ### Changed
 
+- The docs viewer is organised by section. The left menu lists Home (the root's own documents),
+  Apps, Packages, Standards, Architecture, ADR, Roadmap, History and Reviews, with any other
+  top-level folder appended after them; the selected section expands to its folders. Choosing a
+  section replaces the side menu and main pane in place (htmx), and the main pane lists that
+  section's documents under one heading per folder. The page has no "Documentation" heading, no
+  read-only path line and no ADR index link, and search is just the field and its button.
 - A telemetry icon in the top bar shows and hides the strip, remembered per browser. Hidden, the
   page opens no telemetry stream at all: the server polls nothing for that tab, and once no tab is
   streaming, WeightRoom asks Ollama and LoadCoach nothing either. Rendering a page no longer counts

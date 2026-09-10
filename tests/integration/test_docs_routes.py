@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from tests.support import Console, build_console
@@ -91,6 +92,80 @@ class TestPages:
         assert page.count('class="app-tab"') == 4  # the shell chrome, every page (row W3)
         assert "architecture" in page
         assert 'href="/docs/page?path=architecture/master-architecture.md"' in page
+
+    def test_the_left_menu_lists_sections_in_order_and_home_is_the_roots_own_files(
+        self, tmp_path: Path
+    ) -> None:
+        """Home, Apps, Packages, Standards, Architecture, ADR, Roadmap, History, Reviews (operator,
+        2026-09-10); a folder not in that list is appended rather than hidden."""
+        console = _console(tmp_path)
+        root = tmp_path / "docs"
+        (root / "README.md").write_text("# Home\n")
+        for name in ("reviews", "history", "roadmap", "standards", "inventory"):
+            (root / name).mkdir()
+            (root / name / "a.md").write_text("# a\n")
+        (root / "apps" / "loadcoach").mkdir(parents=True)
+        (root / "apps" / "loadcoach" / "spec.md").write_text("# spec\n")
+        (root / "packages" / "mirrorwall").mkdir(parents=True)
+        (root / "packages" / "mirrorwall" / "spec.md").write_text("# spec\n")
+        console.login()
+        page = console.client.get("/docs", headers={"Accept": "text/html"}).text
+
+        start = page.index('aria-label="Documentation sections"')
+        menu = page[start : page.index("</nav>", start)]
+        labels = re.findall(r'<a href="/docs(?:\?section=[a-z]+)?"[^>]*>([^<]+)</a>', menu)
+        assert labels == [
+            "Home", "Apps", "Packages", "Standards", "Architecture",
+            "ADR", "Roadmap", "History", "Reviews", "Inventory",
+        ]  # fmt: skip
+        assert '<a href="/docs" aria-current="page">Home</a>' in menu
+
+        main = page[page.index('class="shell-main"') :]
+        assert 'href="/docs/page?path=README.md"' in main
+        assert "apps/loadcoach/spec.md" not in main  # Home is the root's files, not its folders
+
+        # No page heading, no read-only path line, no ADR index link; search is field + button.
+        assert "<h2>Documentation</h2>" not in page
+        assert "Read-only" not in page
+        assert 'href="/docs/adrs"' not in page
+        assert 'role="search"' in page
+        assert '<label for="q">' not in page
+
+    def test_a_section_lists_each_folder_under_its_own_heading_and_swaps_in_place(
+        self, tmp_path: Path
+    ) -> None:
+        console = _console(tmp_path)
+        root = tmp_path / "docs"
+        for app, doc in (("loadcoach", "spec.md"), ("freeweight", "api.md")):
+            (root / "apps" / app).mkdir(parents=True)
+            (root / "apps" / app / doc).write_text("# doc\n")
+        console.login()
+        page = console.client.get("/docs?section=apps", headers={"Accept": "text/html"}).text
+        assert '<h2 class="docs-section-title">Apps</h2>' in page
+        assert '<h3 class="docs-folder-title" id="docs-apps-freeweight">freeweight</h3>' in page
+        assert '<h3 class="docs-folder-title" id="docs-apps-loadcoach">loadcoach</h3>' in page
+        assert 'href="/docs/page?path=apps/loadcoach/spec.md"' in page
+        # The selected section expands in the left menu to its folders, as in-page links.
+        assert '<a href="#docs-apps-loadcoach">loadcoach</a>' in page
+        # A section link replaces the side menu and main pane only, leaving the top bar's stream.
+        assert 'hx-target=".shell-body" hx-select=".shell-body"' in page
+
+    def test_a_document_opens_with_its_section_selected_and_a_stale_section_shows_the_first(
+        self, tmp_path: Path
+    ) -> None:
+        console = _console(tmp_path)
+        console.login()
+        doc = console.client.get(
+            "/docs/page?path=adr/0016-unavailable-is-not-zero.md", headers={"Accept": "text/html"}
+        ).text
+        assert '<a href="/docs?section=adr" aria-current="true">ADR</a>' in doc
+        stale = console.client.get("/docs?section=../../etc", headers={"Accept": "text/html"})
+        assert stale.status_code == 200
+        # This tree has no root files, so the first section is Architecture (before ADR).
+        assert (
+            '<a href="/docs?section=architecture" aria-current="page">Architecture</a>'
+            in stale.text
+        )
 
     def test_a_page_with_mermaid_loads_the_vendored_script_and_a_plain_one_does_not(
         self, tmp_path: Path

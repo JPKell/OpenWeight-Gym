@@ -1,15 +1,10 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import empty_state %}
+{% from "_docs_tree.html" import docs_side_menu, search_form %}
+{% block side_menu %}{{ docs_side_menu(docs_sections, docs_current_key) }}{% endblock %}
 {% block title %}Search — WeightRoom{% endblock %}
 {% block page_content %}
-<h2>Search</h2>
-<form method="get" action="/docs/search" class="filter-bar" role="search">
-  <div class="field">
-    <label for="q">Search</label>
-    <input id="q" name="q" type="search" value="{{ q }}">
-  </div>
-  <button type="submit">Search</button>
-</form>
+{{ search_form(q) }}
 {% if result is none %}
 <p class="muted">Type something to search the documentation.</p>
 {% elif result.degraded %}
