@@ -1,6 +1,10 @@
 # ADR-0124 — A raw write into another application's database passes a five-part guard, and some tables are never written
 
 **Status:** Accepted (2026-09-09)
+**Amended by:** [ADR-0133](0133-the-guard-follows-foreign-keys-observes-stopped-twice-and-binds-a-write-to-its-dry-run.md)
+— a table reached through a foreign-key action is written; `sqlite_*`/`pg_*` join the list;
+*stopped* is the unit and the port; the connection string is `config show --json`'s effective
+value, not the schema document's; a write is bound to its dry run; condition 5 has a code.
 **Relates to:** [ADR-0123](0123-weightroom-is-a-host-operator-tool-above-the-layer-rules.md) rule 5
 (the exception this record prices), [Database Standards §1 and §8](../standards/database-standards.md)
 (ownership; preview, confirm, backup, transaction), [ADR-0050](0050-a-package-may-ship-tables-never-a-migration-history.md)

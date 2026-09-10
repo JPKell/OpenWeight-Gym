@@ -167,6 +167,7 @@ an ADR is superseded rather than edited.
 | [0130](0130-weightroomgyms-application-tokens-carry-admin-scope.md) | WeightRoomGym's application tokens carry `admin` scope, because ADR-0127 rule 4 routes every runtime key through `PUT /settings` | Accepted |
 | [0131](0131-cli-json-shapes-converge-on-values-and-items.md) | Two CLI JSON shapes converge — `config show` says `values`, a listing says `items` — released as minors by operator exception | Accepted |
 | [0132](0132-loadcoach-streams-thinking-deltas-as-their-own-frame.md) | LoadCoach streams thinking deltas live as their own enveloped `thinking` frame (1.5.0) | Accepted |
+| [0133](0133-the-guard-follows-foreign-keys-observes-stopped-twice-and-binds-a-write-to-its-dry-run.md) | The guard follows foreign keys into the never-writable list, observes *stopped* as unit and port, reads the URL from `config show`, and binds a write to its dry run | Accepted |
 
 ## Writing a new ADR
 

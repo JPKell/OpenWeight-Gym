@@ -455,6 +455,7 @@ APP_UNKNOWN             APP_NOT_INSTALLED       APP_STOPPED             APP_UNRE
 APP_VERSION_MISMATCH    SCHEMA_UNKNOWN          UNIT_UNSUPPORTED        UNIT_ACTION_FAILED
 OLLAMA_RESTART_NOT_PERMITTED                    GUARD_APP_RUNNING       GUARD_BACKUP_FAILED
 GUARD_DRY_RUN_FAILED    GUARD_TABLE_MISMATCH    GUARD_TABLE_LOCKED      GUARD_STATEMENT_REFUSED
+GUARD_AUDIT_FAILED
 CONFIG_VALIDATION_FAILED  CONFIG_CHANGED_ON_DISK  SETTING_CONFIG_ONLY   SETTING_UNKNOWN
 CHAT_BACKEND_UNAVAILABLE  ATTACHMENT_TOO_LARGE  ATTACHMENT_TYPE_REFUSED
 CATALOG_PULL_FAILED     CATALOG_DROPIN_REFUSED  JOB_NOT_FOUND           JOB_INVALID_STATE
@@ -463,7 +464,10 @@ DOCS_ROOT_MISSING       DOCS_PAGE_OUTSIDE_ROOT  VALIDATION_ERROR        PAYLOAD_
 
 Each is a stable code in MirrorWall's error envelope with `details` naming the application,
 unit, table or key concerned. `GUARD_*` codes carry the guard condition that failed by number
-(ADR-0124's 1–5). `SCHEMA_UNKNOWN` names the revision found and the revisions known. Exit
+(ADR-0124's 1–5; `GUARD_AUDIT_FAILED` is condition 5); `GUARD_TABLE_LOCKED` and
+`GUARD_STATEMENT_REFUSED` carry `condition: null`, since no changed fact satisfies them
+([ADR-0133](../../adr/0133-the-guard-follows-foreign-keys-observes-stopped-twice-and-binds-a-write-to-its-dry-run.md)
+rule 6). `SCHEMA_UNKNOWN` names the revision found and the revisions known. Exit
 codes follow [CLI Standards §4](../../standards/cli-standards.md); `INSECURE_BINDING` and
 `TLS_MISSING` are exit 3 at startup.
 
