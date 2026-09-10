@@ -154,6 +154,7 @@ def render_shell_page(
         show_telemetry_bar=True,
         telemetry_stream_url="/api/v1/system/telemetry/stream",
         telemetry_meters=_telemetry_meters(request),
+        telemetry_field_meters=("cpu", "ram", "gpu", "vram"),
         **context,
     )
 

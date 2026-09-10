@@ -1,23 +1,52 @@
 {% extends "_shell.html" %}
-{% from "mirrorwall/components.html" import badge, card %}
+{% from "mirrorwall/components.html" import card, status_dot, table %}
 {% block title %}Overview — WeightRoomGym{% endblock %}
+
+{# A cell that is a link has to reach the table macro as markup, and a macro's output is the one
+   thing Jinja will not escape a second time — hence a macro rather than a `| safe` string, which
+   would hand the application name straight through unescaped. #}
+{% macro app_link(name) %}<a href="/apps/{{ name }}">{{ name }}</a>{% endmacro %}
+
 {% block page_content %}
-<h2>Overview</h2>
-<p class="muted">Row W3: the shell, the telemetry strip and the per-application Overview pages
-are here. Settings and the doctor arrive at W4.</p>
+<div class="page-head">
+  <h2>Overview</h2>
+  <span class="page-actions">
+    <a href="/apps">Applications</a>
+    <a href="/logs">Logs</a>
+    <a href="/ollama">Ollama</a>
+    <a href="/trust">Trust this CA</a>
+  </span>
+</div>
+
 <ul class="card-grid">
-  {{ card("Bind", bind_host, note="server.host") }}
-  {{ card("Certificate", (tls_days_left ~ " days") if tls_days_left is not none else "—", note="leaf days left; wr-gym tls show") }}
-  {{ card("Operator", principal.username, note=principal.source) }}
+  {{ card("Bind", bind_host, note="server.host", kind="figure") }}
+  {{ card("Certificate", (tls_days_left ~ " days") if tls_days_left is not none else "—",
+          note="leaf days left; wr-gym tls show", kind="figure") }}
+  {{ card("Operator", principal.username, note=principal.source, kind="figure") }}
 </ul>
+
 <h3>Applications</h3>
-<ul>
+{# A dense table (design brief §4) rather than the bulleted links this page carried at W3, and the
+   dot vocabulary of §3 so this row and the tab strip above say the same word about the same unit. #}
+{% set rows = [] %}
 {% for view in views %}
-  <li><a href="/apps/{{ view.name }}">{{ view.name }}</a>
-      {{ badge(view.pill, tone=view.pill | pill_tone, title=view.unit_state) }}
-      <span class="muted">{{ view.uptime_seconds | duration_human }}{% if view.version %} · {{ view.version }}{% endif %}</span></li>
+{% set _ = rows.append([
+     app_link(view.name),
+     status_dot(view.pill | pill_status, label=view.pill),
+     view.uptime_seconds | duration_human,
+     view.version or "—",
+     view.unit,
+   ]) %}
 {% endfor %}
-</ul>
-<p><a href="/apps">Applications</a> · <a href="/logs">Logs</a> · <a href="/ollama">Ollama</a> ·
-   <a href="/audit">Audit trail</a> · <a href="/trust">Trust this CA on another device</a></p>
+{{ table(
+     [{"label": "Application"}, {"label": "Status"}, {"label": "Uptime", "mono": True},
+      {"label": "Version", "mono": True}, {"label": "Unit", "mono": True}],
+     rows,
+     table_id="console-applications",
+     density="dense",
+     row_count=views | length) }}
+
+<p class="muted">Rows W3–W5: the shell, the telemetry strip, the per-application Overview pages and
+the documentation viewer are here. Settings and the doctor arrive at W4, chat at W6, the database
+viewer at W7.</p>
 {% endblock %}

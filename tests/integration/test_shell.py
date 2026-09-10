@@ -51,6 +51,33 @@ def test_the_telemetry_strip_is_on_every_page_with_the_stream_url(tmp_path: Path
     assert 'meterValue("QUEUE")' in page
 
 
+def test_the_strip_loads_the_modules_that_move_it(tmp_path: Path) -> None:
+    """A bar whose values never change is a bar that measures nothing (design brief §4).
+
+    MirrorWall's base template loads neither `sse.js` nor `telemetry.js` — they are opt-in per
+    application — so a console that shows the strip and omits them renders four em dashes and
+    keeps them forever, which is what W3 shipped.
+    """
+    console = _console(tmp_path)
+    console.login()
+    page = console.client.get("/", headers={"Accept": "text/html"}).text
+    assert "js/sse.js" in page
+    assert "js/telemetry.js" in page
+    # The artboard's inline meters, opted into by name; MirrorWall renders no track without them.
+    for group in ("cpu", "ram", "gpu", "vram"):
+        assert f'data-meter="{group}"' in page, group
+
+
+def test_the_console_overview_lists_the_applications_as_a_dense_table(tmp_path: Path) -> None:
+    console = _console(tmp_path)
+    console.login()
+    page = console.client.get("/", headers={"Accept": "text/html"}).text
+    assert 'data-table="console-applications"' in page
+    assert 'data-density="dense"' in page
+    for name in ("freeweight", "loadcoach", "ideapress", "promptcadence"):
+        assert f'<a href="/apps/{name}">{name}</a>' in page, name
+
+
 def test_an_applications_side_nav_names_overview_and_the_unbuilt_pages(tmp_path: Path) -> None:
     console = _console(tmp_path)
     console.login()

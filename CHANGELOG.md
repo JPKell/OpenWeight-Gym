@@ -6,6 +6,22 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
+### Fixed
+
+- The telemetry strip is live. The shell now loads MirrorWall's `sse.js` and `telemetry.js`
+  (both opt-in per application, and neither was loaded), so CPU, RAM, GPU and VRAM show
+  measurements instead of the em dashes they held from first paint onwards. RESIDENT and QUEUE
+  wait for `DOMContentLoaded` before looking for `mirrorwallSse`, which is deferred and did not
+  exist when the inline script ran.
+
+### Changed
+
+- The top bar is the artboard's single 48 px row (design brief §4): brand, application tabs,
+  console pages, alerts, a compact theme control with a visually hidden label, and the operator
+  chip at the right edge. The strip opts into MirrorWall's inline meters for all four fields.
+- The console Overview lists the four applications as a dense table with status dots, uptime,
+  version and unit, in place of the bulleted links row W3 shipped.
+
 ## [0.5.0] — 2026-09-10
 
 Row W5: Phase 5 of the development plan — the documentation viewer. Prepared, not tagged, not

@@ -19,21 +19,79 @@
   .shell-body { display: flex; gap: var(--mw-space-5, 20px); align-items: flex-start; }
   .shell-side { width: var(--mw-sidebar-w, 200px); flex: 0 0 auto; }
   .shell-main { flex: 1 1 auto; min-width: 0; }
-  .side-nav-stub { list-style: none; margin: var(--mw-space-2, 8px) 0 0; padding: 0; }
+  .side-nav-stub { list-style: none; margin: 0; padding: 0; }
   .side-nav-stub li {
-    padding: 4px var(--mw-space-2, 8px);
+    padding: var(--mw-space-1, 4px) var(--mw-space-2, 8px);
+    border-radius: var(--mw-radius-sm, 6px);
     color: var(--mw-text-subtle);
+    cursor: default;
+  }
+
+  /* Top bar (design brief §4): one 48 px row — brand, application tabs, console pages, alerts,
+     the theme control and the operator chip. MirrorWall's masthead is a wrap-friendly
+     space-between row sized for an application with a 20 px product title and nothing else in it;
+     the console puts five groups in the same row, so the layout is set here rather than in the
+     shared file, where it would re-flow four applications that want the roomier default. */
+  header { position: sticky; top: 0; z-index: 5; background: var(--mw-bg); }
+  .masthead {
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    min-height: var(--mw-header-h, 48px);
+    gap: var(--mw-space-3, 12px);
+    overflow-x: auto;
+  }
+  .masthead h1 {
+    margin: 0;
+    font-size: var(--mw-font-size-base, 13px);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  /* The theme select keeps its accessible name, but the visible "Theme" label is a word the
+     artboard does not have room for beside five other groups (UI/UX §7: hidden, not removed). */
+  .masthead > .field { order: 90; margin: 0; }
+  .masthead > .field label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
+  }
+  .masthead > .field select {
+    height: 26px; padding: 0 var(--mw-space-2, 8px);
+    font-size: var(--mw-font-size-xs, 11px);
+  }
+  .app-tabs { display: flex; gap: var(--mw-space-1, 4px); align-items: center; }
+  .console-pages {
+    display: flex; gap: var(--mw-space-3, 12px); align-items: center;
+    margin-left: var(--mw-space-4, 16px);
     font-size: var(--mw-font-size-sm, 12px);
   }
-  .app-tabs { display: flex; gap: var(--mw-space-2, 8px); align-items: center; }
-  .console-pages { display: flex; gap: var(--mw-space-3, 12px); align-items: center; }
-  .console-page-stub { color: var(--mw-text-subtle); font-size: var(--mw-font-size-sm, 12px); }
-  .operator-chip { display: flex; align-items: center; gap: var(--mw-space-2, 8px); margin-left: auto; }
+  .console-pages a { color: var(--mw-text-muted); text-decoration: none; white-space: nowrap; }
+  .console-pages a:hover { color: var(--mw-text); }
+  .console-page-stub { color: var(--mw-text-subtle); white-space: nowrap; }
+  .console-alerts { color: var(--mw-text-subtle); white-space: nowrap; }
+  .console-alerts[data-open="true"] { color: var(--mw-status-degraded); }
+  .operator-chip {
+    order: 100;
+    display: flex; align-items: center; gap: var(--mw-space-2, 8px);
+    margin: 0 0 0 auto;
+  }
   .operator-chip .chip {
     display: inline-flex; align-items: center; justify-content: center;
     width: 24px; height: 24px; border-radius: 50%;
     background: var(--mw-accent-soft); font-size: var(--mw-font-size-xs, 11px); font-weight: 600;
   }
+
+  /* Main pane head (design brief §4): the 18 px title with its status pill, and a right-aligned
+     action group. */
+  .page-head {
+    display: flex; align-items: center; gap: var(--mw-space-3, 12px);
+    margin: 0 0 var(--mw-space-4, 16px);
+  }
+  .page-head h2 { margin: 0; font-size: var(--mw-font-size-title, 18px); font-weight: 600; }
+  .page-actions {
+    display: flex; gap: var(--mw-space-3, 12px); margin-left: auto;
+    font-size: var(--mw-font-size-sm, 12px);
+  }
+  .page-actions a { color: var(--mw-text-muted); text-decoration: none; }
+  .page-actions a:hover { color: var(--mw-text); }
   .docs-tree-level { list-style: none; margin: 0; padding-left: var(--mw-space-4, 16px); }
   .docs-tree > .docs-tree-level { padding-left: 0; }
   .docs-tree-dir {
@@ -63,7 +121,7 @@
   <span class="console-page-stub" title="coming in phase {{ page.phase }}">{{ page.label }}</span>
   {% endif %}
   {% endfor %}
-  <span class="console-page-stub" title="alerts arrive at row W9">⚠ —</span>
+  <span class="console-alerts" data-open="false" title="alerts arrive at row W9">⚠ —</span>
 </nav>
 {% if principal.source == "session" %}
 <form method="post" action="/logout" class="operator-chip">
@@ -95,6 +153,11 @@
 {% endblock %}
 
 {% block scripts %}
+{# MirrorWall's base template loads only theme.js and table.js; the SSE client and the telemetry
+   module are opt-in per application (FreeWeight loads the same pair in its own base). Without
+   them the strip renders its em dashes and never replaces one, which is what it did until now. #}
+<script src="{{ 'js/sse.js' | asset_url }}" defer></script>
+<script src="{{ 'js/telemetry.js' | asset_url }}" defer></script>
 <script>
   // Phase 3 acceptance criterion 1: clicking any telemetry figure opens its history page
   // (`/telemetry/history?figure=`). The strip's `[data-field]` spans are MirrorWall's own
@@ -122,8 +185,10 @@
   // 0.3) has no live-update hook of its own — matched by their label text instead of forking the
   // macro for two fields. A second EventSource to the same stream (mirrorwallSse.connect opens
   // one per call, and telemetry.js already owns the first) is the cost of not touching MirrorWall
-  // for a WeightRoomGym-only behaviour.
-  (function () {
+  // for a WeightRoomGym-only behaviour. It waits for DOMContentLoaded because `sse.js` is a
+  // deferred script: at inline-parse time `mirrorwallSse` does not exist yet, and the early
+  // return this used to take is why both meters held their first-paint value forever.
+  document.addEventListener("DOMContentLoaded", function () {
     var GB = 1024 * 1024 * 1024;
     var EM_DASH = "—";
     var bar = document.getElementById("mw-telemetry-bar");
@@ -165,6 +230,6 @@
         }
       }
     });
-  })();
+  });
 </script>
 {% endblock %}
