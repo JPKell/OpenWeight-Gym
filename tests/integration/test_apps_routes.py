@@ -435,7 +435,9 @@ def test_every_page_still_renders_with_every_application_stopped(stopped: Consol
     page = stopped.client.get("/apps/loadcoach", headers={"Accept": "text/html"}).text
     assert "stopped" in page
     assert 'value="start"' in page
-    assert 'data-log-stream="/api/v1/apps/loadcoach/logs/stream"' in page
+    # The Overview page's log tail (row W3) is MirrorWall 0.3's log_pane macro, not the
+    # pre-0.3 `_log_pane.html` module the unified /logs page below still uses.
+    assert 'sse-connect="/api/v1/apps/loadcoach/logs/stream"' in page
 
 
 def test_the_unified_page_names_every_unit_and_streams_from_one_place(tmp_path: Path) -> None:

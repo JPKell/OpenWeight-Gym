@@ -403,17 +403,26 @@ def apps_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
 
 @ui_router.get("/apps/{app}", summary="One application's page", response_class=HTMLResponse)
 def app_page(request: Request, principal: CurrentOperator, app: str) -> HTMLResponse:
-    """One application: the pill, the figures, the controls and the live log pane."""
+    """One application's Overview: the pill, four figures, the primary table, the log tail."""
     name = require_app(app)
+    from weightroom.services.overview import overview_for
     from weightroom.web.rendering import app_side_nav, app_side_nav_stubs
 
     view = _view(request, name)
+    overview = overview_for(
+        name,
+        view,
+        settings=request.app.state.settings,
+        database=request.app.state.database,
+        client=request.app.state.http,
+    )
     return render_shell_page(
         request,
         "app.html",
         page="apps",
         principal=principal,
         view=view,
+        overview=overview,
         applications=APPLICATIONS,
         active_app=name,
         nav_sections=app_side_nav(name),

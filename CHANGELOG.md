@@ -6,6 +6,61 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-09
+
+Row W3: Phase 3 of the development plan — the telemetry sampler, the real shell over MirrorWall
+0.3, and each application's Overview page. Prepared, not tagged, not pushed, not published;
+MirrorWall 0.3.0 pinned as an editable path install (prepared, not yet published itself —
+TODO: re-pin `mirrorwall==0.3.0` once it is).
+
+### Added
+- **`services/telemetry.py`**: `sweatmeter` in process, one `TelemetryService` owning a
+  `TelemetrySampler` thread that writes one `telemetry_samples` row per tick (migration `0002`),
+  every unavailable reading `NULL`, never `0` (ADR-0016). Resident models cached on a five-second
+  cadence rather than asked every tick; LoadCoach's queue depth is read live per frame and never
+  persisted. A background sweep keeps rows older than an hour at one per minute and drops
+  anything past `[telemetry] history_hours`, grouped in Python so the same sweep runs on SQLite
+  and PostgreSQL.
+- `GET /system/telemetry/stream` — SSE, replaying from `Last-Event-ID` by polling the store for
+  rows after the highest id already seen, the same pattern `web/routes/apps.py`'s log stream and
+  FreeWeight's run event store already use, rather than an in-memory fan-out.
+- `GET /system/telemetry/history?figure=&hours=` — one figure's already-downsampled series.
+- `GET /system/resident` — Ollama's `/api/ps` through ModelRack and LoadCoach's own residency,
+  each row naming its source.
+- **The shell** (design brief §4): `_shell.html`, which every operator-facing page now extends
+  instead of `mirrorwall/base.html` directly — the four app tabs with status dots
+  (`render_shell_page`, reusing `services/health.py`'s own pill-to-status-dot map), the telemetry
+  strip with the two WeightRoomGym-specific RESIDENT/QUEUE meters, the console's own page ghosts
+  named with the row that builds them, the operator chip, and a per-application left menu with
+  Overview linked and every other spec §7.3 page inert and titled with its row where one is
+  scheduled.
+- **Each application's Overview** (`services/overview.py`): the pill, four figures, the primary
+  table, the log tail (MirrorWall's `log_pane`, replacing the pre-0.3 `_log_pane.html` on this
+  page only). Figures read `GET /api/v1/system/status` when the application answers and a
+  `COUNT(*)` over named tables (data model §4) when it does not; the primary table always reads
+  the same tables directly, running or not (a deliberate narrowing from a literal API-when-up
+  reading — see the module's own docstring); an unknown `alembic_version` degrades the table by
+  name with the application's API-sourced figures unaffected (spec §11 contract 4).
+- `GET /system/status` now completes its `ollama` and `telemetry` fields.
+
+### Decided
+- **The primary table is database-sourced in every state, not only when stopped.** Each
+  application's list endpoint has its own JSON shape that would need reading and pinning
+  per application before a row of it could render here; every application already exposes the one
+  shape the table needs (`alembic_version` plus a handful of named tables) through the read-only
+  connection this row already opens for the stopped case, and spec §10 already lists "database"
+  as a legitimate read path generally, not one reserved for a stopped application. W7's guarded
+  database viewer is where a *browsable* table belongs; this Overview table is content to be a
+  read of the same rows, once.
+- **RESIDENT and QUEUE do not refresh in place.** The strip's generic CPU/GPU/RAM fields are
+  wired live by MirrorWall's own `telemetry.js`; these two WeightRoomGym-specific meters render
+  from the last sample at page load and do not update until an operator navigates again — the one
+  corner this row cut on the strip's "moving once a second" claim.
+- **Not every spec §7.3 page has a row yet.** Only Settings/Tokens/Providers (W4) and Database
+  (W7) are named with a phase in the side menu; Models, Runs, Routing, Queue, Evidence, Adapters
+  and the rest have no row in `roadmap/weightroom-work.md` between W3 and W10 as of this row —
+  recorded as a documentation gap, not invented an answer to (`W3_HANDOFF.md` §5).
+
 ## [0.2.0] — 2026-09-09
 
 Row W2: Phase 2 of the development plan — process control, unified logs, the Ollama pane and the

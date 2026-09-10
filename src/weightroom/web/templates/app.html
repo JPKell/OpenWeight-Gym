@@ -1,18 +1,16 @@
 {% extends "_shell.html" %}
-{% from "mirrorwall/components.html" import badge, card, kv_list %}
+{% from "mirrorwall/components.html" import badge, card, kv_list, table, log_pane, empty_state %}
 {% block title %}{{ view.name }} — WeightRoomGym{% endblock %}
 {% block page_content %}
-<h2>{{ view.name }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
-<p class="muted">The full control surface for {{ view.name }} — models, runs, settings, database —
-arrives at W3 and W4. This page is the unit: what it is doing, and the three buttons.
+<h2>Overview {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+<p class="muted">{{ overview.source_detail | capitalize }}.
 <a href="/api/v1/apps/{{ view.name }}">JSON</a> ·
 <a href="/api/v1/apps/{{ view.name }}/health">health</a></p>
 
 <ul class="card-grid">
-  {{ card("State", view.pill, note=view.unit_state) }}
-  {{ card("Uptime", view.uptime_seconds | duration_human, note="since the unit last became active") }}
-  {{ card("Version", view.version or "—", note=("WeightRoomGym speaks " ~ view.supported_range) if view.supported_range else None) }}
-  {{ card("Restarts", view.restarts if view.restarts is not none else "—", note="NRestarts") }}
+  {% for figure in overview.figures %}
+  {{ card(figure.label, figure.value, note=figure.note, kind="figure") }}
+  {% endfor %}
 </ul>
 
 {% if view.unit_state == "unsupported" %}
@@ -46,9 +44,15 @@ outside the range WeightRoomGym {{ product_version }} speaks to
   {"label": "Last API error", "value": view.error or "—"},
 ]) }}
 
-{% with stream_url = "/api/v1/apps/" ~ view.name ~ "/logs/stream" %}
-  {% include "_log_pane.html" %}
-{% endwith %}
+<h3>{{ overview.table.caption | capitalize }}</h3>
+{% if overview.table.rows %}
+{{ table(overview.table.columns_for_table_macro(), overview.table.rows, table_id="overview-primary", density="dense", row_count=overview.table.rows | length) }}
+{% else %}
+{{ empty_state(overview.table.empty_message or ("No " ~ overview.table.caption ~ " yet.")) }}
+{% endif %}
+
+<h3>Log</h3>
+{{ log_pane("overview-log", stream_url="/api/v1/apps/" ~ view.name ~ "/logs/stream", label="journalctl --user -u " ~ view.unit) }}
 <p><a href="/api/v1/apps/{{ view.name }}/logs">Journal history as JSON</a> ·
    <code>wr-gym logs {{ view.name }} --follow</code></p>
 {% endblock %}
