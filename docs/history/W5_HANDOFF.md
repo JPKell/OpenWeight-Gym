@@ -43,11 +43,24 @@ is sourced too: **the docs tree and every rendered page are read straight from t
 every request**, never cached in the database beyond the search index. `docs_index` exists for
 full-text search only; `GET /docs/page` always re-renders from disk. This is the same posture
 W3's Overview table took for a different reason (spec §10's "database" read path being general
-rather than reserved) — here the reason is simpler: the tree is the source of truth and spec §15
-budgets a 40 KB render at ≤ 100 ms, which mistune comfortably beats (measured: rendering
-`architecture/master-architecture.md`, real content with three mermaid fences and 32 headings,
-well under budget in this environment — not independently profiled against the ≤ 100 ms target on
-the reference machine).
+rather than reserved) — here the reason is simpler: the tree is the source of truth, and spec §15's
+40 KB / ≤ 100 ms benchmark holds with margin to spare.
+
+**Profiled same day, post-handoff** (`render_markdown`, 10 runs each, this environment, not the
+reference machine):
+
+| Document | Size | Median |
+|---|---|---|
+| A synthetic document at spec §15's own 40 KB benchmark | 32 KB | 15.8 ms |
+| `architecture/master-architecture.md` (real, 3 mermaid fences, 32 headings) | 47 KB | 18.2 ms |
+| `roadmap/outstanding-work.md` (second-largest in the tree) | 170 KB | 45.3 ms |
+| `history/M4_HANDOFF.md` (the largest document in the tree) | 217 KB | **90.0 ms** |
+
+The spec's own benchmark size clears the budget with roughly 5–6× margin. The largest real
+document in the tree — 5.4× the benchmark size, a historical handoff nobody browses routinely —
+sits close to the 100 ms line rather than comfortably under it. Not a blocker (it is within
+budget, measured, and not a page on anyone's regular path), but worth knowing before treating the
+40 KB figure as representative of every document this viewer might be asked to render.
 
 ### 2.3 No raw-asset route
 
