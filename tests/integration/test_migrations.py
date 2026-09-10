@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import pytest
 from sqlalchemy import text
-from weightsdb import MigrationRunner
+from weightsdb import MigrationRunner, ParityResult
 from weightsdb.testing import temporary_postgres, temporary_sqlite
 
 from weightroom.infrastructure.db.models import Base
 from weightroom.services.database import MIGRATIONS_LOCATION, Database, ensure_ready, get_status
+from weightroom.services.docs_index import FTS5_SHADOW_TABLES
 
 EXPECTED_SEED = {
     "freeweight": "0009",
@@ -23,6 +24,19 @@ def _head() -> str:
         heads = MigrationRunner(engine, script_location=MIGRATIONS_LOCATION).heads()
     assert len(heads) == 1, f"the history must stay linear; found {heads}"
     return heads[0]
+
+
+def _assert_parity(parity: ParityResult) -> None:
+    """``docs_index`` (migration 0003) is real DDL, not an ORM model — FTS5's own bookkeeping
+    tables (:data:`FTS5_SHADOW_TABLES`) are the one expected difference from ``Base.metadata``."""
+    if parity.matches:
+        return
+    remaining = [
+        line
+        for line in parity.diff.splitlines()
+        if not any(f"'{table}'" in line for table in FTS5_SHADOW_TABLES)
+    ]
+    assert not remaining, "\n".join(remaining)
 
 
 def _seed(engine: object) -> dict[str, str]:
@@ -42,7 +56,7 @@ def test_fresh_sqlite_migrates_to_head_seeds_known_revisions_and_has_parity() ->
         assert runner.is_at_head()
         assert _seed(engine) == EXPECTED_SEED
         parity = runner.check_parity(Base.metadata)
-        assert parity.matches, parity.diff
+        _assert_parity(parity)
         runner.downgrade("base")
         assert runner.current() is None
         names = {
@@ -61,7 +75,7 @@ def test_fresh_postgres_migrates_to_head_and_back() -> None:
         assert runner.upgrade(backup=False).to_revision == _head()
         assert _seed(engine) == EXPECTED_SEED
         parity = runner.check_parity(Base.metadata)
-        assert parity.matches, parity.diff
+        _assert_parity(parity)
         runner.downgrade("base")
         assert runner.current() is None
 
