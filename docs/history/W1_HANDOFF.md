@@ -2,7 +2,7 @@
 
 **Row:** W1 of [`roadmap/weightroom-work.md`](../roadmap/weightroom-work.md) (Fable 5.1 · attended).
 **Date:** 2026-09-09. **Kickoff:** [`w1-weightroom-p1-skeleton-tls-login.prompt.md`](w1-weightroom-p1-skeleton-tls-login.prompt.md).
-**Ships:** `wr-gym 0.1.0` prepared, **not published, not tagged, not pushed**. `wr-gym setup &&
+**Ships:** `wr-gym 0.1.0`, **published to PyPI on 2026-09-09** (from tag `v0.1.1`; see §7 item 2). `wr-gym setup &&
 wr-gym serve` gives an HTTPS console with a login and the audit trail; nothing behind the login
 yet but a shell that says so.
 **Interpreter:** Python 3.14.4 (`WeightRoom/.venv`) for the gate; the locks were cut on
@@ -215,7 +215,14 @@ SAN (openssl)    DNS:jordan-main, DNS:jordan-main.local, DNS:localhost, IP:10.77
 
 1. Run the phone step (§5) on a real device and append the result to this handoff; **verified
    on: (none yet)**.
-2. Then tag `v0.1.0`, push, approve the PyPI environment (§6).
+2. ~~Then tag `v0.1.0`, push, approve the PyPI environment (§6).~~ **Done 2026-09-09, before
+   the phone step**, with a wrinkle: `v0.1.0` was placed on `9b17d0b`, which predates
+   `release.yml` (added in `96abe6b` after the row closed), so it released nothing; `v0.1.1`
+   was placed on `96abe6b` and released the package **as `0.1.0`** (`__about__` was never
+   bumped). PyPI has `wr-gym 0.1.0`; the GitHub release is named `v0.1.1`; the TestPyPI dry
+   run ran first. Verified from a clean 3.13 venv: `pip install wr-gym==0.1.0`,
+   `wr-gym --version` → `wr-gym 0.1.0 (api v1)`, no application or agent package pulled in.
+   Next tag is `v0.2.0` at W2; never reuse `v0.1.1`.
 3. Tag, push and publish `mirrorwall 0.3.0` (row WM) before starting W2 (§6).
 4. `MEMORY_SAFETY.md` §2.1 and Ollama's `0.0.0.0` bind are still as the W0 handoff found them;
    nothing in W1 touched the host.

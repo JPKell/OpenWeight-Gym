@@ -6,7 +6,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
-## [0.1.0] — 2026-09-09 (prepared, unpublished)
+## [0.1.0] — 2026-09-09
+
+Published to PyPI on 2026-09-09 by `release.yml` from tag **`v0.1.1`** — the tag `v0.1.0` had
+been placed on `9b17d0b`, before the workflow existed, and could not be moved (packaging
+standards §6: a release is never re-tagged), so the next tag name was used with the package
+still at `0.1.0`. The GitHub release `v0.1.1` therefore carries `wr_gym-0.1.0` artifacts. The
+next release is `0.2.0` (row W2) and its tag `v0.2.0`; the name `v0.1.1` is spent.
 
 Row W1: Phase 1 of the development plan — skeleton, configuration, database, TLS, login, `setup`.
 
