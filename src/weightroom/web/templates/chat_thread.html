@@ -138,6 +138,8 @@
         } else if (kind === "delta.text") {
           var live = el.querySelector(".chat-live");
           if (live) { live.textContent += body.delta || ""; }
+        } else if (["plan", "step", "tool_call", "egress_decision", "approval_pending"].indexOf(kind) !== -1) {
+          refresh(body.message_id); // server-rendered card, with its approve/deny forms
         } else if (kind === "done" || kind === "halt") {
           el.removeAttribute("data-streaming");
           refresh(body.message_id);

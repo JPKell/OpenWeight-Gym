@@ -1,0 +1,44 @@
+id: 1
+event: trajectory.created
+data: {"generated_at":"2026-09-10T07:36:52.183Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"bypass_planning":false,"classification":"internal","project":null,"token_budget":2000000,"tool_allowlist":["read_file","list_dir","write_file","run_command","http_fetch"],"trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC"},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253YZNY9C84P7B5ABCX1NSV","message":null,"sequence":1,"timestamp":"2026-09-10T07:36:52.155Z","type":"trajectory.created"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 2
+event: trajectory.claimed
+data: {"generated_at":"2026-09-10T07:36:52.183Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"lease_expires_at":"2026-09-10T07:37:52.162706+00:00","state":"planning","trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC","worker_id":"Jordan-main:1131040/0"},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253YZP4V4Z7TNRK0PWC0TCJ","message":null,"sequence":2,"timestamp":"2026-09-10T07:36:52.162Z","type":"trajectory.claimed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 3
+event: plan.drafted
+data: {"generated_at":"2026-09-10T07:36:58.444Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"attempt":1,"document_sha256":"b1f1435b73d716a44dbfe046a713e853cc164a76e4a4100c3525ca690741a247","issue_count":0,"plan_id":"01M253Z5T6M8HNHKF7JK5TBSQX","step_count":1,"trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC","valid":true},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253Z5TAE1H0MEBTH54JCDCD","message":null,"sequence":3,"timestamp":"2026-09-10T07:36:58.438Z","type":"plan.drafted"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 4
+event: plan.approved
+data: {"generated_at":"2026-09-10T07:36:58.451Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"approval_policy_version":"sha256:e6a4d66edaa1835dbbb066af92cb25f7badab9232645ae46ecd8a4019e0b2f8f","redlined_count":0,"step_count":1,"trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC"},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253Z5TGCXV0VZQ78DCDEHHR","message":null,"sequence":4,"timestamp":"2026-09-10T07:36:58.442Z","type":"plan.approved"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 5
+event: intent.minted
+data: {"generated_at":"2026-09-10T07:36:58.451Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"approval_request_id":null,"approved_tier":"local_fast","fallback_tiers":[],"gated":false,"intent_id":"01M253Z5TFQ5PNQNBYG4QG1V1W","max_classification":"internal","max_turns":8,"minted_by":"policy","revision":1,"step_id":"s1","supersedes":null,"token_budget":10240,"trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC"},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253Z5THQHDBSZR4XWAQN8KT","message":null,"sequence":5,"timestamp":"2026-09-10T07:36:58.442Z","type":"intent.minted"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 6
+event: step.started
+data: {"generated_at":"2026-09-10T07:36:58.467Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"approved_tier":"local_fast","depends_on":[],"intent_id":"01M253Z5TFQ5PNQNBYG4QG1V1W","intent_revision":1,"step_id":"s1","thread_id":"01M253Z5TY8615ZKQKNSGTQQFP","trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC"},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253Z5V29F50F2HCZPNXF4CP","message":null,"sequence":6,"timestamp":"2026-09-10T07:36:58.462Z","type":"step.started"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 7
+event: turn.started
+data: {"generated_at":"2026-09-10T07:36:58.473Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"intent_id":"01M253Z5TFQ5PNQNBYG4QG1V1W","intent_revision":1,"sequence":3,"task_profile":"tools.agent.local_fast","tier":"local_fast","trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC","turn_id":"01M253Z5V481VG1R1CHF297EG7"},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253Z5V9ZT6C7N2XTCK4D0M2","message":null,"sequence":7,"timestamp":"2026-09-10T07:36:58.472Z","type":"turn.started"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 8
+event: budget.debited
+data: {"generated_at":"2026-09-10T07:37:00.156Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"entry_id":"01M253Z7FQ2CSHY2EWDYGKT6G9","headroom":[{"exceeded":false,"money_remaining":{"currency":"USD","nanos":5000000000},"partial_pricing":"floor","scope":"trajectory","tokens_remaining":1999751,"unmetered_debit_count":0,"unpriced_debit_count":1,"untotalled_debit_count":0},{"exceeded":false,"money_remaining":{"currency":"USD","nanos":20000000000},"partial_pricing":"floor","scope":"day","tokens_remaining":null,"unmetered_debit_count":0,"unpriced_debit_count":1,"untotalled_debit_count":0}],"pricing_hash":null,"project":null,"tier":"local_fast","trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC","turn_id":"01M253Z5V481VG1R1CHF297EG7","unpriced":true,"usage":{"cache_read":0,"cache_write":0,"input":130,"output":119}},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253Z7FTZJZB19GX42PPE1PD","message":null,"sequence":8,"timestamp":"2026-09-10T07:37:00.149Z","type":"budget.debited"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 9
+event: turn.completed
+data: {"generated_at":"2026-09-10T07:37:00.161Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"decision":"complete","finish_reason":"stop","input_tokens":130,"loadcoach_job_id":"01M253Z5VCHE3HKZDYBMTXY3EG","loadcoach_ms":1622,"model_canonical_id":"ollama/gpt-oss:20b@sha256:17052f91a42e","output_tokens":119,"overhead_ms":54,"schema_validated":false,"sequence":3,"tier":"local_fast","trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC","turn_id":"01M253Z5V481VG1R1CHF297EG7"},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253Z7FWS0WJNR0Z8MFBC5GJ","message":null,"sequence":9,"timestamp":"2026-09-10T07:37:00.149Z","type":"turn.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 10
+event: step.completed
+data: {"generated_at":"2026-09-10T07:37:00.161Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"final_turn_id":"01M253Z5V481VG1R1CHF297EG7","intent_id":"01M253Z5TFQ5PNQNBYG4QG1V1W","intent_revision":1,"step_id":"s1","thread_id":"01M253Z5TY8615ZKQKNSGTQQFP","trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC","turn_count":3},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253Z7FYKFQGD524MPH6Y52N","message":null,"sequence":10,"timestamp":"2026-09-10T07:37:00.149Z","type":"step.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 11
+event: trajectory.completed
+data: {"generated_at":"2026-09-10T07:37:00.161Z","generator":{"name":"promptcadence","version":"1.3.3"},"payload":{"data":{"step_count":1,"trajectory_id":"01M253YZNV3QQY0CZPWH0E4AYC","turn_count":3},"entity":{"id":"01M253YZNV3QQY0CZPWH0E4AYC","kind":"trajectory"},"event_id":"01M253Z7FYKFQGD524MPH6Y52P","message":null,"sequence":11,"timestamp":"2026-09-10T07:37:00.149Z","type":"trajectory.completed"},"schema":"event.envelope","schema_version":"1.0"}
+

@@ -1,12 +1,55 @@
-{#- One message. Model text arrives here only as message.html (services/chat.py render_reply),
-    thinking and cards only as escaped text. No chat template marks anything safe. -#}
+{#- One message. Model text arrives here only as message.html (services/chat.py render_reply);
+    thinking, cards and halts only as escaped text or tojson. No chat template marks anything safe. -#}
 <article class="chat-message chat-{{ message.role }}" id="m-{{ message.id }}" data-message-id="{{ message.id }}"
          {%- if message.in_progress %} data-streaming="true"{% endif %}>
-  <header class="chat-role muted">{{ "You" if message.role == "user" else ("Reply" if message.role == "assistant" else message.role) }}</header>
+  <header class="chat-role muted">{{ "You" if message.role == "user" else ("Reply" if message.role == "assistant" else message.role) }}
+    {%- if message.remote_job_id and conversation.backend == "promptcadence" %} · trajectory <code>{{ message.remote_job_id }}</code>{% endif %}</header>
 
   {% if message.role == "user" %}
   <div class="chat-user-text">{{ message.text }}</div>
-  {% elif message.in_progress %}
+  {% else %}
+
+  {% for card in message.cards %}
+  {% set pending = card.get('kind') == "approval_pending" and card.get('status') == "requested"
+                   and card.get('approval_request_id') in message.pending_approvals and message.in_progress %}
+  <details class="chat-card chat-card-{{ card.get('kind') }}"{% if pending %} open{% endif %}>
+    <summary>{{ (card.get('kind') or '') | replace('_', ' ') | capitalize }}
+      {%- if card.get('event') %} · <code>{{ card.get('event') }}</code>{% endif %}
+      {%- if card.get('title') %} · {{ card.get('title') }}{% endif %}
+      {%- if card.get('outcome') %} · {{ card.get('outcome') }}{% endif %}
+      {%- if card.get('status') and card.get('kind') == "approval_pending" %} · <strong>{{ card.get('status') }}</strong>{% endif %}</summary>
+    <dl class="kv-list">
+      {% for key, value in card.items() if key not in ("id", "kind", "message_id", "event", "title") %}
+      <dt>{{ key }}</dt><dd><code>{% if value is string %}{{ value }}{% else %}{{ value | tojson }}{% endif %}</code></dd>
+      {% endfor %}
+    </dl>
+    {% if pending %}
+      {% if can_approve %}
+      <form method="post" action="/chat/{{ conversation.id }}/approvals/{{ card.get('approval_request_id') }}" class="field">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+        <input type="hidden" name="decision" value="approve">
+        <button type="submit">Approve</button>
+      </form>
+      <form method="post" action="/chat/{{ conversation.id }}/approvals/{{ card.get('approval_request_id') }}" class="field">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+        <input type="hidden" name="decision" value="deny">
+        <label for="deny-{{ card.get('approval_request_id') }}">Reason <span class="field-hint">optional</span></label>
+        <input id="deny-{{ card.get('approval_request_id') }}" name="reason" maxlength="2000">
+        <button type="submit" data-variant="quiet">Deny</button>
+      </form>
+      {% elif can_approve is sameas false %}
+      <p class="notice"><strong>No approve scope.</strong> The console's PromptCadence token cannot resolve
+      approvals (ADR-0049). Grant it on PromptCadence's Tokens page, or approve with
+      <code>promptcadence approve {{ message.remote_job_id }}</code>.</p>
+      {% else %}
+      <p class="notice">Whether the console's token can approve could not be read; approve with
+      <code>promptcadence approve {{ message.remote_job_id }}</code>.</p>
+      {% endif %}
+    {% endif %}
+  </details>
+  {% endfor %}
+
+  {% if message.in_progress %}
   <details class="chat-thinking" hidden><summary>Thinking…</summary><div class="chat-thinking-body"></div></details>
   <div class="chat-live" aria-live="polite"></div>
   <p class="muted chat-waiting">Waiting for the reply… <noscript>Reload the page to see it.</noscript></p>
@@ -14,26 +57,26 @@
   {% if message.thinking %}
   <details class="chat-thinking"><summary>Thinking</summary><div class="chat-thinking-body">{{ message.thinking }}</div></details>
   {% endif %}
-  {% for card in message.cards %}
-  <details class="chat-card chat-card-{{ card.kind }}"><summary>{{ card.kind | replace("_", " ") }}{% if card.title %} — {{ card.title }}{% endif %}</summary>
-    <pre>{{ card | tojson(indent=2) }}</pre></details>
-  {% endfor %}
   <div class="chat-answer">{{ message.html }}</div>
   {% if message.halt_message %}
   <p class="notice" role="alert"><strong>Halted.</strong> {{ message.halt_message }}</p>
   {% endif %}
   {% if message.routing %}
+  {% set line = message.cost_line %}
   <details class="chat-decision muted">
-    <summary>{{ message.routing.model or "—" }} · {{ message.routing.candidates or 0 }} candidates · {{ message.routing.rejected or 0 }} rejected
-      {%- set line = message.cost_line %}{% if line %} · {{ line.summary }}{% endif %}</summary>
-    {% if message.routing.rejections %}
-    <ul>{% for reason, count in message.routing.rejections.items() %}<li><code>{{ reason }}</code> × {{ count }}</li>{% endfor %}</ul>
+    <summary>{{ message.routing.get('model') or "—" }}
+      {%- if message.routing.get('tier') %} · tier {{ message.routing.get('tier') }}{% endif %}
+      · {{ message.routing.get('candidates') or 0 }} candidates · {{ message.routing.get('rejected') or 0 }} rejected
+      {%- if line %} · {{ line.summary }}{% endif %}</summary>
+    {% if message.routing.get('rejections') %}
+    <ul>{% for reason, count in message.routing.get('rejections').items() %}<li><code>{{ reason }}</code> × {{ count }}</li>{% endfor %}</ul>
     {% endif %}
     {% if line and line.unpriced_count %}<p>{{ line.unpriced_count }} unpriced</p>{% endif %}
-    <p>{% if message.routing.task_profile %}task <code>{{ message.routing.task_profile }}</code> · {% endif %}
-       {% if message.remote_job_id %}job <code>{{ message.remote_job_id }}</code>{% endif %}
+    <p>{% if message.routing.get('task_profile') %}task <code>{{ message.routing.get('task_profile') }}</code> · {% endif %}
+       {% if message.routing.get('job_id') %}LoadCoach job <code>{{ message.routing.get('job_id') }}</code>{% endif %}
        {% if message.finish_reason %} · finish <code>{{ message.finish_reason }}</code>{% endif %}</p>
   </details>
+  {% endif %}
   {% endif %}
   {% endif %}
 </article>

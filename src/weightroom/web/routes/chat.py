@@ -12,7 +12,7 @@ import asyncio
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Final
+from typing import TYPE_CHECKING, Annotated, Any, Final, Literal
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
@@ -29,7 +29,7 @@ from weightroom.services.chat import (
     get_conversation,
     heartbeat_frame,
     list_conversations,
-    run_loadcoach_reply,
+    run_reply,
     sse_frame,
     start_reply,
 )
@@ -96,9 +96,16 @@ def _root(request: Request) -> Path:
 def _availability(request: Request, backend: str) -> str | None:
     from weightroom.web.routes.apps import _view
 
-    if backend == "promptcadence":
-        return "PromptCadence chat is not wired in this build yet; its conversations still read."
     return backend_unavailable_reason(backend, _view(request, backend))
+
+
+def _can_approve(request: Request, backend: str) -> bool | None:
+    """Whether approve/deny buttons can work: the console's PromptCadence token's scope."""
+    if backend != "promptcadence":
+        return None
+    from weightroom.services.chat_promptcadence import token_can_approve
+
+    return token_can_approve(request.app.state.settings)
 
 
 def _send(request: Request, principal: Principal, conversation_id: str, text: str) -> str:
@@ -119,7 +126,7 @@ def _send(request: Request, principal: Principal, conversation_id: str, text: st
     )
     clock = getattr(state, "clock", None) or (lambda: datetime.now(UTC))
     state.chat.submit(
-        run_loadcoach_reply,
+        run_reply,
         state.database,
         state.http,
         settings=state.settings,
@@ -304,6 +311,7 @@ def _render_thread(
         unavailable=_availability(request, view.backend),
         max_attachment_bytes=request.app.state.settings.chat.max_attachment_bytes,
         error=error,
+        can_approve=_can_approve(request, view.backend),
     )
 
 
@@ -422,10 +430,131 @@ def message_fragment(
 ) -> HTMLResponse:
     """The finished message as server-rendered HTML, swapped in by the page on ``done``."""
     from weightroom.services.chat import ConversationNotFound
-    from weightroom.web.rendering import render
+    from weightroom.web.csrf import render_form_page
 
     view = get_conversation(request.app.state.database, conversation_id)
     message = next((one for one in view.messages if one.id == message_id), None)
     if message is None:
         raise ConversationNotFound(f"No message {message_id!r}.", details={"id": message_id})
-    return HTMLResponse(render("_chat_message.html", message=message, conversation=view))
+    return render_form_page(
+        request,
+        "_chat_message.html",
+        message=message,
+        conversation=view,
+        can_approve=_can_approve(request, view.backend),
+    )
+
+
+# --- Approvals ------------------------------------------------------------------------------------
+
+
+class ApprovalBody(BaseModel):
+    """``POST /chat/conversations/{id}/approvals/{approval_id}`` (api.md §6)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    decision: Literal["approve", "deny"]
+    reason: str | None = Field(default=None, max_length=2000)
+
+
+def _decide(
+    request: Request,
+    principal: Principal,
+    conversation_id: str,
+    approval_id: str,
+    decision: str,
+    reason: str | None,
+) -> dict[str, Any]:
+    """Resolve one approval and write its one audit row, refused or not.
+
+    Raises:
+        SuiteError: The service's refusal, after its row is written.
+    """
+    from baseaicore import SuiteError
+
+    from weightroom.services.chat import decide_approval
+
+    state = request.app.state
+    action = "chat.approve" if decision == "approve" else "chat.deny"
+    try:
+        result = decide_approval(
+            state.database,
+            state.http,
+            settings=state.settings,
+            conversation_id=conversation_id,
+            approval_request_id=approval_id,
+            decision=decision,
+            reason=reason,
+        )
+    except SuiteError as exc:
+        record(
+            state.database,
+            action=action,
+            actor="operator",
+            outcome="refused",
+            now=now_of(request),
+            operator_id=principal.operator_id,
+            app="promptcadence",
+            target=approval_id,
+            params={"conversation_id": conversation_id},
+            message=exc.message,
+            security=True,
+            request_id=getattr(request.state, "request_id", None),
+        )
+        raise
+    record(
+        state.database,
+        action=action,
+        actor="operator",
+        outcome="ok",
+        now=now_of(request),
+        operator_id=principal.operator_id,
+        app="promptcadence",
+        target=approval_id,
+        params={
+            "conversation_id": conversation_id,
+            "trajectory_id": result.get("trajectory_id"),
+            "state": result.get("state"),
+        },
+        security=True,
+        request_id=getattr(request.state, "request_id", None),
+    )
+    return result
+
+
+@router.post(
+    "/chat/conversations/{conversation_id}/approvals/{approval_id}",
+    summary="Approve or deny a pending PromptCadence approval",
+)
+def api_decide(
+    request: Request,
+    principal: CurrentOperator,
+    conversation_id: str,
+    approval_id: str,
+    body: ApprovalBody,
+) -> JSONResponse:
+    """PromptCadence's ``approve``/``deny`` with the ``approve``-scoped token (ADR-0049)."""
+    result = _decide(request, principal, conversation_id, approval_id, body.decision, body.reason)
+    return JSONResponse(content=result)
+
+
+@ui_router.post("/chat/{conversation_id}/approvals/{approval_id}", summary="Decide from the page")
+def decide_form(
+    request: Request,
+    principal: CurrentOperator,
+    conversation_id: str,
+    approval_id: str,
+    decision: Annotated[Literal["approve", "deny"], Form()],
+    reason: Annotated[str, Form()] = "",
+) -> Any:  # noqa: ANN401 — a redirect, or the thread with the refusal
+    """Approve or deny, then back to the thread; a refusal is shown in PromptCadence's words."""
+    from baseaicore import SuiteError
+
+    try:
+        _decide(request, principal, conversation_id, approval_id, decision, reason or None)
+    except SuiteError as exc:
+        if exc.code == "NOT_FOUND" and "conversation" not in exc.message.lower():
+            raise
+        view = get_conversation(request.app.state.database, conversation_id)
+        return _render_thread(request, principal, view, error=exc.message)
+    return RedirectResponse(f"/chat/{conversation_id}", status_code=status.HTTP_303_SEE_OTHER)

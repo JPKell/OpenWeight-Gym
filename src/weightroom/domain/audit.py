@@ -44,6 +44,10 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "chat.message",
         "chat.attachment",
         "chat.delete",
+        # W6. Granting or denying a PromptCadence approval from a thread: the one chat action that
+        # authorises spend or egress, so its row names the trajectory and the request it resolved.
+        "chat.approve",
+        "chat.deny",
         "db.guarded_write",
         "db.curated",
         "catalog.pull",

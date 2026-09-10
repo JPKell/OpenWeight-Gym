@@ -210,6 +210,72 @@ def _chat_delete_form(console: Console) -> Any:  # noqa: ANN401
     return console.post_form(f"/chat/{_chat_conversation(console)}/delete", {})
 
 
+def _chat_pending_approval(console: Console) -> tuple[str, str]:
+    """A PromptCadence reply parked on an approval, and the scope cache primed as held — the
+    exercise counts the decision's own row, not a `token list` subprocess."""
+    import time
+
+    from weightroom.infrastructure.db.models import Message, MessageEvent
+    from weightroom.services import chat_promptcadence
+    from weightroom.services.chat import create_conversation
+
+    chat_promptcadence._SCOPE_CACHE["promptcadence"] = (time.monotonic(), True)
+    conversation_id = create_conversation(
+        console.database, backend="promptcadence", title="t", now=console.now
+    )
+    with console.database.write() as session:
+        message = Message(
+            conversation_id=conversation_id,
+            sequence=1,
+            role="assistant",
+            text="",
+            remote_job_id="01TRAJECTORY00000000000001",
+        )
+        session.add(message)
+        session.flush()
+        session.add(
+            MessageEvent(
+                message_id=message.id,
+                sequence=1,
+                kind="approval_pending",
+                payload={
+                    "message_id": message.id,
+                    "status": "requested",
+                    "approval_request_id": "01REQUEST0000000000000001",
+                },
+            )
+        )
+    return conversation_id, "01REQUEST0000000000000001"
+
+
+def _chat_decide_json(console: Console) -> Any:  # noqa: ANN401
+    import respx
+
+    from tests.support import mock_promptcadence
+
+    conversation_id, request_id = _chat_pending_approval(console)
+    with respx.mock(assert_all_called=False) as router:
+        mock_promptcadence(router)
+        return console.client.post(
+            f"/api/v1/chat/conversations/{conversation_id}/approvals/{request_id}",
+            json={"decision": "approve"},
+            headers=JSON_HEADERS,
+        )
+
+
+def _chat_decide_form(console: Console) -> Any:  # noqa: ANN401
+    import respx
+
+    from tests.support import mock_promptcadence
+
+    conversation_id, request_id = _chat_pending_approval(console)
+    with respx.mock(assert_all_called=False) as router:
+        mock_promptcadence(router)
+        return console.post_form(
+            f"/chat/{conversation_id}/approvals/{request_id}", {"decision": "deny"}
+        )
+
+
 EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/login"): _form_login,
     ("POST", "/logout"): _form_logout,
@@ -239,6 +305,11 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
     ("POST", "/chat/{conversation_id}/messages"): _chat_send_form,
     ("POST", "/chat/{conversation_id}/attachments"): _chat_attach_form,
     ("POST", "/chat/{conversation_id}/delete"): _chat_delete_form,
+    (
+        "POST",
+        "/api/v1/chat/conversations/{conversation_id}/approvals/{approval_id}",
+    ): _chat_decide_json,
+    ("POST", "/chat/{conversation_id}/approvals/{approval_id}"): _chat_decide_form,
 }
 """One representative, successful call per state-changing route. Add a line per new route."""
 

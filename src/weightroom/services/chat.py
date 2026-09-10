@@ -90,7 +90,12 @@ __all__ = [
     "list_conversations",
     "recover_interrupted",
     "render_reply",
+    "ApprovalRefused",
+    "ApprovalScopeMissing",
+    "decide_approval",
     "run_loadcoach_reply",
+    "run_promptcadence_reply",
+    "run_reply",
     "sse_frame",
     "start_reply",
 ]
@@ -118,6 +123,18 @@ class AttachmentTypeRefused(SuiteError):
     """The file is not text or markdown — by extension, encoding or content."""
 
     code: ClassVar[str] = "ATTACHMENT_TYPE_REFUSED"
+
+
+class ApprovalScopeMissing(SuiteError):
+    """The console's PromptCadence token cannot approve (ADR-0049's separate scope)."""
+
+    code: ClassVar[str] = "FORBIDDEN"
+
+
+class ApprovalRefused(SuiteError):
+    """PromptCadence refused the decision — nothing pending, already resolved — in its words."""
+
+    code: ClassVar[str] = "VALIDATION_ERROR"
 
 
 class ConversationNotFound(SuiteError):
@@ -211,6 +228,21 @@ class MessageView:
     def in_progress(self) -> bool:
         """Whether this is an assistant reply still streaming."""
         return self.role == "assistant" and self.completed_at is None
+
+    @property
+    def pending_approvals(self) -> frozenset[str]:
+        """Approval requests this reply raised that nobody has granted or denied yet."""
+        requested: set[str] = set()
+        resolved: set[str] = set()
+        for card in self.cards:
+            if card.get("kind") != "approval_pending":
+                continue
+            request_id = str(card.get("approval_request_id") or "")
+            if card.get("status") == "requested":
+                requested.add(request_id)
+            elif card.get("status") in {"granted", "denied"}:
+                resolved.add(request_id)
+        return frozenset(requested - resolved - {""})
 
     @property
     def html(self) -> SafeReplyHtml:
@@ -777,6 +809,39 @@ class _Recorder:
                 self.database, self.message_id, self.sequence, kind, payload, self.clock()
             )
 
+    def card(self, kind: str, payload: Mapping[str, Any]) -> None:
+        """Write one structured card row (plan, step, tool call, egress, approval)."""
+        self.sequence += 1
+        body = {"message_id": self.message_id, **dict(payload)}
+        _append_event(self.database, self.message_id, self.sequence, kind, body, self.clock())
+
+
+def run_reply(
+    database: Database,
+    client: httpx.Client,
+    *,
+    settings: Settings,
+    conversation_id: str,
+    message_id: str,
+    attachments_root: Path,
+    clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+) -> None:
+    """Stream one reply through the conversation's own backend. Never raises."""
+    try:
+        backend = get_conversation(database, conversation_id).backend
+    except SuiteError:
+        return
+    runner = run_promptcadence_reply if backend == "promptcadence" else run_loadcoach_reply
+    runner(
+        database,
+        client,
+        settings=settings,
+        conversation_id=conversation_id,
+        message_id=message_id,
+        attachments_root=attachments_root,
+        clock=clock,
+    )
+
 
 def run_loadcoach_reply(
     database: Database,
@@ -891,6 +956,202 @@ def _finish_result(
         halt=None,
         now=recorder.clock(),
     )
+
+
+def _set_remote(
+    database: Database, conversation_id: str, message_id: str, trajectory_id: str
+) -> None:
+    with database.write() as session:
+        message = session.get(Message, message_id)
+        if message is not None:
+            message.remote_job_id = trajectory_id
+        conversation = session.get(Conversation, conversation_id)
+        if conversation is not None:
+            conversation.remote_trajectory_id = trajectory_id
+
+
+def run_promptcadence_reply(
+    database: Database,
+    client: httpx.Client,
+    *,
+    settings: Settings,
+    conversation_id: str,
+    message_id: str,
+    attachments_root: Path,
+    clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+) -> None:
+    """Run one message as a PromptCadence trajectory into ``message_id``. Never raises.
+
+    Cards are written as the trajectory's events arrive; the answer is its last assistant turn,
+    read on ``trajectory.completed``; a halt carries PromptCadence's own cause.
+    """
+    from weightroom.services import chat_promptcadence as pc
+    from weightroom.services.apps import bearer_token
+
+    recorder = _Recorder(database, message_id, clock)
+    token = bearer_token(settings, "promptcadence")
+    trajectory_id: str | None = None
+    last_turn: dict[str, Any] = {}
+    message = "The trajectory ended without a result."
+    try:
+        view, history = _history(
+            database, conversation_id, reply_id=message_id, attachments_root=attachments_root
+        )
+        trajectory_id = pc.submit_trajectory(
+            client,
+            settings,
+            token=token,
+            task=pc.build_task(history, ()),
+            classification=view.classification,
+            tools=view.tools or [],
+            tier=view.tier,
+        )
+        _set_remote(database, conversation_id, message_id, trajectory_id)
+        for kind, value in pc.stream_trajectory(
+            client, settings, token=token, trajectory_id=trajectory_id
+        ):
+            if kind == "card":
+                card_kind, payload = value
+                if payload.get("event") == "turn.completed":
+                    last_turn = dict(payload)
+                recorder.card(card_kind, payload)
+            elif kind == "completed":
+                answer, usage = pc.fetch_answer(
+                    client, settings, token=token, trajectory_id=trajectory_id
+                )
+                for decision in pc.fetch_egress(
+                    client, settings, token=token, trajectory_id=trajectory_id
+                ):
+                    recorder.card("egress_decision", decision.get("payload", decision))
+                recorder.feed(Chunk("text", answer))
+                recorder.feed(Chunk("done"))
+                _complete(
+                    database,
+                    message_id,
+                    state=recorder.state,
+                    routing=_promptcadence_routing(client, settings, last_turn, token=token),
+                    usage=usage,
+                    cost=None,
+                    finish_reason=str(last_turn.get("finish_reason") or "stop"),
+                    remote_job_id=trajectory_id,
+                    halt=None,
+                    now=clock(),
+                )
+                return
+            elif kind == "halt":
+                message = str(value)
+                break
+    except BackendRefused as exc:
+        message = exc.message
+    except httpx.HTTPError as exc:
+        message = f"PromptCadence did not answer: {exc}"
+    except Exception as exc:  # noqa: BLE001 — a reply thread reports, it never dies silently
+        logger.exception("chat.trajectory_failed", extra={"message_id": message_id})
+        message = f"The reply failed: {exc}"
+    if not recorder.state.finished:
+        recorder.feed(Chunk("error", message))
+    _complete(
+        database,
+        message_id,
+        state=recorder.state,
+        routing=None,
+        usage=None,
+        cost=None,
+        finish_reason="error",
+        remote_job_id=trajectory_id,
+        halt=recorder.state.error or message,
+        now=clock(),
+    )
+
+
+def _promptcadence_routing(
+    client: httpx.Client, settings: Settings, turn: Mapping[str, Any], *, token: str | None
+) -> dict[str, Any]:
+    """The decision line for a trajectory: its last turn's model and tier, LoadCoach's routing
+    counts for that turn's job, and whether the tier is remote by PromptCadence's own flag."""
+    from weightroom.services import chat_promptcadence as pc
+    from weightroom.services.apps import bearer_token
+
+    job = str(turn.get("loadcoach_job_id") or "")
+    decision: dict[str, Any] = {}
+    if job:
+        decision = dict(
+            fetch_routing(
+                client,
+                base_url=settings.apps.loadcoach.base_url,
+                token=bearer_token(settings, "loadcoach"),
+                explanation_url=f"/api/v1/jobs/{job}/explanation",
+            )
+            or {}
+        )
+    tier = str(turn.get("tier") or "")
+    return {
+        **decision,
+        "model": turn.get("model_canonical_id") or decision.get("model"),
+        "tier": tier or None,
+        "job_id": job or None,
+        "is_remote": pc.fetch_tier_remote(client, settings, token=token, tier=tier) is True,
+    }
+
+
+def decide_approval(
+    database: Database,
+    client: httpx.Client,
+    *,
+    settings: Settings,
+    conversation_id: str,
+    approval_request_id: str,
+    decision: str,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    """Grant or deny a pending approval a reply raised, with the ``approve``-scoped token.
+
+    Raises:
+        ConversationNotFound: No pending request with that id in this conversation.
+        ApprovalScopeMissing: The console's token has no ``approve`` scope, or it cannot tell.
+        ApprovalRefused: PromptCadence refused the decision, in its own words.
+        ChatBackendUnavailable: PromptCadence did not answer.
+    """
+    from weightroom.services import chat_promptcadence as pc
+    from weightroom.services.apps import bearer_token
+
+    view = get_conversation(database, conversation_id)
+    message = next(
+        (one for one in view.messages if approval_request_id in one.pending_approvals), None
+    )
+    if view.backend != "promptcadence" or message is None or not message.remote_job_id:
+        raise ConversationNotFound(
+            f"No pending approval {approval_request_id!r} in this conversation.",
+            details={
+                "conversation_id": conversation_id,
+                "approval_request_id": approval_request_id,
+            },
+        )
+    allowed = pc.token_can_approve(settings)
+    if allowed is not True:
+        raise ApprovalScopeMissing(
+            "The console's PromptCadence token has no approve scope (ADR-0049)."
+            if allowed is False
+            else "Whether the console's PromptCadence token can approve could not be read.",
+            details={"approval_request_id": approval_request_id},
+        )
+    try:
+        return pc.approval_decision(
+            client,
+            settings,
+            token=bearer_token(settings, "promptcadence"),
+            trajectory_id=message.remote_job_id,
+            decision=decision,
+            reason=reason,
+        )
+    except BackendRefused as exc:
+        raise ApprovalRefused(
+            exc.message, details={"approval_request_id": approval_request_id}
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise ChatBackendUnavailable(
+            f"PromptCadence did not answer: {exc}", details={"backend": "promptcadence"}
+        ) from exc
 
 
 def recover_interrupted(database: Database, *, now: datetime) -> int:
