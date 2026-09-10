@@ -45,6 +45,8 @@ NAV_ITEMS: tuple[dict[str, str], ...] = (
     {"key": "ollama", "href": "/ollama", "label": "Ollama"},
     {"key": "logs", "href": "/logs", "label": "Logs"},
     {"key": "audit", "href": "/audit", "label": "Audit"},
+    {"key": "doctor", "href": "/doctor", "label": "Doctor"},
+    {"key": "settings", "href": "/settings", "label": "Settings"},
     {"key": "trust", "href": "/trust", "label": "Trust"},
 )
 
@@ -112,19 +114,44 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
 """Spec §7.3's menu, per application. Only ``Overview`` is built before W4–W9 land the rest."""
 
 _PAGE_PHASE: dict[str, str] = {
-    "Settings": "W4",
-    "Providers": "W4",
-    "Provider": "W4",
-    "Tokens": "W4",
     "Database": "W7",
 }
 """Where a still-unbuilt page's kickoff already names a row; everything else is not yet
-scheduled in ``roadmap/weightroom-work.md`` (a documentation gap this row notes rather than
-invents an answer to — the handoff records it)."""
+scheduled in ``roadmap/weightroom-work.md`` (a documentation gap W3 noted rather than invented
+an answer to — the handoffs record it)."""
+
+_PAGE_ELSEWHERE: dict[str, str] = {
+    "Provider": "edited on the application's own provider page (ADR-0117)",
+    "Providers": "edited on the application's own provider page (ADR-0117)",
+}
+"""Pages spec §7.3 names that are **not** WeightRoomGym's to build.
+
+A provider registration is a keyed table with its own admin form inside the application
+(ADR-0117), reachable from the application itself; the console's settings page edits every other
+key of the same file and says so rather than growing a fifth copy of that form (W4)."""
+
+_PAGE_HREF: dict[str, str] = {
+    "Overview": "/apps/{app}",
+    "Settings": "/apps/{app}/settings",
+    "Tokens": "/apps/{app}/tokens",
+}
+"""Where a built page lives; anything absent is still a stub."""
+
+_NO_TOKENS: frozenset[str] = frozenset({"ideapress"})
+"""IdeaPress has no token surface at all — no ``token`` CLI verb and no token table (W4)."""
 
 
-def app_side_nav(app_name: str) -> tuple[dict[str, Any], ...]:
-    """The one section :func:`~mirrorwall.side_nav` renders for an application: ``Overview``.
+def _built_pages(app_name: str) -> tuple[str, ...]:
+    """Every spec §7.3 page for ``app_name`` this build actually serves."""
+    return tuple(
+        label
+        for label in _APP_PAGES.get(app_name, ())
+        if label in _PAGE_HREF and not (label == "Tokens" and app_name in _NO_TOKENS)
+    )
+
+
+def app_side_nav(app_name: str, *, selected: str = "Overview") -> tuple[dict[str, Any], ...]:
+    """The section :func:`~mirrorwall.side_nav` renders for an application: its built pages.
 
     The macro's ``link`` shape has no inert state, so a page this build has not shipped yet is
     never handed to it as a dead ``href=""`` link — :func:`app_side_nav_stubs` renders those
@@ -133,24 +160,38 @@ def app_side_nav(app_name: str) -> tuple[dict[str, Any], ...]:
     return (
         {
             "title": app_name,
-            "links": [{"label": "Overview", "href": f"/apps/{app_name}", "selected": True}],
+            "links": [
+                {
+                    "label": label,
+                    "href": _PAGE_HREF[label].format(app=app_name),
+                    "selected": label == selected,
+                }
+                for label in _built_pages(app_name)
+            ],
         },
     )
 
 
 def app_side_nav_stubs(app_name: str) -> tuple[dict[str, str], ...]:
-    """Every page spec §7.3 names for ``app_name`` that this build has not shipped yet.
+    """Every page spec §7.3 names for ``app_name`` that this build does not serve.
 
-    Each carries the row that will build it where the roadmap already says so, and "not yet
-    scheduled" where it does not — a documentation gap this row notes rather than invents an
-    answer to (the handoff records it).
+    Each carries the row that will build it where the roadmap already says so, "not yet
+    scheduled" where it does not — a documentation gap noted rather than invented an answer to —
+    and, for a page that is deliberately somebody else's, where it actually lives.
     """
+    built = _built_pages(app_name)
     stubs = []
     for label in _APP_PAGES.get(app_name, ()):
-        if label == "Overview":
+        if label in built:
             continue
-        phase = _PAGE_PHASE.get(label)
-        title = f"coming in phase {phase}" if phase else "not yet scheduled"
+        elsewhere = _PAGE_ELSEWHERE.get(label)
+        if elsewhere is not None:
+            title = elsewhere
+        elif label == "Tokens":
+            title = f"{app_name} has no API tokens"
+        else:
+            phase = _PAGE_PHASE.get(label)
+            title = f"coming in phase {phase}" if phase else "not yet scheduled"
         stubs.append({"label": label, "title": title})
     return tuple(stubs)
 

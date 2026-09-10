@@ -41,6 +41,7 @@ from weightroom.services.database import Database
 from weightroom.services.journal import JournalReader
 from weightroom.services.ollama import ollama_client
 from weightroom.services.processes import SubprocessSystemdController
+from weightroom.services.settings_forms import SchemaCache
 from weightroom.services.telemetry import TelemetryService
 from weightroom.web.csrf import render_form_page
 from weightroom.web.hosts import resolve_allowed_hosts
@@ -50,6 +51,7 @@ from weightroom.web.routes import apps as apps_routes
 from weightroom.web.routes import audit as audit_routes
 from weightroom.web.routes import ollama as ollama_routes
 from weightroom.web.routes import session as session_routes
+from weightroom.web.routes import settings as settings_routes
 from weightroom.web.routes import shell as shell_routes
 from weightroom.web.routes import system as system_routes
 from weightroom.web.routes import trust as trust_routes
@@ -72,6 +74,11 @@ STATUS_BY_CODE: dict[str, int] = {
     "AUDIT_NOT_FOUND": status.HTTP_404_NOT_FOUND,
     "SETTING_CONFIG_ONLY": status.HTTP_403_FORBIDDEN,
     "SETTING_UNKNOWN": status.HTTP_400_BAD_REQUEST,
+    # 409: the request was well formed and the console is fine; the *file* moved underneath it,
+    # and the operator resolves it by reloading and re-applying (ADR-0117 rule 7).
+    "CONFIG_CHANGED_ON_DISK": status.HTTP_409_CONFLICT,
+    # 400: the application's own loader refused the candidate, in its own words.
+    "CONFIG_VALIDATION_FAILED": status.HTTP_400_BAD_REQUEST,
     "APP_UNKNOWN": status.HTTP_404_NOT_FOUND,
     # 409: the application exists and the request was well formed; the *host* is in a state
     # that makes the action impossible, and the operator fixes it by installing or starting.
@@ -271,6 +278,9 @@ def create_app(
     app.state.controller = controller if controller is not None else SubprocessSystemdController()
     app.state.journal = journal if journal is not None else JournalReader()
     app.state.versions = VersionCache()
+    # One schema document per application, re-read every 60 s (api.md §2). Each read launches
+    # `<app> config schema --json`, so without it every element of a settings page would.
+    app.state.schemas = SchemaCache()
     # Pooled, and both open nothing until the first request; the lifespan closes them. The
     # Ollama one is separate because ModelRack's provider issues relative paths against whatever
     # client it is handed, so that client must carry Ollama's own base URL.
@@ -297,12 +307,14 @@ def create_app(
     app.include_router(session_routes.router, prefix="/api/v1")
     app.include_router(apps_routes.router, prefix="/api/v1")
     app.include_router(audit_routes.router, prefix="/api/v1")
+    app.include_router(settings_routes.router, prefix="/api/v1")
     app.include_router(ollama_routes.router, prefix="/api/v1")
     app.include_router(session_routes.ui_router)
     app.include_router(shell_routes.ui_router)
     app.include_router(trust_routes.ui_router)
     app.include_router(apps_routes.ui_router)
     app.include_router(audit_routes.ui_router)
+    app.include_router(settings_routes.ui_router)
     app.include_router(ollama_routes.ui_router)
     app.include_router(system_routes.ui_router)
 

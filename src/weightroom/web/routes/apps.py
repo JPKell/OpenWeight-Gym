@@ -425,7 +425,7 @@ def app_page(request: Request, principal: CurrentOperator, app: str) -> HTMLResp
         overview=overview,
         applications=APPLICATIONS,
         active_app=name,
-        nav_sections=app_side_nav(name),
+        nav_sections=app_side_nav(name, selected="Overview"),
         nav_footer=f"{name} {view.version or '—'}",
         side_nav_stubs=app_side_nav_stubs(name),
     )

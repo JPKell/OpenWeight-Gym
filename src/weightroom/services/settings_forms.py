@@ -31,6 +31,7 @@ list, which is a page, not a stack trace.
 from __future__ import annotations
 
 import json
+import os
 import re
 import threading
 import time
@@ -41,6 +42,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx
+import tomlkit
 
 from weightroom.config import APPLICATIONS
 from weightroom.services.apps import bearer_token
@@ -55,6 +57,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "REDACTED",
+    "KeyOutcome",
+    "SaveResult",
     "SCHEMA_TIMEOUT_SECONDS",
     "SCHEMA_TTL_SECONDS",
     "FormField",
@@ -63,7 +67,9 @@ __all__ = [
     "SettingsForm",
     "config_file_path",
     "is_secret_key",
+    "live_settings",
     "read_schema_document",
+    "save_settings",
     "settings_form",
 ]
 
@@ -159,6 +165,65 @@ class FormField:
         """The default, rendered the same way."""
         return _as_text(self.default)
 
+    def parse(self, raw: str) -> Any:  # noqa: ANN401 — TOML in, JSON-shaped out
+        """One submitted form string as this field's own type.
+
+        A browser posts text; the file and the application both want a typed value, and the type
+        is the one the document stated. Anything but a scalar is parsed as the TOML value it is
+        written as, so an array or an inline table can be edited in a single-line input exactly
+        as it appears in the file.
+
+        Args:
+            raw: What the form posted.
+
+        Returns:
+            The typed value.
+
+        Raises:
+            ValueError: The text is not a value of this field's type.
+        """
+        text = raw.strip()
+        if self.kind == "string":
+            # An empty box on a string the model has no value for means *leave it unset*, not
+            # "set it to the empty string" — otherwise submitting an untouched form would write
+            # `database_url = ""` over every optional path in the file. Where the field's value
+            # already **is** the empty string, that is a real value and emptying stays an edit.
+            return None if raw == "" and self.value is None else raw
+        if not text:
+            # TOML has no null, so an empty box on a non-string field means *leave it alone*.
+            # `save_settings` compares this against the current value: it is `unchanged` for a
+            # field that has no value, and a refusal for one that does — clearing a key is the
+            # raw editor's job, because it is a deletion and not an edit.
+            return None
+        if self.kind == "boolean":
+            if text.lower() in {"true", "on", "yes", "1"}:
+                return True
+            if text.lower() in {"false", "off", "no", "0"}:
+                return False
+            message = f"{self.key} is true or false, not {raw!r}"
+            raise ValueError(message)
+        if self.kind == "integer":
+            try:
+                return int(text, 10)
+            except ValueError as exc:
+                message = f"{self.key} is a whole number, not {raw!r}"
+                raise ValueError(message) from exc
+        if self.kind == "number":
+            try:
+                return float(text)
+            except ValueError as exc:
+                message = f"{self.key} is a number, not {raw!r}"
+                raise ValueError(message) from exc
+        try:
+            parsed = tomllib.loads(f"value = {text}")
+        except tomllib.TOMLDecodeError as exc:
+            message = f"{self.key} needs a TOML value, and {raw!r} is not one"
+            raise ValueError(message) from exc
+        if "value" not in parsed:
+            message = f"{self.key} needs a TOML value, and {raw!r} is not one"
+            raise ValueError(message)
+        return parsed["value"]
+
     @property
     def bounds_text(self) -> str:
         """``100 … 60000``, ``≥ 1``, ``≤ 100`` or ``""`` — whichever bounds exist."""
@@ -228,7 +293,7 @@ class SettingsForm:
     version: str
     config_path: str
     config_exists: bool
-    base_mtime: float | None
+    base_mtime: int | None
     sections: tuple[FormSection, ...] = ()
     undescribed: tuple[str, ...] = ()
     problems: tuple[str, ...] = ()
@@ -370,14 +435,29 @@ def read_schema_document(
     return document, None
 
 
-def config_file_path(document: Mapping[str, Any] | None, *, fallback: Path | None = None) -> Path:
-    """The file the application reads, from its own document; ``fallback`` when it said nothing."""
+def config_file_path(
+    document: Mapping[str, Any] | None, *, app: str = "", fallback: Path | None = None
+) -> Path:
+    """The file the application reads.
+
+    Args:
+        document: Its schema document, which states ``config_path`` — the authority.
+        app: The application, for the fallback below.
+        fallback: An explicit path (WeightRoomGym's own, which the runtime already resolved).
+
+    Returns:
+        The document's path; failing that ``fallback``; failing that the XDG default the whole
+        suite uses. The last is what makes the *degrade to the raw editor* path work at all: an
+        application too old or too broken to publish a document still has a file, and it is
+        there (configuration standards §2).
+    """
     stated = str((document or {}).get("config_path") or "")
     if stated:
         return Path(stated)
     if fallback is not None:
         return fallback
-    return Path()
+    root = Path(os.environ.get("XDG_CONFIG_HOME") or (Path.home() / ".config"))
+    return root / (app or "unknown") / "config.toml"
 
 
 def _as_text(value: Any) -> str:
@@ -390,7 +470,12 @@ def _as_text(value: Any) -> str:
         return value
     if isinstance(value, (int, float)):
         return _number_text(value)
-    return json.dumps(value)
+    # TOML, not JSON: an inline table is `{a = 1}`, and this text is posted straight back to
+    # :meth:`FormField.parse`, which reads it as the TOML value it will be written as.
+    try:
+        return str(tomlkit.item(value).as_string())
+    except (TypeError, ValueError):  # pragma: no cover — a value pydantic could not express
+        return json.dumps(value)
 
 
 def _number_text(value: float) -> str:
@@ -657,7 +742,7 @@ def settings_form(
         The form. Every field comes from ``document``; nothing in this function names a key of
         any application (ADR-0127 rule 3).
     """
-    path = config_file_path(document, fallback=config_path)
+    path = config_file_path(document, app=app, fallback=config_path)
     text, file_data, parse_error = _read_toml(path)
     live_values = dict(live or {})
     problems = [str(one) for one in (document or {}).get("problems", []) or []]
@@ -730,7 +815,7 @@ def settings_form(
         version=str((document or {}).get("version") or ""),
         config_path=str(path),
         config_exists=path.is_file(),
-        base_mtime=path.stat().st_mtime if path.is_file() else None,
+        base_mtime=path.stat().st_mtime_ns if path.is_file() else None,
         sections=tuple(sections),
         undescribed=undescribed,
         problems=tuple(problems),
@@ -835,3 +920,178 @@ def forms_for(
             config_path=config_path if app == "weightroom" else None,
         )
     return built
+
+
+# --- Saving -------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class KeyOutcome:
+    """What happened to one submitted key (api.md §2's per-key answer).
+
+    Attributes:
+        key: The dotted key.
+        outcome: ``applied`` (live on the running application), ``written`` (in the file, pending
+            restart), ``unchanged`` (the submitted value is what it already was) or ``refused``.
+        message: Why it was refused, in the refusing party's own words.
+        code: The spec §13 code behind a refusal, for a client that branches on it.
+    """
+
+    key: str
+    outcome: str
+    message: str | None = None
+    code: str | None = None
+
+    def as_json(self) -> dict[str, Any]:
+        """The wire shape."""
+        return {
+            "key": self.key,
+            "outcome": self.outcome,
+            "message": self.message,
+            "code": self.code,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class SaveResult:
+    """The answer to one ``PUT /apps/{app}/settings``."""
+
+    outcomes: tuple[KeyOutcome, ...]
+    base_mtime: int | None
+    backup: str | None = None
+    pending_restart: bool = False
+
+    def keys_with(self, outcome: str) -> tuple[str, ...]:
+        """Every key whose outcome was ``outcome``, sorted."""
+        return tuple(sorted(one.key for one in self.outcomes if one.outcome == outcome))
+
+    @property
+    def refused(self) -> tuple[KeyOutcome, ...]:
+        """Every refusal, for the page's error list."""
+        return tuple(one for one in self.outcomes if one.outcome == "refused")
+
+    def as_json(self) -> dict[str, Any]:
+        """The wire shape."""
+        return {
+            "outcomes": {one.key: one.as_json() for one in self.outcomes},
+            "base_mtime": self.base_mtime,
+            "backup": self.backup,
+            "pending_restart": self.pending_restart,
+            "applied": list(self.keys_with("applied")),
+            "written": list(self.keys_with("written")),
+        }
+
+
+def save_settings(
+    settings: Settings,
+    app: str,
+    changes: Mapping[str, Any],
+    *,
+    form: SettingsForm,
+    base_mtime: int | None,
+    to_file: frozenset[str] = frozenset(),
+    apply_runtime: Callable[[Mapping[str, Any]], tuple[bool, str | None]] | None = None,
+    runner: Runner = run_command,
+) -> SaveResult:
+    """Route each submitted key to the file or to the running application, and report each.
+
+    The file is written **first** and as one transaction: it is the only half that can be refused
+    wholesale (a stale base, the application's own validation), so a refusal there must leave
+    nothing applied anywhere. Runtime keys follow, and each carries its own outcome.
+
+    Args:
+        settings: The validated settings.
+        app: The application.
+        changes: Dotted key to new value, already typed (see :meth:`FormField.parse` for the
+            form-post path that turns strings into these).
+        form: The form the operator was looking at, for the fields and their current values.
+        base_mtime: The ``st_mtime_ns`` that form was rendered from.
+        to_file: Runtime keys the operator explicitly chose to write to the file instead —
+            what the page offers when the application is stopped (ADR-0127 rule 4).
+        apply_runtime: How to reach the application's ``PUT /api/v1/settings``; ``None`` when it
+            is not running, which refuses every runtime key by name rather than guessing.
+        runner: The process-launch boundary, injected.
+
+    Returns:
+        One outcome per submitted key.
+
+    Raises:
+        ConfigChangedOnDisk: The file moved since ``base_mtime``; nothing was written.
+        ConfigValidationFailed: The application refused the candidate; nothing was written.
+    """
+    from weightroom.services.config_files import apply_changes, write_config
+
+    outcomes: list[KeyOutcome] = []
+    file_changes: dict[str, Any] = {}
+    runtime_changes: dict[str, Any] = {}
+    for key, value in changes.items():
+        one = form.field_for(key)
+        if one is None:
+            outcomes.append(
+                KeyOutcome(
+                    key,
+                    "refused",
+                    f"{key} is not a setting {app} recognises.",
+                    "SETTING_UNKNOWN",
+                )
+            )
+        elif one.secret and value == REDACTED:
+            outcomes.append(KeyOutcome(key, "unchanged"))
+        elif not one.secret and value == one.value:
+            outcomes.append(KeyOutcome(key, "unchanged"))
+        elif one.runtime and key not in to_file:
+            runtime_changes[key] = value
+        else:
+            file_changes[key] = value
+
+    written: tuple[str, ...] = ()
+    backup: str | None = None
+    new_mtime = base_mtime
+    if file_changes:
+        path = Path(form.config_path)
+        text, _ = _read_toml(path)[:2]
+        try:
+            candidate = apply_changes(text, file_changes)
+        except ValueError as exc:
+            for key in file_changes:
+                outcomes.append(KeyOutcome(key, "refused", str(exc), "CONFIG_VALIDATION_FAILED"))
+        else:
+            landed = write_config(
+                settings,
+                app,
+                path,
+                candidate,
+                base_mtime=base_mtime,
+                keys=tuple(file_changes),
+                runner=runner,
+            )
+            written = landed.keys
+            backup = str(landed.backup) if landed.backup else None
+            new_mtime = landed.base_mtime
+            outcomes.extend(KeyOutcome(key, "written") for key in written)
+
+    if runtime_changes:
+        if apply_runtime is None:
+            for key in runtime_changes:
+                outcomes.append(
+                    KeyOutcome(
+                        key,
+                        "refused",
+                        f"{key} is applied by the running {app}, which is not running. Start it, "
+                        f"or save the key to {form.config_path} instead.",
+                        "APP_STOPPED",
+                    )
+                )
+        else:
+            ok, message = apply_runtime(runtime_changes)
+            outcomes.extend(
+                KeyOutcome(key, "applied") if ok else KeyOutcome(key, "refused", message, None)
+                for key in runtime_changes
+            )
+
+    return SaveResult(
+        outcomes=tuple(outcomes),
+        base_mtime=new_mtime,
+        backup=backup,
+        pending_restart=form.pending_restart or bool(written),
+    )

@@ -51,15 +51,22 @@ def test_the_telemetry_strip_is_on_every_page_with_the_stream_url(tmp_path: Path
     assert 'meterValue("QUEUE")' in page
 
 
-def test_an_applications_side_nav_names_overview_and_the_unbuilt_pages(tmp_path: Path) -> None:
+def test_an_applications_side_nav_names_its_built_pages_and_the_unbuilt_ones(
+    tmp_path: Path,
+) -> None:
     console = _console(tmp_path)
     console.login()
     page = console.client.get("/apps/loadcoach", headers={"Accept": "text/html"}).text
     assert 'aria-label="Sections"' in page  # side_nav's own landmark
     assert "Overview" in page
-    # Settings is scheduled (W4); a page with no row yet says so honestly.
-    assert 'title="coming in phase W4"' in page
+    # Built at W4, so they are links now, not stubs.
+    assert 'href="/apps/loadcoach/settings"' in page
+    assert 'href="/apps/loadcoach/tokens"' in page
+    # Database is scheduled (W7); a page with no row yet says so honestly; and a page that is
+    # deliberately somebody else's says where it lives instead of naming a row (W4).
+    assert 'title="coming in phase W7"' in page
     assert "not yet scheduled" in page
+    assert "ADR-0117" in page
 
 
 def test_the_console_pages_are_named_and_inert_until_their_rows_land(tmp_path: Path) -> None:

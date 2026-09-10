@@ -30,6 +30,14 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "unit.restart",
         "ollama.restart",
         "settings.write",
+        # W4. A validation changes nothing, but it launches the application's own loader over
+        # operator-supplied text, and the outcome is what the operator wants to find later; the
+        # row says `pending`, which is the outcome vocabulary's word for "no state moved".
+        "settings.validate",
+        # W4. An API token is a credential; its creation and its revocation are both trail
+        # entries, and neither row ever carries the secret (`params` is redacted regardless).
+        "token.create",
+        "token.revoke",
         "db.guarded_write",
         "db.curated",
         "catalog.pull",
