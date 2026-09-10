@@ -163,6 +163,7 @@ an ADR is superseded rather than edited.
 | [0126](0126-weightroom-is-the-only-service-on-the-lan-and-terminates-tls-with-its-own-ca.md) | WeightRoomGym is the only service on the LAN, and it terminates TLS with its own CA behind a session login | Accepted |
 | [0127](0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) | Every application publishes its settings schema, and WeightRoomGym generates the settings form from it | Accepted |
 | [0128](0128-mirrorwall-vendors-htmx-and-applications-may-adopt-it.md) | MirrorWall vendors htmx, and an application may adopt it | Accepted |
+| [0129](0129-weightroom-reads-both-version-payload-shapes.md) | WeightRoomGym reads both shapes of `GET /api/v1/version`, and the suite converges on one later | Accepted |
 
 ## Writing a new ADR
 

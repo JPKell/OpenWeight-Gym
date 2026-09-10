@@ -554,7 +554,9 @@ The full suite passes with no application installed, no systemd, no GPU and no n
 
 * Application semver; API `v1`. WeightRoomGym `1.x` names, per application, the range of
   versions it speaks to (`GET /api/v1/version` on first contact, re-checked every five minutes,
-  [ADR-0013](../../adr/0013-api-versioning.md)) and the `alembic_version`s it reads
+  [ADR-0013](../../adr/0013-api-versioning.md); the payload takes either of the two shapes the
+  suite currently emits — [ADR-0129](../../adr/0129-weightroom-reads-both-version-payload-shapes.md))
+  and the `alembic_version`s it reads
   (`known_revisions`). An application outside either range is *degraded by name*, never
   guessed at.
 * The schema document is `schema_version 1.0`; a minor adds fields, a major is a new WeightRoomGym

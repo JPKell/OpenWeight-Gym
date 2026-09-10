@@ -30,7 +30,7 @@ value is `404 APP_UNKNOWN`.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /apps` | The four, with `installed`, `executable`, `unit` (`active`/`inactive`/`failed`/`absent`/`unsupported`), `version`, `base_url`, `db_revision`, `known` |
+| `GET /apps` | The four, with `installed`, `executable`, `unit` (`active`/`activating`/`deactivating`/`inactive`/`failed`/`absent`/`unsupported`), `state` (the pill), `version`, `version_verdict`, `base_url`, `db_revision`, `known`. The version comes from each application's own `GET /api/v1/version`, which answers in either of two shapes ([ADR-0129](../../adr/0129-weightroom-reads-both-version-payload-shapes.md)) |
 | `GET /apps/{app}` · `GET /apps/{app}/health` | One application; its own `/api/v1/health` proxied verbatim with `source: "api"` or `{"state": "stopped"}` |
 | `POST /apps/{app}/start` · `/stop` · `/restart` | `systemctl --user <verb> <app>.service`; `202` with the audit id, then the unit state; `UNIT_UNSUPPORTED` without systemd, `UNIT_ACTION_FAILED` with systemd's message |
 | `GET /apps/{app}/logs?since=&until=&level=&q=` | Journal history, JSON lines, capped at 5 000 rows per page with a cursor |
