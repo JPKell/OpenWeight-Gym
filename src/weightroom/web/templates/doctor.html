@@ -1,0 +1,48 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state %}
+{% block title %}Doctor — WeightRoomGym{% endblock %}
+{% set tones = {"failure": "danger", "warning": "warning", "notice": "neutral", "unknown": "neutral", "ok": "success"} %}
+{% block page_content %}
+<h2>Doctor
+  {{ badge(report.worst, tone=tones.get(report.worst, "neutral")) }}
+</h2>
+<p class="muted">Every rule comes from one of the suite's own documents, shows what it actually
+read, and — where there is a fix — <strong>prints the command rather than running it</strong>.
+This console is never root and never elevates (ADR-0125 rules 4–5).
+<a href="/api/v1/doctor">JSON</a> · <code>wr-gym doctor</code></p>
+
+<ul class="card-grid">
+  {% for severity in ("failure", "warning", "notice", "unknown", "ok") %}
+  {% if report.counts[severity] %}
+  <li class="card card--figure">
+    <span class="card-label">{{ severity }}</span>
+    <span class="card-value">{{ report.counts[severity] }}</span>
+  </li>
+  {% endif %}
+  {% endfor %}
+</ul>
+
+{% if report.findings %}
+<table id="doctor-findings" data-density="dense">
+  <caption>One line per rule, worst first.</caption>
+  <thead><tr>
+    <th scope="col"></th><th scope="col">Rule</th><th scope="col">What it found</th>
+    <th scope="col">Evidence</th><th scope="col">Document</th>
+  </tr></thead>
+  <tbody>
+  {% for finding in report.findings %}
+  <tr>
+    <td>{{ badge(finding.severity, tone=tones.get(finding.severity, "neutral")) }}</td>
+    <th scope="row"><code>{{ finding.rule }}</code></th>
+    <td>{{ finding.summary }}
+      {% if finding.command %}<pre><code>{{ finding.command }}</code></pre>{% endif %}</td>
+    <td class="muted"><code>{{ finding.evidence }}</code></td>
+    <td class="muted">{{ finding.document }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{{ empty_state("No rule could be evaluated on this host.") }}
+{% endif %}
+{% endblock %}

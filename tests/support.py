@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -117,6 +118,68 @@ def build_console(
     app.state.clock = lambda: console.now
     console.client = TestClient(app, base_url="https://localhost", follow_redirects=False)
     return console
+
+
+SCHEMA_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "schemas"
+
+REFUSAL_MARKER = "refuse_me = true"
+"""A line the fake application's `config validate --file` refuses, so a test can watch a real
+refusal come back in the application's own words rather than mocking the refusal path."""
+
+
+def fake_application(
+    tmp_path: Path,
+    app: str,
+    *,
+    config_toml: str = "",
+    document: dict[str, Any] | None = None,
+    schema_exit: int = 0,
+) -> tuple[Path, Path, dict[str, Any]]:
+    """An executable that answers ADR-0127's two verbs, over a real config file in ``tmp_path``.
+
+    A shell script rather than a mock, because the console reaches every application by launching
+    it: the argv, the exit code and the captured output are the contract this row is built on,
+    and a monkeypatched function would test none of them.
+
+    Args:
+        tmp_path: Where the executable, the config file and the document live.
+        app: One of the four; its committed schema document is the starting point.
+        config_toml: The config file's initial text.
+        document: An override for the document; the committed fixture otherwise.
+        schema_exit: What `config schema` exits with — non-zero exercises the degraded page.
+
+    Returns:
+        ``(executable, config_path, document)``.
+    """
+    directory = tmp_path / app
+    directory.mkdir(parents=True, exist_ok=True)
+    config_path = directory / "config.toml"
+    config_path.write_text(config_toml, encoding="utf-8")
+    body = document
+    if body is None:
+        body = json.loads((SCHEMA_FIXTURES / f"{app}.json").read_text(encoding="utf-8"))
+    body["config_path"] = str(config_path)
+    document_file = directory / "schema.json"
+    document_file.write_text(json.dumps(body), encoding="utf-8")
+    executable = directory / app
+    executable.write_text(
+        "#!/bin/sh\n"
+        'if [ "$1" = "config" ] && [ "$2" = "schema" ]; then\n'
+        f"  cat {document_file}\n"
+        f"  exit {schema_exit}\n"
+        "fi\n"
+        'if [ "$1" = "config" ] && [ "$2" = "validate" ]; then\n'
+        f'  if grep -q "{REFUSAL_MARKER}" "$4"; then\n'
+        f'    echo "{app}: refuse_me is not a configuration key" >&2\n'
+        "    exit 3\n"
+        "  fi\n"
+        "  exit 0\n"
+        "fi\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
+    return executable, config_path, body
 
 
 def api_routes(app: Any) -> list[tuple[str, APIRoute]]:  # noqa: ANN401 — a FastAPI app

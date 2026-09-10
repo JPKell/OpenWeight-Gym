@@ -1,0 +1,121 @@
+# FreeWeight configuration.
+# Every key below is optional; a fresh install with no file at all is fully functional.
+# Precedence: defaults -> this file -> FREEWEIGHT_* environment variables -> CLI flags.
+
+[server]
+host = "127.0.0.1"
+port = 8765
+allow_lan_exposure = false
+allowed_hosts = []          # required when host is not loopback
+request_timeout_seconds = 120.0
+
+[storage]
+# database_url and artifact_dir default to locations under the XDG data directory.
+# auto_migrate defaults to true on SQLite and false on PostgreSQL, where a failed migration
+# cannot be rolled back automatically (database standards §5.1, §7). Set it explicitly to
+# override that on either dialect.
+backup_retention = 5        # automatic pre-migration backups to keep
+# There is no time-based retention. A measurement does not expire: a result taken six months ago
+# is as true as one taken today, and the thing that invalidates it is a change of hardware or a
+# model leaving the machine — neither of which a clock can detect. Delete results by model
+# (`freeweight db delete --model …`) when you remove the model, and never on a timer.
+# statement_timeout_ms applies to PostgreSQL only (also used as lock_timeout); unset = server
+# default. SQLite's analogue is its busy_timeout, which the engine always sets.
+
+[benchmarks]
+# The ceiling of native.long_context's depth sweep. The shipped ladder doubles to 32 000; raise it
+# on a machine that can serve more, lower it on one that cannot. The effective ladder is hashed
+# into the suite's dataset_hashes, so two ceilings are two measurements and are never averaged.
+long_context_max_tokens = 32000
+# The ceiling of native.memory_kv's maximum-context-fit ladder (8192 doubling to 131072). The test
+# climbs until the provider refuses; Ollama spills to host RAM instead of refusing, so lower this
+# to what the card serves there. Hashed like long_context_max_tokens (ADR-0121).
+max_fit_context_tokens = 131072
+
+[provider]
+kind = "ollama"
+base_url = "http://127.0.0.1:11434"
+timeout_seconds = 300.0
+# For kind = "llamacpp", instead of base_url:
+# model_directory = "~/ai/models/llm"   # required; no default is guessed
+# state_dir = ""                        # empty = <data_dir>/llamacpp
+# server_path = "llama-server"
+# memory_max_bytes = 25769803776        # 24 GiB: llama-server is killed, not swapped (ADR-0119)
+# memory_high_bytes = 23622320128       # 22 GiB throttle point; requires memory_max_bytes
+
+[providers]
+allow_remote = false
+
+[adapters]
+# LoRA adapters (not the [external] benchmark-harness sense). Empty means off.
+# The directory holds each adapter's artifact and its reviewed manifest.
+directory = ""
+
+[runtime]
+# How a model is loaded and served, as opposed to how a run is executed (ADR-0023). Every setting
+# is optional; unset means "provider defaults", which is itself a legal, hashable profile.
+# A differing runtime profile is a *hard separation* (ADR-0017): results measured at one context do
+# not describe another, and FreeWeight will not merge them.
+# context_size = 8192   # Ollama's num_ctx. Unset = the provider decides and the run records its
+                        # served context as "assumed" rather than "configured". Set it to compare
+                        # one model against itself at two contexts.
+# flash_attention = true       # llamacpp only; refused by name under kind = "ollama" (ADR-0120)
+# kv_cache_precision = "q8_0"  # f16 | q8_0 | q4_0; q8_0/q4_0 require flash_attention = true.
+                               # A different precision is a different measurement subject.
+# fit_to_device = false        # llamacpp only. false = --fit off: no fit is a launch failure,
+                               # never a host-RAM spill under a profile that hides it (ADR-0121)
+# gpu_layers = 32
+# threads = 8
+# batch_size = 512
+# keep_alive = "5m"
+
+[telemetry]
+interval_ms = 1000
+persist_during_runs = true
+calibrate_overhead = true
+
+[goals]
+# root defaults to <config>/goals: hand-editable, git-trackable goal packs (ADR-0031 §6).
+max_pack_bytes = 5242880    # import size cap, enforced before a byte is written
+rule_timeout_ms = 250       # per criterion, per sample
+
+[judge]
+jury_size = 3               # distinct local models; 1 disables the jury and says so in the result
+models = []                 # empty = auto-select from installed models
+repetitions = 3
+randomize_order = true
+blind_candidate_identity = true
+refuse_self_judging = true  # a juror never judges its own output
+allow_remote = false        # requires providers.allow_remote as well
+temperature = 0.0
+
+[calibration]
+target_samples = 12
+min_samples = 8             # below this: CALIBRATION_INSUFFICIENT, not a failed gate
+holdout_fraction = 0.4
+partition_seed = 0
+min_agreement = 0.40        # weighted kappa_w below this emits no evidence at all
+n_holdout_target = 10       # shrinkage denominator for judge_validity_factor (ADR-0032 §2)
+
+[evidence]
+# ADR-0017's confidence policy. Every value is recorded on the evidence it produces; changing one
+# derives a new policy_version, so evidence under the old policy is kept beside the new rather
+# than overwritten.
+n_target = 30                       # samples at which the sample factor reaches 1.0
+quality_half_life_days = 90.0       # freshness half-life for quality evidence
+performance_half_life_days = 30.0   # for performance, memory and energy evidence
+freshness_floor = 0.3               # freshness never decays below this
+stale_below = 0.5                   # badge stale below this freshness (about one half-life)
+name_only_identity_factor = 0.6     # a name-only identity's weights may have changed
+performance_drift_factor = 0.7      # provider minor / driver / CUDA change, performance evidence
+quality_drift_factor = 0.5          # provider change with template implications, quality evidence
+goal_contribution_weight = 1.0      # a goal's weight inside the capability it contributes_to
+# capability_weights_path = "~/.config/freeweight/capability_weights.toml"  # unset = shipped
+
+[auth]
+tokens = []                 # required for a non-loopback bind
+
+[logging]
+level = "INFO"
+format = "auto"              # text | json | auto (text on a TTY, json otherwise)
+include_content = false

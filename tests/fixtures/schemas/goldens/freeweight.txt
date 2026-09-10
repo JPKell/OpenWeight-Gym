@@ -1,0 +1,101 @@
+[adapters]
+  --- adapters.directory: string
+[auth]
+  -SX auth.tokens: array
+[benchmarks]
+  --- benchmarks.long_context_max_tokens: integer 1000 … 2000000
+  --- benchmarks.max_fit_context_tokens: integer 8192 … 2000000
+[calibration]
+  --- calibration.holdout_fraction: number 0 … 1
+  --- calibration.min_agreement: number -1 … 1
+  --- calibration.min_samples: integer ≥ 1
+  --- calibration.n_holdout_target: integer ≥ 1
+  --- calibration.partition_seed: integer
+  --- calibration.target_samples: integer ≥ 1
+[evidence]
+  --- evidence.capability_weights_path: string
+  --- evidence.freshness_floor: number 0 … 1
+  --- evidence.goal_contribution_weight: number ≥ 0
+  --- evidence.n_target: integer ≥ 1
+  --- evidence.name_only_identity_factor: number 0 … 1
+  --- evidence.performance_drift_factor: number 0 … 1
+  --- evidence.performance_half_life_days: number ≥ 0
+  --- evidence.quality_drift_factor: number 0 … 1
+  --- evidence.quality_half_life_days: number ≥ 0
+  --- evidence.stale_below: number 0 … 1
+[execution]
+  L-- execution.cooldown_seconds: number 0 … 600
+  --- execution.gpu_index: integer ≥ 0
+  L-- execution.idle_gpu_threshold_percent: number 0 … 100
+  --- execution.idle_required_samples: integer ≥ 1
+  --- execution.idle_wait_timeout_seconds: number ≥ 0
+  L-- execution.measured_repetitions: integer 1 … 50
+  L-- execution.on_idle_timeout: string {warn,refuse}
+  L-- execution.randomize_case_order: boolean
+  --- execution.run_timeout_seconds: number ≥ 0
+  L-- execution.seed: integer 0 … 2147483647
+  --- execution.store_responses: boolean
+  --- execution.test_timeout_seconds: number ≥ 0
+  L-- execution.warmup_repetitions: integer 0 … 20
+[external]
+  --- external.download_cap_bytes: integer ≥ 0
+  --- external.install_timeout_seconds: integer ≥ 1
+  -S- external.root: string
+[goals]
+  --- goals.max_pack_bytes: integer ≥ 0
+  -S- goals.root: string
+  --- goals.rule_timeout_ms: integer ≥ 0
+[judge]
+  -S- judge.allow_remote: boolean
+  --- judge.blind_candidate_identity: boolean
+  --- judge.jury_size: integer ≥ 1
+  --- judge.models: array
+  --- judge.randomize_order: boolean
+  --- judge.refuse_self_judging: boolean
+  --- judge.repetitions: integer ≥ 1
+  --- judge.temperature: number 0 … 2
+[logging]
+  --- logging.format: string {text,json,auto}
+  -S- logging.include_content: boolean
+  L-- logging.level: string
+[provider]
+  -S- provider.base_url: string
+  --- provider.kind: string
+  --- provider.memory_high_bytes: integer ≥ 1
+  --- provider.memory_max_bytes: integer ≥ 1
+  --- provider.model_directory: string
+  --- provider.server_path: string
+  --- provider.state_dir: string
+  --- provider.timeout_seconds: number ≥ 0
+[providers]
+  -S- providers.allow_remote: boolean
+[runtime]
+  --- runtime.batch_size: integer ≥ 0
+  --- runtime.context_size: integer ≥ 0
+  --- runtime.fit_to_device: boolean
+  --- runtime.flash_attention: boolean
+  --- runtime.gpu_layers: integer ≥ 0
+  --- runtime.keep_alive: string
+  --- runtime.kv_cache_precision: string {f16,q8_0,q4_0}
+  --- runtime.threads: integer ≥ 0
+[sandbox]
+  --- sandbox.cpu_limit: integer 1 … 256
+  --- sandbox.memory_limit_mb: integer ≥ 64
+  -S- sandbox.tier: string {auto,container,bwrap,none}
+  --- sandbox.timeout_seconds: integer ≥ 1
+[server]
+  -S- server.allow_lan_exposure: boolean
+  -S- server.allowed_hosts: array
+  -S- server.host: string
+  -S- server.port: integer 1 … 65535
+  --- server.request_timeout_seconds: number ≥ 0
+[storage]
+  -S- storage.artifact_dir: string
+  --- storage.auto_migrate: boolean
+  L-- storage.backup_retention: integer 0 … 100
+  -S- storage.database_url: string
+  --- storage.statement_timeout_ms: integer ≥ 0
+[telemetry]
+  L-- telemetry.calibrate_overhead: boolean
+  L-- telemetry.interval_ms: integer 100 … 60000
+  L-- telemetry.persist_during_runs: boolean

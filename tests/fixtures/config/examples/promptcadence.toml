@@ -1,0 +1,139 @@
+# PromptCadence configuration.
+# Every key below is optional; a fresh install with no file at all is fully functional and starts
+# with no LoadCoach reachable (health reports it degraded, never a startup failure).
+# Precedence: defaults -> this file -> PROMPTCADENCE_* environment variables -> CLI flags.
+
+[server]
+host = "127.0.0.1"
+port = 8768
+allow_lan_exposure = false
+allowed_hosts = []          # required when host is not loopback (ADR-0026)
+rate_limit_per_minute = 600     # per credential; 0 disables; 429 + Retry-After at the limit
+rate_limit_burst = 100          # requests one credential may make at once before the rate applies
+failed_auth_per_minute = 20     # failed authentications per address before a 429 brake; 0 disables
+max_body_bytes = 1048576        # 413 before buffering
+
+[storage]
+# database_url defaults to a location under the XDG data directory.
+content_retention_hours = 24    # transcript text; records/hashes kept forever
+retain_content = false
+
+[loadcoach]
+base_url = "http://127.0.0.1:8766"
+api_key_env = ""            # or api_key_file (ADR-0026); never both
+timeout_seconds = 600.0
+
+[planning]
+enabled = true               # the bypass switch -- governance is never bypassed
+allow_request_override = true
+reapproval_scope = "on_tier_or_classification_change"   # or "any_deviation"
+max_plan_steps = 20
+corrective_retries = 2       # retries after an invalid draft, then PLAN_DRAFT_FAILED
+
+[approval]
+mode = "auto"                # auto | hybrid | manual
+gate_egress_at = "internal"  # hybrid: a step at/above this classification needs a human
+request_timeout_hours = 24.0
+
+[approval.gate_step_cost]
+currency = "USD"
+nanos = 1000000000           # $1.00/step
+
+[execution]
+max_concurrent_trajectories = 1
+max_concurrent_steps = 1
+max_concurrent_remote_steps = 2
+max_turns_per_step = 8
+step_retries = 1             # repeats of a failed turn under the SAME intent (ADR-0076); 0 = none
+max_steps = 20
+lease_seconds = 60
+
+[budget]
+default_token_ceiling = 2000000
+estimate_min_samples = 20
+partial_pricing = "floor"    # floor | strict (ADR-0069)
+on_exhausted = "approval"    # approval | halt
+on_daily_exhausted = "window"  # window | approval | halt
+window_wait_max_days = 3
+
+[budget.default_money_ceiling]
+currency = "USD"
+nanos = 5000000000            # $5.00
+
+[budget.daily_money_ceiling]
+currency = "USD"
+nanos = 20000000000           # $20.00
+
+# [budget.projects.research]
+# token_ceiling = 100000000   # a project binding neither ceiling is refused
+# [budget.projects.research.money_ceiling]
+# currency = "USD"
+# nanos = 50000000000         # $50.00, lifetime, until raised
+
+[tools]
+# http_fetch is egress-checked through Commissioner on every call; a tool this host cannot honour
+# is withheld, and `promptcadence tools list` shows it with the cause.
+enabled = ["read_file", "list_dir", "write_file", "run_command", "http_fetch"]
+workspace_root = ""          # default: <data>/workspaces; per-trajectory subdirectory
+artifact_root = ""           # default: <data>/artifacts; oversize output, keyed by its digest
+read_roots = []              # extra read-only roots; absolute, and disjoint from workspace_root
+fetch_allowed_hosts = []
+redact_args = []             # these tools' arguments are stored as a hash only
+container_image = "python:3.12-slim"   # run_command's container rung; --pull=never, so it must
+                                       # already be present. `doctor` shows the rung and why.
+max_result_chars = 8192      # what the model sees of a result; the whole output is kept as an
+                             # artifact under its digest, never a truncated body pretending to be
+                             # the whole one
+timeout_seconds = 30.0       # per call; there is no way to express "no timeout"
+
+[compaction]
+threshold = 0.8               # compact when estimate > 0.8 x tier context budget
+policy_chain = ["observation_masking", "summarizing", "drop_oldest"]
+protected_recent_turns = 4
+
+# The two tiers below are the active zero-configuration defaults.
+[tiers.local_fast]
+task_profile = "tools.agent.local_fast"
+remote = false                # local => max classification implicitly confidential
+context_budget_tokens = 16384
+default_step_input_tokens = 4096    # the estimator's configured_default rung (lifecycle §6),
+default_step_output_tokens = 1024   # used until estimate_min_samples observations exist
+
+[tiers.local_large]
+task_profile = "tools.agent.local_large"
+remote = false
+context_budget_tokens = 32768
+default_step_input_tokens = 8192
+default_step_output_tokens = 2048
+
+# Remote tiers are unusable until pricing is supplied (ADR-0047 §3) -- uncomment and fill in
+# pricing_file before adding either to policy.escalation_order.
+# [tiers.remote_cheap]
+# task_profile = "tools.agent.remote_cheap"
+# remote = true
+# max_data_classification = "internal"      # never confidential
+# context_budget_tokens = 128000
+# default_step_input_tokens = 8192
+# default_step_output_tokens = 2048
+# pricing_file = ""            # a JSON file of ModelPricing observations; required for a remote
+#                              # tier. See services/pricing.py for the record shape: rates are
+#                              # decimal *strings*, and an omitted rate is "not stated", which is
+#                              # not "free" -- a call using that class prices as a floor (ADR-0069)
+#
+# [tiers.remote_frontier]
+# task_profile = "tools.agent.remote_frontier"
+# remote = true
+# max_data_classification = "public"
+# context_budget_tokens = 200000
+# default_step_input_tokens = 16384
+# default_step_output_tokens = 4096
+# pricing_file = ""
+
+[policy]
+default_tier = "local_fast"     # bypass mode and unplanned turns start here
+escalation_order = ["local_fast", "local_large"]
+
+[logging]
+level = "INFO"
+format = "auto"               # text | json | auto (text on a TTY, json otherwise)
+include_content = false

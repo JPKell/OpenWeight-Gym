@@ -1,0 +1,179 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state, json_viewer %}
+{% block title %}{{ app }} settings — WeightRoomGym{% endblock %}
+{% block page_content %}
+{% set is_own = app == "weightroom" %}
+<h2>Settings
+  {% if form.pending_restart %}{{ badge("pending restart", tone="warning") }}{% endif %}
+  {% if form.running %}{{ badge("running", tone="success") }}
+  {% elif not is_own %}{{ badge("stopped", tone="neutral") }}{% endif %}
+</h2>
+<p class="muted">Generated from
+  <code>{% if is_own %}wr-gym{% else %}{{ app }}{% endif %} config schema --json</code>
+  {%- if form.version %} ({{ app }} {{ form.version }}){% endif %} — this console hardcodes no
+  key of any application (ADR-0127 rule 3). File: <code>{{ form.config_path }}</code>{% if not
+  form.config_exists %} <em>(does not exist yet; the first write creates it)</em>{% endif %}.
+  <a href="/api/v1/apps/{{ app }}/settings">JSON</a> ·
+  <a href="/api/v1/apps/{{ app }}/settings/schema">schema</a></p>
+
+{% if error %}<p class="notice" role="alert"><strong>Refused.</strong> {{ error }}</p>{% endif %}
+{% if notice %}<p class="notice" role="status">{{ notice }}.
+  {%- if result and result.backup %} Previous file kept as <code>{{ result.backup }}</code>.{% endif %}</p>{% endif %}
+
+{% if result and result.refused %}
+<div class="notice" role="alert">
+  <p><strong>{{ result.refused | length }} key(s) refused</strong> — in the refusing party's own words:</p>
+  <ul>{% for one in result.refused %}
+    <li><code>{{ one.key }}</code>: {{ one.message }}{% if one.code %} <em>({{ one.code }})</em>{% endif %}</li>
+  {% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if form.document_error %}
+<p class="notice"><strong>{{ app }} could not describe its own configuration.</strong>
+  {{ form.document_error }} The form below is unavailable; the raw editor still works, under the
+  same validate-before-write rules (development plan Phase 4).</p>
+{% endif %}
+
+{% if form.problems %}
+<div class="notice">
+  <p><strong>{{ app }} reports problems with its own file:</strong></p>
+  <ul>{% for problem in form.problems %}<li>{{ problem }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if form.pending_restart and not is_own %}
+<form method="post" action="/apps/{{ app }}/restart-for-settings" class="field">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <p class="muted"><code>{{ form.config_path }}</code> changed after {{ app }} started, so what is
+  running is not what the file says. Restart to apply it.</p>
+  <button type="submit">Restart {{ app }}</button>
+</form>
+{% elif form.pending_restart and is_own %}
+<p class="notice">This file changed after WeightRoomGym started. It does not restart itself from
+its own page — run <code>systemctl --user restart weightroom</code> on the host.</p>
+{% endif %}
+
+{% if not form.running and not is_own and form.runtime_keys %}
+<p class="notice">{{ app }} is not running, so its <strong>live</strong> keys have no runtime path.
+Each one below offers <em>save to the file instead</em>, which takes effect at the next start
+(ADR-0127 rule 4).</p>
+{% endif %}
+
+{% if form.sections %}
+<form method="post" action="{% if is_own %}/settings{% else %}/apps/{{ app }}/settings{% endif %}">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <input type="hidden" name="base_mtime" value="{{ form.base_mtime if form.base_mtime is not none else '' }}">
+  <input type="hidden" name="to_file" id="to-file" value="">
+
+  {% for section in form.sections %}
+  <section class="settings-section">
+    <h3 id="section-{{ section.name }}"><code>[{{ section.name }}]</code>
+      {%- if section.description %} <span class="muted">{{ section.description }}</span>{% endif %}</h3>
+    <table class="settings-table" data-density="dense">
+      <caption class="visually-hidden">Every key of [{{ section.name }}]</caption>
+      <thead><tr>
+        <th scope="col">Key</th><th scope="col">Value</th>
+        <th scope="col">Source</th><th scope="col">Applies</th>
+      </tr></thead>
+      <tbody>
+      {% for one in section.fields %}
+      {% set field_id = "f-" ~ one.key | replace(".", "-") %}
+      <tr{% if one.shadowed %} class="shadowed"{% endif %}>
+        <th scope="row">
+          <label for="{{ field_id }}"><code>{{ one.key }}</code></label>
+          {% if one.description %}<span class="field-hint">{{ one.description }}</span>{% endif %}
+          {% if one.bounds_text %}<span class="field-hint">range {{ one.bounds_text }}</span>{% endif %}
+          <span class="field-hint">default <code>{{ one.default_text or "—" }}</code></span>
+        </th>
+        <td>
+          {% if one.choices %}
+          <select id="{{ field_id }}" name="field:{{ one.key }}">
+            {% for choice in one.choices %}
+            <option value="{{ choice }}"{% if choice == one.value_text %} selected{% endif %}>{{ choice }}</option>
+            {% endfor %}
+          </select>
+          {% elif one.kind == "boolean" %}
+          <select id="{{ field_id }}" name="field:{{ one.key }}">
+            <option value="true"{% if one.value is sameas true %} selected{% endif %}>true</option>
+            <option value="false"{% if one.value is not sameas true %} selected{% endif %}>false</option>
+          </select>
+          {% else %}
+          <input id="{{ field_id }}" name="field:{{ one.key }}"
+                 type="{{ "number" if one.kind in ("integer", "number") else "text" }}"
+                 {%- if one.kind == "number" %} step="any"{% endif %}
+                 {%- if one.minimum is not none %} min="{{ one.minimum }}"{% endif %}
+                 {%- if one.maximum is not none %} max="{{ one.maximum }}"{% endif %}
+                 value="{{ one.value_text }}"
+                 {%- if one.secret %} autocomplete="off" spellcheck="false"{% endif %}>
+          {% endif %}
+        </td>
+        <td class="muted"><code>{{ one.source }}</code>
+          {%- if one.shadowed %} {{ badge("shadowed", tone="warning", title="A file edit to this key cannot take effect while the environment pins it.") }}{% endif %}
+          {%- if one.secret %} {{ badge("secret", tone="neutral", title="Never rendered; leave it as ******** to keep it.") }}{% endif %}
+        </td>
+        <td>
+          {% if one.runtime and form.running %}{{ badge("live", tone="success", title="Saved through the application's own PUT /settings; no restart.") }}
+          {% elif one.runtime %}{{ badge("live", tone="neutral", title=app ~ " is stopped; this key has no runtime path.") }}
+            <button type="submit" name="to_file_now" value="{{ one.key }}" data-variant="quiet"
+                    onclick="document.getElementById('to-file').value='{{ one.key }}'">to file</button>
+          {% else %}{{ badge("restart", tone="neutral", title="Written to config.toml; applied when the application restarts.") }}{% endif %}
+          {%- if one.security %} {{ badge("security key", tone="danger", title="Needs the operator's password again (ADR-0127 rule 6).") }}{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endfor %}
+
+  <div class="field">
+    <label for="settings-password">Operator password
+      <span class="field-hint">Required only when a <strong>security key</strong> changed, and
+      only when the last re-authentication is more than
+      {{ auth_window_minutes }} minutes old (ADR-0127 rule 6). Every such change is an audit row
+      that says <em>security key</em>.</span></label>
+    <input id="settings-password" name="password" type="password" autocomplete="current-password">
+  </div>
+  <button type="submit">Save</button>
+</form>
+{% elif not form.document_error %}
+{{ empty_state("This application's schema document describes no editable key.") }}
+{% endif %}
+
+{% if form.undescribed %}
+<h3>Keys the document does not describe</h3>
+<p class="muted">In the file, and not in {{ app }}'s schema — shown as they are, never invented
+(ADR-0127 rule 3). Edit them in the raw editor below.</p>
+<ul>{% for key in form.undescribed %}<li><code>{{ key }}</code></li>{% endfor %}</ul>
+{% endif %}
+
+<h3>The whole file</h3>
+{% if not show_raw %}
+<p class="muted">The raw TOML editor is <a href="/apps/{{ app }}/settings/raw">on its own page</a>.
+It shows <code>{{ form.config_path }}</code> exactly as it is, secrets included — which is what
+makes it useful and why this page does not carry it.</p>
+{% else %}
+<p class="muted">The same rules as the form: validated by
+<code>{{ "wr-gym" if is_own else app }} config validate --file</code> before anything lands, the
+previous file kept as <code>config.toml{{ backup_suffix }}</code>, and refused whole if the file
+changed on disk since this page was read. The whole file is the write, so the password is needed
+whenever the file carries any security key.</p>
+<form method="post" action="/apps/{{ app }}/settings/raw">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <input type="hidden" name="base_mtime" value="{{ form.base_mtime if form.base_mtime is not none else '' }}">
+  <div class="field">
+    <label for="raw-toml"><code>{{ form.config_path }}</code></label>
+    <textarea id="raw-toml" name="text" rows="24" spellcheck="false">{{ form.raw_toml }}</textarea>
+  </div>
+  <div class="field">
+    <label for="raw-password">Operator password</label>
+    <input id="raw-password" name="password" type="password" autocomplete="current-password">
+  </div>
+  <button type="submit">Write the file</button>
+</form>
+<p><a href="/apps/{{ app }}/settings">Back to the form</a></p>
+{% endif %}
+
+{% if result %}{{ json_viewer(result.as_json(), label="What the last save did") }}{% endif %}
+{% endblock %}

@@ -1,0 +1,76 @@
+[budget]
+  --- budget.partial_pricing: string {floor,strict}
+  --- budget.per_output_money_ceiling: object
+  --- budget.per_output_token_ceiling: integer ≥ 1
+  --- budget.per_project_money_ceiling: object
+  --- budget.per_project_token_ceiling: integer ≥ 1
+[execution]
+  --- execution.max_concurrent_stages: integer ≥ 1
+  --- execution.unload_before_model_switch: boolean
+[inference]
+  --- inference.data_classification: string
+  --- inference.fallback_mode: string
+  --- inference.loadcoach.api_key_env: string
+  --- inference.loadcoach.base_url: string
+  --- inference.loadcoach.honour_stage_bindings: boolean
+  --- inference.loadcoach.job_stages: array
+  --- inference.loadcoach.max_data_classification: string
+  --- inference.loadcoach.timeout_seconds: integer ≥ 1
+  L-- inference.mode: string {ollama,loadcoach,openai_compatible}
+  --- inference.ollama.base_url: string
+  --- inference.ollama.timeout_seconds: integer ≥ 1
+  --- inference.openai_compatible.api_key_env: string
+  --- inference.openai_compatible.base_url: string
+  --- inference.openai_compatible.max_data_classification: string
+  --- inference.openai_compatible.model: string
+  --- inference.openai_compatible.timeout_seconds: integer ≥ 1
+  --- inference.pin_backend: boolean
+[logging]
+  --- logging.format: string {text,json}
+  --- logging.include_content: boolean
+  L-- logging.level: string {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+[models]
+  --- models.stage_adapters: object
+  L-- models.stages.audit_deep: string
+  L-- models.stages.audit_fast: string
+  L-- models.stages.critique: string
+  L-- models.stages.draft: string
+  L-- models.stages.fact_check: string
+  L-- models.stages.outline: string
+  L-- models.stages.project_review: string
+  L-- models.stages.repair: string
+  L-- models.stages.requirements: string
+  L-- models.stages.research_synthesis: string
+  L-- models.stages.revise: string
+[pricing]
+  --- pricing.file: string
+[providers]
+  -S- providers.allow_remote: boolean
+[research]
+  --- research.allowed_hosts: array
+  --- research.allowed_tools: array
+  --- research.max_data_classification: string
+  --- research.max_fetch_bytes: integer ≥ 1024
+  --- research.max_file_bytes: integer ≥ 1024
+  --- research.timeout_seconds: number 0 … 600
+[server]
+  -S- server.allow_lan_exposure: boolean
+  -S- server.allowed_hosts: array
+  -S- server.host: string
+  --- server.max_body_bytes: integer ≥ 1024
+  -S- server.port: integer 1 … 65535
+[storage]
+  --- storage.auto_migrate: boolean
+  -S- storage.database_url: string
+  --- storage.project_dir: string
+  --- storage.statement_timeout_ms: integer ≥ 0
+[workflow]
+  --- workflow.allow_audit_gated_requirements: boolean
+  L-- workflow.audit_escalation_threshold: number 0 … 1
+  L-- workflow.context_budget_tokens: integer ≥ 256
+  L-- workflow.diminishing_returns_threshold: number 0 … 1
+  L-- workflow.max_attempts_per_stage: integer 1 … 100
+  L-- workflow.max_revision_rounds: integer 0 … 100
+  --- workflow.project_review_context_budget_tokens: integer ≥ 256
+  L-- workflow.require_clean_validation_to_commit: boolean
+  --- workflow.structured_output_tokens: integer 1024 … 131072

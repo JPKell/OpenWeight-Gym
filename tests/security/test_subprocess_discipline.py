@@ -20,8 +20,9 @@ import pytest
 SOURCE_ROOT = Path(__file__).resolve().parents[2] / "src" / "weightroom"
 SOURCES = sorted(SOURCE_ROOT.rglob("*.py"))
 
-# The two modules that print a command beginning with `sudo` for the operator to run by hand.
-INSTRUCTION_MODULES = {"services/tls.py", "services/ollama.py"}
+# The modules that print a command beginning with `sudo` for the operator to run by hand.
+# `services/doctor.py` joined them at W4: its whole point is printing fixes it must not run.
+INSTRUCTION_MODULES = {"services/tls.py", "services/ollama.py", "services/doctor.py"}
 
 
 def _relative(path: Path) -> str:
