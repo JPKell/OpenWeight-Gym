@@ -198,18 +198,29 @@ SAN (openssl)    DNS:jordan-main, DNS:jordan-main.local, DNS:localhost, IP:10.77
    phone's certificate details (issuer `WeightRoomGym CA jordan-main`, the SHA-256) beside
    `wr-gym tls show` here.
 
-## 6. Open for the operator
+## 6. Decided by the operator (interview, 2026-09-09, after the row closed)
+
+| Question | Decision |
+|---|---|
+| Real bind | **One LAN interface** (`server.host = 10.77.10.84`) |
+| Release `0.1.0` | **Tag + publish after the phone step** — device verified first, then `v0.1.0`, push, PyPI approval |
+| `Sec-Fetch-Site` absent on a JSON write | **Keep strict** (refused; §3 item 4 stands) |
+| Failed logins | **Keep as audit rows** (`login`/`refused`; §3 item 6 stands) |
+| `cryptography >=50,<51` | **Accepted** |
+| Application tokens | **Executables written now, `setup` rerun at W2** — `~/.config/wr-gym/config.toml` created from the example with the four `[apps.<app>] executable` paths (each repo's `.venv/bin/<app>`); W2's wizard step issues the tokens with the units |
+| `172.17.0.1` in the SANs | **Keep** (no filtering of virtual interfaces) |
+| Next | **Publish `mirrorwall 0.3.0` first, then W2** |
+
+## 7. Open for the operator
 
 1. Run the phone step (§5) on a real device and append the result to this handoff; **verified
    on: (none yet)**.
-2. `pip install wr-gym` is not yet possible: `0.1.0` is prepared, not published; tagging and
-   the PyPI approval are the operator's (standing instruction).
-3. Set `[apps.<app>] executable` to each venv's binary before the real `setup` so the tokens
-   are issued (§4 item 2), or wait for W2.
+2. Then tag `v0.1.0`, push, approve the PyPI environment (§6).
+3. Tag, push and publish `mirrorwall 0.3.0` (row WM) before starting W2 (§6).
 4. `MEMORY_SAFETY.md` §2.1 and Ollama's `0.0.0.0` bind are still as the W0 handoff found them;
    nothing in W1 touched the host.
 
-## 7. What runs next
+## 8. What runs next
 
 W2 (Opus 5 · high): process control, unified logs, the audit page's growth. It inherits the
 route registry in `tests/security/test_audit_routes.py` (add a line per `POST /apps/{app}/…`),
