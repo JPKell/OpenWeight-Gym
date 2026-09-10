@@ -213,7 +213,12 @@ Stopped afterwards by its environ-verified pid.
    planned); the LoadCoach manual backup; an IdeaPress settings row `models.stages.draft =
    "ollama/gemma4:12b"` (the default's value; nothing reads it). **Removed:** the override, the
    IdeaPress `config.toml` and directories the demo created, the transient unit (collected), the
-   throwaway console.
+   throwaway console. **After the interview (§6):** the LoadCoach manual backup was removed;
+   `~/.config/ideapress/config.toml` now binds `models.stages.draft = "ollama/qwen3.5:9b-q8_0"`
+   (validated with `ideapress config validate --file`, IdeaPress restarted); the settings row
+   stays — WeightRoomGym's guard refuses IdeaPress's `settings` table by design (ADR-0124: the
+   application's `PUT /settings` is the audited path) and IdeaPress offers no way to clear a row,
+   so row WI1 clears it.
 5. **Found, not fixed** — for W10 or a follow-up row:
    a. `MEMORY_SAFETY.md` §2.3's request no longer fires the cap on Ollama 0.32.13 (§4.4). The
       recipe needs replacing — a capped transient unit proves the kernel and journal half; proving
@@ -234,8 +239,27 @@ Stopped afterwards by its environ-verified pid.
       the pipe), so the run id is not visible while the run is going.
    i. FreeWeight's app-doc mirrors have been stale since WA1 (pre-existing).
 
-## 6. Open for later rows
+## 6. Open for later rows, and the operator's decisions (interviewed 2026-09-10)
 
-* **W10:** the OpenAPI snapshot picks up the jobs, schedules, alerts and prompts routes; §5 item 5's
-  findings; a live proof of ADR-0136 once the console runs as `weightroom.service`; §2.3's recipe.
-* **Whoever next touches IdeaPress:** §5 items 5b–5e.
+* **`MEMORY_SAFETY.md` §2.3 is rewritten to fire a capped transient unit** (`systemd-run --user
+  -p MemoryMax=64M -p MemorySwapMax=0` allocating past it), as §4.4 did: it proves the kernel kill,
+  the journal and the alert path; `ollama.service`'s own cap is trusted from its unit file rather
+  than fired. The document is shared (mirrored into FreeWeight, LoadCoach, IdeaPress and
+  PromptCadence), so the rewrite rides W10's documentation pass.
+* **IdeaPress conforms to the suite's runtime-settings shape** rather than the console learning a
+  per-application one: `PUT /settings` takes the flat object LoadCoach and PromptCadence take,
+  `GET` answers their document, and stored rows are applied with ADR-0100's precedence. With the
+  unit left in `drafting` by a stage that fails before its first attempt (§5 item 5d), and the
+  leftover row (§5 item 4), this is **new row WI1, before W10, Opus 5 · high**.
+* **IdeaPress's draft stage on the reference machine uses `ollama/qwen3.5:9b-q8_0`** (§5 item 5e),
+  written to `~/.config/ideapress/config.toml` — done.
+* **Cleanup:** the IdeaPress settings row and the LoadCoach manual backup to be removed (the backup
+  is; the row waits for WI1, §5 item 4); `smollm2:135m` and the IdeaPress demo project stay.
+* **The console runs as `weightroom.service` at W10** — `wr-gym units sync`, started as the unit
+  (still not enabled at boot, `roadmap/weightroom-work.md` §4) — and ADR-0136's restore is proven
+  live there.
+* **W10 also takes W9's small follow-ups:** a successful `catalog_pull` enqueues `model_refresh`
+  (§5 item 5f); `memory_cap` watches the scopes the console launches for `freeweight_suite_run`
+  (5g); child processes run with `PYTHONUNBUFFERED=1` (5h); FreeWeight's app-doc mirrors re-synced
+  (5i). Beside those, W10's own: the OpenAPI snapshot picks up the jobs, schedules, alerts and
+  prompts routes.
