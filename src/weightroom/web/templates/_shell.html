@@ -58,6 +58,11 @@
   .kit-details { margin: 4px 0; }
   .kit-output, .kit-live { white-space: pre-wrap; overflow-wrap: anywhere; }
   .kit-output { max-height: 32rem; overflow: auto; }
+  /* A fieldset's default `min-width: min-content` let a select whose options carry long scale
+     descriptors push the grading form to 839 px on a 412 px phone, and taps landed on the sample
+     text instead (row WP4's phone demonstration). */
+  fieldset { min-width: 0; }
+  select { max-width: 100%; }
 
   /* Top bar (design brief §4): brand, application tabs, console pages, then the Menu dropdown and
      the operator menu at the right edge. It collapses in two steps as the viewport narrows —

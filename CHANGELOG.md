@@ -50,6 +50,13 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   note that they were not on its API.
 
 ### Fixed
+- A form with a `fieldset` overflowed a phone (row WP4's phone demonstration): a fieldset's
+  default `min-width: min-content` let a select whose options carry scale descriptors widen
+  FreeWeight's grading form to 839 px on a 412 px screen, and taps on *Save and go on* landed on
+  the sample text. Fieldsets shrink and selects stay within their column, console-wide.
+- A figure FreeWeight could not compute, on FreeWeight's agreement report and judges, gave its
+  reason only as a hover tooltip, which a phone cannot show; the reason is now written beside the
+  `—`. A model never measured as a judge says so once in its row rather than in eight cells.
 - The page kit (row WP4, from WP3's screenshots): a refusal rendered in the success-green
   `.notice` box and now renders as an error; a page whose API refused it said *The API did not
   answer this page* and now says the API answered with a refusal; the stopped notice named the

@@ -22,8 +22,9 @@ remote permissions.</p>
 {% set rows = [] %}
 {% for one in judges.get("items") %}
 {% set results = one.get("judge_results") %}
-{% set row = [one.get("model") or "—", badge("eligible", tone="success") if one.get("eligible") else badge("refused", tone="danger"), (one.get("reasons") or []) | join(", ") or "—", run_link(results.get("run_id")) if results else "—"] %}
-{% for key in keys %}{% set _ = row.append(figure((results.get("metrics") or {}).get(key) if results else none, ("its native.judge run reported none" if results else "never measured as a judge"))) %}{% endfor %}
+{% set row = [one.get("model") or "—", badge("eligible", tone="success") if one.get("eligible") else badge("refused", tone="danger"), (one.get("reasons") or []) | join(", ") or "—", run_link(results.get("run_id")) if results else "never measured as a judge"] %}
+{#- A model never measured says so once, in its run column, rather than in each of eight cells. -#}
+{% for key in keys %}{% set _ = row.append(figure((results.get("metrics") or {}).get(key), "its run reported none") if results else "—") %}{% endfor %}
 {% set _ = rows.append(row) %}
 {% endfor %}
 {% set head = [{"label": "Model", "mono": true}, {"label": "Eligible"}, {"label": "Refused because"}, {"label": "native.judge run"}] %}

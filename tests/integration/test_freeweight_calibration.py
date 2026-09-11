@@ -430,10 +430,10 @@ def test_a_figure_freeweight_could_not_compute_is_a_dash_with_its_reason(tmp_pat
     assert "Not measurable yet — and that is a useful answer" in text
     assert "emits no capability evidence" in text
     assert (
-        'title="the grades for this criterion do not vary, so there was nothing to agree about">—'
-        in text
+        "— <small>the grades for this criterion do not vary, so there was nothing to agree about"
+        "</small>" in text
     )
-    assert 'title="a jury of one has no inter-juror agreement">—' in text
+    assert "— <small>a jury of one has no inter-juror agreement</small>" in text
     with respx.mock(assert_all_called=False) as router:
         mock_calibration(
             router, bodies={f"goals/{SLUG}/calibration/report": recorded("report-insufficient")}
@@ -472,8 +472,8 @@ def test_judges_show_their_refusals_their_bias_figures_and_a_jury_dry_run(tmp_pa
     assert json.loads(validate.calls.last.request.content) == {"goal": SLUG, "candidate": None}
     assert "self_judging" in text and ">refused<" in text
     assert "0.875" in text
-    assert 'title="its native.judge run reported none">—' in text
-    assert 'title="never measured as a judge">—' in text
+    assert "— <small>its run reported none</small>" in text
+    assert "never measured as a judge" in text
     assert "jury_reduced" in text
     assert f'<option value="{SLUG}" selected>' in text
 

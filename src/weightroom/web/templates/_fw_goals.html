@@ -31,7 +31,8 @@
 {%- endmacro %}
 
 {% macro figure(number, reason, fmt="%.3f") -%}
-{#- One agreement figure, or `—` with FreeWeight's reason for having none. -#}
+{#- One agreement figure, or `—` with FreeWeight's reason for having none — written out, not a tooltip a
+    phone cannot hover (row WP4's phone demonstration). -#}
 {%- if number is number and number is not sameas true and number is not sameas false -%}{{ fmt | format(number) }}
-{%- else -%}<span class="muted" title="{{ reason }}">—</span>{%- endif -%}
+{%- else -%}<span class="muted">— <small>{{ reason }}</small></span>{%- endif -%}
 {%- endmacro %}
