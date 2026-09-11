@@ -166,4 +166,22 @@ against a live model (test only); a phone (not part of this row).
 
 ## 8. What runs next
 
-WP2 (`history/prompts/wp2-weightroom-loadcoach-pages.prompt.md`) on this kit.
+WP2 (`history/prompts/wp2-weightroom-loadcoach-pages.prompt.md`) on this kit, then WPC1 (§9).
+
+## 9. Operator decisions (2026-09-10, post-handoff interview)
+
+1. **PromptCadence's API gaps (§2 item 1) become a row: WPC1.** It runs after WP2 and before WP3,
+   on Opus 5 · high, never overnight. Two additive changes land in PromptCadence's API: every
+   approval request listed without a trajectory, and egress decisions newest first with a cursor.
+   The console's Approvals history and Egress page then read the API while PromptCadence answers.
+   Kickoff: `history/prompts/wpc1-promptcadence-api-gaps-system-page.prompt.md`.
+2. **The two existing defects (§7 item 2) go to WP2's Gate A.** The figure-card layout is fixed in
+   WeightRoomGym's shell CSS, and MirrorWall `0.3.1` stays as prepared. The Overview's figures are
+   re-read against each application's real `/system/status` body.
+3. **PromptCadence gains a System page (§4).** Spec §7.3's PromptCadence menu is amended to list
+   *System*, and WPC1 builds it at parity with PromptCadence's own page.
+4. **A grant and a denial are proven live in WPC1**, by setting a real approval gate up on
+   purpose, not left to WP6 or to tests alone.
+5. **`weightroom.service` was restarted** at the operator's instruction, right after this
+   interview. It answers `1.0.0` on `https://10.77.10.84:8769`, and
+   `/apps/promptcadence/trajectories` redirects to the login page, so the WP1 routes are live.

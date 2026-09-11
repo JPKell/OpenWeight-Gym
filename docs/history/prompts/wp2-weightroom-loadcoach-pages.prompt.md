@@ -23,6 +23,19 @@ and their routes. Inventory them before Gate A. The handoff's parity table start
 ## Decisions already taken — do not reopen
 
 * Everything in the arc index §2.
+* **Gate A also fixes two existing defects** (operator, 2026-09-10; `history/handoffs/WP1_HANDOFF.md`
+  §7 item 2 and §9). Both are in the kit this row builds on, and both land before any LoadCoach
+  page.
+  * **Figure cards stack.** MirrorWall's `card(…, kind="figure")` renders the label, the figure
+    and the note on one line. Design brief §5 stacks them: the label, then the 22 px mono
+    figure, then the 12 px note. Fix it in WeightRoomGym's own shell CSS, so the prepared,
+    unpublished MirrorWall `0.3.1` does not change. Take screenshots of the Overview and
+    PromptCadence's Ledger in both themes.
+  * **Overview figures read the real status bodies.** `services/overview._STATUS_FIGURES` reads
+    field names the applications' `GET /system/status` do not serve. PromptCadence serves
+    `active_trajectories` and `pending_approvals` as lists, so *Executing* and *Planning* render
+    `—` and *Pending approvals* renders `[]`. Check all four applications against their live
+    bodies. Count a list, and let a missing field stay `—`. Pin each body with a recorded fixture.
 * **Models.** `GET /models` shows declared capabilities, evidence summary, reliability, residency,
   `provider_name` and `is_remote`. `""` and `false` render as *not recorded*, never guessed.
   Detail is by ULID or prefix, never by canonical id (ADR-0024), and shows evidence per capability

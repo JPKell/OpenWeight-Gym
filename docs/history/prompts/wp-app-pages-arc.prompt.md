@@ -96,7 +96,9 @@ scheduled them. This arc closes the gap.
 
 ## 3. Order
 
-**W10 → WP1 → WP2 → WP3 → WP4 → WP5 → WP6.** WP1 is hard-first: it builds the page kit, the
+**W10 → WP1 → WP2 → WPC1 → WP3 → WP4 → WP5 → WP6.** (WPC1 was added by the operator on
+2026-09-10, after WP1: PromptCadence's two API gaps, its System page, and a grant proven live —
+`history/prompts/wpc1-promptcadence-api-gaps-system-page.prompt.md`.) WP1 is hard-first: it builds the page kit, the
 client and the Logs page. WP3 comes before WP4: the goals pages sit on the runs and results
 pages. WP2, WP3 and WP5 are independent of each other in substance. They still run one at a time,
 because each edits `rendering.py`, the audit registry, the OpenAPI snapshot and `api.md`.
