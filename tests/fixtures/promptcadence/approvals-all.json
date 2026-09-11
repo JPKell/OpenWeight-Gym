@@ -1,6 +1,26 @@
 {
   "items": [
     {
+      "request_id": "01M29D4RMN5S5N3G7YBGQV1MAS",
+      "trajectory_id": "01M29D4RKCKVG4D9G3ECD54GEA",
+      "kind": "ceiling_raise",
+      "status": "expired",
+      "reason": "budget_exceeded",
+      "step_ids": [
+        "loop"
+      ],
+      "detail": {
+        "scope": "trajectory",
+        "step_id": "loop"
+      },
+      "created_at": "2026-09-11T23:34:16.469Z",
+      "expires_at": "2026-09-12T23:34:16.469Z",
+      "resolved_at": "2026-09-11T23:34:36.034Z",
+      "approver_token_id": null,
+      "resolution_reason": "the trajectory was cancelled from awaiting_approval, unanswered",
+      "age_seconds": 19.565
+    },
+    {
       "request_id": "01M25664N0H4Z3V0WBDAG672QZ",
       "trajectory_id": "01M256601QYN4AVJCB8ZZSSQ7G",
       "kind": "plan",
