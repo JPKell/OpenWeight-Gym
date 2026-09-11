@@ -628,7 +628,7 @@ def app_logs_page(
     )
 
 
-def _back_to(app: str, next_path: str | None) -> str:
+def back_to(app: str, next_path: str | None) -> str:
     """Where the control form returns to: ``next`` when it is a page of this application's tab.
 
     Anything else — another application, another host, a scheme-relative ``//`` — is the Overview,
@@ -657,7 +657,7 @@ def control_from_page(
     """
     name = require_app(app)
     _control(request, principal, name, verb)
-    return RedirectResponse(_back_to(name, next_path), status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(back_to(name, next_path), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @ui_router.get("/logs", summary="The unified log page", response_class=HTMLResponse)

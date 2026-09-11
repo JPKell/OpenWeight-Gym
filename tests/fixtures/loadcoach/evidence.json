@@ -1,0 +1,26 @@
+{
+ "items": [],
+ "page": {
+  "limit": 50,
+  "next_cursor": null,
+  "has_more": false,
+  "total": 0
+ },
+ "summary": {
+  "status": "not_configured",
+  "note": "No evidence source is configured ([evidence] freeweight_url is empty), so routing ranks on declared capabilities and priors and says so.",
+  "configured": false,
+  "total_records": 0,
+  "bound_records": 0,
+  "unmatched_records": 0,
+  "ambiguous_records": 0,
+  "stale_records": 0,
+  "imported_at": null,
+  "generated_at": null,
+  "oldest_measured_at": null,
+  "newest_measured_at": null,
+  "bundle_schema_version": null,
+  "policy_version": null,
+  "vocabulary_version": null
+ }
+}

@@ -1,0 +1,35 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, kv_list %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_lc.html" import mapping_list, num %}
+{% block title %}Task profile — LoadCoach — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Task profile {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/loadcoach/routing#task-profiles">Every task profile</a> · <a href="/apps/loadcoach/reliability?task={{ profile_id | urlencode }}">Its reliability</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(sourced.error) }}
+{% set profile = sourced.data %}
+{% if profile is not none %}
+<p class="mono">{{ profile.get("profile_id") or profile_id }}</p>
+{{ kv_list([
+  {"label": "Version", "value": profile.get("version") or "—"},
+  {"label": "Description", "value": profile.get("description") or "—"},
+  {"label": "Enabled", "value": "yes" if profile.get("enabled") else "no"},
+  {"label": "Updated", "value": profile.get("updated_at") or "—"},
+]) }}
+<h3>Weights</h3>
+{% set weights = profile.get("weights") or {} %}
+{% set rows = [] %}
+{% for name, weight in weights | dictsort %}{% set _ = rows.append([name, num(weight, "%.2f")]) %}{% endfor %}
+{{ table([{"label": "Capability", "mono": true}, {"label": "Weight", "numeric": true}], rows, density="dense", row_count=rows | length) }}
+<h3>Constraints</h3>
+{{ mapping_list(profile.get("constraints")) }}
+<h3>Execution</h3>
+{{ mapping_list(profile.get("execution")) }}
+<h3>Validation</h3>
+{{ mapping_list(profile.get("validation")) }}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

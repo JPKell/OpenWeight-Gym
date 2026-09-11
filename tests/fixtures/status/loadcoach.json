@@ -1,0 +1,55 @@
+{
+    "depth_by_state": {},
+    "depth_by_class": {},
+    "active": 0,
+    "max_depth": 1000,
+    "oldest_queued_age_seconds": null,
+    "starving": 0,
+    "throughput": {
+        "completed_last_5m": 0
+    },
+    "residency": [],
+    "flags": {
+        "paused": false,
+        "draining": false
+    },
+    "executions": [],
+    "dispatch_latency_ms": {
+        "samples": 0,
+        "median": null,
+        "max": null
+    },
+    "circuit_breakers": [
+        {
+            "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+            "state": "closed",
+            "failure_rate": null,
+            "samples": 0,
+            "opened_at": null,
+            "expires_at": null,
+            "reason": "closed",
+            "probe_in_flight": false,
+            "probe_started_at": null
+        }
+    ],
+    "last_recovery": {
+        "requeued": [],
+        "failed": [],
+        "cancelled": [],
+        "reevaluated": [],
+        "aged": 0,
+        "touched": 0
+    },
+    "checked_at": "2026-09-11T04:26:13.840Z",
+    "telemetry": {
+        "timestamp": "2026-09-11T04:26:13.842Z",
+        "ram_available_bytes": 22055034880,
+        "gpus": [
+            {
+                "index": 0,
+                "vram_total_bytes": 17103323136,
+                "vram_used_bytes": 387973120
+            }
+        ]
+    }
+}

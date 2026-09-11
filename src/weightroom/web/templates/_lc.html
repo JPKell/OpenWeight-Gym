@@ -1,0 +1,190 @@
+{#- LoadCoach's vocabulary as WeightRoom renders it (row WP2) — the helpers its own templates spell
+    inline. Every one builds markup rather than concatenating it, so a cell holding a model's name or
+    a rejection's detail is escaped text. Dictionary fields are read with `.get`: the environment is
+    StrictUndefined, and LoadCoach omitting an optional key is not a page error. -#}
+{% from "mirrorwall/components.html" import badge, table, empty_state, json_viewer, kv_list %}
+
+{% macro short(value) -%}
+{%- if value and value | length > 14 -%}
+<span class="mono kit-id" title="{{ value }}">{{ value[:6] }}…{{ value[-4:] }}</span>
+{%- elif value -%}<span class="mono kit-id">{{ value }}</span>
+{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro model_link(model_ref, canonical_id) -%}
+{%- if model_ref -%}
+<a class="mono" href="/apps/loadcoach/models/{{ model_ref | urlencode }}" title="{{ model_ref }}">{{ canonical_id or model_ref }}</a>
+{%- else -%}<span class="mono">{{ canonical_id or "—" }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro decision_link(decision_id) -%}
+{%- if decision_id -%}
+<a class="mono kit-id" href="/apps/loadcoach/routing/decisions/{{ decision_id | urlencode }}" title="{{ decision_id }}">{{ decision_id[:6] }}…{{ decision_id[-4:] }}</a>
+{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro job_link(job_id) -%}
+{%- if job_id -%}
+<a class="mono kit-id" href="/apps/loadcoach/queue/jobs/{{ job_id | urlencode }}" title="{{ job_id }}">{{ job_id[:6] }}…{{ job_id[-4:] }}</a>
+{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro profile_link(profile_id) -%}
+{%- if profile_id -%}
+<a class="mono" href="/apps/loadcoach/routing/task-profiles/{{ profile_id | urlencode }}">{{ profile_id }}</a>
+{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro recorded(value) -%}
+{#- api.md §2: `""` and `false` read as *not recorded* — a row discovered before registrations had
+    names keeps its honest default, and is never guessed at from the provider kind. -#}
+{%- if value -%}{{ value }}
+{%- else -%}<span class="muted" title="not recorded: never guessed from the provider kind (ADR-0055)">not recorded</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro measure(value, unit="") -%}
+{%- if value is none or value == "unsupported" or value == "" -%}
+<span class="muted" title="not reported; not the same as zero">—</span>
+{%- else -%}{{ value }}{% if unit %} {{ unit }}{% endif %}{%- endif -%}
+{%- endmacro %}
+
+{% macro num(value, fmt="%.4f") -%}
+{%- if value is number -%}{{ fmt | format(value) }}{%- else -%}<span class="muted">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro stat(entry, fmt="%.0f%%", scale=100) -%}
+{#- One bounded statistic (ADR-0016 rule 5): its value, or a dash carrying the reason it is absent. -#}
+{%- if entry is mapping and entry.get("value") is number -%}
+<span title="{{ entry.get('samples') }} sample(s)">{{ fmt | format(entry.get("value") * scale) }}</span>
+{%- else -%}
+<span class="muted" title="{{ (entry.get('reason') if entry is mapping else none) or 'not reported' }}">—</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro breaker_badge(state, reason=none) -%}
+{%- if state == "open" -%}{{ badge("open", tone="danger", title=reason) }}
+{%- elif state == "half_open" -%}{{ badge("half-open", tone="warning", title=reason) }}
+{%- elif state == "closed" -%}{{ badge("closed", tone="success", title=reason) }}
+{%- else -%}<span class="muted" title="the live breaker is LoadCoach's own state">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro adapter_name(adapter) -%}
+{%- if adapter is mapping -%}{{ adapter.get("name") or "—" }}
+{%- elif adapter -%}{{ adapter }}
+{%- else -%}<span class="muted">none</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro model_actions(model, next_path) -%}
+{#- ADR-0118's switch and the warm job, as LoadCoach's own Models page offers them. Imported `with
+    context`: both forms carry the CSRF token. -#}
+<div class="kit-actions">
+  <form method="post" action="/apps/loadcoach/models/{{ model.get('model_ref') | urlencode }}/enabled">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="enabled" value="{{ 'false' if model.get('enabled') else 'true' }}">
+    <input type="hidden" name="canonical_id" value="{{ model.get('canonical_id') or '' }}">
+    <input type="hidden" name="next" value="{{ next_path }}">
+    <button type="submit">{{ "Disable" if model.get("enabled") else "Enable" }}</button>
+  </form>
+  <form method="post" action="/apps/loadcoach/models/{{ model.get('model_ref') | urlencode }}/warm">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="canonical_id" value="{{ model.get('canonical_id') or '' }}">
+    <button type="submit"{% if not model.get("enabled") or not model.get("available") %} disabled title="only an enabled, available model can be warmed"{% endif %}>Warm</button>
+  </form>
+</div>
+{%- endmacro %}
+
+{% macro rejections(rejected, caption="Rejected, each by its code") -%}
+{%- if rejected -%}
+{% set rows = [] %}
+{% for one in rejected %}
+{% set detail = one.get("detail") %}
+{% set _ = rows.append([
+  model_link(one.get("model_id"), one.get("subject_canonical_id") or one.get("canonical_id")),
+  adapter_name(one.get("adapter")),
+  badge(one.get("reason") or "—", tone="danger"),
+  json_viewer(detail, label="Numbers") if detail else "—"
+]) %}
+{% endfor %}
+{{ table([{"label": "Model"}, {"label": "Adapter"}, {"label": "Reason", "mono": true}, {"label": "Detail"}], rows, caption=caption, density="dense", row_count=rows | length) }}
+{%- else -%}{{ empty_state("No candidate was rejected.") }}{%- endif -%}
+{%- endmacro %}
+
+{% macro explanation(e) -%}
+{#- One routing explanation (routing §8): the decision, the selection, every candidate's numbers and
+    every rejection — the document `POST /route`, a stored decision and a job all carry. -#}
+{% set profile = e.get("task_profile") or {} %}
+{% set strategy = e.get("strategy") or {} %}
+{% set evidence = e.get("evidence_summary") or {} %}
+{{ kv_list([
+  {"label": "Decision", "value": e.get("decision_id") or "—"},
+  {"label": "Task profile", "value": ((profile.get("id") or "—") ~ " " ~ (profile.get("version") or "")) if profile is mapping else profile},
+  {"label": "Strategy", "value": ((strategy.get("name") or "—") ~ " " ~ (strategy.get("version") or "")) if strategy is mapping else strategy},
+  {"label": "Requested at", "value": e.get("requested_at") or "—"},
+  {"label": "Took", "value": (e.get("duration_ms") ~ " ms") if e.get("duration_ms") is not none else "—"},
+  {"label": "Flags", "value": (e.get("flags") or []) | join(", ") or "none"},
+  {"label": "Evidence", "value": (evidence.get("source") if evidence is mapping else evidence) or "—"},
+]) }}
+{% set selected = e.get("selected") %}
+<h4>Selected</h4>
+{% if selected %}
+{{ kv_list([
+  {"label": "Model", "value": selected.get("subject_canonical_id") or selected.get("canonical_id") or "—"},
+  {"label": "Registration", "value": selected.get("provider_name") or "not recorded"},
+  {"label": "Adapter", "value": (selected.get("adapter").get("name") if selected.get("adapter") is mapping else selected.get("adapter")) or "none"},
+  {"label": "Runtime profile", "value": selected.get("runtime_profile_hash") or "—"},
+  {"label": "Served context", "value": (selected.get("served_context") ~ " tokens (" ~ (selected.get("served_context_source") or "—") ~ ")") if selected.get("served_context") else "—"},
+  {"label": "Target GPU", "value": selected.get("target_gpu_index") if selected.get("target_gpu_index") is not none else "—"},
+  {"label": "Final score", "value": ("%.4f" | format(selected.get("final_score"))) if selected.get("final_score") is number else "—"},
+]) }}
+{% else %}
+{{ empty_state("No candidate was eligible.") }}
+{% endif %}
+<h4>Candidates</h4>
+{% set candidates = e.get("candidates") or [] %}
+{% if candidates %}
+{% set rows = [] %}
+{% for one in candidates %}
+{% set factors = one.get("factors") or {} %}
+{% set _ = rows.append([
+  one.get("rank") if one.get("rank") is not none else "—",
+  model_link(one.get("model_id"), one.get("subject_canonical_id") or one.get("canonical_id")),
+  adapter_name(one.get("adapter")),
+  num(one.get("task_fit")),
+  num(factors.get("reliability"), "%.3f"), num(factors.get("availability"), "%.3f"),
+  num(factors.get("residency"), "%.3f"), num(factors.get("cost"), "%.3f"),
+  num(one.get("final_score")),
+  (one.get("estimated_vram_bytes") | bytes_human) if one.get("estimated_vram_bytes") is number else "—",
+  one.get("target_gpu_index") if one.get("target_gpu_index") is not none else "—"
+]) %}
+{% endfor %}
+{{ table([{"label": "Rank", "numeric": true}, {"label": "Model"}, {"label": "Adapter"}, {"label": "Task fit", "numeric": true}, {"label": "Reliability", "numeric": true}, {"label": "Availability", "numeric": true}, {"label": "Residency", "numeric": true}, {"label": "Cost", "numeric": true}, {"label": "Final", "numeric": true}, {"label": "Est. VRAM", "numeric": true}, {"label": "GPU", "numeric": true}], rows, caption="task fit × reliability × availability × residency × cost = final", density="dense", row_count=rows | length) }}
+{% for one in candidates %}
+{% set capabilities = one.get("capabilities") or [] %}
+{% if capabilities %}
+<details class="kit-details"><summary><span class="mono">{{ one.get("subject_canonical_id") or one.get("canonical_id") }}</span> — what carried its task fit</summary>
+{% set rows = [] %}
+{% for capability in capabilities %}
+{% set _ = rows.append([capability.get("capability"), num(capability.get("weight"), "%.2f"), num(capability.get("score"), "%.3f"), num(capability.get("confidence"), "%.3f"), capability.get("source") or "—", ((capability.get("note") or "") ~ (" " ~ capability.get("remedy") if capability.get("remedy") else "")) or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Capability", "mono": true}, {"label": "Weight", "numeric": true}, {"label": "Score", "numeric": true}, {"label": "Confidence", "numeric": true}, {"label": "Source"}, {"label": "Note"}], rows, density="dense", row_count=rows | length) }}
+</details>
+{% endif %}
+{% endfor %}
+{% else %}
+{{ empty_state("No candidate survived the hard constraints.") }}
+{% endif %}
+<h4>Rejected</h4>
+{{ rejections(e.get("rejected") or []) }}
+{{ json_viewer(e, label="The complete explanation, as LoadCoach stored it") }}
+{%- endmacro %}
+
+{% macro mapping_list(values) -%}
+{%- if values is mapping and values -%}
+{% set items = [] %}
+{% for key, value in values | dictsort %}
+{% set _ = items.append({"label": key, "value": (value if value is string else (value | tojson))}) %}
+{% endfor %}
+{{ kv_list(items) }}
+{%- elif values -%}{{ json_viewer(values, label="As stored") }}
+{%- else -%}<p class="muted">None.</p>{%- endif -%}
+{%- endmacro %}

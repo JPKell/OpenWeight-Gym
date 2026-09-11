@@ -1,0 +1,71 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_lc.html" import model_link, recorded, measure, breaker_badge, model_actions with context %}
+{% block title %}Models — LoadCoach — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Models {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions">
+    <a href="/apps/loadcoach/reliability">Reliability</a> · <a href="/apps/loadcoach/providers">Providers</a> · <a href="/catalog">Catalog</a>
+    <form method="post" action="/apps/loadcoach/models/discover" class="kit-inline">
+      <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+      <button type="submit" data-variant="primary"{% if not sourced.live %} disabled title="LoadCoach is not answering"{% endif %}>Scan for models</button>
+    </form>
+  </div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{% if scanned %}
+<p class="notice" role="status">Scanned: {{ scanned.get("added") }} added, {{ scanned.get("updated") }} updated,
+{{ scanned.get("unavailable") }} unavailable, {{ scanned.get("total") }} in the registry.
+{% if scanned.get("unreachable") %}Not reached: {{ scanned.get("unreachable") | join(", ") }}.{% endif %}</p>
+{% endif %}
+<p class="muted">Every model discovery has seen, available or not. Scanning asks every registration what
+it serves now. Disabling keeps a model with its evidence and history and routes around it by name
+(<span class="mono">model_disabled</span>, ADR-0118); warming runs one small pinned job, the path any
+job takes, and opens that job.</p>
+
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% if sourced.data %}
+{% set rows = [] %}
+{% for model in sourced.data %}
+{% set evidence = model.get("evidence_summary") %}
+{% set reliability = model.get("reliability") %}
+{% set residency = model.get("residency") %}
+{% set _ = rows.append([
+  model_link(model.get("model_ref"), model.get("canonical_id")) ~ " · " ~ recorded(model.get("provider_name")),
+  badge("remote", tone="warning") if model.get("is_remote") else recorded(false),
+  model.get("family") or "—",
+  measure(model.get("max_context")),
+  (model.get("size_bytes") | bytes_human) if model.get("size_bytes") is number else measure(none),
+  (model.get("declared_capabilities") or {}).keys() | join(", ") or "none declared",
+  measure(none) if evidence is none else ((evidence.get("bound") ~ " bound · " ~ evidence.get("capabilities") ~ " capabilities" ~ (" · " ~ evidence.get("stale") ~ " stale" if evidence.get("stale") else "") ~ (" · " ~ evidence.get("unmatched") ~ " unmatched" if evidence.get("unmatched") else "")) if evidence.get("bound") or evidence.get("unmatched") else "none imported"),
+  measure(none) if reliability is none else ((("factor %.3f" | format(reliability.get("lowest_factor"))) if reliability.get("lowest_factor") is number else "neutral") ~ " · " ~ reliability.get("attempts_7d") ~ " attempts 7d" ~ (" · " ~ badge("regression", tone="danger") if reliability.get("regressions") else "") ~ (" · " ~ breaker_badge(reliability.get("circuit_state")) if reliability.get("circuit_state") != "closed" else "") if reliability.get("pairs") else "no production evidence"),
+  measure(none) if residency is none else ((badge("resident", tone="success") ~ " GPU " ~ (residency.get("gpu_indexes") or []) | join(", ")) if residency.get("resident") else "no"),
+  badge("available", tone="success") if model.get("available") else badge("unavailable", tone="danger", title=model.get("unavailable_reason")),
+  (badge("enabled", tone="success") if model.get("enabled") else badge("disabled", tone="danger")) ~ (model_actions(model, current_path) if sourced.live and model.get("model_ref") else "")
+]) %}
+{% for adapter in model.get("adapters") or [] %}
+{% set _ = rows.append([
+  "↳ " ~ (adapter.get("subject_canonical_id") or adapter.get("name") or "—"),
+  "adapter",
+  "local only",
+  "—", "—",
+  (adapter.get("declared_capabilities") or []) | join(", ") or "none declared",
+  (adapter.get("evidence_source") or "—") ~ " · " ~ (adapter.get("base_confidence") or "—") ~ " base",
+  "per subject",
+  "with its base",
+  badge("available", tone="success") if adapter.get("available") else badge("unavailable", tone="danger", title=adapter.get("unavailable_reason")),
+  badge(adapter.get("data_classification") or "—", tone="neutral")
+]) %}
+{% endfor %}
+{% endfor %}
+{{ table([{"label": "Model · registration"}, {"label": "Egress"}, {"label": "Family"}, {"label": "Context", "numeric": true}, {"label": "Size", "numeric": true}, {"label": "Declared"}, {"label": "Evidence"}, {"label": "Reliability"}, {"label": "Resident"}, {"label": "Availability"}, {"label": "Use"}], rows, caption="Every model discovery has seen, each adapter subject under the base it runs on", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No model has been discovered yet. Scan for models once a registration answers.", "Providers", "/apps/loadcoach/providers") }}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

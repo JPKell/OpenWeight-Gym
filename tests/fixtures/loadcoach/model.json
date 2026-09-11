@@ -1,0 +1,598 @@
+{
+ "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+ "model_ref": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+ "provider_kind": "ollama",
+ "provider_name": "ollama",
+ "is_remote": false,
+ "provider_model_name": "deepseek-coder-v2:latest",
+ "identity_confidence": "digest",
+ "family": "deepseek2",
+ "quantization": "Q4_0",
+ "max_context": 163840,
+ "size_bytes": 8905126121,
+ "parameter_count": 15706484224,
+ "available": true,
+ "unavailable_reason": null,
+ "enabled": true,
+ "declared_capabilities": {},
+ "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+ "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+ "evidence_summary": {
+  "bound": 0,
+  "capabilities": 0,
+  "stale": 0,
+  "unmatched": 0
+ },
+ "reliability": {
+  "pairs": 2,
+  "attempts_7d": 4,
+  "lowest_factor": null,
+  "regressions": 0,
+  "circuit_state": "closed"
+ },
+ "residency": {
+  "resident": false,
+  "gpu_indexes": []
+ },
+ "adapters": [],
+ "descriptor": {
+  "layers": 27,
+  "kv_heads": 16,
+  "head_dim": 192,
+  "attention_heads": 16,
+  "embedding_dim": 2048,
+  "vocab_size": 102400
+ },
+ "evidence": [],
+ "reliability_by_task_profile": [
+  {
+   "model": {
+    "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "subject_canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "model_ref": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+    "adapter": null
+   },
+   "task_profile_id": "tools.agent.local_fast",
+   "windows": {
+    "30d": {
+     "window": "30d",
+     "attempts": 3,
+     "counted": 3,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 2,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "7d": {
+     "window": "7d",
+     "attempts": 3,
+     "counted": 3,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 2,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 3,
+     "counted": 3,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 2,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 1.0,
+    "neutral": true,
+    "window": null,
+    "attempts": 3,
+    "minimum_samples": 20,
+    "success_rate": null,
+    "validation_pass_rate": null,
+    "error_rate": null,
+    "timeout_rate": null,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d; counted attempts: 7d=3, 30d=3"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 0.3333333333333333,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 3,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 3 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T03:34:29.604Z"
+  },
+  {
+   "model": {
+    "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "subject_canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "model_ref": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+    "adapter": null
+   },
+   "task_profile_id": "tools.plan",
+   "windows": {
+    "30d": {
+     "window": "30d",
+     "attempts": 1,
+     "counted": 1,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "7d": {
+     "window": "7d",
+     "attempts": 1,
+     "counted": 1,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 1,
+     "counted": 1,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 1.0,
+    "neutral": true,
+    "window": null,
+    "attempts": 1,
+    "minimum_samples": 20,
+    "success_rate": null,
+    "validation_pass_rate": null,
+    "error_rate": null,
+    "timeout_rate": null,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d; counted attempts: 7d=1, 30d=1"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 1.0,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 1,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 1 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T03:34:29.604Z"
+  }
+ ],
+ "circuit_breaker": {
+  "state": "closed"
+ }
+}

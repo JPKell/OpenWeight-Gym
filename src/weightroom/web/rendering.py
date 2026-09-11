@@ -122,10 +122,7 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
 """Spec §7.3's menu, per application; :data:`_PAGE_HREF` says which of them this build serves."""
 
 _PAGE_PHASE: dict[tuple[str, str], str] = {
-    **{
-        ("loadcoach", label): "WP2"
-        for label in ("Models", "Routing", "Queue", "Evidence", "Adapters", "Reliability")
-    },
+    **{("loadcoach", label): "WP2" for label in ("Queue", "Evidence", "Adapters")},
     **{
         ("freeweight", label): "WP3"
         for label in ("Models", "Runs", "Results", "Evidence", "Adapters")
@@ -147,7 +144,7 @@ A provider registration is a keyed table with its own admin form inside the appl
 (ADR-0117), reachable from the application itself; the console's settings page edits every other
 key of the same file and says so rather than growing a fifth copy of that form (W4)."""
 
-_PAGE_HREF: dict[str, str] = {
+_PAGE_HREF: dict[str | tuple[str, str], str] = {
     "Overview": "/apps/{app}",
     "Settings": "/apps/{app}/settings",
     "Tokens": "/apps/{app}/tokens",
@@ -161,8 +158,21 @@ _PAGE_HREF: dict[str, str] = {
     "Tools": "/apps/{app}/tools",
     "Ledger": "/apps/{app}/ledger",
     "Egress": "/apps/{app}/egress",
+    # LoadCoach's own pages (row WP2), keyed by application: FreeWeight's Models, Evidence and
+    # Adapters are other pages, built by another row.
+    ("loadcoach", "Models"): "/apps/loadcoach/models",
+    ("loadcoach", "Routing"): "/apps/loadcoach/routing",
+    ("loadcoach", "Reliability"): "/apps/loadcoach/reliability",
 }
-"""Where a built page lives; anything absent is still a stub."""
+"""Where a built page lives — by label for a page every application shares, by ``(app, label)`` for
+one only that application has; anything absent is still a stub."""
+
+
+def _page_href(app_name: str, label: str) -> str | None:
+    """The built page's path, or ``None`` for a stub."""
+    href = _PAGE_HREF.get((app_name, label)) or _PAGE_HREF.get(label)
+    return None if href is None else href.format(app=app_name)
+
 
 _ADMIN_PAGES: frozenset[str] = frozenset(
     {"Settings", "Provider", "Providers", "Tokens", "Prompts", "Logs", "Database"}
@@ -179,7 +189,7 @@ def _built_pages(app_name: str) -> tuple[str, ...]:
     return tuple(
         label
         for label in _APP_PAGES.get(app_name, ())
-        if label in _PAGE_HREF and not (label == "Tokens" and app_name in _NO_TOKENS)
+        if _page_href(app_name, label) and not (label == "Tokens" and app_name in _NO_TOKENS)
     )
 
 
@@ -208,7 +218,7 @@ def app_side_nav(app_name: str, *, selected: str = "Overview") -> tuple[dict[str
     links = [
         {
             "label": label,
-            "href": _PAGE_HREF[label].format(app=app_name),
+            "href": _page_href(app_name, label),
             "selected": label == selected,
         }
         for label in _built_pages(app_name)

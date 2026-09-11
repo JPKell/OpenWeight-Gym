@@ -1,0 +1,678 @@
+{
+ "models": [
+  {
+   "canonical_id": "ollama/sorc/qwen3.5-heretic:9b@sha256:0b34f914eac4",
+   "model_ref": "01M1FAMBDQZ0E73126TKYVFH82",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "sorc/qwen3.5-heretic:9b",
+   "identity_confidence": "digest",
+   "family": "qwen35",
+   "quantization": "Q8_0",
+   "max_context": 262144,
+   "size_bytes": 10441350192,
+   "parameter_count": 9409813744,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/fredrezones55/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive:IQ2_M@sha256:423c4a0ed6fb",
+   "model_ref": "01M1FAMBDS7RVRK3VYFG10HCG3",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "fredrezones55/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive:IQ2_M",
+   "identity_confidence": "digest",
+   "family": "qwen35moe",
+   "quantization": "IQ2_M",
+   "max_context": 262144,
+   "size_bytes": 12559519194,
+   "parameter_count": 35107181936,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/gemma4:12b-it-q8_0@sha256:41c402fdddc2",
+   "model_ref": "01M1FAMBDVMBZH4FE3W5S30AT8",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "gemma4:12b-it-q8_0",
+   "identity_confidence": "digest",
+   "family": "gemma4",
+   "quantization": "Q8_0",
+   "max_context": 262144,
+   "size_bytes": 12844772074,
+   "parameter_count": 11907350576,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+   "model_ref": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "deepseek-coder-v2:latest",
+   "identity_confidence": "digest",
+   "family": "deepseek2",
+   "quantization": "Q4_0",
+   "max_context": 163840,
+   "size_bytes": 8905126121,
+   "parameter_count": 15706484224,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {},
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 2,
+    "attempts_7d": 4,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/SetneufPT/Qwen3.5-9B-Coder_Q4_256k_ABL_16GB-GPU:latest@sha256:8d7f60bdc09d",
+   "model_ref": "01M1FAMBDYQFB7CM6T3RP1C5RR",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "SetneufPT/Qwen3.5-9B-Coder_Q4_256k_ABL_16GB-GPU:latest",
+   "identity_confidence": "digest",
+   "family": "qwen35",
+   "quantization": "Q4_K_M",
+   "max_context": 262144,
+   "size_bytes": 6594475097,
+   "parameter_count": 9653104368,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/ornith:9b@sha256:a75697c14589",
+   "model_ref": "01M1FAMBDZ2Q4C52P92QPCGKVG",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "ornith:9b",
+   "identity_confidence": "digest",
+   "family": "qwen35",
+   "quantization": "Q4_K_M",
+   "max_context": 262144,
+   "size_bytes": 5629110568,
+   "parameter_count": 8953803264,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "model_ref": "01M1FAMBE164PDVB95AXXGXJXS",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "gpt-oss:20b",
+   "identity_confidence": "digest",
+   "family": "gptoss",
+   "quantization": "MXFP4",
+   "max_context": 131072,
+   "size_bytes": 13793441244,
+   "parameter_count": 20914757184,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 6,
+    "attempts_7d": 155,
+    "lowest_factor": 0.9375,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/qwen3.5:9b-q8_0@sha256:441ec31e4d2a",
+   "model_ref": "01M1FAMBE2BWZM5C6VHFYMH498",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "qwen3.5:9b-q8_0",
+   "identity_confidence": "digest",
+   "family": "qwen35",
+   "quantization": "Q8_0",
+   "max_context": 262144,
+   "size_bytes": 10699928277,
+   "parameter_count": 9653104368,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/hk:latest@sha256:3bbf71189af5",
+   "model_ref": "01M1RAR0AND5C327K4TY52EQCQ",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "hk:latest",
+   "identity_confidence": "digest",
+   "family": "gemma4",
+   "quantization": "Q8_0",
+   "max_context": 131072,
+   "size_bytes": 8031253574,
+   "parameter_count": 7518069290,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-05T08:25:15.815377+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/HammerAI/gemma-4-e4b-heretic:e4b-q8_0@sha256:42ae73d6e12a",
+   "model_ref": "01M1RAR0APQH6Q13AKCCVCB5FM",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "HammerAI/gemma-4-e4b-heretic:e4b-q8_0",
+   "identity_confidence": "digest",
+   "family": "gemma4",
+   "quantization": "Q8_0",
+   "max_context": 131072,
+   "size_bytes": 8031236478,
+   "parameter_count": 7518069290,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-05T08:25:15.815377+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/smollm2:135m@sha256:9077fe9d2ae1",
+   "model_ref": "01M26MN1KJGVN5K84P1707773K",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "smollm2:135m",
+   "identity_confidence": "digest",
+   "family": "llama",
+   "quantization": "F16",
+   "max_context": 8192,
+   "size_bytes": 270898672,
+   "parameter_count": 134515008,
+   "available": true,
+   "unavailable_reason": null,
+   "enabled": true,
+   "declared_capabilities": {},
+   "first_seen_at": "2026-09-10T21:47:46.637628+00:00",
+   "last_seen_at": "2026-09-11T02:38:01.596146+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/gemma3:latest@sha256:a2af6cc3eb7f",
+   "model_ref": "01M1FAMBDWCG3WM9KWXDCSW3FE",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "gemma3:latest",
+   "identity_confidence": "digest",
+   "family": "gemma3",
+   "quantization": "Q4_K_M",
+   "max_context": 131072,
+   "size_bytes": 3338801804,
+   "parameter_count": 4299915632,
+   "available": false,
+   "unavailable_reason": "not reported by the provider's most recent discovery",
+   "enabled": true,
+   "declared_capabilities": {},
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-06T22:35:14.700612+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/gemma4:12b@sha256:4eb23ef187e2",
+   "model_ref": "01M1FAMBDX3SMZN4R8PYTJYSE2",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "gemma4:12b",
+   "identity_confidence": "digest",
+   "family": "gemma4",
+   "quantization": "Q4_K_M",
+   "max_context": 262144,
+   "size_bytes": 7556508396,
+   "parameter_count": 11907350576,
+   "available": false,
+   "unavailable_reason": "not reported by the provider's most recent discovery",
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-06T22:35:14.700612+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/sorc/qwen3.5-instruct-heretic:latest@sha256:a3d9f8974d97",
+   "model_ref": "01M1FAMBE2BWZM5C6VHFYMH49A",
+   "provider_kind": "ollama",
+   "provider_name": "ollama",
+   "is_remote": false,
+   "provider_model_name": "sorc/qwen3.5-instruct-heretic:latest",
+   "identity_confidence": "digest",
+   "family": "qwen35",
+   "quantization": "Q8_0",
+   "max_context": 262144,
+   "size_bytes": 10441352691,
+   "parameter_count": 9409813744,
+   "available": false,
+   "unavailable_reason": "not reported by the provider's most recent discovery",
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-06T22:35:14.700612+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/igorls/gemma-4-12B-it-heretic-GGUF:Q4_K_M@sha256:39e061f35bcc",
+   "model_ref": "01M1FAMBDS7RVRK3VYFG10HCG1",
+   "provider_kind": "ollama",
+   "provider_name": "",
+   "is_remote": false,
+   "provider_model_name": "igorls/gemma-4-12B-it-heretic-GGUF:Q4_K_M",
+   "identity_confidence": "digest",
+   "family": "gemma4",
+   "quantization": "Q4_K_M",
+   "max_context": 131072,
+   "size_bytes": 7381382171,
+   "parameter_count": 11907350576,
+   "available": false,
+   "unavailable_reason": "not reported by the provider's most recent discovery",
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/hk:latest@sha256:45e016d27b68",
+   "model_ref": "01M1FAMBDT3AEH5V624M2JD7JM",
+   "provider_kind": "ollama",
+   "provider_name": "",
+   "is_remote": false,
+   "provider_model_name": "hk:latest",
+   "identity_confidence": "digest",
+   "family": "qwen35",
+   "quantization": "Q8_0",
+   "max_context": 262144,
+   "size_bytes": 10441369786,
+   "parameter_count": 9409813744,
+   "available": false,
+   "unavailable_reason": "not reported by the provider's most recent discovery",
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  },
+  {
+   "canonical_id": "ollama/qwen3:8b@sha256:500a1f067a9f",
+   "model_ref": "01M1FAMBE00F115FSW1JSTMSTY",
+   "provider_kind": "ollama",
+   "provider_name": "",
+   "is_remote": false,
+   "provider_model_name": "qwen3:8b",
+   "identity_confidence": "digest",
+   "family": "qwen3",
+   "quantization": "Q4_K_M",
+   "max_context": 40960,
+   "size_bytes": 5225388164,
+   "parameter_count": 8190735360,
+   "available": false,
+   "unavailable_reason": "not reported by the provider's most recent discovery",
+   "enabled": true,
+   "declared_capabilities": {
+    "tool_use": 1.0
+   },
+   "first_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "last_seen_at": "2026-09-01T20:30:06.227549+00:00",
+   "evidence_summary": {
+    "bound": 0,
+    "capabilities": 0,
+    "stale": 0,
+    "unmatched": 0
+   },
+   "reliability": {
+    "pairs": 0,
+    "attempts_7d": 0,
+    "lowest_factor": null,
+    "regressions": 0,
+    "circuit_state": "closed"
+   },
+   "residency": {
+    "resident": false,
+    "gpu_indexes": []
+   },
+   "adapters": []
+  }
+ ]
+}

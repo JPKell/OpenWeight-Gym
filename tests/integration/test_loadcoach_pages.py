@@ -1,0 +1,443 @@
+"""Row WP2 Gate A: LoadCoach's Models, Routing and Reliability pages, and what they act on.
+
+The recordings under ``tests/fixtures/loadcoach`` are the reference machine's own LoadCoach 1.5.0
+answering on 2026-09-10; the stopped half reads a copy of the committed ``loadcoach-0015`` fixture
+database with rows added per test.
+"""
+
+from __future__ import annotations
+
+import json
+import sqlite3
+from pathlib import Path
+from typing import Any
+
+import httpx
+import respx
+
+from tests.support import (
+    JSON_HEADERS,
+    LOADCOACH_URL,
+    Console,
+    build_console,
+    fake_application,
+    fill_rows,
+    fixture_database,
+    mock_loadcoach,
+)
+from weightroom.services.apps import AppState
+from weightroom.services.processes import FakeSystemdController
+
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "loadcoach"
+HTML = {"Accept": "text/html"}
+BASE = "/apps/loadcoach"
+API = f"{LOADCOACH_URL}/api/v1"
+MODEL = "01M1FAMBDX3SMZN4R8PYTJYSE1"
+CANONICAL = "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b"
+STOPPED_MODEL = "01STOPPEDMODEL00000000000A"
+STOPPED_DECISION = "01STOPPEDDECISION00000000A"
+
+
+def fixture(name: str) -> Any:  # noqa: ANN401 — a recorded JSON document
+    return json.loads((FIXTURES / f"{name}.json").read_text(encoding="utf-8"))
+
+
+def loadcoach_console(
+    tmp_path: Path, *, state: AppState, revision: str | None = None
+) -> tuple[Console, Path]:
+    """A console with LoadCoach installed in ``state``, its database a copy of the fixture."""
+    database = fixture_database(tmp_path, "loadcoach-0015")
+    if revision is not None:
+        connection = sqlite3.connect(database)
+        connection.execute("UPDATE alembic_version SET version_num = ?", (revision,))
+        connection.commit()
+        connection.close()
+    executable, _config, _document = fake_application(
+        tmp_path, "loadcoach", database_url=f"sqlite:///{database}"
+    )
+    console = build_console(
+        tmp_path / "console",
+        extra_toml=f'[apps.loadcoach]\nexecutable = "{executable}"\nbase_url = "{LOADCOACH_URL}"\n',
+        systemd=FakeSystemdController(states={"loadcoach.service": state}),
+    )
+    console.login()
+    return console, database
+
+
+def mock_api(
+    router: Any,  # noqa: ANN401 — a respx router
+    *,
+    version: str = "1.5.0",
+    bodies: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """LoadCoach's recorded reads, by path under ``/api/v1``; ``bodies`` replaces or adds some."""
+    mock_loadcoach(router, version=version)
+    decision = fixture("decision")
+    recorded: dict[str, Any] = {
+        "models": fixture("models"),
+        f"models/{MODEL}": fixture("model"),
+        "routing-decisions": fixture("routing-decisions"),
+        f"routing-decisions/{decision['decision_id']}": decision,
+        "task-profiles": fixture("task-profiles"),
+        "task-profiles/general.chat": fixture("task-profile"),
+        "reliability": fixture("reliability"),
+    }
+    recorded.update(bodies or {})
+    return {
+        path: router.get(f"{API}/{path}").mock(return_value=httpx.Response(200, json=body))
+        for path, body in recorded.items()
+    }
+
+
+def page(console: Console, path: str) -> str:
+    response = console.client.get(path, headers=HTML)
+    assert response.status_code == 200, response.text
+    return str(response.text)
+
+
+def post(console: Console, path: str, data: dict[str, Any]) -> httpx.Response:
+    token = console.csrf_token()
+    response: httpx.Response = console.client.post(
+        path, data={**data, "csrf_token": token}, headers=HTML, follow_redirects=False
+    )
+    return response
+
+
+def audit(console: Console, action: str) -> list[dict[str, Any]]:
+    listing = console.client.get("/api/v1/audit", params={"limit": "200"}, headers=JSON_HEADERS)
+    return [row for row in listing.json()["items"] if row["action"] == action]
+
+
+def _refusal(code: str, message: str, details: dict[str, Any], status: int) -> httpx.Response:
+    return httpx.Response(
+        status, json={"error": {"code": code, "message": message, "details": details}}
+    )
+
+
+# --- Reading--------------------------------------------------------------------------------------
+
+
+def test_the_models_page_reads_the_registry_and_offers_its_switches(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    models = fixture("models")
+    unnamed = next(one for one in models["models"] if one["model_ref"] != MODEL)
+    unnamed["provider_name"] = ""
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router, bodies={"models": models})
+        text = page(console, f"{BASE}/models")
+    assert CANONICAL in text
+    assert f'href="{BASE}/models/{MODEL}"' in text
+    assert "not recorded" in text  # "" and false are never guessed at (api.md §2)
+    assert f'action="{BASE}/models/discover"' in text
+    assert f'action="{BASE}/models/{MODEL}/warm"' in text
+    assert f'action="{BASE}/models/{MODEL}/enabled"' in text
+    assert '<a href="/apps/loadcoach/models" aria-current="page">Models</a>' in text
+    assert "From the API" in text
+
+
+def test_one_model_shows_its_identity_reliability_and_breaker(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        text = page(console, f"{BASE}/models/{MODEL}")
+    assert CANONICAL in text
+    assert "deepseek2" in text
+    assert "tools.agent.local_fast" in text
+    assert "closed" in text
+
+
+def test_routing_lists_decisions_and_profiles_and_a_decision_names_every_rejection(
+    tmp_path: Path,
+) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    decision = fixture("decision")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        routing = page(console, f"{BASE}/routing")
+        one = page(console, f"{BASE}/routing/decisions/{decision['decision_id']}")
+        profile = page(console, f"{BASE}/routing/task-profiles/general.chat")
+    assert f'href="{BASE}/routing/decisions/{decision["decision_id"]}"' in routing
+    assert f'href="{BASE}/routing/task-profiles/general.chat"' in routing
+    assert f'action="{BASE}/routing"' in routing
+    assert "insufficient_vram" in one
+    assert decision["selected"]["canonical_id"] in one
+    assert "instruction_following" in profile
+
+
+def test_reliability_shows_each_value_with_its_samples_or_why_it_is_absent(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        routes = mock_api(router)
+        text = page(console, f"{BASE}/reliability?task=tools.agent.local_fast")
+    assert "3 sample(s); 5 needed" in text
+    assert "not evaluated" in text
+    assert routes["reliability"].calls.last.request.url.params["task"] == "tools.agent.local_fast"
+
+
+def test_stopped_pages_read_the_database_with_a_start_beside_them(tmp_path: Path) -> None:
+    console, database = loadcoach_console(tmp_path, state="inactive")
+    recorded = "ollama/recorded-before-the-stop:latest@sha256:0123456789ab"
+    fill_rows(
+        database,
+        "models",
+        [
+            {
+                "id": STOPPED_MODEL,
+                "canonical_id": recorded,
+                "provider_kind": "ollama",
+                "identity_confidence": "digest",
+                "provider_name": "",
+                "is_remote": 0,
+                "available": 1,
+                "enabled": 0,
+                "declared_capabilities_json": json.dumps({"tool_use": 1.0}),
+            }
+        ],
+    )
+    fill_rows(
+        database,
+        "capability_evidence",
+        [
+            {
+                "id": "01EVIDENCE",
+                "model_id": STOPPED_MODEL,
+                "capability_id": "reasoning_recorded",
+                "match_state": "bound",
+            }
+        ],
+    )
+    explanation = {**fixture("decision"), "decision_id": STOPPED_DECISION}
+    fill_rows(
+        database,
+        "routing_decisions",
+        [
+            {
+                "id": STOPPED_DECISION,
+                "task_profile_id": "general.chat",
+                "task_profile_version": "1.0.0",
+                "requested_at": "2026-09-10T00:00:00Z",
+                "explanation_json": json.dumps(explanation),
+                "flags_json": json.dumps(["low_evidence"]),
+            }
+        ],
+    )
+    fill_rows(
+        database,
+        "task_profiles",
+        [
+            {
+                "id": "01PROFILE",
+                "profile_id": "recorded.profile",
+                "version": "1.0.0",
+                "description": "a profile recorded before the stop",
+                "weights_json": json.dumps({"reasoning": 1.0}),
+                "enabled": 1,
+                "updated_at": "2026-09-10T00:00:00Z",
+            }
+        ],
+    )
+    fill_rows(
+        database,
+        "reliability_stats",
+        [
+            {
+                "id": "01STATS",
+                "model_id": STOPPED_MODEL,
+                "task_profile_id": "general.chat",
+                "window": "7d",
+                "attempts": 7,
+                "successes": 6,
+                "circuit_state": "closed",
+            }
+        ],
+    )
+    models = page(console, f"{BASE}/models")
+    assert recorded in models
+    assert "From the database at revision 0015" in models
+    assert 'name="next" value="/apps/loadcoach/models"' in models  # the Start form
+    assert "/warm" not in models  # API-only actions are off
+    assert "reasoning_recorded" in page(console, f"{BASE}/models/{STOPPED_MODEL}")
+    routing = page(console, f"{BASE}/routing")
+    assert STOPPED_DECISION in routing
+    assert "a profile recorded before the stop" in routing
+    assert f'action="{BASE}/routing"' not in routing
+    assert "insufficient_vram" in page(console, f"{BASE}/routing/decisions/{STOPPED_DECISION}")
+    assert "a profile recorded before the stop" in page(
+        console, f"{BASE}/routing/task-profiles/recorded.profile"
+    )
+    reliability = page(console, f"{BASE}/reliability")
+    assert recorded in reliability
+    assert "read only from its running API" in reliability
+
+
+def test_an_unknown_revision_degrades_each_database_page_by_name(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="inactive", revision="9999")
+    for path in ("models", "routing", "reliability"):
+        text = page(console, f"{BASE}/{path}")
+        assert "SCHEMA_UNKNOWN" in text, path
+        assert "9999" in text, path
+
+
+def test_a_version_outside_the_range_reads_neither_source(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        routes = mock_api(router, version="9.0.0")
+        text = page(console, f"{BASE}/models")
+    assert "APP_VERSION_MISMATCH" in text
+    assert not routes["models"].called
+
+
+# --- Acting---------------------------------------------------------------------------------------
+
+
+def test_scan_posts_discover_and_shows_the_passes_counts(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    counts = {"added": 2, "updated": 15, "unavailable": 1, "total": 17, "unreachable": []}
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        discover = router.post(f"{API}/models/discover").mock(
+            return_value=httpx.Response(200, json=counts)
+        )
+        response = post(console, f"{BASE}/models/discover", {})
+    assert response.status_code == 200
+    assert discover.called
+    assert "Scanned: 2 added, 15 updated" in response.text
+    (row,) = audit(console, "loadcoach.discover")
+    assert row["outcome"] == "ok"
+    assert row["params"]["added"] == 2
+
+
+def test_disable_goes_through_the_catalog_call_and_returns_to_the_page(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        enabled = router.post(f"{API}/models/{MODEL}/enabled").mock(
+            return_value=httpx.Response(200, json={})
+        )
+        response = post(
+            console,
+            f"{BASE}/models/{MODEL}/enabled",
+            {"enabled": "false", "canonical_id": CANONICAL, "next": f"{BASE}/models/{MODEL}"},
+        )
+    assert response.status_code == 303
+    assert response.headers["location"] == f"{BASE}/models/{MODEL}"
+    assert json.loads(enabled.calls.last.request.content) == {"enabled": False}
+    (row,) = audit(console, "catalog.enabled")
+    assert row["target"] == CANONICAL
+    assert row["params"]["enabled"] is False
+
+
+def test_a_reference_that_is_not_a_ulid_is_refused_before_anything_is_sent(
+    tmp_path: Path,
+) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        response = post(console, f"{BASE}/models/not-a-ulid/warm", {})
+    assert response.status_code == 200
+    assert "VALIDATION_ERROR" in response.text
+    (row,) = audit(console, "loadcoach.warm")
+    assert row["outcome"] == "refused"
+
+
+def test_warm_opens_the_job_it_enqueued(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        router.post(f"{API}/models/{MODEL}/warm").mock(
+            return_value=httpx.Response(200, json={"job_id": "01WARMJOB", "model_ref": MODEL})
+        )
+        response = post(console, f"{BASE}/models/{MODEL}/warm", {"canonical_id": CANONICAL})
+    assert response.status_code == 303
+    assert response.headers["location"] == f"{BASE}/queue/jobs/01WARMJOB"
+    (row,) = audit(console, "loadcoach.warm")
+    assert row["params"]["job_id"] == "01WARMJOB"
+
+
+def test_explain_sends_the_forms_overrides_and_renders_every_candidate(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        route = router.post(f"{API}/route").mock(
+            return_value=httpx.Response(200, json=fixture("decision"))
+        )
+        response = post(
+            console,
+            f"{BASE}/routing",
+            {
+                "task": "general.chat",
+                "max_output_tokens": "256",
+                "model": "",
+                "adapter": "",
+                "context_size": "8192",
+                "flash_attention": "true",
+                "ignore_residency": "on",
+            },
+        )
+    assert response.status_code == 200
+    assert json.loads(route.calls.last.request.content) == {
+        "task": "general.chat",
+        "max_output_tokens": 256,
+        "overrides": {
+            "runtime_profile": {"context_size": 8192, "flash_attention": True},
+            "ignore_residency": True,
+        },
+    }
+    assert "insufficient_vram" in response.text
+    (row,) = audit(console, "loadcoach.route")
+    assert row["outcome"] == "ok"
+
+
+def test_an_adapter_pin_refused_renders_loadcoachs_code_and_keeps_the_form(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        route = router.post(f"{API}/route").mock(
+            return_value=_refusal(
+                "ADAPTER_NOT_FOUND",
+                "no adapter named 'no-such-adapter' is registered on any provider",
+                {"adapter": "no-such-adapter", "known_adapters": []},
+                404,
+            )
+        )
+        response = post(
+            console, f"{BASE}/routing", {"task": "general.chat", "adapter": "no-such-adapter"}
+        )
+    assert json.loads(route.calls.last.request.content)["overrides"] == {
+        "adapter": "no-such-adapter"
+    }
+    assert "ADAPTER_NOT_FOUND" in response.text
+    assert 'value="no-such-adapter"' in response.text
+    assert "Adapters LoadCoach holds: none." in response.text
+    (row,) = audit(console, "loadcoach.route")
+    assert row["outcome"] == "refused"
+
+
+def test_no_eligible_model_lists_every_rejection_the_refusal_carries(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    decision = fixture("decision")
+    details = {
+        "decision_id": decision["decision_id"],
+        "task_profile_id": "general.chat",
+        "candidates": decision["rejected"],
+    }
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        router.post(f"{API}/route").mock(
+            return_value=_refusal("NO_ELIGIBLE_MODEL", "No model satisfied it.", details, 422)
+        )
+        response = post(console, f"{BASE}/routing", {"task": "general.chat"})
+    assert "NO_ELIGIBLE_MODEL" in response.text
+    assert "insufficient_vram" in response.text
+    assert f'href="{BASE}/routing/decisions/{decision["decision_id"]}"' in response.text
+
+
+def test_a_field_that_cannot_parse_is_refused_and_nothing_is_sent(tmp_path: Path) -> None:
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        route = router.post(f"{API}/route").mock(return_value=httpx.Response(200, json={}))
+        response = post(console, f"{BASE}/routing", {"task": "general.chat", "gpu_layers": "all"})
+    assert "VALIDATION_ERROR" in response.text
+    assert "gpu_layers must be a whole number" in response.text
+    assert not route.called

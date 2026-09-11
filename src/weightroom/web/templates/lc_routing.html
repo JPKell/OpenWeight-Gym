@@ -1,0 +1,120 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_lc.html" import decision_link, job_link, profile_link, num, explanation, rejections %}
+{% block title %}Routing — LoadCoach — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Routing {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/loadcoach/models">Models</a> · <a href="/apps/loadcoach/reliability">Reliability</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Why a model was chosen. Explaining a route runs routing's whole pipeline against the task
+profile and returns every candidate with its numbers and every rejection by its code, without
+executing anything; LoadCoach keeps the decision, so it joins the history below.</p>
+
+{% if decisions.live %}
+<details class="card kit-form"{% if explained or explain_error %} open{% endif %}>
+  <summary><strong>Explain a route</strong> <span class="muted">— <code>POST /route</code>, nothing executed</span></summary>
+  <form method="post" action="/apps/loadcoach/routing">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <div class="field"><label for="lc-task">Task profile</label>
+      {% if profiles.data %}
+      <select id="lc-task" name="task" required>
+        {% for one in profiles.data %}<option value="{{ one.get('profile_id') }}"{{ ' selected' if form.get('task') == one.get('profile_id') else '' }}>{{ one.get("profile_id") }}</option>{% endfor %}
+      </select>
+      {% else %}
+      <input id="lc-task" name="task" value="{{ form.get('task', '') }}" required placeholder="general.chat">
+      {% endif %}</div>
+    <div class="field"><label for="lc-input-tokens">Estimated input tokens</label>
+      <input id="lc-input-tokens" name="estimated_input_tokens" inputmode="numeric" value="{{ form.get('estimated_input_tokens', '') }}"></div>
+    <div class="field"><label for="lc-output-tokens">Max output tokens</label>
+      <input id="lc-output-tokens" name="max_output_tokens" inputmode="numeric" value="{{ form.get('max_output_tokens', '') }}"></div>
+    <div class="field"><label for="lc-requires">Required capabilities</label>
+      <input id="lc-requires" name="requires_capabilities" value="{{ form.get('requires_capabilities', '') }}" placeholder="structured_output, tool_use"></div>
+    <div class="field"><label for="lc-model">Pin a model</label>
+      <select id="lc-model" name="model">
+        <option value="">Routing's choice</option>
+        {% for one in models %}<option value="{{ one.get('canonical_id') }}"{{ ' selected' if form.get('model') == one.get('canonical_id') else '' }}>{{ one.get("canonical_id") }}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label for="lc-adapter">Pin an adapter</label>
+      <input id="lc-adapter" name="adapter" value="{{ form.get('adapter', '') }}" placeholder="a manifest name">
+      <span class="field-hint">A pin is an assertion: one that cannot be honoured is refused by name (ADR-0064).</span></div>
+    {% for name, kind in runtime_fields %}
+    <div class="field"><label for="lc-rp-{{ name }}">Runtime profile · {{ name }}</label>
+      {% if kind == "bool" %}
+      <select id="lc-rp-{{ name }}" name="{{ name }}">
+        <option value="">The profile's own</option>
+        <option value="true"{{ ' selected' if form.get(name) == 'true' else '' }}>on</option>
+        <option value="false"{{ ' selected' if form.get(name) == 'false' else '' }}>off</option>
+      </select>
+      {% else %}
+      <input id="lc-rp-{{ name }}" name="{{ name }}" value="{{ form.get(name, '') }}"{% if kind == "int" %} inputmode="numeric"{% endif %}>
+      {% endif %}</div>
+    {% endfor %}
+    <fieldset class="field kit-wide"><legend>Overrides</legend>
+      <label class="kit-check"><input type="checkbox" name="disallow_fallback" value="on"{{ ' checked' if form.get('disallow_fallback') else '' }}> refuse a fallback</label>
+      <label class="kit-check"><input type="checkbox" name="require_evidence" value="on"{{ ' checked' if form.get('require_evidence') else '' }}> require measured evidence</label>
+      <label class="kit-check"><input type="checkbox" name="ignore_residency" value="on"{{ ' checked' if form.get('ignore_residency') else '' }}> ignore residency</label>
+    </fieldset>
+    <div class="kit-wide"><button type="submit" data-variant="primary">Explain</button></div>
+  </form>
+</details>
+{% endif %}
+
+{{ refusal(explain_error) }}
+{% set refused = explain_error.details.get("app_details") if explain_error else none %}
+{% if refused %}
+{% if refused.get("candidates") %}
+<h3>Every candidate, and what rejected it</h3>
+{{ rejections(refused.get("candidates"), caption="NO_ELIGIBLE_MODEL: nothing survived the hard constraints") }}
+{% endif %}
+{% if refused.get("decision_id") %}<p>LoadCoach kept this as decision {{ decision_link(refused.get("decision_id")) }}.</p>{% endif %}
+{% if refused.get("known_adapters") is not none %}<p>Adapters LoadCoach holds: {{ (refused.get("known_adapters") or []) | join(", ") or "none" }}.</p>{% endif %}
+{{ json_viewer(refused, label="What LoadCoach sent with the refusal") }}
+{% endif %}
+{% if explained %}
+<h3>Explanation</h3>
+{{ explanation(explained) }}
+{% endif %}
+
+<h3>Decision history</h3>
+{{ refusal(decisions.error) }}
+{% if decisions.data is not none %}
+{% if decisions.data %}
+{% set rows = [] %}
+{% for one in decisions.data %}
+{% set profile = one.get("task_profile") or {} %}
+{% set _ = rows.append([
+  decision_link(one.get("decision_id")),
+  (profile.get("id") or "—") ~ " " ~ (profile.get("version") or ""),
+  one.get("selected") or "—",
+  num(one.get("final_score")),
+  (one.get("flags") or []) | join(" ") or "none",
+  (one.get("duration_ms") ~ " ms") if one.get("duration_ms") is not none else "—",
+  one.get("requested_at") or "—",
+  job_link(one.get("job_id"))
+]) %}
+{% endfor %}
+{{ table([{"label": "Decision"}, {"label": "Task profile"}, {"label": "Selected", "mono": true}, {"label": "Score", "numeric": true}, {"label": "Flags"}, {"label": "Took", "numeric": true}, {"label": "Requested", "mono": true}, {"label": "Job"}], rows, caption="Every decision is persisted, not sampled; newest first", density="dense", complete=false, row_count=rows | length) }}
+{% else %}
+{{ empty_state("No routing decision has been made yet.") }}
+{% endif %}
+{% endif %}
+{{ page_source(decisions) }}
+
+<h3 id="task-profiles">Task profiles</h3>
+{{ refusal(profiles.error) }}
+{% if profiles.data is not none %}
+{% if profiles.data %}
+{% set rows = [] %}
+{% for one in profiles.data %}
+{% set _ = rows.append([profile_link(one.get("profile_id")), one.get("version") or "—", one.get("description") or "—", (one.get("weights") or {}).keys() | join(", ") or "—", badge("enabled", tone="success") if one.get("enabled") else badge("disabled", tone="neutral")]) %}
+{% endfor %}
+{{ table([{"label": "Profile"}, {"label": "Version", "mono": true}, {"label": "Description"}, {"label": "Weighted capabilities"}, {"label": "Enabled"}], rows, caption="Routing intent, not prompts", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No task profile is loaded.") }}
+{% endif %}
+{% endif %}
+{{ page_source(profiles) }}
+{% endblock %}

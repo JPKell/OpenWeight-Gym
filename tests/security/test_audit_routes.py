@@ -796,6 +796,57 @@ EXERCISES.update(
 )
 
 
+def _lc_form(
+    path: str, data: dict[str, str], *, reply: tuple[str, str, int, Any] | None = None
+) -> Exercise:
+    """A form post from LoadCoach's tab (row WP2), LoadCoach answering ``reply`` to the action and
+    an empty document to every read the page it renders makes."""
+
+    def exercise(console: Console) -> Any:  # noqa: ANN401
+        import httpx
+        import respx
+
+        from tests.support import LOADCOACH_URL, mock_loadcoach
+
+        with respx.mock(assert_all_called=False) as router:
+            mock_loadcoach(router)
+            if reply is not None:
+                method, action, status_code, body = reply
+                router.request(method, f"{LOADCOACH_URL}/api/v1/{action}").mock(
+                    return_value=httpx.Response(status_code, json=body)
+                )
+            router.get(url__regex=rf"{LOADCOACH_URL}/api/v1/.*").mock(
+                return_value=httpx.Response(200, json={})
+            )
+            return console.post_form(path, data)
+
+    return exercise
+
+
+_LC_MODEL = "01M1FAMBDX3SMZN4R8PYTJYSE1"
+
+EXERCISES.update(
+    {
+        ("POST", "/apps/loadcoach/models/discover"): _lc_form(
+            "/apps/loadcoach/models/discover", {}, reply=("POST", "models/discover", 200, {})
+        ),
+        ("POST", "/apps/loadcoach/models/{model_ref}/enabled"): _lc_form(
+            f"/apps/loadcoach/models/{_LC_MODEL}/enabled",
+            {"enabled": "false"},
+            reply=("POST", f"models/{_LC_MODEL}/enabled", 200, {}),
+        ),
+        ("POST", "/apps/loadcoach/models/{model_ref}/warm"): _lc_form(
+            f"/apps/loadcoach/models/{_LC_MODEL}/warm",
+            {},
+            reply=("POST", f"models/{_LC_MODEL}/warm", 200, {"job_id": "01WARMJOB"}),
+        ),
+        ("POST", "/apps/loadcoach/routing"): _lc_form(
+            "/apps/loadcoach/routing", {"task": "general.chat"}, reply=("POST", "route", 200, {})
+        ),
+    }
+)
+
+
 def _state_changing_routes(console: Console) -> set[tuple[str, str]]:
     found: set[tuple[str, str]] = set()
     for path, route in api_routes(console.client.app):

@@ -73,31 +73,35 @@ _FIGURE_TABLES: Final[dict[str, tuple[str, ...]]] = {
 }
 """The tables each application's stopped-state figures fall back to counting (data model §4)."""
 
-_STATUS_FIGURES: Final[dict[str, tuple[tuple[str, tuple[str, ...]], ...]]] = {
-    # label -> a dotted path into GET /system/status's own body (api.md §1, each application's own).
+_STATUS_FIGURES: Final[dict[str, tuple[tuple[str, tuple[str, ...], str], ...]]] = {
+    # label -> a dotted path into GET /system/status's own body, and how to show what it holds:
+    # `value` as it is, `bytes` humanised, `count` a list's length, `count:<state>` the list's
+    # entries whose `state` is that word. Pinned against each application's recorded body
+    # (tests/fixtures/status, row WP2).
     "freeweight": (
-        ("Active run", ("active_run",)),
-        ("Queue depth", ("queue_depth",)),
-        ("Disk headroom", ("disk_headroom_bytes",)),
+        ("Active run", ("active_run",), "value"),
+        ("Queue depth", ("queue_depth",), "value"),
+        ("Disk headroom", ("disk_headroom_bytes",), "bytes"),
     ),
     "loadcoach": (
-        ("Active", ("active",)),
-        ("Oldest queued", ("oldest_queued_age_seconds",)),
-        ("Starving", ("starving",)),
+        ("Active", ("active",), "value"),
+        ("Oldest queued", ("oldest_queued_age_seconds",), "value"),
+        ("Starving", ("starving",), "value"),
     ),
     "ideapress": (
-        ("Active stage runs", ("active_stage_runs",)),
-        ("Backend", ("backend_mode",)),
-        ("Pin", ("pin",)),
+        ("Active stage runs", ("active_stage_runs",), "count"),
+        ("Backend", ("backend_mode",), "value"),
+        ("Pinned", ("pinned",), "value"),
     ),
     "promptcadence": (
-        ("Executing", ("executing",)),
-        ("Planning", ("planning",)),
-        ("Pending approvals", ("pending_approvals",)),
+        ("Executing", ("active_trajectories",), "count:executing"),
+        ("Planning", ("active_trajectories",), "count:planning"),
+        ("Pending approvals", ("pending_approvals",), "count"),
     ),
 }
-"""Best-effort field names read off each application's own status body; an absent key is a
-figure this build does not know how to read, not a zero (ADR-0016) — it renders ``—``."""
+"""The field each figure reads off each application's own status body; an absent key, or a value
+that is not the shape its figure counts, is a figure nobody can read, not a zero (ADR-0016) — it
+renders ``—``."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,7 +139,9 @@ class Overview:
 
 
 def _dash_figures(app: str) -> tuple[Figure, ...]:
-    return tuple(Figure(label=label, value="—") for label, _path in _STATUS_FIGURES.get(app, ()))
+    return tuple(
+        Figure(label=label, value="—") for label, _path, _how in _STATUS_FIGURES.get(app, ())
+    )
 
 
 def _empty_table(app: str, *, message: str) -> OverviewTable:
@@ -153,12 +159,33 @@ def _dig(body: dict[str, Any], path: tuple[str, ...]) -> Any:
     return node
 
 
+def _shown(value: Any, how: str) -> str:  # noqa: ANN401 — whatever the status body holds
+    """One figure's text, by :data:`_STATUS_FIGURES`' rule; ``—`` for anything else."""
+    from mirrorwall import bytes_human
+
+    if how.startswith("count"):
+        if not isinstance(value, list):
+            return "—"
+        _, _, state = how.partition(":")
+        return str(
+            sum(
+                1
+                for one in value
+                if not state or (isinstance(one, dict) and one.get("state") == state)
+            )
+        )
+    if value is None:
+        return "—"
+    if how == "bytes" and isinstance(value, int) and not isinstance(value, bool):
+        return str(bytes_human(value))
+    return str(value)
+
+
 def _figures_from_status(app: str, body: dict[str, Any]) -> tuple[Figure, ...]:
-    figures = []
-    for label, path in _STATUS_FIGURES.get(app, ()):
-        value = _dig(body, path)
-        figures.append(Figure(label=label, value="—" if value is None else str(value)))
-    return tuple(figures)
+    return tuple(
+        Figure(label=label, value=_shown(_dig(body, path), how))
+        for label, path, how in _STATUS_FIGURES.get(app, ())
+    )
 
 
 def _fetch_status(

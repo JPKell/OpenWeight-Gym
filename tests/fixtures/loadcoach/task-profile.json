@@ -1,0 +1,37 @@
+{
+ "profile_id": "general.chat",
+ "version": "1.0.0",
+ "description": "Open-ended conversational response.",
+ "weights": {
+  "reasoning": 0.3,
+  "instruction_following": 0.3,
+  "creative_writing": 0.2,
+  "reliability": 0.2
+ },
+ "constraints": {
+  "min_context_tokens": 4096,
+  "requires_capabilities": [],
+  "max_latency_p95_seconds": 30.0,
+  "min_capability_scores": {},
+  "exclude_models": [],
+  "allow_remote_providers": false
+ },
+ "execution": {
+  "temperature": 0.7,
+  "max_output_tokens": 2048,
+  "min_output_tokens": null,
+  "response_format": "text",
+  "json_schema_ref": null,
+  "max_attempts": 2,
+  "fallback_depth": 1,
+  "think": null
+ },
+ "validation": {
+  "require_valid_json": false,
+  "require_schema": false,
+  "required_fields": [],
+  "max_output_chars": 50000
+ },
+ "enabled": true,
+ "updated_at": "2026-09-11T02:38:01.573038+00:00"
+}

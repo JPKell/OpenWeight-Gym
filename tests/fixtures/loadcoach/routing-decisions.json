@@ -1,0 +1,704 @@
+{
+ "decisions": [
+  {
+   "decision_id": "01M277XCTXMGY1XSPQW542KGWX",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-11T03:24:23.256877+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+   "final_score": 0.17640000000000003,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M277X4C2XNANV16QMVSK6N36",
+   "task_profile": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-11T03:24:14.589011+00:00",
+   "duration_ms": 5,
+   "selected": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+   "final_score": 0.168,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M273AGPCY2DKHFX6S0HAQTAB",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-11T02:04:10.312827+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17514000000000002,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M273A8DGJKW2C588RVG21TNJ",
+   "task_profile": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-11T02:04:01.836186+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17078478260869562,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2739P6VYPVX5Q1M0G9HHEP7",
+   "task_profile": {
+    "id": "general.chat",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-11T02:03:43.186158+00:00",
+   "duration_ms": 8,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.174,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M26MJ254C09GE12EWQY0J80S",
+   "task_profile": {
+    "id": "general.chat",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T21:46:08.908846+00:00",
+   "duration_ms": 23,
+   "selected": null,
+   "final_score": null,
+   "flags": [
+    "breaker_state_unavailable"
+   ]
+  },
+  {
+   "decision_id": "01M26MH6QPPPBZKE1T92FPRZCG",
+   "task_profile": {
+    "id": "general.chat",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T21:45:40.831235+00:00",
+   "duration_ms": 22,
+   "selected": null,
+   "final_score": null,
+   "flags": [
+    "breaker_state_unavailable"
+   ]
+  },
+  {
+   "decision_id": "01M26MF9PSJRC5ZEZG4FFCSQ1P",
+   "task_profile": {
+    "id": "general.chat",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T21:44:38.337199+00:00",
+   "duration_ms": 24,
+   "selected": null,
+   "final_score": null,
+   "flags": [
+    "breaker_state_unavailable"
+   ]
+  },
+  {
+   "decision_id": "01M258EJ487R2RH34GBR00XSBJ",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:55:16.867608+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M258EHBAZCEJQ6VVPZGZ2NZ0",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:55:16.070785+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M258EGAW7BPZKHV5S9DCE7KD",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:55:15.032669+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M258EFBPYEQA5N9GDRJR1S42",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:55:14.035151+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M258E5KC0DTYR79BMA91GK4W",
+   "task_profile": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:55:04.039741+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.1695909090909091,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M258B3J8R7FSMGX34J9AMNC5",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:53:23.652770+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M258AYKH4SEX3SW6JT4N0N7W",
+   "task_profile": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:53:18.573566+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.16899999999999998,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2589HEYVK0JNNYR1MBJ5Q3V",
+   "task_profile": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:52:32.346929+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.182,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2586YVV92FVEZ1V194SZV36",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:51:07.767733+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2586TJY7X6XFSS79C636ZHZ",
+   "task_profile": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:51:03.386670+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.182,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M258669Y89WJ8KTF411EMF4Y",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:50:42.619418+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M25865FN425BGVX91TMD65M1",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:50:41.778056+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M25862SR43RYD65TQ0YST92K",
+   "task_profile": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:50:39.029001+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.182,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2585E7DNRWQ6JJWNNA2J65G",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:50:17.961949+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2585DD559BE7FWQ9GSHHTCF",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:50:17.121764+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M25856PQQYRBQE4RD1AVHM30",
+   "task_profile": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:50:10.260151+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.182,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M25842AN3YWKY4Q0GPENP7MT",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:33.010475+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2583ZHKK4X0FA57HV9JW5TX",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:30.158482+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2583W8BPP96Y92ZGC3D9QFJ",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:26.792260+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2583TXR103RVW3Q81QB40R1",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:25.429286+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2583T05RFKV231B2AC1PV2B",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:24.481194+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2583S4CFJHEE41A1ZP848TP",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:23.592481+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2583JKQ15W54QGW83ME0S5B",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:16.915908+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M25838Q4ABTGJC2XW3XKZMEB",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:06.785123+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M25837D82D5RK1B3VC8EN2PB",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:05.445532+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M25834VQ2Y96R8FBQ65WKGQR",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:02.835345+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M25833ZJW225AXYEP2HR7TWP",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:49:01.934746+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M2580Q1E0P082FEEJEAKECSD",
+   "task_profile": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:47:43.146404+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.182,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257VKEM58VZ93TJY9ETHNHX",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:55.631698+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257VGVYKYZDCKF9Z8E1PETA",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:52.987080+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257VESDAWPDT251MM6BNHYN",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:50.857971+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257VCE781T3QJ2Y0SWFPVZ7",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:48.452728+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257VAS37G05FFEDCPMWPRNK",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:46.751760+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257V7W26JM03Q15W99RKH7Y",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:43.775576+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257V5767PM74RP8MDC58YDQ",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:41.058680+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257V30Y0E3WSEV97D12NFG0",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:38.811219+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257V0TTV6PPCANCKJTQRM6H",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:36.565098+00:00",
+   "duration_ms": 5,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257TZ4VVZQN57Q4A4MJYM8Y",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:34.839316+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257TXMEDGGCN5Q66N9QKQKJ",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:33.291326+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257TWQ42DDRPKQ8RBZGB5M3",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:32.352945+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257TSAB02BACFDYCMZ6H416",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:28.871134+00:00",
+   "duration_ms": 4,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  },
+  {
+   "decision_id": "01M257TQHV8GGEWSMEE67MZJSF",
+   "task_profile": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "requested_at": "2026-09-10T08:44:27.064217+00:00",
+   "duration_ms": 3,
+   "selected": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "final_score": 0.17464999999999997,
+   "flags": [
+    "low_evidence"
+   ]
+  }
+ ]
+}

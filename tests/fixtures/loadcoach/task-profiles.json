@@ -1,0 +1,854 @@
+{
+ "task_profiles": [
+  {
+   "profile_id": "general.chat",
+   "version": "1.0.0",
+   "description": "Open-ended conversational response.",
+   "weights": {
+    "reasoning": 0.3,
+    "instruction_following": 0.3,
+    "creative_writing": 0.2,
+    "reliability": 0.2
+   },
+   "constraints": {
+    "min_context_tokens": 4096,
+    "requires_capabilities": [],
+    "max_latency_p95_seconds": 30.0,
+    "min_capability_scores": {},
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.7,
+    "max_output_tokens": 2048,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 50000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "general.reasoning",
+   "version": "1.0.0",
+   "description": "Step-by-step problem solving where showing the work matters.",
+   "weights": {
+    "reasoning": 0.55,
+    "instruction_following": 0.2,
+    "reliability": 0.15,
+    "long_context": 0.1
+   },
+   "constraints": {
+    "min_context_tokens": 8192,
+    "requires_capabilities": [],
+    "max_latency_p95_seconds": 180.0,
+    "min_capability_scores": {
+     "reasoning": 0.4
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.2,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "general.summarize",
+   "version": "1.0.0",
+   "description": "Condense a document or conversation into a shorter form.",
+   "weights": {
+    "summarization": 0.5,
+    "instruction_following": 0.2,
+    "long_context": 0.2,
+    "reliability": 0.1
+   },
+   "constraints": {
+    "min_context_tokens": 8192,
+    "requires_capabilities": [],
+    "max_latency_p95_seconds": 60.0,
+    "min_capability_scores": {
+     "summarization": 0.3
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.3,
+    "max_output_tokens": 1024,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 20000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "code.generate",
+   "version": "1.0.0",
+   "description": "Write new code from a specification.",
+   "weights": {
+    "coding": 0.5,
+    "instruction_following": 0.2,
+    "reasoning": 0.15,
+    "structured_output": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 8192,
+    "requires_capabilities": [
+     "coding"
+    ],
+    "max_latency_p95_seconds": 120.0,
+    "min_capability_scores": {
+     "coding": 0.4
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.2,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "code.review",
+   "version": "1.2.0",
+   "description": "Review a diff or file for defects, prioritising precision over recall.",
+   "weights": {
+    "code_review": 0.45,
+    "reasoning": 0.2,
+    "instruction_following": 0.15,
+    "structured_output": 0.1,
+    "long_context": 0.1
+   },
+   "constraints": {
+    "min_context_tokens": 16384,
+    "requires_capabilities": [
+     "structured_output"
+    ],
+    "max_latency_p95_seconds": 120.0,
+    "min_capability_scores": {
+     "code_review": 0.35
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.1,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "json_schema",
+    "json_schema_ref": "code_review_findings.json",
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": true,
+    "require_schema": true,
+    "required_fields": [
+     "findings",
+     "summary"
+    ],
+    "max_output_chars": 200000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "code.debug",
+   "version": "1.0.0",
+   "description": "Diagnose and fix a specific bug given a failure description.",
+   "weights": {
+    "debugging": 0.45,
+    "code_review": 0.2,
+    "reasoning": 0.2,
+    "instruction_following": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 16384,
+    "requires_capabilities": [
+     "structured_output"
+    ],
+    "max_latency_p95_seconds": 150.0,
+    "min_capability_scores": {
+     "debugging": 0.35
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.15,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "json_schema",
+    "json_schema_ref": "code_debug_findings.json",
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": true,
+    "require_schema": true,
+    "required_fields": [
+     "diagnosis",
+     "fix"
+    ],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "content.research_synthesis",
+   "version": "1.0.0",
+   "description": "Combine multiple sources into a coherent synthesis.",
+   "weights": {
+    "reasoning": 0.3,
+    "summarization": 0.25,
+    "long_context": 0.25,
+    "instruction_following": 0.2
+   },
+   "constraints": {
+    "min_context_tokens": 32768,
+    "requires_capabilities": [
+     "long_context"
+    ],
+    "max_latency_p95_seconds": 180.0,
+    "min_capability_scores": {
+     "long_context": 0.3
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.3,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 150000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "content.outline",
+   "version": "1.0.0",
+   "description": "Structure a piece of writing before drafting.",
+   "weights": {
+    "instruction_following": 0.35,
+    "reasoning": 0.25,
+    "creative_writing": 0.25,
+    "structured_output": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 8192,
+    "requires_capabilities": [],
+    "max_latency_p95_seconds": 60.0,
+    "min_capability_scores": {},
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.5,
+    "max_output_tokens": 1024,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 20000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "content.article_draft",
+   "version": "1.0.0",
+   "description": "Write a full first draft of an article.",
+   "weights": {
+    "creative_writing": 0.4,
+    "instruction_following": 0.25,
+    "reasoning": 0.2,
+    "long_context": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 16384,
+    "requires_capabilities": [],
+    "max_latency_p95_seconds": 180.0,
+    "min_capability_scores": {
+     "creative_writing": 0.3
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.7,
+    "max_output_tokens": 8192,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 200000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "content.rewrite",
+   "version": "1.0.0",
+   "description": "Transform existing text in tone, style or length.",
+   "weights": {
+    "instruction_following": 0.4,
+    "creative_writing": 0.3,
+    "reasoning": 0.15,
+    "reliability": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 8192,
+    "requires_capabilities": [],
+    "max_latency_p95_seconds": 90.0,
+    "min_capability_scores": {},
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.5,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "content.edit",
+   "version": "1.0.0",
+   "description": "Line-edit or copy-edit existing text without changing its structure.",
+   "weights": {
+    "instruction_following": 0.4,
+    "auditing": 0.25,
+    "reliability": 0.2,
+    "structured_output": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 8192,
+    "requires_capabilities": [],
+    "max_latency_p95_seconds": 90.0,
+    "min_capability_scores": {},
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.2,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "content.review",
+   "version": "1.0.0",
+   "description": "Review prose against a requirement set and return structured findings.",
+   "weights": {
+    "auditing": 0.35,
+    "instruction_following": 0.25,
+    "reasoning": 0.25,
+    "structured_output": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 16384,
+    "requires_capabilities": [
+     "structured_output"
+    ],
+    "max_latency_p95_seconds": 120.0,
+    "min_capability_scores": {
+     "auditing": 0.3
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.1,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "json_schema",
+    "json_schema_ref": "content_review_findings.json",
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": true,
+    "require_schema": true,
+    "required_fields": [
+     "findings",
+     "summary"
+    ],
+    "max_output_chars": 200000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "content.fact_check",
+   "version": "1.0.0",
+   "description": "Verify factual claims in a piece of text.",
+   "weights": {
+    "reasoning": 0.35,
+    "auditing": 0.3,
+    "instruction_following": 0.2,
+    "reliability": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 8192,
+    "requires_capabilities": [
+     "structured_output"
+    ],
+    "max_latency_p95_seconds": 120.0,
+    "min_capability_scores": {
+     "auditing": 0.25
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.1,
+    "max_output_tokens": 2048,
+    "min_output_tokens": null,
+    "response_format": "json_schema",
+    "json_schema_ref": "fact_check_findings.json",
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": true,
+    "require_schema": true,
+    "required_fields": [
+     "claims",
+     "verdict"
+    ],
+    "max_output_chars": 50000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "structured.extract",
+   "version": "1.0.0",
+   "description": "Extract structured data from unstructured text.",
+   "weights": {
+    "structured_output": 0.45,
+    "instruction_following": 0.25,
+    "reliability": 0.2,
+    "reasoning": 0.1
+   },
+   "constraints": {
+    "min_context_tokens": 8192,
+    "requires_capabilities": [
+     "structured_output"
+    ],
+    "max_latency_p95_seconds": 60.0,
+    "min_capability_scores": {
+     "structured_output": 0.4
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.0,
+    "max_output_tokens": 2048,
+    "min_output_tokens": null,
+    "response_format": "json_schema",
+    "json_schema_ref": "structured_extract.json",
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": true,
+    "require_schema": true,
+    "required_fields": [
+     "data"
+    ],
+    "max_output_chars": 50000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "tools.agent",
+   "version": "1.0.0",
+   "description": "Use tools to accomplish a multi-step task.",
+   "weights": {
+    "agentic": 0.35,
+    "tool_use": 0.3,
+    "reasoning": 0.2,
+    "reliability": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 8192,
+    "requires_capabilities": [
+     "tool_use"
+    ],
+    "max_latency_p95_seconds": 180.0,
+    "min_capability_scores": {
+     "tool_use": 0.3
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.2,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "tools.agent.local_fast",
+   "version": "1.0.0",
+   "description": "Agent turns on a small local model: tools, short latency, a 16k context budget.",
+   "weights": {
+    "agentic": 0.35,
+    "tool_use": 0.3,
+    "reasoning": 0.2,
+    "reliability": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 16384,
+    "requires_capabilities": [
+     "tool_use"
+    ],
+    "max_latency_p95_seconds": 60.0,
+    "min_capability_scores": {
+     "tool_use": 0.3
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.2,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "tools.agent.local_large",
+   "version": "1.0.0",
+   "description": "Agent turns on a larger local model: harder reasoning, a longer wait, a 32k budget.",
+   "weights": {
+    "agentic": 0.3,
+    "tool_use": 0.25,
+    "reasoning": 0.3,
+    "reliability": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 32768,
+    "requires_capabilities": [
+     "tool_use"
+    ],
+    "max_latency_p95_seconds": 300.0,
+    "min_capability_scores": {
+     "tool_use": 0.4,
+     "reasoning": 0.4
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.2,
+    "max_output_tokens": 8192,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "tools.agent.remote_cheap",
+   "version": "1.0.0",
+   "description": "Agent turns on an inexpensive remote model: a 128k context budget, egress.",
+   "weights": {
+    "agentic": 0.35,
+    "tool_use": 0.3,
+    "reasoning": 0.2,
+    "reliability": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 128000,
+    "requires_capabilities": [
+     "tool_use"
+    ],
+    "max_latency_p95_seconds": 120.0,
+    "min_capability_scores": {
+     "tool_use": 0.4
+    },
+    "exclude_models": [],
+    "allow_remote_providers": true
+   },
+   "execution": {
+    "temperature": 0.2,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "tools.agent.remote_frontier",
+   "version": "1.0.0",
+   "description": "Agent turns on a frontier remote model: a 200k context budget, egress.",
+   "weights": {
+    "agentic": 0.35,
+    "tool_use": 0.3,
+    "reasoning": 0.2,
+    "reliability": 0.15
+   },
+   "constraints": {
+    "min_context_tokens": 200000,
+    "requires_capabilities": [
+     "tool_use"
+    ],
+    "max_latency_p95_seconds": 300.0,
+    "min_capability_scores": {
+     "tool_use": 0.5,
+     "reasoning": 0.5
+    },
+    "exclude_models": [],
+    "allow_remote_providers": true
+   },
+   "execution": {
+    "temperature": 0.2,
+    "max_output_tokens": 8192,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 3,
+    "fallback_depth": 2,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 100000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "tools.plan",
+   "version": "1.0.0",
+   "description": "Draft a structured multi-step plan as JSON, for a harness to validate and approve.",
+   "weights": {
+    "reasoning": 0.4,
+    "structured_output": 0.3,
+    "instruction_following": 0.2,
+    "reliability": 0.1
+   },
+   "constraints": {
+    "min_context_tokens": 16384,
+    "requires_capabilities": [
+     "structured_output"
+    ],
+    "max_latency_p95_seconds": 180.0,
+    "min_capability_scores": {
+     "structured_output": 0.4
+    },
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.1,
+    "max_output_tokens": 4096,
+    "min_output_tokens": null,
+    "response_format": "json",
+    "json_schema_ref": null,
+    "max_attempts": 3,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": true,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 50000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  },
+  {
+   "profile_id": "adapters.measured",
+   "version": "1.0.0",
+   "description": "Select among a base and its measured adapter subjects, on what the regression panel measures for all of them.",
+   "weights": {
+    "instruction_following": 0.5,
+    "structured_output": 0.5
+   },
+   "constraints": {
+    "min_context_tokens": 0,
+    "requires_capabilities": [],
+    "max_latency_p95_seconds": 60.0,
+    "min_capability_scores": {},
+    "exclude_models": [],
+    "allow_remote_providers": false
+   },
+   "execution": {
+    "temperature": 0.2,
+    "max_output_tokens": 2048,
+    "min_output_tokens": null,
+    "response_format": "text",
+    "json_schema_ref": null,
+    "max_attempts": 2,
+    "fallback_depth": 1,
+    "think": null
+   },
+   "validation": {
+    "require_valid_json": false,
+    "require_schema": false,
+    "required_fields": [],
+    "max_output_chars": 50000
+   },
+   "enabled": true,
+   "updated_at": "2026-09-11T02:38:01.573038+00:00"
+  }
+ ]
+}

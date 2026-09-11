@@ -1,0 +1,363 @@
+{
+ "items": [
+  {
+   "job_id": "01M277XCSBNY229K1SESEFCJ0A",
+   "status": "completed",
+   "state": "completed",
+   "state_reason": "synchronous",
+   "class": "interactive",
+   "priority": {
+    "base": 800,
+    "effective": 800
+   },
+   "source": "promptcadence",
+   "task": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "idempotent": true,
+   "idempotency_key": "01M277XCRWXD7PG1JVQQVW7RGA",
+   "cancel_requested": false,
+   "max_wait_seconds": null,
+   "lease": {
+    "owner": null,
+    "expires_at": null
+   },
+   "timestamps": {
+    "created_at": "2026-09-11T03:24:23.209Z",
+    "queued_at": null,
+    "scheduled_for": null,
+    "started_at": "2026-09-11T03:24:23.209Z",
+    "completed_at": "2026-09-11T03:24:23.256Z"
+   },
+   "output": {
+    "text": " The result of the arithmetic expression 3 + 4 is 7.",
+    "finish_reason": "stop",
+    "structured": null,
+    "tool_calls": [],
+    "tool_calls_assembled": []
+   },
+   "reasoning": {
+    "available": false,
+    "summary": null,
+    "source": null
+   },
+   "model": {
+    "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "subject_canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "model_ref": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+    "adapter": null,
+    "runtime_profile_hash": "c7d2fa821fe9f8a5",
+    "served_context": 16384,
+    "served_context_source": "configured",
+    "target_gpu_index": 0
+   },
+   "routing": {
+    "decision_id": "01M277XCTXMGY1XSPQW542KGWX",
+    "final_score": 0.17640000000000003,
+    "flags": [
+     "low_evidence"
+    ],
+    "explanation_url": "/api/v1/jobs/01M277XCSBNY229K1SESEFCJ0A/explanation"
+   },
+   "usage": {
+    "input_tokens": 79,
+    "output_tokens": 16,
+    "cache_write_tokens": 0,
+    "cache_read_tokens": 0,
+    "thinking_tokens": "unsupported"
+   },
+   "timing": {
+    "total_ms": 305,
+    "provider_ms": 287,
+    "loadcoach_overhead_ms": 18,
+    "ttft_ms": 203,
+    "queue_wait_ms": null
+   },
+   "validation": {
+    "performed": true,
+    "passed": true,
+    "attempts": 1,
+    "checks": [
+     {
+      "kind": "length",
+      "passed": true,
+      "detail": {}
+     }
+    ]
+   },
+   "retention": {
+    "content_scrubbed_at": null
+   },
+   "feedback": [],
+   "attempts": [
+    {
+     "attempt": 1,
+     "model": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+     "runtime_profile_hash": "c7d2fa821fe9f8a5",
+     "rank": 1,
+     "outcome": "completed",
+     "provider_ms": 287,
+     "ttft_ms": 203,
+     "error_code": null,
+     "started_at": "2026-09-11T03:24:23.274Z",
+     "completed_at": "2026-09-11T03:24:23.562Z",
+     "prompt_id": null,
+     "prompt_version": null,
+     "prompt_sha256": null
+    }
+   ],
+   "attempt": 1,
+   "max_attempts": 1,
+   "degradations": [],
+   "error": null
+  },
+  {
+   "job_id": "01M277X49WAV2JCY1TYPJEJG3C",
+   "status": "completed",
+   "state": "completed",
+   "state_reason": "synchronous",
+   "class": "interactive",
+   "priority": {
+    "base": 800,
+    "effective": 800
+   },
+   "source": "promptcadence",
+   "task": {
+    "id": "tools.plan",
+    "version": "1.0.0"
+   },
+   "idempotent": true,
+   "idempotency_key": "plan:01M277X4949YM571B679X90MZ0:01M277X49M7V23YJYTSBZE4Q3S:1",
+   "cancel_requested": false,
+   "max_wait_seconds": null,
+   "lease": {
+    "owner": null,
+    "expires_at": null
+   },
+   "timestamps": {
+    "created_at": "2026-09-11T03:24:14.523Z",
+    "queued_at": null,
+    "scheduled_for": null,
+    "started_at": "2026-09-11T03:24:14.523Z",
+    "completed_at": "2026-09-11T03:24:14.589Z"
+   },
+   "output": {
+    "text": "{\"steps\": [{\"step_id\": \"s1\", \"description\": \"Calculate the result of the arithmetic expression 3 + 4.\", \"depends_on\": [], \"tools\": [], \"tier\": \"local_fast\", \"data_classification\": \"public\", \"expected_turns\": 1}]}",
+    "finish_reason": "stop",
+    "structured": {
+     "steps": [
+      {
+       "step_id": "s1",
+       "description": "Calculate the result of the arithmetic expression 3 + 4.",
+       "depends_on": [],
+       "tools": [],
+       "tier": "local_fast",
+       "data_classification": "public",
+       "expected_turns": 1
+      }
+     ]
+    },
+    "tool_calls": [],
+    "tool_calls_assembled": []
+   },
+   "reasoning": {
+    "available": false,
+    "summary": null,
+    "source": null
+   },
+   "model": {
+    "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "subject_canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "model_ref": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+    "adapter": null,
+    "runtime_profile_hash": "c7d2fa821fe9f8a5",
+    "served_context": 16384,
+    "served_context_source": "configured",
+    "target_gpu_index": 0
+   },
+   "routing": {
+    "decision_id": "01M277X4C2XNANV16QMVSK6N36",
+    "final_score": 0.168,
+    "flags": [
+     "low_evidence"
+    ],
+    "explanation_url": "/api/v1/jobs/01M277X49WAV2JCY1TYPJEJG3C/explanation"
+   },
+   "usage": {
+    "input_tokens": 488,
+    "output_tokens": 65,
+    "cache_write_tokens": 0,
+    "cache_read_tokens": 0,
+    "thinking_tokens": "unsupported"
+   },
+   "timing": {
+    "total_ms": 8533,
+    "provider_ms": 742,
+    "loadcoach_overhead_ms": 7791,
+    "ttft_ms": 308,
+    "queue_wait_ms": null
+   },
+   "validation": {
+    "performed": true,
+    "passed": true,
+    "attempts": 1,
+    "checks": [
+     {
+      "kind": "json",
+      "passed": true,
+      "detail": {}
+     },
+     {
+      "kind": "length",
+      "passed": true,
+      "detail": {}
+     }
+    ]
+   },
+   "retention": {
+    "content_scrubbed_at": null
+   },
+   "feedback": [],
+   "attempts": [
+    {
+     "attempt": 1,
+     "model": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+     "runtime_profile_hash": "c7d2fa821fe9f8a5",
+     "rank": 1,
+     "outcome": "completed",
+     "provider_ms": 742,
+     "ttft_ms": 308,
+     "error_code": null,
+     "started_at": "2026-09-11T03:24:22.380Z",
+     "completed_at": "2026-09-11T03:24:23.122Z",
+     "prompt_id": null,
+     "prompt_version": null,
+     "prompt_sha256": null
+    }
+   ],
+   "attempt": 1,
+   "max_attempts": 1,
+   "degradations": [],
+   "error": null
+  },
+  {
+   "job_id": "01M273AGMYFW2VZJX65WPV6GAZ",
+   "status": "completed",
+   "state": "completed",
+   "state_reason": "synchronous",
+   "class": "interactive",
+   "priority": {
+    "base": 800,
+    "effective": 800
+   },
+   "source": "promptcadence",
+   "task": {
+    "id": "tools.agent.local_fast",
+    "version": "1.0.0"
+   },
+   "idempotent": true,
+   "idempotency_key": "01M273AGMF7829G0QFPAGTV373",
+   "cancel_requested": false,
+   "max_wait_seconds": null,
+   "lease": {
+    "owner": null,
+    "expires_at": null
+   },
+   "timestamps": {
+    "created_at": "2026-09-11T02:04:10.269Z",
+    "queued_at": null,
+    "scheduled_for": null,
+    "started_at": "2026-09-11T02:04:10.269Z",
+    "completed_at": "2026-09-11T02:04:10.312Z"
+   },
+   "output": {
+    "text": "2+2 equals 4.",
+    "finish_reason": "stop",
+    "structured": null,
+    "tool_calls": [],
+    "tool_calls_assembled": []
+   },
+   "reasoning": {
+    "available": true,
+    "summary": "The user says: \"State in one sentence what 2+2 is. You are executing step s1 of an approved plan for the task above. STEP Answer the question: 2+2 equals 4. Use only these tools: none. When the step is complete, answer with the step's result and stop.\"\n\nSo we just need to answer: \"2+2 equals 4.\" That is the step's result. Then stop.",
+    "source": "provider"
+   },
+   "model": {
+    "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "subject_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "model_ref": "01M1FAMBE164PDVB95AXXGXJXS",
+    "adapter": null,
+    "runtime_profile_hash": "c7d2fa821fe9f8a5",
+    "served_context": 16384,
+    "served_context_source": "configured",
+    "target_gpu_index": 0
+   },
+   "routing": {
+    "decision_id": "01M273AGPCY2DKHFX6S0HAQTAB",
+    "final_score": 0.17514000000000002,
+    "flags": [
+     "low_evidence"
+    ],
+    "explanation_url": "/api/v1/jobs/01M273AGMYFW2VZJX65WPV6GAZ/explanation"
+   },
+   "usage": {
+    "input_tokens": 129,
+    "output_tokens": 108,
+    "cache_write_tokens": 0,
+    "cache_read_tokens": 0,
+    "thinking_tokens": "unsupported"
+   },
+   "timing": {
+    "total_ms": 1441,
+    "provider_ms": 1427,
+    "loadcoach_overhead_ms": 14,
+    "ttft_ms": 1354,
+    "queue_wait_ms": null
+   },
+   "validation": {
+    "performed": true,
+    "passed": true,
+    "attempts": 1,
+    "checks": [
+     {
+      "kind": "length",
+      "passed": true,
+      "detail": {}
+     }
+    ]
+   },
+   "retention": {
+    "content_scrubbed_at": null
+   },
+   "feedback": [],
+   "attempts": [
+    {
+     "attempt": 1,
+     "model": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+     "runtime_profile_hash": "c7d2fa821fe9f8a5",
+     "rank": 1,
+     "outcome": "completed",
+     "provider_ms": 1427,
+     "ttft_ms": 1354,
+     "error_code": null,
+     "started_at": "2026-09-11T02:04:10.327Z",
+     "completed_at": "2026-09-11T02:04:11.754Z",
+     "prompt_id": null,
+     "prompt_version": null,
+     "prompt_sha256": null
+    }
+   ],
+   "attempt": 1,
+   "max_attempts": 1,
+   "degradations": [],
+   "error": null
+  }
+ ],
+ "page": {
+  "limit": 3,
+  "next_cursor": "MjAyNi0wOS0xMVQwMjowNDoxMC4yNjk3NzQrMDA6MDB8MDFNMjczQUdNWUZXMlZaSlg2NVdQVjZHQVo=",
+  "has_more": true,
+  "total": null
+ }
+}

@@ -7,6 +7,20 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **LoadCoach's Models, Routing and Reliability pages under its tab** (row WP2), at parity with
+  LoadCoach's own UI: **Models** (declared capabilities, the evidence summary, reliability,
+  residency, the registration and egress class — `""` and `false` read *not recorded* — with each
+  adapter subject under its base), **one model** (identity, descriptor, evidence per capability
+  with its `match_state`, reliability per task profile, the breaker), **Routing** (an explain form
+  over `POST /route` with the task profile, required capabilities and the model, adapter and
+  runtime-profile overrides, rendering every candidate's numbers and every rejection by its code;
+  the decision history; the task profiles and one profile's weights, constraints and policies),
+  and **Reliability** (the `7d`/`30d`/`all` windows, each value with its samples or why it is
+  absent, the factor with its reason, the regression verdict, the breaker; filtered by task and
+  model). **Scan**, **enable/disable** (through the catalog's own call) and **warm** (opening the
+  job it enqueued) act from the page, each one audit row (`loadcoach.discover`, `catalog.enabled`,
+  `loadcoach.warm`, `loadcoach.route`). A stopped LoadCoach's pages read its database; its
+  factor, verdict and live breaker say they wait for its API.
 - **PromptCadence's pages under its tab** (row WP1), at parity with PromptCadence's own console,
   which a browser on the LAN cannot reach: **Trajectories** (filtered by state, paged by
   PromptCadence's cursor), **one trajectory's whole record** (the explanation document PromptCadence
@@ -41,6 +55,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 - An application's left menu is two sections: its own pages, a rule, then Settings, Tokens,
   Prompts, Logs and Database (design brief §4). A page not built yet names the row that builds it
   (`coming in row WP2`) instead of *not yet scheduled*.
+
+### Fixed
+- **Figure cards stack** their label, figure and note (design brief §5) instead of running them on
+  one line; fixed in the console's shell CSS, so the prepared MirrorWall `0.3.1` is unchanged
+  (row WP2).
+- **The Overview's figures read fields the applications serve** (row WP2): PromptCadence's
+  *Executing* and *Planning* count its `active_trajectories` by state and *Pending approvals*
+  counts its list (they rendered `—`, `—` and `[]`); IdeaPress's *Active stage runs* counts its
+  list and *Pinned* reads `pinned`; FreeWeight's disk headroom is humanised. Each application's
+  status body is pinned by a recorded fixture.
 
 ## [1.0.0] — 2026-09-10
 

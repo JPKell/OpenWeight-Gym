@@ -38,6 +38,22 @@
     color: var(--mw-text-subtle);
     cursor: default;
   }
+  /* A card stacks its label, its figure and its note (design brief §5). MirrorWall's `card` emits
+     three inline spans, so they ran on one line; fixed here rather than in the prepared MirrorWall
+     0.3.1 (row WP2, operator 2026-09-10). */
+  .card > .card-label, .card > .card-value, .card > .card-note { display: block; }
+  /* The application page kit's form chrome (row WP2): a button beside a heading, a row's small
+     action forms side by side, and a collapsible form laid out as a grid. */
+  .kit-inline { display: inline; margin: 0 0 0 8px; }
+  .kit-inline button, .kit-actions button { width: auto; }
+  .kit-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .kit-actions form { margin: 0; }
+  .kit-form { margin: 0 0 var(--mw-space-4, 16px); }
+  .kit-form form { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 16px; }
+  .kit-form .kit-wide { grid-column: 1 / -1; }
+  .kit-check { display: inline-flex; align-items: center; gap: 4px; margin: 0 12px 4px 0; }
+  .kit-check input { width: auto; height: auto; margin: 0; }
+  .kit-details { margin: 4px 0; }
 
   /* Top bar (design brief §4): brand, application tabs, console pages, then the Menu dropdown and
      the operator menu at the right edge. It collapses in two steps as the viewport narrows —

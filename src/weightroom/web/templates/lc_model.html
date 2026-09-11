@@ -1,0 +1,99 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_lc.html" import recorded, measure, num, breaker_badge, profile_link, model_actions with context %}
+{% block title %}Model — LoadCoach — WeightRoom{% endblock %}
+{% block page_content %}
+{% set model = sourced.data %}
+<div class="page-head">
+  <h2>Model {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/loadcoach/models">Every model</a>{% if model %} · <a href="/apps/loadcoach/reliability?model={{ model.get('canonical_id') | urlencode }}">Its reliability</a>{% endif %}</div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(sourced.error) }}
+{% if model is not none %}
+<p class="mono">{{ model.get("canonical_id") or model_ref }}</p>
+{% if sourced.live and model.get("model_ref") %}{{ model_actions(model, current_path) }}{% endif %}
+{{ kv_list([
+  {"label": "Reference", "value": model.get("model_ref") or "—"},
+  {"label": "Provider kind", "value": model.get("provider_kind") or "—"},
+  {"label": "Registration", "value": model.get("provider_name") or "not recorded"},
+  {"label": "Egress class", "value": "remote" if model.get("is_remote") else "not recorded"},
+  {"label": "Provider's name", "value": model.get("provider_model_name") or "—"},
+  {"label": "Identity confidence", "value": model.get("identity_confidence") or "—"},
+  {"label": "Family · quantization", "value": (model.get("family") or "—") ~ " · " ~ (model.get("quantization") or "—")},
+  {"label": "Context", "value": model.get("max_context") if model.get("max_context") is not none else "—"},
+  {"label": "Size", "value": (model.get("size_bytes") | bytes_human) if model.get("size_bytes") is number else "—"},
+  {"label": "Parameters", "value": model.get("parameter_count") if model.get("parameter_count") is not none else "—"},
+  {"label": "Available", "value": "yes" if model.get("available") else ("no — " ~ (model.get("unavailable_reason") or "no reason given"))},
+  {"label": "Enabled", "value": "yes" if model.get("enabled") else "no — routing rejects it as model_disabled"},
+  {"label": "First seen", "value": model.get("first_seen_at") or "—"},
+  {"label": "Last seen", "value": model.get("last_seen_at") or "—"},
+]) }}
+
+<h3>Declared capabilities</h3>
+{% set declared = model.get("declared_capabilities") or {} %}
+{% if declared %}
+{% set rows = [] %}
+{% for name, value in declared | dictsort %}{% set _ = rows.append([name, value]) %}{% endfor %}
+{{ table([{"label": "Capability", "mono": true}, {"label": "Declared", "numeric": true}], rows, density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">None declared: routing ranks it on priors and whatever evidence is imported.</p>
+{% endif %}
+
+<h3>Evidence per capability</h3>
+{% set evidence = model.get("evidence") or [] %}
+{% if evidence %}
+{% set rows = [] %}
+{% for one in evidence %}
+{% set _ = rows.append([
+  one.get("capability_id"), num(one.get("score"), "%.3f"), num(one.get("confidence"), "%.3f"),
+  measure(one.get("sample_count")), one.get("source") or "—",
+  badge(one.get("match_state") or "—", tone="success" if one.get("match_state") == "bound" else "warning"),
+  badge("stale", tone="warning", title=one.get("stale_reason")) if one.get("stale") else "fresh",
+  one.get("measured_at") or "—", one.get("runtime_profile_hash") or "—"
+]) %}
+{% endfor %}
+{{ table([{"label": "Capability", "mono": true}, {"label": "Score", "numeric": true}, {"label": "Confidence", "numeric": true}, {"label": "Samples", "numeric": true}, {"label": "Source"}, {"label": "Match"}, {"label": "Age"}, {"label": "Measured", "mono": true}, {"label": "Runtime profile", "mono": true}], rows, caption="Imported benchmark evidence; confidence is FreeWeight's, applied here and never recomputed", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No evidence imported for this model.", "Evidence", "/apps/loadcoach/evidence") }}
+{% endif %}
+
+<h3>Reliability per task profile</h3>
+{% set pairs = model.get("reliability_by_task_profile") %}
+{% if pairs is none %}
+<p class="muted">The factor, the regression verdict and the breaker are LoadCoach's own arithmetic, read
+only from its running API.</p>
+{% elif pairs %}
+{% set rows = [] %}
+{% for one in pairs %}
+{% set factor = one.get("factor") or {} %}
+{% set regression = one.get("regression") or {} %}
+{% set breaker = one.get("circuit_breaker") or {} %}
+{% set _ = rows.append([
+  profile_link(one.get("task_profile_id")),
+  num(factor.get("value"), "%.3f") ~ (" (neutral)" if factor.get("neutral") else ""),
+  badge(regression.get("status") or "—", tone="danger" if regression.get("status") == "regressed" else "neutral", title=regression.get("reason")),
+  breaker_badge(breaker.get("state"), breaker.get("reason"))
+]) %}
+{% endfor %}
+{{ table([{"label": "Task profile"}, {"label": "Factor", "numeric": true}, {"label": "Trend"}, {"label": "Breaker"}], rows, density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">No production evidence yet.</p>
+{% endif %}
+{% if model.get("circuit_breaker") %}
+<p>Circuit breaker: {{ breaker_badge((model.get("circuit_breaker") or {}).get("state")) }}</p>
+{% endif %}
+
+{% if model.get("adapters") %}
+<h3>Adapters on this base</h3>
+{% set rows = [] %}
+{% for adapter in model.get("adapters") %}
+{% set _ = rows.append([adapter.get("subject_canonical_id") or adapter.get("name") or "—", adapter.get("data_classification") or "—", adapter.get("base_confidence") or "—", badge("available", tone="success") if adapter.get("available") else badge("unavailable", tone="danger", title=adapter.get("unavailable_reason"))]) %}
+{% endfor %}
+{{ table([{"label": "Subject", "mono": true}, {"label": "Classification"}, {"label": "Base"}, {"label": "Availability"}], rows, density="dense", row_count=rows | length) }}
+{% endif %}
+{% if model.get("descriptor") %}{{ json_viewer(model.get("descriptor"), label="Descriptor, as discovered") }}{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

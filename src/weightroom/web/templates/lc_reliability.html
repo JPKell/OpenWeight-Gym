@@ -1,0 +1,102 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_lc.html" import stat, num, measure, breaker_badge, profile_link %}
+{% block title %}Reliability — LoadCoach — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Reliability {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/loadcoach/models">Models</a> · <a href="/apps/loadcoach/routing">Routing</a> · <a href="/apps/loadcoach/queue">Queue</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Production evidence per model and task profile: what happened when jobs ran. Below its
+minimum a value is a dash carrying the reason, never a number; hover a dash to read it.</p>
+<form class="filter-bar" action="/apps/loadcoach/reliability" method="get" role="search">
+  <div class="field"><label for="lc-rel-task">Task profile</label>
+    <input id="lc-rel-task" name="task" value="{{ task }}" placeholder="general.chat"></div>
+  <div class="field"><label for="lc-rel-model">Model</label>
+    <input id="lc-rel-model" name="model" value="{{ model }}" placeholder="a canonical id"></div>
+  <button type="submit">Filter</button>
+  {% if task or model %}<a href="/apps/loadcoach/reliability">Show all</a>{% endif %}
+</form>
+{{ refusal(sourced.error) }}
+{% set data = sourced.data %}
+{% if data is not none %}
+{% if data.get("reliability") is not none %}
+{% set minimums = data.get("minimums") or {} %}
+<p class="muted">Every rate needs {{ minimums.get("rate_samples", "—") }} samples, every percentile
+{{ minimums.get("percentile_samples", "—") }}, the routing factor {{ minimums.get("factor_attempts", "—") }}
+counted attempts in the last 7 or 30 days. A regression is a drop of at least
+{{ ("%.0f%%" | format(minimums.get("regression_drop") * 100)) if minimums.get("regression_drop") is number else "—" }}
+in validated success against the model's own history, at z ≥ {{ minimums.get("regression_z", "—") }}.</p>
+{% set entries = data.get("reliability") %}
+{% if entries %}
+{% set rows = [] %}
+{% for entry in entries %}
+{% set subject = entry.get("model") or {} %}
+{% set windows = entry.get("windows") or {} %}
+{% set week = windows.get("7d") or {} %}
+{% set factor = entry.get("factor") or {} %}
+{% set regression = entry.get("regression") or {} %}
+{% set breaker = entry.get("circuit_breaker") or {} %}
+{% set _ = rows.append([
+  subject.get("subject_canonical_id") or subject.get("canonical_id") or "—",
+  profile_link(entry.get("task_profile_id")),
+  (week.get("counted", "—") ~ " / " ~ (windows.get("30d") or {}).get("counted", "—") ~ " / " ~ (windows.get("all") or {}).get("counted", "—")),
+  '<span title="'|safe ~ (factor.get("reason") or "") ~ '">'|safe ~ num(factor.get("value"), "%.3f") ~ (" (neutral)" if factor.get("neutral") else "") ~ '</span>'|safe,
+  stat(week.get("success_rate")), stat(week.get("validation_pass_rate")),
+  stat(week.get("acceptance_rate")), stat(week.get("mean_quality"), "%.2f", 1),
+  stat(week.get("p50_latency_ms"), "%.0f ms", 1), stat(week.get("p95_latency_ms"), "%.0f ms", 1),
+  badge("regression", tone="danger", title=regression.get("reason")) if regression.get("status") == "regressed" else (badge("stable", tone="success", title=regression.get("reason")) if regression.get("status") == "stable" else badge("not evaluated", tone="neutral", title=regression.get("reason"))),
+  breaker_badge(breaker.get("state"), breaker.get("reason"))
+]) %}
+{% endfor %}
+{{ table([{"label": "Model", "mono": true}, {"label": "Task profile"}, {"label": "Attempts 7d / 30d / all", "numeric": true}, {"label": "Factor", "numeric": true}, {"label": "Answered", "numeric": true}, {"label": "Validated", "numeric": true}, {"label": "Accepted", "numeric": true}, {"label": "Quality", "numeric": true}, {"label": "p50", "numeric": true}, {"label": "p95", "numeric": true}, {"label": "Trend"}, {"label": "Breaker"}], rows, caption="The last seven days, per model and task profile", density="dense", row_count=rows | length) }}
+
+<h3>Every window</h3>
+{% set rows = [] %}
+{% for entry in entries %}
+{% set subject = entry.get("model") or {} %}
+{% for name in data.get("windows") or [] %}
+{% set w = (entry.get("windows") or {}).get(name) or {} %}
+{% set _ = rows.append([
+  subject.get("subject_canonical_id") or subject.get("canonical_id") or "—", entry.get("task_profile_id") or "—", name,
+  measure(w.get("counted")), stat(w.get("success_rate")), stat(w.get("validation_pass_rate")),
+  measure(w.get("errors")), measure(w.get("timeouts")), measure(w.get("cancellations")),
+  stat(w.get("acceptance_rate")), stat(w.get("mean_quality"), "%.2f", 1),
+  stat(w.get("p50_latency_ms"), "%.0f ms", 1), stat(w.get("p95_latency_ms"), "%.0f ms", 1),
+  stat(w.get("mean_tokens_per_second"), "%.1f", 1), stat(w.get("mean_output_tokens"), "%.0f", 1)
+]) %}
+{% endfor %}
+{% endfor %}
+{{ table([{"label": "Model", "mono": true}, {"label": "Task profile", "mono": true}, {"label": "Window"}, {"label": "Attempts", "numeric": true}, {"label": "Answered", "numeric": true}, {"label": "Validated", "numeric": true}, {"label": "Errors", "numeric": true}, {"label": "Timeouts", "numeric": true}, {"label": "Cancelled", "numeric": true}, {"label": "Accepted", "numeric": true}, {"label": "Quality", "numeric": true}, {"label": "p50", "numeric": true}, {"label": "p95", "numeric": true}, {"label": "Tokens/s", "numeric": true}, {"label": "Output tokens", "numeric": true}], rows, density="dense", row_count=rows | length) }}
+
+{% if data.get("regressions") %}
+<h3>Regressions</h3>
+<ul>
+{% for one in data.get("regressions") %}
+<li><span class="mono">{{ one.get("canonical_id") }}</span> · {{ one.get("task_profile_id") }} — {{ one.get("reason") }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+{% else %}
+{{ empty_state("No production evidence yet: statistics appear once jobs have run.") }}
+{% endif %}
+{% else %}
+<p class="notice">LoadCoach is not answering. These are the counts it persisted per window; the factor,
+the regression verdict, each rate against its minimum and the live breaker are its own arithmetic,
+read only from its running API.</p>
+{% set stats = data.get("stats") or [] %}
+{% if stats %}
+{% set rows = [] %}
+{% for one in stats %}
+{% set _ = rows.append([one.get("canonical_id") or "—", one.get("adapter_key") or "—", one.get("task_profile_id") or "—", one.get("window") or "—", measure(one.get("attempts")), measure(one.get("successes")), measure(one.get("validation_passes")), measure(one.get("errors")), measure(one.get("timeouts")), measure(one.get("cancellations")), measure(one.get("p50_latency_ms"), "ms"), measure(one.get("p95_latency_ms"), "ms"), breaker_badge(one.get("circuit_state"), one.get("circuit_reason")), one.get("updated_at") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Model", "mono": true}, {"label": "Adapter", "mono": true}, {"label": "Task profile", "mono": true}, {"label": "Window"}, {"label": "Attempts", "numeric": true}, {"label": "Successes", "numeric": true}, {"label": "Validated", "numeric": true}, {"label": "Errors", "numeric": true}, {"label": "Timeouts", "numeric": true}, {"label": "Cancelled", "numeric": true}, {"label": "p50", "numeric": true}, {"label": "p95", "numeric": true}, {"label": "Breaker, as stored"}, {"label": "Updated", "mono": true}], rows, caption="reliability_stats, as LoadCoach last wrote it", density="dense", complete=false, row_count=rows | length) }}
+{% else %}
+{{ empty_state("No production evidence recorded.") }}
+{% endif %}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

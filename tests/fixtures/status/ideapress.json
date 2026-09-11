@@ -1,0 +1,7 @@
+{
+    "backend_mode": "ollama",
+    "fallback_mode": null,
+    "pinned": false,
+    "max_concurrent_stages": 1,
+    "active_stage_runs": []
+}

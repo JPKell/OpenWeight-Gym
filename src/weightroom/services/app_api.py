@@ -37,7 +37,9 @@ class AppRefused(SuiteError):
     """The application answered with an error status.
 
     ``details`` carries ``app``, ``app_code`` (the application's own code, or ``HTTP_<status>``
-    when its body named none) and ``status``; the message is the application's own.
+    when its body named none), ``status`` and ``app_details`` (the error's own ``details``, ``{}``
+    when it sent none — LoadCoach's ``NO_ELIGIBLE_MODEL`` carries every candidate and rejection
+    there); the message is the application's own.
     """
 
     code: ClassVar[str] = "APP_REFUSED"
@@ -76,6 +78,7 @@ def refusal(app: str, response: httpx.Response) -> AppRefused:
     error = body.get("error") if isinstance(body, Mapping) else None
     code = error.get("code") if isinstance(error, Mapping) else None
     message = error.get("message") if isinstance(error, Mapping) else None
+    details = error.get("details") if isinstance(error, Mapping) else None
     return AppRefused(
         f"{app} refused: {message}"
         if message
@@ -84,6 +87,7 @@ def refusal(app: str, response: httpx.Response) -> AppRefused:
             "app": app,
             "app_code": str(code) if code else f"HTTP_{response.status_code}",
             "status": response.status_code,
+            "app_details": dict(details) if isinstance(details, Mapping) else {},
         },
     )
 

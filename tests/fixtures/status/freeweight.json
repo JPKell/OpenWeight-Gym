@@ -1,0 +1,40 @@
+{
+    "active_run": null,
+    "queue_depth": 0,
+    "telemetry": {
+        "cpu_percent": 3.005008347245409,
+        "cpu_temperature_c": 39.75,
+        "disk_read_bytes_per_sec": 0.0,
+        "disk_write_bytes_per_sec": 0.0,
+        "gpus": [
+            {
+                "core_clock_mhz": 195.0,
+                "fan_percent": 0.0,
+                "index": 0,
+                "memory_clock_mhz": 405.0,
+                "memory_temperature_c": "unsupported",
+                "memory_utilization_percent": 11.0,
+                "power_limit_watts": 180.0,
+                "power_watts": 5.9,
+                "temperature_c": 28.0,
+                "throttle_reasons": [],
+                "throttle_reasons_available": true,
+                "utilization_percent": 0.0,
+                "uuid": "GPU-1250055e-ad4f-31da-ddd8-0341a2677e23",
+                "vram_total_bytes": 17103323136,
+                "vram_used_bytes": 387973120
+            }
+        ],
+        "load_average_1m": 0.21,
+        "process_rss_bytes": 209817600,
+        "ram_available_bytes": 22072172544,
+        "ram_total_bytes": 32220958720,
+        "ram_used_bytes": 10148786176,
+        "timestamp": "2026-09-11T04:26:12.889Z",
+        "unavailable_reasons": {
+            "gpu.0.memory_temperature_c": "sensor_unsupported"
+        }
+    },
+    "threadpool_saturation": null,
+    "disk_headroom_bytes": 517497982976
+}

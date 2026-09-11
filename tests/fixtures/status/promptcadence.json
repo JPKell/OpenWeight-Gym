@@ -1,0 +1,64 @@
+{
+    "active_trajectories": [],
+    "pending_approvals": [],
+    "ledger": {
+        "as_of": "2026-09-11T04:26:13.912Z",
+        "utc_day": "2026-09-11",
+        "day": {
+            "scope": "day",
+            "exceeded": false,
+            "binds": false,
+            "money_remaining": {
+                "currency": "USD",
+                "nanos": 20000000000
+            },
+            "money_remaining_display": "at most 20 USD",
+            "money_is_floor": true,
+            "tokens_remaining": null,
+            "tokens_remaining_display": "\u2014",
+            "tokens_are_floor": false,
+            "unpriced_debit_count": 2,
+            "untotalled_debit_count": 0,
+            "unmetered_debit_count": 0,
+            "partial_pricing": "floor"
+        },
+        "projects": [],
+        "trajectory": null,
+        "tiers": [
+            {
+                "tier": "local_fast",
+                "tokens_spent": 45764,
+                "tokens_spent_display": "at least 45764",
+                "money_spent": [],
+                "money_spent_display": "\u2014",
+                "money_is_floor": true,
+                "tokens_are_floor": true,
+                "unpriced_debit_count": 67,
+                "untotalled_debit_count": 0,
+                "unmetered_debit_count": 5
+            },
+            {
+                "tier": "local_large",
+                "tokens_spent": 0,
+                "tokens_spent_display": "0",
+                "money_spent": [],
+                "money_spent_display": "\u2014",
+                "money_is_floor": false,
+                "tokens_are_floor": false,
+                "unpriced_debit_count": 0,
+                "untotalled_debit_count": 0,
+                "unmetered_debit_count": 0
+            }
+        ]
+    },
+    "max_concurrent_trajectories": 1,
+    "loadcoach_base_url": "http://127.0.0.1:8766",
+    "last_recovery": {
+        "resumed": [],
+        "finished": [],
+        "halted": [],
+        "failed": [],
+        "deferred": [],
+        "touched": 0
+    }
+}

@@ -1,0 +1,27 @@
+{
+ "registrations": [
+  {
+   "name": "ollama",
+   "kind": "ollama",
+   "base_url": "http://127.0.0.1:11434",
+   "timeout_seconds": 300.0,
+   "remote": false,
+   "model_directory": "",
+   "state_dir": "",
+   "server_path": "llama-server",
+   "shadowed_by": ""
+  }
+ ],
+ "config_path": "/home/jpk/.config/loadcoach/config.toml",
+ "config_digest": "",
+ "allow_remote": false,
+ "writable_fields": [
+  "kind",
+  "base_url",
+  "timeout_seconds",
+  "remote",
+  "model_directory",
+  "state_dir",
+  "server_path"
+ ]
+}

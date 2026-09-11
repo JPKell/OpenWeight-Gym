@@ -78,6 +78,11 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "trajectory.cancel",
         "trajectory.approve",
         "trajectory.deny",
+        # WP2. From LoadCoach's tab (enabling a model reuses `catalog.enabled`, W8's call): a
+        # discovery pass, a warm job, and an explanation — `POST /route` persists its decision.
+        "loadcoach.discover",
+        "loadcoach.warm",
+        "loadcoach.route",
     }
 )
 """The closed action vocabulary."""

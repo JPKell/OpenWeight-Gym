@@ -1,0 +1,638 @@
+{
+ "decision_id": "01M277XCTXMGY1XSPQW542KGWX",
+ "task_profile": {
+  "id": "tools.agent.local_fast",
+  "version": "1.0.0"
+ },
+ "strategy": {
+  "name": "weighted_evidence",
+  "version": "1.0.0"
+ },
+ "confidence_policy_version": "1.0.0",
+ "requested_at": "2026-09-11T03:24:23.256Z",
+ "duration_ms": 4,
+ "selected": {
+  "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+  "subject_canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+  "provider_name": "ollama",
+  "adapter": null,
+  "model_id": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+  "runtime_profile_hash": "c7d2fa821fe9f8a5",
+  "final_score": 0.17640000000000003,
+  "rank": 1,
+  "served_context": 16384,
+  "served_context_source": "configured",
+  "target_gpu_index": 0
+ },
+ "fallbacks": [
+  {
+   "canonical_id": "ollama/smollm2:135m@sha256:9077fe9d2ae1",
+   "subject_canonical_id": "ollama/smollm2:135m@sha256:9077fe9d2ae1",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M26MN1KJGVN5K84P1707773K",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "final_score": 0.108,
+   "rank": 2,
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "target_gpu_index": 0
+  }
+ ],
+ "candidates": [
+  {
+   "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+   "subject_canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "rank": 1,
+   "task_fit": 0.168,
+   "final_score": 0.17640000000000003,
+   "present_weight": 1.0,
+   "measured_weight": 0,
+   "estimated_vram_bytes": 15054635867,
+   "target_gpu_index": 0,
+   "capabilities": [
+    {
+     "capability": "agentic",
+     "weight": 0.35,
+     "score": 0.56,
+     "confidence": 0.3,
+     "source": "prior",
+     "note": "parameter-count band relative to the installed set (routing §5.1)"
+    },
+    {
+     "capability": "reasoning",
+     "weight": 0.2,
+     "score": 0.56,
+     "confidence": 0.3,
+     "source": "prior",
+     "note": "parameter-count band relative to the installed set (routing §5.1)"
+    },
+    {
+     "capability": "reliability",
+     "weight": 0.15,
+     "score": 0.56,
+     "confidence": 0.3,
+     "source": "prior",
+     "note": "parameter-count band relative to the installed set (routing §5.1)"
+    },
+    {
+     "capability": "tool_use",
+     "weight": 0.3,
+     "score": 0.56,
+     "confidence": 0.3,
+     "source": "prior",
+     "note": "parameter-count band relative to the installed set (routing §5.1)"
+    }
+   ],
+   "factors": {
+    "reliability": 1.0,
+    "availability": 1.0,
+    "residency": 1.05,
+    "cost": 1.0,
+    "reliability_detail": {
+     "source": "production",
+     "value": 1.0,
+     "neutral": true,
+     "window": null,
+     "attempts": 2,
+     "minimum_samples": 20,
+     "success_rate": null,
+     "validation_pass_rate": null,
+     "error_rate": null,
+     "timeout_rate": null,
+     "acceptance_rate": null,
+     "feedback_count": 0,
+     "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d; counted attempts: 7d=2, 30d=2"
+    },
+    "residency_detail": {
+     "level": "resident_base",
+     "resident_bases": [
+      "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b"
+     ],
+     "prefer_resident_bonus": 0.05,
+     "base_switch_penalty": 0.1,
+     "ignore_residency": false
+    }
+   },
+   "residency_detail": {
+    "level": "resident_base",
+    "resident_bases": [
+     "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b"
+    ],
+    "prefer_resident_bonus": 0.05,
+    "base_switch_penalty": 0.1,
+    "ignore_residency": false
+   }
+  },
+  {
+   "canonical_id": "ollama/smollm2:135m@sha256:9077fe9d2ae1",
+   "subject_canonical_id": "ollama/smollm2:135m@sha256:9077fe9d2ae1",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M26MN1KJGVN5K84P1707773K",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "rank": 2,
+   "task_fit": 0.12,
+   "final_score": 0.108,
+   "present_weight": 1.0,
+   "measured_weight": 0,
+   "estimated_vram_bytes": 930366421,
+   "target_gpu_index": 0,
+   "capabilities": [
+    {
+     "capability": "agentic",
+     "weight": 0.35,
+     "score": 0.4,
+     "confidence": 0.3,
+     "source": "prior",
+     "note": "parameter-count band relative to the installed set (routing §5.1)"
+    },
+    {
+     "capability": "reasoning",
+     "weight": 0.2,
+     "score": 0.4,
+     "confidence": 0.3,
+     "source": "prior",
+     "note": "parameter-count band relative to the installed set (routing §5.1)"
+    },
+    {
+     "capability": "reliability",
+     "weight": 0.15,
+     "score": 0.4,
+     "confidence": 0.3,
+     "source": "prior",
+     "note": "parameter-count band relative to the installed set (routing §5.1)"
+    },
+    {
+     "capability": "tool_use",
+     "weight": 0.3,
+     "score": 0.4,
+     "confidence": 0.3,
+     "source": "prior",
+     "note": "parameter-count band relative to the installed set (routing §5.1)"
+    }
+   ],
+   "factors": {
+    "reliability": 1.0,
+    "availability": 1.0,
+    "residency": 0.9,
+    "cost": 1.0,
+    "reliability_detail": {
+     "source": "production",
+     "value": 1.0,
+     "neutral": true,
+     "window": null,
+     "attempts": 0,
+     "minimum_samples": 20,
+     "success_rate": null,
+     "validation_pass_rate": null,
+     "error_rate": null,
+     "timeout_rate": null,
+     "acceptance_rate": null,
+     "feedback_count": 0,
+     "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d"
+    },
+    "residency_detail": {
+     "level": "base_switch",
+     "resident_bases": [
+      "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b"
+     ],
+     "prefer_resident_bonus": 0.05,
+     "base_switch_penalty": 0.1,
+     "ignore_residency": false
+    }
+   },
+   "residency_detail": {
+    "level": "base_switch",
+    "resident_bases": [
+     "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b"
+    ],
+    "prefer_resident_bonus": 0.05,
+    "base_switch_penalty": 0.1,
+    "ignore_residency": false
+   }
+  }
+ ],
+ "rejected": [
+  {
+   "canonical_id": "ollama/HammerAI/gemma-4-e4b-heretic:e4b-q8_0@sha256:42ae73d6e12a",
+   "subject_canonical_id": "ollama/HammerAI/gemma-4-e4b-heretic:e4b-q8_0@sha256:42ae73d6e12a",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1RAR0APQH6Q13AKCCVCB5FM",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "insufficient_vram",
+   "detail": {
+    "estimated_bytes": 11519806045,
+    "free_bytes_by_gpu": {
+     "0": 2540699648
+    },
+    "headroom_bytes": 536870912,
+    "estimate": {
+     "total_bytes": 11519806045,
+     "weights_bytes": 8432798301,
+     "kv_bytes": 2818572288,
+     "activation_bytes": 268435456,
+     "kv_bytes_per_token": 172032.0,
+     "kv_source": "theoretical",
+     "kv_precision_assumed": true,
+     "served_context": 16384,
+     "unknown_reason": null
+    }
+   }
+  },
+  {
+   "canonical_id": "ollama/SetneufPT/Qwen3.5-9B-Coder_Q4_256k_ABL_16GB-GPU:latest@sha256:8d7f60bdc09d",
+   "subject_canonical_id": "ollama/SetneufPT/Qwen3.5-9B-Coder_Q4_256k_ABL_16GB-GPU:latest@sha256:8d7f60bdc09d",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBDYQFB7CM6T3RP1C5RR",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "insufficient_vram",
+   "detail": {
+    "estimated_bytes": null,
+    "free_bytes_by_gpu": {
+     "0": 2540699648
+    },
+    "headroom_bytes": 536870912,
+    "estimate": {
+     "total_bytes": null,
+     "weights_bytes": 6924198851,
+     "kv_bytes": null,
+     "activation_bytes": 268435456,
+     "kv_bytes_per_token": null,
+     "kv_source": "unknown",
+     "kv_precision_assumed": false,
+     "served_context": 16384,
+     "unknown_reason": "no measured KV figure exists and the provider reported no layers/kv_heads/head_dim to compute a theoretical one"
+    }
+   }
+  },
+  {
+   "canonical_id": "ollama/fredrezones55/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive:IQ2_M@sha256:423c4a0ed6fb",
+   "subject_canonical_id": "ollama/fredrezones55/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive:IQ2_M@sha256:423c4a0ed6fb",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBDS7RVRK3VYFG10HCG3",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "insufficient_vram",
+   "detail": {
+    "estimated_bytes": null,
+    "free_bytes_by_gpu": {
+     "0": 2540699648
+    },
+    "headroom_bytes": 536870912,
+    "estimate": {
+     "total_bytes": null,
+     "weights_bytes": 13187495153,
+     "kv_bytes": null,
+     "activation_bytes": 268435456,
+     "kv_bytes_per_token": null,
+     "kv_source": "unknown",
+     "kv_precision_assumed": false,
+     "served_context": 16384,
+     "unknown_reason": "no measured KV figure exists and the provider reported no layers/kv_heads/head_dim to compute a theoretical one"
+    }
+   }
+  },
+  {
+   "canonical_id": "ollama/gemma3:latest@sha256:a2af6cc3eb7f",
+   "subject_canonical_id": "ollama/gemma3:latest@sha256:a2af6cc3eb7f",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBDWCG3WM9KWXDCSW3FE",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "model_unavailable",
+   "detail": {
+    "available": false,
+    "provider_healthy": true,
+    "reason": "not reported by the provider's most recent discovery"
+   }
+  },
+  {
+   "canonical_id": "ollama/gemma4:12b-it-q8_0@sha256:41c402fdddc2",
+   "subject_canonical_id": "ollama/gemma4:12b-it-q8_0@sha256:41c402fdddc2",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBDVMBZH4FE3W5S30AT8",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "insufficient_vram",
+   "detail": {
+    "estimated_bytes": null,
+    "free_bytes_by_gpu": {
+     "0": 2540699648
+    },
+    "headroom_bytes": 536870912,
+    "estimate": {
+     "total_bytes": null,
+     "weights_bytes": 13487010677,
+     "kv_bytes": null,
+     "activation_bytes": 268435456,
+     "kv_bytes_per_token": null,
+     "kv_source": "unknown",
+     "kv_precision_assumed": false,
+     "served_context": 16384,
+     "unknown_reason": "no measured KV figure exists and the provider reported no layers/kv_heads/head_dim to compute a theoretical one"
+    }
+   }
+  },
+  {
+   "canonical_id": "ollama/gemma4:12b@sha256:4eb23ef187e2",
+   "subject_canonical_id": "ollama/gemma4:12b@sha256:4eb23ef187e2",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBDX3SMZN4R8PYTJYSE2",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "model_unavailable",
+   "detail": {
+    "available": false,
+    "provider_healthy": true,
+    "reason": "not reported by the provider's most recent discovery"
+   }
+  },
+  {
+   "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "subject_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBE164PDVB95AXXGXJXS",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "insufficient_vram",
+   "detail": {
+    "estimated_bytes": 15556855130,
+    "free_bytes_by_gpu": {
+     "0": 2540699648
+    },
+    "headroom_bytes": 536870912,
+    "estimate": {
+     "total_bytes": 15556855130,
+     "weights_bytes": 14483113306,
+     "kv_bytes": 805306368,
+     "activation_bytes": 268435456,
+     "kv_bytes_per_token": 49152.0,
+     "kv_source": "theoretical",
+     "kv_precision_assumed": true,
+     "served_context": 16384,
+     "unknown_reason": null
+    }
+   }
+  },
+  {
+   "canonical_id": "ollama/hk:latest@sha256:3bbf71189af5",
+   "subject_canonical_id": "ollama/hk:latest@sha256:3bbf71189af5",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1RAR0AND5C327K4TY52EQCQ",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "insufficient_vram",
+   "detail": {
+    "estimated_bytes": 11519823996,
+    "free_bytes_by_gpu": {
+     "0": 2540699648
+    },
+    "headroom_bytes": 536870912,
+    "estimate": {
+     "total_bytes": 11519823996,
+     "weights_bytes": 8432816252,
+     "kv_bytes": 2818572288,
+     "activation_bytes": 268435456,
+     "kv_bytes_per_token": 172032.0,
+     "kv_source": "theoretical",
+     "kv_precision_assumed": true,
+     "served_context": 16384,
+     "unknown_reason": null
+    }
+   }
+  },
+  {
+   "canonical_id": "ollama/hk:latest@sha256:45e016d27b68",
+   "subject_canonical_id": "ollama/hk:latest@sha256:45e016d27b68",
+   "provider_name": null,
+   "adapter": null,
+   "model_id": "01M1FAMBDT3AEH5V624M2JD7JM",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "model_unavailable",
+   "detail": {
+    "available": false,
+    "provider_healthy": true,
+    "reason": "not reported by the provider's most recent discovery"
+   }
+  },
+  {
+   "canonical_id": "ollama/igorls/gemma-4-12B-it-heretic-GGUF:Q4_K_M@sha256:39e061f35bcc",
+   "subject_canonical_id": "ollama/igorls/gemma-4-12B-it-heretic-GGUF:Q4_K_M@sha256:39e061f35bcc",
+   "provider_name": null,
+   "adapter": null,
+   "model_id": "01M1FAMBDS7RVRK3VYFG10HCG1",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "model_unavailable",
+   "detail": {
+    "available": false,
+    "provider_healthy": true,
+    "reason": "not reported by the provider's most recent discovery"
+   }
+  },
+  {
+   "canonical_id": "ollama/ornith:9b@sha256:a75697c14589",
+   "subject_canonical_id": "ollama/ornith:9b@sha256:a75697c14589",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBDZ2Q4C52P92QPCGKVG",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "insufficient_vram",
+   "detail": {
+    "estimated_bytes": 8326485200,
+    "free_bytes_by_gpu": {
+     "0": 2540699648
+    },
+    "headroom_bytes": 536870912,
+    "estimate": {
+     "total_bytes": 8326485200,
+     "weights_bytes": 5910566096,
+     "kv_bytes": 2147483648,
+     "activation_bytes": 268435456,
+     "kv_bytes_per_token": 131072.0,
+     "kv_source": "theoretical",
+     "kv_precision_assumed": true,
+     "served_context": 16384,
+     "unknown_reason": null
+    }
+   }
+  },
+  {
+   "canonical_id": "ollama/qwen3.5:9b-q8_0@sha256:441ec31e4d2a",
+   "subject_canonical_id": "ollama/qwen3.5:9b-q8_0@sha256:441ec31e4d2a",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBE2BWZM5C6VHFYMH498",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "insufficient_vram",
+   "detail": {
+    "estimated_bytes": null,
+    "free_bytes_by_gpu": {
+     "0": 2540699648
+    },
+    "headroom_bytes": 536870912,
+    "estimate": {
+     "total_bytes": null,
+     "weights_bytes": 11234924690,
+     "kv_bytes": null,
+     "activation_bytes": 268435456,
+     "kv_bytes_per_token": null,
+     "kv_source": "unknown",
+     "kv_precision_assumed": false,
+     "served_context": 16384,
+     "unknown_reason": "no measured KV figure exists and the provider reported no layers/kv_heads/head_dim to compute a theoretical one"
+    }
+   }
+  },
+  {
+   "canonical_id": "ollama/qwen3:8b@sha256:500a1f067a9f",
+   "subject_canonical_id": "ollama/qwen3:8b@sha256:500a1f067a9f",
+   "provider_name": null,
+   "adapter": null,
+   "model_id": "01M1FAMBE00F115FSW1JSTMSTY",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "model_unavailable",
+   "detail": {
+    "available": false,
+    "provider_healthy": true,
+    "reason": "not reported by the provider's most recent discovery"
+   }
+  },
+  {
+   "canonical_id": "ollama/sorc/qwen3.5-heretic:9b@sha256:0b34f914eac4",
+   "subject_canonical_id": "ollama/sorc/qwen3.5-heretic:9b@sha256:0b34f914eac4",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBDQZ0E73126TKYVFH82",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "insufficient_vram",
+   "detail": {
+    "estimated_bytes": null,
+    "free_bytes_by_gpu": {
+     "0": 2540699648
+    },
+    "headroom_bytes": 536870912,
+    "estimate": {
+     "total_bytes": null,
+     "weights_bytes": 10963417701,
+     "kv_bytes": null,
+     "activation_bytes": 268435456,
+     "kv_bytes_per_token": null,
+     "kv_source": "unknown",
+     "kv_precision_assumed": false,
+     "served_context": 16384,
+     "unknown_reason": "no measured KV figure exists and the provider reported no layers/kv_heads/head_dim to compute a theoretical one"
+    }
+   }
+  },
+  {
+   "canonical_id": "ollama/sorc/qwen3.5-instruct-heretic:latest@sha256:a3d9f8974d97",
+   "subject_canonical_id": "ollama/sorc/qwen3.5-instruct-heretic:latest@sha256:a3d9f8974d97",
+   "provider_name": "ollama",
+   "adapter": null,
+   "model_id": "01M1FAMBE2BWZM5C6VHFYMH49A",
+   "runtime_profile_hash": "c7d2fa821fe9f8a5",
+   "served_context": 16384,
+   "served_context_source": "configured",
+   "reason": "model_unavailable",
+   "detail": {
+    "available": false,
+    "provider_healthy": true,
+    "reason": "not reported by the provider's most recent discovery"
+   }
+  }
+ ],
+ "flags": [
+  "low_evidence"
+ ],
+ "context_budget": {
+  "fits": true,
+  "estimated_input_tokens": 65,
+  "max_output_tokens": 4096,
+  "requested_output_tokens": 4096,
+  "reduced": false,
+  "safety_margin_tokens": 256,
+  "required_context": 4417,
+  "served_context": 16384,
+  "served_context_source": "configured",
+  "input_estimate_source": "caller",
+  "chars_per_token": null,
+  "shortfall_tokens": 0
+ },
+ "evidence_summary": {
+  "source": "none",
+  "contributing_sources": [
+   "prior"
+  ],
+  "profile_mismatched_capabilities": 0,
+  "foreign_machine_capabilities": 0,
+  "unbound_capabilities": 0,
+  "stale_capabilities_used": 0,
+  "candidates_considered": 17,
+  "status": "not_configured",
+  "note": "No evidence source is configured ([evidence] freeweight_url is empty), so routing ranks on declared capabilities and priors and says so.",
+  "imported_at": null,
+  "generated_at": null,
+  "oldest_measured_at": null,
+  "newest_measured_at": null,
+  "bundle_schema_version": null,
+  "policy_version": null,
+  "vocabulary_version": null,
+  "stale": false,
+  "stale_records": 0,
+  "unmatched_records": 0,
+  "ambiguous_records": 0,
+  "bound_records": 0,
+  "total_records": 0
+ },
+ "telemetry_snapshot": {
+  "timestamp": "2026-09-11T03:24:23.215Z",
+  "ram_available_bytes": 21821550592,
+  "gpus": [
+   {
+    "index": 0,
+    "vram_total_bytes": 17103323136,
+    "vram_used_bytes": 14562623488
+   }
+  ]
+ },
+ "overrides": null
+}

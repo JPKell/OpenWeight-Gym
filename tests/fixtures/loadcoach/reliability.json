@@ -1,0 +1,2203 @@
+{
+ "reliability": [
+  {
+   "model": {
+    "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "subject_canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "model_ref": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+    "adapter": null
+   },
+   "task_profile_id": "tools.agent.local_fast",
+   "windows": {
+    "7d": {
+     "window": "7d",
+     "attempts": 3,
+     "counted": 3,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 2,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "30d": {
+     "window": "30d",
+     "attempts": 3,
+     "counted": 3,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 2,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 3,
+     "counted": 3,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 2,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 3,
+      "minimum": 5,
+      "reason": "3 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 3,
+      "minimum": 20,
+      "reason": "3 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 1.0,
+    "neutral": true,
+    "window": null,
+    "attempts": 3,
+    "minimum_samples": 20,
+    "success_rate": null,
+    "validation_pass_rate": null,
+    "error_rate": null,
+    "timeout_rate": null,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d; counted attempts: 7d=3, 30d=3"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 0.3333333333333333,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 3,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 3 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T03:34:29.604Z"
+  },
+  {
+   "model": {
+    "canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "subject_canonical_id": "ollama/deepseek-coder-v2:latest@sha256:63fb193b3a9b",
+    "model_ref": "01M1FAMBDX3SMZN4R8PYTJYSE1",
+    "adapter": null
+   },
+   "task_profile_id": "tools.plan",
+   "windows": {
+    "7d": {
+     "window": "7d",
+     "attempts": 1,
+     "counted": 1,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "30d": {
+     "window": "30d",
+     "attempts": 1,
+     "counted": 1,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 1,
+     "counted": 1,
+     "successes": 1,
+     "validation_passes": 1,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 1,
+      "minimum": 20,
+      "reason": "1 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 1,
+      "minimum": 5,
+      "reason": "1 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 1.0,
+    "neutral": true,
+    "window": null,
+    "attempts": 1,
+    "minimum_samples": 20,
+    "success_rate": null,
+    "validation_pass_rate": null,
+    "error_rate": null,
+    "timeout_rate": null,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d; counted attempts: 7d=1, 30d=1"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 1.0,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 1,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 1 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T03:34:29.604Z"
+  },
+  {
+   "model": {
+    "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "subject_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "model_ref": "01M1FAMBE164PDVB95AXXGXJXS",
+    "adapter": null
+   },
+   "task_profile_id": "content.article_draft",
+   "windows": {
+    "7d": {
+     "window": "7d",
+     "attempts": 2,
+     "counted": 2,
+     "successes": 2,
+     "validation_passes": 2,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 2,
+      "minimum": 20,
+      "reason": "2 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 2,
+      "minimum": 20,
+      "reason": "2 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "30d": {
+     "window": "30d",
+     "attempts": 2,
+     "counted": 2,
+     "successes": 2,
+     "validation_passes": 2,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 2,
+      "minimum": 20,
+      "reason": "2 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 2,
+      "minimum": 20,
+      "reason": "2 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 2,
+     "counted": 2,
+     "successes": 2,
+     "validation_passes": 2,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 2,
+      "minimum": 20,
+      "reason": "2 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 2,
+      "minimum": 20,
+      "reason": "2 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 1.0,
+    "neutral": true,
+    "window": null,
+    "attempts": 2,
+    "minimum_samples": 20,
+    "success_rate": null,
+    "validation_pass_rate": null,
+    "error_rate": null,
+    "timeout_rate": null,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d; counted attempts: 7d=2, 30d=2"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 1.0,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 2,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 2 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T02:14:20.655Z"
+  },
+  {
+   "model": {
+    "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "subject_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "model_ref": "01M1FAMBE164PDVB95AXXGXJXS",
+    "adapter": null
+   },
+   "task_profile_id": "content.review",
+   "windows": {
+    "7d": {
+     "window": "7d",
+     "attempts": 4,
+     "counted": 4,
+     "successes": 4,
+     "validation_passes": 2,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 4,
+      "minimum": 20,
+      "reason": "4 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 4,
+      "minimum": 20,
+      "reason": "4 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "30d": {
+     "window": "30d",
+     "attempts": 4,
+     "counted": 4,
+     "successes": 4,
+     "validation_passes": 2,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 4,
+      "minimum": 20,
+      "reason": "4 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 4,
+      "minimum": 20,
+      "reason": "4 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 4,
+     "counted": 4,
+     "successes": 4,
+     "validation_passes": 2,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "validation_pass_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "validated_success_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "error_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "timeout_rate": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 4,
+      "minimum": 20,
+      "reason": "4 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 4,
+      "minimum": 20,
+      "reason": "4 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "mean_tokens_per_second": {
+      "value": null,
+      "samples": 4,
+      "minimum": 5,
+      "reason": "4 sample(s); 5 needed"
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 1.0,
+    "neutral": true,
+    "window": null,
+    "attempts": 4,
+    "minimum_samples": 20,
+    "success_rate": null,
+    "validation_pass_rate": null,
+    "error_rate": null,
+    "timeout_rate": null,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d; counted attempts: 7d=4, 30d=4"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 0.5,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 4,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 4 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T02:14:20.655Z"
+  },
+  {
+   "model": {
+    "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "subject_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "model_ref": "01M1FAMBE164PDVB95AXXGXJXS",
+    "adapter": null
+   },
+   "task_profile_id": "general.chat",
+   "windows": {
+    "7d": {
+     "window": "7d",
+     "attempts": 15,
+     "counted": 15,
+     "successes": 15,
+     "validation_passes": 15,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 1.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 1.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 15,
+      "minimum": 20,
+      "reason": "15 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 15,
+      "minimum": 20,
+      "reason": "15 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": 516.0666666666667,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 65.3677519156451,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "30d": {
+     "window": "30d",
+     "attempts": 15,
+     "counted": 15,
+     "successes": 15,
+     "validation_passes": 15,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 1.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 1.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 15,
+      "minimum": 20,
+      "reason": "15 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 15,
+      "minimum": 20,
+      "reason": "15 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": 516.0666666666667,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 65.3677519156451,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 15,
+     "counted": 15,
+     "successes": 15,
+     "validation_passes": 15,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 1.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 1.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 15,
+      "minimum": 20,
+      "reason": "15 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 15,
+      "minimum": 20,
+      "reason": "15 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": 516.0666666666667,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 65.3677519156451,
+      "samples": 15,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 1.0,
+    "neutral": true,
+    "window": null,
+    "attempts": 15,
+    "minimum_samples": 20,
+    "success_rate": null,
+    "validation_pass_rate": null,
+    "error_rate": null,
+    "timeout_rate": null,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d; counted attempts: 7d=15, 30d=15"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 1.0,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 15,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 15 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T02:14:20.655Z"
+  },
+  {
+   "model": {
+    "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "subject_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "model_ref": "01M1FAMBE164PDVB95AXXGXJXS",
+    "adapter": null
+   },
+   "task_profile_id": "general.reasoning",
+   "windows": {
+    "7d": {
+     "window": "7d",
+     "attempts": 11,
+     "counted": 11,
+     "successes": 11,
+     "validation_passes": 11,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 1.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 1.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 11,
+      "minimum": 20,
+      "reason": "11 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 11,
+      "minimum": 20,
+      "reason": "11 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": 115.36363636363636,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 57.020354206358185,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": 1.0,
+      "samples": 6,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     }
+    },
+    "30d": {
+     "window": "30d",
+     "attempts": 11,
+     "counted": 11,
+     "successes": 11,
+     "validation_passes": 11,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 1.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 1.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 11,
+      "minimum": 20,
+      "reason": "11 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 11,
+      "minimum": 20,
+      "reason": "11 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": 115.36363636363636,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 57.020354206358185,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": 1.0,
+      "samples": 6,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 11,
+     "counted": 11,
+     "successes": 11,
+     "validation_passes": 11,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 1.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 1.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": null,
+      "samples": 11,
+      "minimum": 20,
+      "reason": "11 sample(s); 20 needed"
+     },
+     "p95_latency_ms": {
+      "value": null,
+      "samples": 11,
+      "minimum": 20,
+      "reason": "11 sample(s); 20 needed"
+     },
+     "mean_output_tokens": {
+      "value": 115.36363636363636,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 57.020354206358185,
+      "samples": 11,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": 1.0,
+      "samples": 6,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 2,
+      "minimum": 5,
+      "reason": "2 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 1.0,
+    "neutral": true,
+    "window": null,
+    "attempts": 11,
+    "minimum_samples": 20,
+    "success_rate": null,
+    "validation_pass_rate": null,
+    "error_rate": null,
+    "timeout_rate": null,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "neutral: fewer than 20 counted attempts in the last 7d and 30d; counted attempts: 7d=11, 30d=11"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 1.0,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 11,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 11 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T02:14:20.655Z"
+  },
+  {
+   "model": {
+    "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "subject_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "model_ref": "01M1FAMBE164PDVB95AXXGXJXS",
+    "adapter": null
+   },
+   "task_profile_id": "tools.agent.local_fast",
+   "windows": {
+    "7d": {
+     "window": "7d",
+     "attempts": 99,
+     "counted": 99,
+     "successes": 99,
+     "validation_passes": 99,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 1.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 1.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": 1641,
+      "samples": 99,
+      "minimum": 20,
+      "reason": null
+     },
+     "p95_latency_ms": {
+      "value": 8501,
+      "samples": 99,
+      "minimum": 20,
+      "reason": null
+     },
+     "mean_output_tokens": {
+      "value": 200.989898989899,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 70.27167895818398,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "30d": {
+     "window": "30d",
+     "attempts": 99,
+     "counted": 99,
+     "successes": 99,
+     "validation_passes": 99,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 1.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 1.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": 1641,
+      "samples": 99,
+      "minimum": 20,
+      "reason": null
+     },
+     "p95_latency_ms": {
+      "value": 8501,
+      "samples": 99,
+      "minimum": 20,
+      "reason": null
+     },
+     "mean_output_tokens": {
+      "value": 200.989898989899,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 70.27167895818398,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 99,
+     "counted": 99,
+     "successes": 99,
+     "validation_passes": 99,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 1.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 1.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": 1641,
+      "samples": 99,
+      "minimum": 20,
+      "reason": null
+     },
+     "p95_latency_ms": {
+      "value": 8501,
+      "samples": 99,
+      "minimum": 20,
+      "reason": null
+     },
+     "mean_output_tokens": {
+      "value": 200.989898989899,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 70.27167895818398,
+      "samples": 99,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 1.0,
+    "neutral": false,
+    "window": "7d",
+    "attempts": 99,
+    "minimum_samples": 20,
+    "success_rate": 1.0,
+    "validation_pass_rate": 1.0,
+    "error_rate": 0.0,
+    "timeout_rate": 0.0,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "7d window: 99 of 99 attempts answered (100%); 99 of 99 validated (100%) → factor 1.000"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 1.0,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 99,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 99 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T02:14:20.655Z"
+  },
+  {
+   "model": {
+    "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "subject_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+    "model_ref": "01M1FAMBE164PDVB95AXXGXJXS",
+    "adapter": null
+   },
+   "task_profile_id": "tools.plan",
+   "windows": {
+    "7d": {
+     "window": "7d",
+     "attempts": 24,
+     "counted": 24,
+     "successes": 24,
+     "validation_passes": 21,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 0.875,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 0.875,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": 6384,
+      "samples": 24,
+      "minimum": 20,
+      "reason": null
+     },
+     "p95_latency_ms": {
+      "value": 44108,
+      "samples": 24,
+      "minimum": 20,
+      "reason": null
+     },
+     "mean_output_tokens": {
+      "value": 588.9583333333334,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 21.41732380046061,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "30d": {
+     "window": "30d",
+     "attempts": 24,
+     "counted": 24,
+     "successes": 24,
+     "validation_passes": 21,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 0.875,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 0.875,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": 6384,
+      "samples": 24,
+      "minimum": 20,
+      "reason": null
+     },
+     "p95_latency_ms": {
+      "value": 44108,
+      "samples": 24,
+      "minimum": 20,
+      "reason": null
+     },
+     "mean_output_tokens": {
+      "value": 588.9583333333334,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 21.41732380046061,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    },
+    "all": {
+     "window": "all",
+     "attempts": 24,
+     "counted": 24,
+     "successes": 24,
+     "validation_passes": 21,
+     "errors": 0,
+     "timeouts": 0,
+     "cancellations": 0,
+     "success_rate": {
+      "value": 1.0,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "validation_pass_rate": {
+      "value": 0.875,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "validated_success_rate": {
+      "value": 0.875,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "error_rate": {
+      "value": 0.0,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "timeout_rate": {
+      "value": 0.0,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "p50_latency_ms": {
+      "value": 6384,
+      "samples": 24,
+      "minimum": 20,
+      "reason": null
+     },
+     "p95_latency_ms": {
+      "value": 44108,
+      "samples": 24,
+      "minimum": 20,
+      "reason": null
+     },
+     "mean_output_tokens": {
+      "value": 588.9583333333334,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "mean_tokens_per_second": {
+      "value": 21.41732380046061,
+      "samples": 24,
+      "minimum": 5,
+      "reason": null
+     },
+     "acceptance_rate": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     },
+     "mean_quality": {
+      "value": null,
+      "samples": 0,
+      "minimum": 5,
+      "reason": "0 sample(s); 5 needed"
+     }
+    }
+   },
+   "factor": {
+    "source": "production",
+    "value": 0.9375,
+    "neutral": false,
+    "window": "7d",
+    "attempts": 24,
+    "minimum_samples": 20,
+    "success_rate": 1.0,
+    "validation_pass_rate": 0.875,
+    "error_rate": 0.0,
+    "timeout_rate": 0.0,
+    "acceptance_rate": null,
+    "feedback_count": 0,
+    "reason": "7d window: 24 of 24 attempts answered (100%); 21 of 24 validated (88%) → factor 0.938"
+   },
+   "regression": {
+    "status": "insufficient_samples",
+    "recent_rate": 0.875,
+    "baseline_rate": null,
+    "drop": null,
+    "z_score": null,
+    "recent_samples": 24,
+    "baseline_samples": 0,
+    "minimum_samples": 20,
+    "minimum_drop": 0.15,
+    "z_threshold": 2.0,
+    "reason": "not evaluated: 24 recent and 0 baseline attempts; 20 of each needed"
+   },
+   "circuit_breaker": {
+    "state": "closed",
+    "opened_at": null,
+    "reason": "closed"
+   },
+   "updated_at": "2026-09-11T02:14:20.655Z"
+  }
+ ],
+ "regressions": [],
+ "windows": [
+  "7d",
+  "30d",
+  "all"
+ ],
+ "minimums": {
+  "factor_attempts": 20,
+  "rate_samples": 5,
+  "mean_samples": 5,
+  "percentile_samples": 20,
+  "regression_samples": 20,
+  "regression_drop": 0.15,
+  "regression_z": 2.0
+ }
+}
