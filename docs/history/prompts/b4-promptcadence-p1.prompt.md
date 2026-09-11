@@ -57,7 +57,7 @@ name reservation and CI secrets are human steps
   is still unpublished at that point, pin it as a local editable install with a
   `TODO: re-pin on publish`.
 * **Documentation is mirrored.** The workspace copies under
-  `/home/jpk/ai/suite/docs/apps/promptcadence/` are authoritative; copy `spec.md`,
+  `/home/jpk/ai/suite/WeightRoom/docs/apps/promptcadence/` are authoritative; copy `spec.md`,
   `lifecycle.md` and `development-plan.md` byte-identically into the new repo on creation and
   verify with `cmp`.
 * **You are not authorised to tag or publish.** Nothing ships here — the first release is

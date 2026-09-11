@@ -70,7 +70,7 @@ your time than `DropOldestPolicy` does.
   dependencies, and exceeding it requires an ADR. `hypothesis` is a **dev** dependency and does not
   touch that budget.
 * **Documentation is mirrored.** The workspace copies under
-  `/home/jpk/ai/suite/docs/packages/cutctx/` are authoritative; copy `spec.md` and
+  `/home/jpk/ai/suite/WeightRoom/docs/packages/cutctx/` are authoritative; copy `spec.md` and
   `development-plan.md` byte-identically into the repo's own `docs/packages/cutctx/` and verify
   with `cmp` ([outstanding-work §4](docs/roadmap/outstanding-work.md)).
 

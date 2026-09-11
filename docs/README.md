@@ -200,6 +200,14 @@ closing a question the code raised:
 | [Development Plan](apps/weightroom/development-plan.md) | 10 phases with demonstrable gates, one `1.0.0`; the schema rows and the MirrorWall row it depends on |
 | [Risks](apps/weightroom/risks.md) | The boundary-crossing class priced; the security rows a LAN console adds |
 
+WeightRoomGym's operator documents live at this tree's root, because this tree is its
+repository: [`setup.md`](setup.md) (the wizard, what it leaves on the host, trusting the root on
+each device), [`security.md`](security.md) (the LAN surface end to end), [`operations.md`](operations.md)
+(units, logs, backups and restore, jobs, retention, certificates), [`troubleshooting.md`](troubleshooting.md)
+(every doctor rule and error code), [`configuration.md`](configuration.md) (generated from the
+settings model) and [`openapi.json`](openapi.json) (the API snapshot). [`LAN_ACCESS.md`](LAN_ACCESS.md)
+and [`MEMORY_SAFETY.md`](MEMORY_SAFETY.md) are the suite documents it applies.
+
 ### [PromptCadence](apps/promptcadence/spec.md) — harness
 
 | Document | Contents |

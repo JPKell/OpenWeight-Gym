@@ -4,7 +4,7 @@
 **Model:** **Sonnet 5 · high**, as scheduled ([model-assignment](docs/roadmap/model-assignment.md)).
 Measurement plumbing on an existing engine; panel composition is already specified. The judgement is
 in §0.3's four decisions and in making I18 an honest two-application demonstration.
-**Repositories:** `/home/jpk/ai/suite/docs` first (§0.2), then `/home/jpk/ai/suite/FreeWeight` (the
+**Repositories:** `/home/jpk/ai/suite/WeightRoom/docs` first (§0.2), then `/home/jpk/ai/suite/FreeWeight` (the
 weight), then `/home/jpk/ai/suite/py/Commissioner` (one pin widen and its own release, §0.5).
 **Ships:** **`freeweight 1.1.0` and `commissioner 0.1.1` prepared, not published.** Version bumps,
 changelog moves and release commits are yours; **`git push`, tags and publishes are the operator's**
@@ -221,7 +221,7 @@ pin does not move an installed venv and looks exactly like success when it does 
 ## 1. Setup
 
 ```bash
-git -C /home/jpk/ai/suite/docs status -sb
+git -C /home/jpk/ai/suite/WeightRoom/docs status -sb
 git -C /home/jpk/ai/suite/FreeWeight status -sb
 git -C /home/jpk/ai/suite/py/Commissioner status -sb
 cd /home/jpk/ai/suite/FreeWeight && source .venv/bin/activate && pip install -e ".[dev]"

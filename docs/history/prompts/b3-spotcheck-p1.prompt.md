@@ -57,7 +57,7 @@ published, and anything B1 had to settle.
   [ADR-0051](docs/adr/0051-plans-stay-internal-and-one-payload-travels.md)). Pin the published
   versions. `sqlalchemy` arrives in Phase 2 (row E3) as the `spotcheck[sql]` extra — not now.
 * **Documentation is mirrored.** The workspace copies under
-  `/home/jpk/ai/suite/docs/packages/spotcheck/` are authoritative; copy `spec.md` and
+  `/home/jpk/ai/suite/WeightRoom/docs/packages/spotcheck/` are authoritative; copy `spec.md` and
   `development-plan.md` byte-identically into the new repo on creation and verify with `cmp`.
 * **You are not authorised to tag or publish.** Phase 1 does not publish; `0.1.0` ships at the end
   of Phase 2 (row E3).

@@ -33,7 +33,7 @@ ask. If a decision cannot be taken conservatively, stop at a green gate and writ
 * **Finish line:** `ruff format --check . && ruff check . && mypy src tests && lint-imports &&
   pytest -m "not live and not performance"` green; `pytest --cov` ≥ 85 %. One Conventional Commit
   per gate. **Name the interpreter and the invocation in the handoff.**
-* **Documentation is mirrored.** Edit `/home/jpk/ai/suite/docs/` first, then copy byte-identically
+* **Documentation is mirrored.** Edit `/home/jpk/ai/suite/WeightRoom/docs/` first, then copy byte-identically
   into `IdeaPress/docs/apps/ideapress/` (`spec.md`, `development-plan.md`, `workflows.md` and the
   other `apps/ideapress/*` files are mirrors); verify with `cmp`. **`IdeaPress/docs/README.md` is a
   repo-local index — never overwrite it.** The `docs` repository is shared with row M2 tonight:

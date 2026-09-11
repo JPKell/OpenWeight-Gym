@@ -41,7 +41,7 @@ your own heavy model loads to slow its test runs (say so if it matters).
 * **Live work is marked.** Anything that needs Ollama is a `live`-marked test or a scratchpad
   script, never part of the default suite (spec §18). The default suite must stay green with no
   network and no GPU.
-* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/docs/` first,
+* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/WeightRoom/docs/` first,
   then copy byte-identically into the component's own `docs/`, and verify with `cmp`.
 * **Do not push, do not tag, do not publish.** Standing instruction of 2026-09-04.
 * **Run `git status --short` at the start and at the end** in every repo you touch.

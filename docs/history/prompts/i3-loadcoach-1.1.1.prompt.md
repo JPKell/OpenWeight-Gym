@@ -4,7 +4,7 @@
 **Model:** **Sonnet 5 · high**, as scheduled ([model-assignment](docs/roadmap/model-assignment.md)).
 Daytime preferred: the row is small, but its second half has a measurement in it that a person
 should watch once. Record any deviation ([model-assignment §3.5](docs/roadmap/model-assignment.md)).
-**Repositories:** `/home/jpk/ai/suite/docs` first (the ADR and the two document edits), then
+**Repositories:** `/home/jpk/ai/suite/WeightRoom/docs` first (the ADR and the two document edits), then
 `/home/jpk/ai/suite/LoadCoach`. Nothing else.
 **Ships:** **`loadcoach 1.1.1` prepared, not published** — the version bump, the changelog and the
 release commit are yours; **`git push`, the tag and the publish are the operator's** (standing
@@ -207,7 +207,7 @@ source .venv/bin/activate          # Python 3.14.4 — say so in the report
 python --version
 pip install -e ".[dev]"            # only if the venv is stale
 git status -sb                     # clean, main...origin/main
-cd /home/jpk/ai/suite/docs && git status -sb
+cd /home/jpk/ai/suite/WeightRoom/docs && git status -sb
 ```
 
 ## 2. Standing preamble ([outstanding-work §2](docs/roadmap/outstanding-work.md))

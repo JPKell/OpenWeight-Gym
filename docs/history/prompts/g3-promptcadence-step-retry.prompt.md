@@ -4,7 +4,7 @@
 **Model:** **Opus 5 · high**, as scheduled ([model-assignment](docs/roadmap/model-assignment.md)).
 Lifecycle semantics that become persisted record shape — small in code, permanent in what an
 explanation says.
-**Repositories:** `/home/jpk/ai/suite/docs` (the ADR and the amendments, **first**), then
+**Repositories:** `/home/jpk/ai/suite/WeightRoom/docs` (the ADR and the amendments, **first**), then
 `/home/jpk/ai/suite/PromptCadence`.
 **Ships:** **nothing.** `0.9.0b0` is cut; this goes under `## [Unreleased]`. **No bump, no tag, no
 publish.**
@@ -141,7 +141,7 @@ reason**, and the I1 note in the handoff says how the explanation reads it.
 ## 1. Setup
 
 ```bash
-git -C /home/jpk/ai/suite/docs status -sb && git -C /home/jpk/ai/suite/docs log --oneline -3
+git -C /home/jpk/ai/suite/WeightRoom/docs status -sb && git -C /home/jpk/ai/suite/WeightRoom/docs log --oneline -3
 git -C /home/jpk/ai/suite/PromptCadence status -sb && git -C /home/jpk/ai/suite/PromptCadence log --oneline -3
 source .venv/bin/activate && pip install -e ".[dev]"
 python -V && pip show setspec commissioner loadledger toolyard | grep -E "^(Name|Version)"

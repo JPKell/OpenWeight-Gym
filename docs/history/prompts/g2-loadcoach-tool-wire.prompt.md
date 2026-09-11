@@ -3,7 +3,7 @@
 **Row:** G2 of [`docs/roadmap/outstanding-work.md`](docs/roadmap/outstanding-work.md) §1.
 **Model:** **Opus 5 · high**, as scheduled ([model-assignment](docs/roadmap/model-assignment.md)).
 A wire contract inside `/api/v1` that H2 then generalizes, plus the corrective's failure semantics.
-**Repositories:** `/home/jpk/ai/suite/docs` (first), `/home/jpk/ai/suite/LoadCoach` (the row's
+**Repositories:** `/home/jpk/ai/suite/WeightRoom/docs` (first), `/home/jpk/ai/suite/LoadCoach` (the row's
 weight), then `/home/jpk/ai/suite/PromptCadence` (the last two commits).
 **Ships:** **nothing.** LoadCoach's changelog gains an `## [Unreleased]` section; **no bump, no tag,
 no publish** — this rides the next LoadCoach minor (1.1 at H2 if H2 lands first). PromptCadence is
@@ -162,7 +162,7 @@ nothing to a response. Therefore:
 ## 1. Setup
 
 ```bash
-git -C /home/jpk/ai/suite/docs status -sb
+git -C /home/jpk/ai/suite/WeightRoom/docs status -sb
 git -C /home/jpk/ai/suite/LoadCoach status -sb
 git -C /home/jpk/ai/suite/PromptCadence status -sb
 cd /home/jpk/ai/suite/LoadCoach && source .venv/bin/activate && pip install -e ".[dev]"

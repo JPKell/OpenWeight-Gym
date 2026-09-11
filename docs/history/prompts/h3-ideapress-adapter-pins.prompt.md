@@ -7,7 +7,7 @@ operator on 2026-09-05 and to be recorded under
 repository of configuration passthrough; it now spans two repositories, a routing-semantics change,
 a migration and a live three-stage demonstration, and the classification join is a security-shaped
 invariant whose failure mode is quiet.
-**Repositories:** `/home/jpk/ai/suite/docs` first, then `/home/jpk/ai/suite/LoadCoach` (one narrow
+**Repositories:** `/home/jpk/ai/suite/WeightRoom/docs` first, then `/home/jpk/ai/suite/LoadCoach` (one narrow
 change, §0.1a), then `/home/jpk/ai/suite/IdeaPress`.
 **Ships:** **`ideapress 1.1.0` prepared, not published**, and an amendment to the already-prepared,
 still-unpublished **`loadcoach 1.1.0`**. Version bumps, changelog moves and release commits are
@@ -225,7 +225,7 @@ minutes, not hours.
 ## 1. Setup
 
 ```bash
-git -C /home/jpk/ai/suite/docs status -sb
+git -C /home/jpk/ai/suite/WeightRoom/docs status -sb
 git -C /home/jpk/ai/suite/LoadCoach status -sb
 git -C /home/jpk/ai/suite/IdeaPress status -sb
 source .venv/bin/activate && pip install -e ".[dev]"

@@ -68,7 +68,7 @@ kill-mid-debit design in §4 deserve more of your time than `SqlLedger`'s query 
 
 * **Work from inside the component directory, never the workspace root.** `/home/jpk/ai/suite` is a
   workspace, not a repository. This row works in `/home/jpk/ai/suite/py/LoadLedger` (and in
-  `/home/jpk/ai/suite/docs` for the authoritative copy of the two mirrored documents).
+  `/home/jpk/ai/suite/WeightRoom/docs` for the authoritative copy of the two mirrored documents).
 * **Read before writing**, in this order:
   [`docs/architecture/master-architecture.md`](docs/architecture/master-architecture.md) §§1–3
   (and §5.3, the storage model, which ADR-0050 extends), the LoadLedger section of
@@ -88,7 +88,7 @@ kill-mid-debit design in §4 deserve more of your time than `SqlLedger`'s query 
   handoff doc** (M5C-13). B2 ran `py/LoadLedger/.venv/bin/python`, Python 3.13.15 — confirm rather
   than copy that; there is no `python3.12` on this machine.
 * **Documentation is mirrored.** Edit the workspace copy under
-  `/home/jpk/ai/suite/docs/packages/loadledger/` first, then copy byte-identically into the repo's
+  `/home/jpk/ai/suite/WeightRoom/docs/packages/loadledger/` first, then copy byte-identically into the repo's
   `docs/packages/loadledger/`. Verify with `cmp`, never by eye
   ([outstanding-work §4](docs/roadmap/outstanding-work.md)).
 * **Lockfiles:** adding `sqlalchemy`, `alembic` and a PostgreSQL driver to `[dev]` means

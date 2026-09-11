@@ -139,13 +139,29 @@ anything else it spawns.
 
 ### 2.3 Verify the guard before trusting it
 
+Fire a cap on purpose and watch the kill arrive — in the kernel log, in the unit's journal, and
+(with WeightRoomGym running) as a *memory cap fired* alert on every console page. The unit is a
+throwaway: a transient `systemd --user` service with a 64 MiB cap allocating past it, so the
+proof costs nothing and touches no model.
+
 ```bash
-# Drive Ollama past the cap on purpose. Expect: the runner dies, `ollama ps` empties, the
-# desktop stays responsive, journalctl -u ollama shows the kill, the daemon restarts in 3 s.
-curl -s http://127.0.0.1:11434/api/generate -d \
-  '{"model":"gemma4:12b-it-q8_0","prompt":"hi","options":{"num_ctx":131072}}'
-journalctl -u ollama -k --since "-2m" | grep -iE 'oom|killed|memory'
+systemd-run --user --unit=memcap-demo --collect -p MemoryMax=64M -p MemorySwapMax=0 \
+  python3 -c 'bytearray(512 * 1024 * 1024)'
+# Expect, within a few seconds:
+journalctl --user -u memcap-demo --since "-2m"          # "Failed with result 'oom-kill'"
+journalctl -k --since "-2m" | grep -i 'oom-kill'        # task_memcg=…/memcap-demo.service
+wr-gym alerts list                                      # memory cap fired · memcap-demo.service (if the console watches it)
 ```
+
+This proves the half that matters — the kernel enforces a cgroup cap, the journal records it,
+and the alert path from journal to banner works — for **any** capped unit, `ollama.service`
+and the application units included, which carry the same `MemoryMax=` line (§2.1, §2.2). What
+it does not prove is that a real request drives Ollama past *its* cap: since Ollama 0.32
+`--fit` places the KV cache to fit the GPU, and on the reference machine no installed model can
+push `ollama.service` past 24 G (row W9, 2026-09-10). The older recipe — a 131 072-token request
+to `gemma4:12b-it-q8_0` — therefore no longer fires anything, and is retired. To fire Ollama's
+own cap you need a model larger than the cap; trust the unit's `MemoryMax=` line as
+`systemctl show ollama.service` reports it, which `wr-gym doctor` checks on every run.
 
 A guard that has not been fired once is a hope. Fire it.
 

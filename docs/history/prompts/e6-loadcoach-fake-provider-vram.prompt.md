@@ -7,7 +7,7 @@ stay reachable on purpose), and §0.1 below corrects the one thing it gets factu
 **Model:** **Sonnet 5 · standard**, as scheduled — overnight, run at **high**
 ([model-assignment §2.12](docs/roadmap/model-assignment.md)). One provider's declared numbers plus
 one configuration key.
-**Repositories:** `/home/jpk/ai/suite/LoadCoach` only, then `/home/jpk/ai/suite/docs`.
+**Repositories:** `/home/jpk/ai/suite/LoadCoach` only, then `/home/jpk/ai/suite/WeightRoom/docs`.
 **Ships:** nothing to PyPI. A LoadCoach change, changelog under `## [Unreleased]`, no version bump,
 no tag.
 **Overnight:** permitted (E6 is on none of §2.12's never-overnight list).
@@ -230,7 +230,7 @@ Add the configuration from §0.3, wire it through `build_provider`, and prove an
 ## 8. Gate D — docs
 
 If (and only if) you touched a workspace `docs/` file, mirror it into `LoadCoach/docs/` and
-`cmp`-prove byte-identity. Then, in `/home/jpk/ai/suite/docs`, one commit:
+`cmp`-prove byte-identity. Then, in `/home/jpk/ai/suite/WeightRoom/docs`, one commit:
 
 * Mark the **E6 row** done in `roadmap/outstanding-work.md` §1 in the house shape E4/E5 used —
   `**Done 2026-09-0X** (`docs/history/handoffs/E6_HANDOFF.md`; commits …)` — and fold in §0.1 (the numbers are ModelRack's)

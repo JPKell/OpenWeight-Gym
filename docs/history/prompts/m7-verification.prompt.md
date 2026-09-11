@@ -36,7 +36,7 @@ WEIGHTSDB_REQUIRE_POSTGRES=1 \
 ```
 
 The venv is **Python 3.13.15**. The handoff is `~/ai/suite/M7_HANDOFF.md`, entries `M7-1` … and a
-final `## ACTIONS REQUIRED FROM YOU`. The docs repository (`~/ai/suite/docs`) is committed at its
+final `## ACTIONS REQUIRED FROM YOU`. The docs repository (`~/ai/suite/WeightRoom/docs`) is committed at its
 head; `IdeaPress/docs/apps/ideapress/*.md` are byte-identical mirrors — `cmp` all six yourself,
 because this repository is the one whose mirror had never been repaired before this run.
 

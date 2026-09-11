@@ -5,7 +5,7 @@
 reasoning on Opus, conformance + docs + publication on Sonnet); [model-assignment §3.5](docs/roadmap/model-assignment.md)
 settled at F1 that a phase gets **one** model, the stronger of any pair. Run it whole on Opus 5 · high
 and record no deviation.
-**Repositories, in this order:** `/home/jpk/ai/suite/docs` (first, always),
+**Repositories, in this order:** `/home/jpk/ai/suite/WeightRoom/docs` (first, always),
 `/home/jpk/ai/suite/py/BaseAiCore` (one field, one release), then `/home/jpk/ai/suite/py/ModelRack`
 (the row's weight).
 **Ships:** **two releases prepared, neither pushed.** `baseaicore 0.4.2` (ADR-0074's field) must be
@@ -130,7 +130,7 @@ otherwise the suite's `thinking_control` row is a skip everywhere but a live tes
 ## 1. Setup
 
 ```bash
-git -C /home/jpk/ai/suite/docs status -sb
+git -C /home/jpk/ai/suite/WeightRoom/docs status -sb
 git -C /home/jpk/ai/suite/py/BaseAiCore status -sb
 git -C /home/jpk/ai/suite/py/ModelRack status -sb
 cd /home/jpk/ai/suite/py/ModelRack && source .venv/bin/activate && pip install -e ".[dev]"

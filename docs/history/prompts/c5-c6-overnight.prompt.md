@@ -8,7 +8,7 @@ exactly this: *"consecutive rows with one letter can be run back-to-back in one 
 [model-assignment §3.5](docs/roadmap/model-assignment.md)'s distribution does not drift silently.
 **Repositories:** `/home/jpk/ai/suite/py/ModelRack` (Python 3.13.15, coverage floor **95 %**), then
 `/home/jpk/ai/suite/LoadCoach` (Python 3.14.4, coverage floor **85 %**), plus
-`/home/jpk/ai/suite/docs` for C6's document amendments. Three repos, one session.
+`/home/jpk/ai/suite/WeightRoom/docs` for C6's document amendments. Three repos, one session.
 **Ships:** nothing. C5 rides `modelrack 0.7.0` at H1; C6 rides `loadcoach 1.1.0` at H2. No version
 bump, no tag, no publish, **no push**.
 **Overnight:** permitted. Neither row is on [§2.12](docs/roadmap/model-assignment.md)'s

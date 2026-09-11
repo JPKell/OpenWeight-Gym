@@ -19,8 +19,8 @@ should additionally include the standing preamble in §2 below. Batch letters gr
 adjacent *and* on the same model, so consecutive rows with one letter can be run back-to-back in
 one sitting; letters are dependency-ordered, and §3 lists which orderings are load-bearing versus
 merely convenient. All paths are relative to `~/ai/suite/WeightRoom/docs/` (the documentation
-repository became the WeightRoomGym repository at row W0; `~/ai/suite/docs` is a symlink to it for
-one transition).
+repository became the WeightRoomGym repository at row W0; the `~/ai/suite/docs` symlink of the
+transition was removed at row W10).
 
 ## 1. The master table
 

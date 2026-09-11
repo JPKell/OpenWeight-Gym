@@ -49,7 +49,7 @@ two dialects, with a `check_parity` test that will tell you immediately if you g
 
 * **Work from inside the component directory, never the workspace root.** `/home/jpk/ai/suite` is a
   workspace, not a repository. This row works in `/home/jpk/ai/suite/LoadCoach` (and in
-  `/home/jpk/ai/suite/docs` for the authoritative copy of the mirrored documents).
+  `/home/jpk/ai/suite/WeightRoom/docs` for the authoritative copy of the mirrored documents).
 * **Read before writing**, in this order:
   [`docs/architecture/master-architecture.md`](docs/architecture/master-architecture.md) §§1–3, the
   LoadCoach section of [`docs/standards/gold-standards.md`](docs/standards/gold-standards.md) §2

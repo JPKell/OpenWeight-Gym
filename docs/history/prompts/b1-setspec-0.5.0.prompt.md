@@ -46,7 +46,7 @@ unpublished type is how the two drift.
   (M5C-13) — e.g. `py/SetSpec/.venv/bin/python`, Python 3.13.x.
 * **Dependency pinning:** `setspec` depends on `baseaicore` only. Keep the existing `>=0.4,<0.5`
   range — `0.4.1` is inside it, so no pin changes. Add no other dependency.
-* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/docs/` first,
+* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/WeightRoom/docs/` first,
   then copy byte-identically into `py/SetSpec/docs/`. Verify with `cmp`, never by eye. The mirrored
   files here are `packages/setspec/spec.md` and `packages/setspec/development-plan.md`.
 * **You are not authorised to tag or publish.** Prepare the release, stop at the tag, and say so.

@@ -25,7 +25,7 @@ new capability this adoption buys is *one shared, golden-tested reduction* — n
 * **Finish line:** `ruff format --check . && ruff check . && mypy src tests && lint-imports &&
   pytest -m "not live and not performance"` green, plus `pytest --cov` at or above the **85 %**
   floor (application). **Name the interpreter and the exact invocation in the handoff** (M5C-13).
-* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/docs/` first,
+* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/WeightRoom/docs/` first,
   then copy byte-identically into `IdeaPress/docs/apps/ideapress/`, and verify with `cmp`.
 * **Do not push, do not tag, do not publish.** Standing instruction of 2026-09-04.
 * **Run `git status --short` at the start and at the end** in every repository you touch.

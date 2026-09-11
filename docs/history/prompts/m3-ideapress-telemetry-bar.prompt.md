@@ -20,7 +20,7 @@ it clean and committed.**
 * **Finish line:** `ruff format --check . && ruff check . && mypy src tests && lint-imports &&
   pytest -m "not live and not performance"` green, coverage ≥ 85 %. `CHANGELOG.md` under
   `[Unreleased]`. One Conventional Commit per gate. Name the interpreter.
-* **Documentation is mirrored.** Edit `/home/jpk/ai/suite/docs/` first, then copy byte-identically
+* **Documentation is mirrored.** Edit `/home/jpk/ai/suite/WeightRoom/docs/` first, then copy byte-identically
   into `IdeaPress/docs/apps/ideapress/`; verify with `cmp`. **`IdeaPress/docs/README.md` is
   repo-local — never overwrite it.** The `docs` repository is shared with row M2 tonight: commit
   only the files you edited, by name; never `git add -A`.

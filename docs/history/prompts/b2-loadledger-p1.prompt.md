@@ -47,7 +47,7 @@ yet; creating it is the first task.**
   the standing rule is a local path/editable install carrying a `TODO: re-pin on publish`; that does
   not apply here, because `baseaicore` is published.
 * **Documentation is mirrored.** The workspace copies under
-  `/home/jpk/ai/suite/docs/packages/loadledger/` are authoritative; copy `spec.md` and
+  `/home/jpk/ai/suite/WeightRoom/docs/packages/loadledger/` are authoritative; copy `spec.md` and
   `development-plan.md` byte-identically into the new repo's own `docs/packages/loadledger/` on
   creation and verify with `cmp` ([outstanding-work §4](docs/roadmap/outstanding-work.md)).
 * **You are not authorised to tag or publish.** Phase 1 does not publish in any case — `0.1.0` ships

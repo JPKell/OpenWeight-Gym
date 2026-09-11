@@ -8,7 +8,7 @@ exception), and §0.1 below corrects three factual assumptions in it.
 lock recompile and a gate per repository, proven once already on MirrorWall itself.
 **Repositories, in this order:** `/home/jpk/ai/suite/py/MirrorWall` (release only — the code is
 built), then `/home/jpk/ai/suite/PromptCadence`, `/home/jpk/ai/suite/IdeaPress`,
-`/home/jpk/ai/suite/FreeWeight`, then `/home/jpk/ai/suite/docs` (the row is marked done last).
+`/home/jpk/ai/suite/FreeWeight`, then `/home/jpk/ai/suite/WeightRoom/docs` (the row is marked done last).
 **Ships:** `mirrorwall 0.2.2` to PyPI — and **nothing else**. The three applications take a
 dependency edit only: changelog under `## [Unreleased]`, **no version bump, no tag, no publish**.
 **Overnight:** permitted (E5 is on none of §2.12's never-overnight list) — but see the hard stop in
@@ -168,7 +168,7 @@ fixes it, or run the pushes from the VSCode terminal where the askpass IPC env i
 **A2. Push the four repositories, in this order**, and confirm CI green on each:
 
 ```bash
-cd /home/jpk/ai/suite/docs          && git push origin main   # E4's, owed
+cd /home/jpk/ai/suite/WeightRoom/docs          && git push origin main   # E4's, owed
 cd /home/jpk/ai/suite/LoadCoach     && git push origin main   # E4's, owed — no tag, no release
 cd /home/jpk/ai/suite/PromptCadence && git push origin main   # E4's, owed
 cd /home/jpk/ai/suite/py/MirrorWall && git push origin main   # this row's
@@ -259,7 +259,7 @@ which.
 
 ## 7. Gate C — docs
 
-In `/home/jpk/ai/suite/docs`, one commit:
+In `/home/jpk/ai/suite/WeightRoom/docs`, one commit:
 
 * Mark the **E5 row** done in `roadmap/outstanding-work.md` §1 in the house shape E4 used —
   `**Done 2026-09-0X** (`docs/history/handoffs/E5_HANDOFF.md`; commits …)` — and add any correction this session found, so

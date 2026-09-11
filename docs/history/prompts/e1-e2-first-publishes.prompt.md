@@ -8,7 +8,7 @@ share nothing else: E2 needs D1, E1 needs C1, and neither needs the other.
 **Repositories, in the order this document runs them:** `/home/jpk/ai/suite/py/ToolYard`, then
 `/home/jpk/ai/suite/py/CutCtx` — both Python **3.13.15**, coverage floor **95 %** — plus
 `/home/jpk/ai/suite/LoadCoach` for the shared fetch vectors (**tests only**, §2.4) and
-`/home/jpk/ai/suite/docs` for any amendment you propose.
+`/home/jpk/ai/suite/WeightRoom/docs` for any amendment you propose.
 **Ships:** both rows end at a **first publish** — `toolyard 0.1.0` and `cutctx 0.1.0`.
 **You prepare each release and stop at the tag.** Tagging, the `pypi` environment approval and the
 post-publish install check are the human's ([outstanding-work §4](docs/roadmap/outstanding-work.md)).
@@ -167,7 +167,7 @@ git status --short
   (both repos stand at 100 % today — do not regress them silently), `CHANGELOG.md` updated, one
   Conventional Commit per logical group. **Name the interpreter and the exact invocation in each
   handoff** (M5C-13) — confirm 3.13.15 rather than copying it from here.
-* **Documentation is mirrored.** Anything you amend under `/home/jpk/ai/suite/docs/` is edited in the
+* **Documentation is mirrored.** Anything you amend under `/home/jpk/ai/suite/WeightRoom/docs/` is edited in the
   workspace copy **first**, then re-copied into the component's `docs/` and proven with `cmp`. Do not
   reflow markdown you edit.
 * **A new public name is a spec amendment, proposed, not a quiet deviation.** Both rows will want

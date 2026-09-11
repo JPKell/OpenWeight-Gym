@@ -3,7 +3,7 @@
 **Row:** G1 of [`docs/roadmap/outstanding-work.md`](docs/roadmap/outstanding-work.md) §1.
 **Model:** **Fable 5 · xhigh**, as scheduled ([model-assignment §2.10](docs/roadmap/model-assignment.md)).
 Design-dense, with a live-model interaction and the arc's central proof.
-**Repositories:** `/home/jpk/ai/suite/PromptCadence`, then `/home/jpk/ai/suite/docs`.
+**Repositories:** `/home/jpk/ai/suite/PromptCadence`, then `/home/jpk/ai/suite/WeightRoom/docs`.
 **Ships:** **`promptcadence 0.9.0b0` — the M11 beta, and the package's first PyPI release.**
 The version bump and the changelog release section are yours; **the tag, the push and the `pypi`
 environment approval are the operator's** (§12).
@@ -137,7 +137,7 @@ config edit, not an ADR: **do not open one for it.**
 cd /home/jpk/ai/suite/PromptCadence && source .venv/bin/activate && pip install -e ".[dev]"
 python -V && pip show setspec commissioner loadledger toolyard | grep -E "^(Name|Version)"
 git -C /home/jpk/ai/suite/PromptCadence status -sb
-git -C /home/jpk/ai/suite/docs status -sb
+git -C /home/jpk/ai/suite/WeightRoom/docs status -sb
 ```
 
 Every scratch database, config file, workspace and log goes in the session scratchpad — **never**

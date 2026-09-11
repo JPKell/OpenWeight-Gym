@@ -6,7 +6,7 @@ The row's note *"consider Fable 5 for the injection corpus"* is the operator's c
 yours mid-session; whatever runs, record the deviation ([model-assignment §3.5](docs/roadmap/model-assignment.md)).
 **Never overnight.** [outstanding-work §2](docs/roadmap/outstanding-work.md) names this row's
 security half explicitly: it is won by review and fails silently.
-**Repositories:** `/home/jpk/ai/suite/docs` first (gate A), then
+**Repositories:** `/home/jpk/ai/suite/WeightRoom/docs` first (gate A), then
 `/home/jpk/ai/suite/PromptCadence`. `py/ToolYard` only if gate D finds something in it (§0.5).
 **Ships:** **`promptcadence 1.0.0` prepared, not published.** The version bump, the changelog move
 and the release commit are yours; **`git push`, the tag and the publish are the operator's**
@@ -211,11 +211,11 @@ the handoff. CutCtx feedback presupposes I1 (§0.1).
 ## 1. Setup
 
 ```bash
-git -C /home/jpk/ai/suite/docs status -sb && git -C /home/jpk/ai/suite/docs log --oneline -3
+git -C /home/jpk/ai/suite/WeightRoom/docs status -sb && git -C /home/jpk/ai/suite/WeightRoom/docs log --oneline -3
 git -C /home/jpk/ai/suite/PromptCadence status -sb && git -C /home/jpk/ai/suite/PromptCadence log --oneline -3
 source .venv/bin/activate && pip install -e ".[dev]"
 python -V && pip show setspec toolyard loadledger commissioner mirrorwall | grep -E "^(Name|Version)"
-ls docs/adr | tail -3   # from /home/jpk/ai/suite/docs — the next ADR number
+ls docs/adr | tail -3   # from /home/jpk/ai/suite/WeightRoom/docs — the next ADR number
 ```
 
 Every scratch database, config file, workspace, corpus fixture and log goes in the session

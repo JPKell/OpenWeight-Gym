@@ -36,7 +36,7 @@ nesting an unpublished `1.1` evidence class is a contract that does not exist an
 
 * **Work from inside the component directory, never the workspace root.** `/home/jpk/ai/suite` is a
   workspace, not a repository. This row works in `/home/jpk/ai/suite/py/SetSpec` (and in
-  `/home/jpk/ai/suite/docs` for the authoritative copy of the two mirrored documents).
+  `/home/jpk/ai/suite/WeightRoom/docs` for the authoritative copy of the two mirrored documents).
 * **Read before writing**, in this order:
   [`docs/architecture/master-architecture.md`](docs/architecture/master-architecture.md) §§1–3, the
   SetSpec section of [`docs/standards/gold-standards.md`](docs/standards/gold-standards.md) §2, then
@@ -55,7 +55,7 @@ nesting an unpublished `1.1` evidence class is a contract that does not exist an
   adds **no dependency and changes no pin**; every type it needs is already imported by
   `setspec.capability.v1`. If a `baseaicore` upgrade lands in the venv mid-session, see the
   snapshot-drift rule under "Constraints".
-* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/docs/` first,
+* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/WeightRoom/docs/` first,
   then copy byte-identically into `py/SetSpec/docs/`. Verify with `cmp`, never by eye. The mirrored
   files here are `packages/setspec/spec.md` and `packages/setspec/development-plan.md`.
 * **You are not authorised to tag or publish.** Prepare the release, stop at the tag, and say so.

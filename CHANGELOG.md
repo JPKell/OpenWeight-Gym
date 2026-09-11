@@ -6,6 +6,74 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.0.0] — 2026-09-10
+
+One release over everything rows W1–W9 built (interview decision D15), prepared at row W10 for
+the operator's tag once the independent-device verification says *ready* and MirrorWall `0.3.1`
+is published (`requirements/ci.lock` is re-cut against it then). `0.1.0` is the only version on
+PyPI; `0.2.0`–`0.7.0` were prepared and never tagged, and their sections below are what `1.0.0`
+carries.
+
+### Added
+- **The operator documentation set** (row W10): `docs/setup.md` (the wizard end to end, what it
+  leaves on the host, trusting the root on each device), `docs/security.md` (the LAN surface end
+  to end, in the order a request meets it), `docs/operations.md` (units, logs, backups and
+  restore — the console's own and each application's — jobs, retention, certificates,
+  upgrading) and `docs/troubleshooting.md` (every doctor rule and every spec §13 code, with what
+  to do); `docs/openapi.json`, the API snapshot, held byte-identical to the application by
+  `tests/contract/test_openapi_snapshot.py`, which also holds `api.md`'s route list to exactly
+  the routes served.
+- **Spec §14 as a registry** (`tests/security/test_checklist.py`): every security row named by
+  the file and test that holds it; **the redaction sweep** (`tests/security/test_redaction_sweep.py`):
+  every audit exercise through one console holding the operator's password and a LoadCoach
+  token, neither reaching an audit row or a log line; **a network-isolation e2e**
+  (`tests/e2e/test_network_isolation.py`): every page and every id-free `GET` with the four
+  applications installed and stopped and every socket refused — no internal error, every `5xx`
+  a refusal by name.
+- **Every spec §15 budget measured and asserted** under `-m performance`
+  (`tests/performance/test_budgets.py`), the degradations the spec names each tied to its test
+  (`tests/unit/test_degradations.py`), and the upgrade from the first release's schema
+  (migration `0001`) to head with rows intact.
+- **The doctor repeats PromptCadence's LoadCoach token check** on its card
+  (`promptcadence.loadcoach_token`): *ok* when LoadCoach answers PromptCadence and accepts its
+  token, a *failure* naming the re-issue when it refuses it, *unknown* while PromptCadence is
+  stopped or too old to say (`history/handoffs/W6_HANDOFF.md` §8 item 4).
+- **Settings:** an application's per-key `applies` (IdeaPress: *next stage*) is shown instead of
+  *live* when its document states one; a stored runtime row offers **clear**, which sends
+  `null` through the application's own `PUT /settings` and is audited as `cleared`
+  (`history/handoffs/WI1_HANDOFF.md` §5 items 4a–4b).
+- A successful `catalog_pull` queues a `model_refresh`, so a pulled model reaches the catalog
+  without a second click; `freeweight_suite_run` launches under a named scope
+  (`wr-gym-fwrun-<job>.scope`) that the `memory_cap` alert source watches; every child process
+  runs with `PYTHONUNBUFFERED=1`, so a run id is visible while the run is going
+  (`history/handoffs/W9_HANDOFF.md` §5 items 5f–5h).
+
+### Changed
+- **Spec §15's JavaScript budget is the console's own scripts** (ADR-0138): htmx and its SSE
+  extension (ADR-0128), ECharts and mermaid are excluded and budgeted by name; the total is
+  reported beside the part — 30 KiB own, 89 KiB in all on the heaviest page at this release.
+- `mirrorwall>=0.3.1,<0.4` (W3's `TODO` closed): the shell needs `mw:telemetry`,
+  `product_href`, `theme_control`, the multipart CSRF fix and `log_pane`'s `sse-close`.
+- `MEMORY_SAFETY.md` §2.3 fires a capped transient unit rather than a 131 072-token request
+  to Ollama, which no longer drives `ollama.service` past its cap on Ollama 0.32 with `--fit`
+  (`history/handoffs/W9_HANDOFF.md` §4.4); mirrored into the four applications.
+
+### Fixed
+- A `settings.write` audit row said `touched_security: true` for a change to an unrelated key:
+  the page posts every field, and an unchanged security key counted as touched and demanded the
+  password. Only a security key whose value changed counts (WI1 §5 item 4c).
+- `tests/unit/test_cli.py::test_units_sync_writes_reports_and_audits` pins `PATH`, so an
+  activated virtualenv (where `wr-gym` resolves and a fifth unit is written) no longer fails it
+  (WI1 §5 item 4d).
+
+### Removed
+- The `~/ai/suite/docs` symlink of the W0–W10 transition; every kickoff prompt and comment that
+  named it says `WeightRoom/docs` now.
+
+## [0.7.0-unreleased] — the work of rows W8, W9, WA1 (2026-09-10), carried into 1.0.0
+
 ### Added
 - **The job queue** (row W9, `domain/jobs.py`, `services/jobs.py`, `services/job_kinds.py`,
   `/jobs`, `wr-gym jobs list|show|run|cancel|schedule`, migration `0006`): WeightRoomGym's own

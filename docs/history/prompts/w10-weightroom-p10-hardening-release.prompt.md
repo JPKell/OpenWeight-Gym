@@ -18,7 +18,7 @@ Phase 10; `standards/security-standards.md` §14; `standards/testing-standards.m
 WeightRoomGym and §4; `history/handoffs/M7_HANDOFF.md` and `history/prompts/m7-verification.prompt.md` (the
 verification precedent: an independent run with permission to say *not ready*); every
 `W*_HANDOFF.md` and `WS*_HANDOFF.md` (what each row deferred); `history/handoffs/W0_HANDOFF.md` §"The
-symlink" (what still resolves through `~/ai/suite/docs`).
+symlink" (what still resolves through `~/ai/suite/WeightRoom/docs`).
 
 ## Decisions already taken — do not reopen
 
@@ -26,7 +26,7 @@ symlink" (what still resolves through `~/ai/suite/docs`).
   date — a criterion that fails is reported, not waived.
 * The verification is run **on an independent device** against the reference machine, by a
   session with explicit permission to say *not ready*, and its verdict is recorded verbatim.
-* The `docs` symlink at the workspace root is removed by this row; every `~/ai/suite/docs`
+* The `docs` symlink at the workspace root is removed by this row; every `~/ai/suite/WeightRoom/docs`
   reference in scripts, prompts, `pyproject.toml` comments and the workspace `CLAUDE.md` is
   rewritten to `WeightRoom/docs` (the W0 handoff lists them); the operator confirms nothing else
   on the machine resolves through it before the `rm`.

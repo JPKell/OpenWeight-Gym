@@ -90,7 +90,7 @@ enforcement of the refusal order in §4, and the fuzz corpus in §7 deserve more
   have to guess which you intended. `hypothesis` is a **dev** dependency and does not touch the
   budget (the CutCtx precedent).
 * **Documentation is mirrored.** The workspace copies under
-  `/home/jpk/ai/suite/docs/packages/toolyard/` are authoritative; copy `spec.md` and
+  `/home/jpk/ai/suite/WeightRoom/docs/packages/toolyard/` are authoritative; copy `spec.md` and
   `development-plan.md` byte-identically into the repo's own `docs/packages/toolyard/` and verify
   with `cmp` ([outstanding-work §4](docs/roadmap/outstanding-work.md)).
 

@@ -66,7 +66,7 @@ the `compare()` input in §6 deserve more of your time than the state-machine tr
 
 * **Work from inside the component directory, never the workspace root.** `/home/jpk/ai/suite` is a
   workspace, not a repository. This row works in `/home/jpk/ai/suite/PromptCadence` (and in
-  `/home/jpk/ai/suite/docs` for the authoritative copy of the three mirrored documents).
+  `/home/jpk/ai/suite/WeightRoom/docs` for the authoritative copy of the three mirrored documents).
 * **Read before writing**, in this order:
   [`docs/architecture/master-architecture.md`](docs/architecture/master-architecture.md) §§1–3, the
   PromptCadence section of [`docs/standards/gold-standards.md`](docs/standards/gold-standards.md)
@@ -93,7 +93,7 @@ the `compare()` input in §6 deserve more of your time than the state-machine tr
   `PromptCadence/.venv/bin/python`, Python 3.13.15; confirm rather than copy. There is no
   `python3.12` on this machine.
 * **Documentation is mirrored.** Edit the workspace copy under
-  `/home/jpk/ai/suite/docs/apps/promptcadence/` first, then copy byte-identically into the repo's
+  `/home/jpk/ai/suite/WeightRoom/docs/apps/promptcadence/` first, then copy byte-identically into the repo's
   `docs/apps/promptcadence/`. The three files are `spec.md`, `lifecycle.md` and
   `development-plan.md`. Verify with `cmp`, never by eye.
 

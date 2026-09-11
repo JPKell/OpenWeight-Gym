@@ -1,0 +1,4000 @@
+{
+  "components": {
+    "schemas": {
+      "ApprovalBody": {
+        "additionalProperties": false,
+        "description": "``POST /chat/conversations/{id}/approvals/{approval_id}`` (api.md \u00a76).",
+        "properties": {
+          "decision": {
+            "enum": [
+              "approve",
+              "deny"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "ApprovalBody",
+        "type": "object"
+      },
+      "Body_api_attach_api_v1_chat_conversations__conversation_id__attachments_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_api_attach_api_v1_chat_conversations__conversation_id__attachments_post",
+        "type": "object"
+      },
+      "Body_post_dropin_api_v1_catalog_dropin_post": {
+        "properties": {
+          "file": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "path": {
+            "default": "",
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "title": "Body_post_dropin_api_v1_catalog_dropin_post",
+        "type": "object"
+      },
+      "CandidateFile": {
+        "additionalProperties": false,
+        "description": "``POST /apps/{app}/settings/validate``'s body: a whole candidate file.",
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "CandidateFile",
+        "type": "object"
+      },
+      "Credentials": {
+        "additionalProperties": false,
+        "description": "``POST /api/v1/login``'s body.",
+        "properties": {
+          "password": {
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Credentials",
+        "type": "object"
+      },
+      "DeleteBody": {
+        "additionalProperties": false,
+        "description": "``DELETE /catalog/{ref}`` (api.md \u00a75): preview first, then a typed, re-authenticated\nconfirm.",
+        "properties": {
+          "confirm": {
+            "default": "",
+            "maxLength": 256,
+            "title": "Confirm",
+            "type": "string"
+          },
+          "preview": {
+            "default": false,
+            "title": "Preview",
+            "type": "boolean"
+          },
+          "token": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "title": "DeleteBody",
+        "type": "object"
+      },
+      "DeleteResultsBody": {
+        "additionalProperties": false,
+        "description": "``POST \u2026/db/delete-results`` (api.md \u00a73): preview without ``token``, then the deletion.",
+        "properties": {
+          "scope": {
+            "maxLength": 16,
+            "title": "Scope",
+            "type": "string"
+          },
+          "selector": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Selector",
+            "type": "string"
+          },
+          "token": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Token",
+            "type": "string"
+          },
+          "typed": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Typed",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "title": "DeleteResultsBody",
+        "type": "object"
+      },
+      "EnabledBody": {
+        "additionalProperties": false,
+        "description": "``POST /catalog/{ref}/enabled`` (api.md \u00a75).",
+        "properties": {
+          "app": {
+            "maxLength": 32,
+            "title": "App",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "app",
+          "enabled"
+        ],
+        "title": "EnabledBody",
+        "type": "object"
+      },
+      "EnqueueBody": {
+        "additionalProperties": false,
+        "description": "``POST /jobs`` (api.md \u00a77): a kind and its parameters, or a schedule to run now.",
+        "properties": {
+          "kind": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Kind",
+            "type": "string"
+          },
+          "name_typed": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Name Typed",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": true,
+            "title": "Params",
+            "type": "object"
+          },
+          "schedule_id": {
+            "anyOf": [
+              {
+                "maxLength": 26,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Id"
+          }
+        },
+        "title": "EnqueueBody",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "NewConversation": {
+        "additionalProperties": false,
+        "description": "``POST /chat/conversations`` (api.md \u00a76).",
+        "properties": {
+          "backend": {
+            "title": "Backend",
+            "type": "string"
+          },
+          "classification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classification"
+          },
+          "model_override": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Override"
+          },
+          "task_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Profile"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools"
+          }
+        },
+        "required": [
+          "backend",
+          "title"
+        ],
+        "title": "NewConversation",
+        "type": "object"
+      },
+      "NewMessage": {
+        "additionalProperties": false,
+        "description": "``POST /chat/conversations/{id}/messages``.",
+        "properties": {
+          "attachment_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Attachment Ids",
+            "type": "array"
+          },
+          "text": {
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "NewMessage",
+        "type": "object"
+      },
+      "OverrideBody": {
+        "additionalProperties": false,
+        "description": "``PUT /apps/{app}/prompts/{id}`` (api.md \u00a74): the whole record.",
+        "properties": {
+          "record": {
+            "additionalProperties": true,
+            "title": "Record",
+            "type": "object"
+          }
+        },
+        "required": [
+          "record"
+        ],
+        "title": "OverrideBody",
+        "type": "object"
+      },
+      "Password": {
+        "additionalProperties": false,
+        "description": "``POST /api/v1/reauth``'s body.",
+        "properties": {
+          "password": {
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "Password",
+        "type": "object"
+      },
+      "PullBody": {
+        "additionalProperties": false,
+        "description": "``POST /catalog/pull`` (api.md \u00a75).",
+        "properties": {
+          "name": {
+            "maxLength": 256,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PullBody",
+        "type": "object"
+      },
+      "QueryBody": {
+        "additionalProperties": false,
+        "description": "``POST \u2026/db/query`` and ``POST \u2026/db/write/dry-run``: one statement.",
+        "properties": {
+          "sql": {
+            "maxLength": 100000,
+            "title": "Sql",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sql"
+        ],
+        "title": "QueryBody",
+        "type": "object"
+      },
+      "RestoreBody": {
+        "additionalProperties": false,
+        "description": "``POST \u2026/db/restore`` (api.md \u00a73).",
+        "properties": {
+          "file": {
+            "maxLength": 4096,
+            "title": "File",
+            "type": "string"
+          },
+          "name_typed": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Name Typed",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "RestoreBody",
+        "type": "object"
+      },
+      "ScheduleBody": {
+        "additionalProperties": false,
+        "description": "``PUT /jobs/schedules/{id}`` (api.md \u00a77): any of the three; one left out is unchanged.",
+        "properties": {
+          "cron": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cron"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
+          }
+        },
+        "title": "ScheduleBody",
+        "type": "object"
+      },
+      "SettingsWrite": {
+        "additionalProperties": false,
+        "description": "``PUT /apps/{app}/settings``'s body (api.md \u00a72).",
+        "properties": {
+          "base_mtime": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Mtime"
+          },
+          "changes": {
+            "additionalProperties": true,
+            "title": "Changes",
+            "type": "object"
+          },
+          "to_file": {
+            "items": {
+              "type": "string"
+            },
+            "title": "To File",
+            "type": "array"
+          }
+        },
+        "title": "SettingsWrite",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WriteBody": {
+        "additionalProperties": false,
+        "description": "``POST \u2026/db/write`` (api.md \u00a73).\n\nNo re-authentication field: the window is the session's, opened by ``POST /reauth`` (row W4).",
+        "properties": {
+          "dry_run_id": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Dry Run Id",
+            "type": "string"
+          },
+          "sql": {
+            "maxLength": 100000,
+            "title": "Sql",
+            "type": "string"
+          },
+          "tables_typed": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Tables Typed",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sql"
+        ],
+        "title": "WriteBody",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "WeightRoomGym",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/alerts": {
+      "get": {
+        "description": "Every alert not yet closed, newest first, and the banner's count and newest.",
+        "operationId": "get_alerts_api_v1_alerts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Active alerts, and what the banner shows",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/api/v1/alerts/history": {
+      "get": {
+        "description": "``opened``, ``seen``, ``acknowledged`` and ``cleared``, newest first; kept for ever.",
+        "operationId": "get_history_api_v1_alerts_history_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "What happened to every alert",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/api/v1/alerts/{alert_id}/acknowledge": {
+      "post": {
+        "description": "A memory-cap alert closes; a condition stays active, off the banner, until it clears.",
+        "operationId": "post_acknowledge_api_v1_alerts__alert_id__acknowledge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "alert_id",
+            "required": true,
+            "schema": {
+              "title": "Alert Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Acknowledge an alert",
+        "tags": [
+          "alerts"
+        ]
+      }
+    },
+    "/api/v1/apps": {
+      "get": {
+        "description": "Each application's install, unit, version, negotiated verdict and schema revision.",
+        "operationId": "list_apps_api_v1_apps_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The four applications",
+        "tags": [
+          "apps"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}": {
+      "get": {
+        "description": "One application's view; ``404 APP_UNKNOWN`` for a name that is not one of the four.",
+        "operationId": "get_app_api_v1_apps__app__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One application",
+        "tags": [
+          "apps"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/config": {
+      "get": {
+        "description": "The file's text and ``st_mtime_ns`` \u2014 the raw editor's base (api.md \u00a72).",
+        "operationId": "get_config_api_v1_apps__app__config_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The raw configuration file and its base mtime",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/backup": {
+      "post": {
+        "description": "``<app> db backup``; ``ok`` false with the application's words when it failed.",
+        "operationId": "post_backup_api_v1_apps__app__db_backup_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The application's own db backup",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/backups": {
+      "get": {
+        "description": "Every backup a guarded write took, newest first.",
+        "operationId": "get_backups_api_v1_apps__app__db_backups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The guarded-write backups of this database",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/delete-results": {
+      "post": {
+        "description": "FreeWeight's preview without ``token``; with it, typed and re-authenticated, the deletion.",
+        "operationId": "post_delete_results_api_v1_apps__app__db_delete_results_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteResultsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The application's own deletion of stored results",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/query": {
+      "post": {
+        "description": "30 s, 10 000 rows; anything but one ``SELECT`` is ``GUARD_STATEMENT_REFUSED``.",
+        "operationId": "post_query_api_v1_apps__app__db_query_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One SELECT on a read-only connection",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/restore": {
+      "post": {
+        "description": "``<app> db restore --yes FILE`` with the unit stopped, the name typed, re-authenticated.",
+        "operationId": "post_restore_api_v1_apps__app__db_restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The application's own db restore",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/revision": {
+      "get": {
+        "description": "``alembic_version``, whether this console knows it, and the revisions it does.",
+        "operationId": "get_revision_api_v1_apps__app__db_revision_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The schema revision against known_revisions",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/status": {
+      "get": {
+        "description": "``<app> db status --json``, as the application printed it.",
+        "operationId": "get_db_status_api_v1_apps__app__db_status_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The application's own db status",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/tables": {
+      "get": {
+        "description": "Every table with its count, ``writable`` and, when locked, ``reason``.",
+        "operationId": "get_tables_api_v1_apps__app__db_tables_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tables, row counts and locks",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/tables/{table}": {
+      "get": {
+        "description": "One page of ``table``, sorted by ``sort`` (the primary key otherwise), filtered by\n``column`` containing ``filter``.",
+        "operationId": "get_rows_api_v1_apps__app__db_tables__table__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "table",
+            "required": true,
+            "schema": {
+              "title": "Table",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sort"
+            }
+          },
+          {
+            "in": "query",
+            "name": "desc",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Desc",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "column",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Column"
+            }
+          },
+          {
+            "in": "query",
+            "name": "filter",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filter"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "A page of rows, columns typed",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/upgrade": {
+      "post": {
+        "description": "``<app> db upgrade``, which takes its own backup first.",
+        "operationId": "post_upgrade_api_v1_apps__app__db_upgrade_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The application's own db upgrade",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/write": {
+      "post": {
+        "description": "``GUARD_*`` naming the condition that failed, or the audit id, the backup and the count.",
+        "operationId": "post_write_api_v1_apps__app__db_write_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WriteBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "A raw write under ADR-0124's five conditions",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/db/write/dry-run": {
+      "post": {
+        "description": "The statement echoed, the tables it names, what its foreign keys reach, the rolled-back\ncount once the application is stopped, and the five conditions' verdicts.",
+        "operationId": "post_dry_run_api_v1_apps__app__db_write_dry_run_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The guard's dry run, rolled back",
+        "tags": [
+          "databases"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/health": {
+      "get": {
+        "description": "The application's own ``/api/v1/health`` verbatim, with ``source`` naming who answered.",
+        "operationId": "get_app_health_api_v1_apps__app__health_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The application's own health, proxied",
+        "tags": [
+          "apps"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/logs": {
+      "get": {
+        "description": "One page of the application's journal, newest first, capped at 5 000 rows.",
+        "operationId": "app_logs_api_v1_apps__app__logs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          },
+          {
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Journal history",
+        "tags": [
+          "apps"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/logs/stream": {
+      "get": {
+        "description": "SSE of one application's journal: ``log``, ``log.dropped``, ``log.closed``.",
+        "operationId": "app_log_stream_api_v1_apps__app__logs_stream_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "backfill",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "title": "Backfill",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Live journal, one application",
+        "tags": [
+          "apps"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/prompts": {
+      "get": {
+        "description": "The shipped pack (``prompt_id``, version, sha256) joined with the overrides on disk.",
+        "operationId": "get_pack_api_v1_apps__app__prompts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "An application's prompt pack and its overrides",
+        "tags": [
+          "prompts"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/prompts/{prompt_id}": {
+      "get": {
+        "description": "The shipped record, the override if any, and a unified diff between them.",
+        "operationId": "get_prompt_api_v1_apps__app__prompts__prompt_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "prompt_id",
+            "required": true,
+            "schema": {
+              "title": "Prompt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One prompt: shipped, override, diff",
+        "tags": [
+          "prompts"
+        ]
+      },
+      "put": {
+        "description": "Validated against the record schema first; says where it went and how runs are marked.",
+        "operationId": "put_prompt_api_v1_apps__app__prompts__prompt_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "prompt_id",
+            "required": true,
+            "schema": {
+              "title": "Prompt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Write an override record",
+        "tags": [
+          "prompts"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/prompts/{prompt_id}/override": {
+      "delete": {
+        "description": "The shipped record is what the application renders again.",
+        "operationId": "delete_prompt_override_api_v1_apps__app__prompts__prompt_id__override_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "prompt_id",
+            "required": true,
+            "schema": {
+              "title": "Prompt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove an override",
+        "tags": [
+          "prompts"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/restart": {
+      "post": {
+        "description": "``systemctl --user restart <app>.service``.",
+        "operationId": "restart_app_api_v1_apps__app__restart_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Restart App Api V1 Apps  App  Restart Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restart",
+        "tags": [
+          "apps"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/settings": {
+      "get": {
+        "description": "Every key with its type, bounds, default, value, source and the two key sets.",
+        "operationId": "get_settings_api_v1_apps__app__settings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Effective settings, with sources",
+        "tags": [
+          "settings"
+        ]
+      },
+      "put": {
+        "description": "Route each key to the file or the running application, and answer per key (api.md \u00a72).\n\nRaises:\n    ReauthRequired: A security key without a fresh ``POST /reauth`` (``REAUTH_REQUIRED``).\n    ConfigChangedOnDisk: ``base_mtime`` is stale; nothing was written.\n    ConfigValidationFailed: The application refused the candidate file.",
+        "operationId": "put_settings_api_v1_apps__app__settings_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change settings",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/settings/schema": {
+      "get": {
+        "description": "ADR-0127 rule 1's document, cached for 60 s; the reason instead when it cannot be read.",
+        "operationId": "get_schema_api_v1_apps__app__settings_schema_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The application's schema document",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/settings/validate": {
+      "post": {
+        "description": "The application's own verdict on a candidate file, unchanged (ADR-0127 rule 2).\n\nNothing is written: the candidate is handed to ``<app> config validate --file`` in a\ntemporary file and the verdict is returned. The row it leaves says ``pending``, because a\nsubprocess was launched over operator-supplied text and that is worth a trail entry even\nthough no state moved.",
+        "operationId": "validate_settings_api_v1_apps__app__settings_validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateFile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate a candidate file",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/start": {
+      "post": {
+        "description": "``systemctl --user start <app>.service``; ``202`` with the audit id and the new state.",
+        "operationId": "start_app_api_v1_apps__app__start_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Start App Api V1 Apps  App  Start Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start",
+        "tags": [
+          "apps"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/stop": {
+      "post": {
+        "description": "``systemctl --user stop <app>.service``.",
+        "operationId": "stop_app_api_v1_apps__app__stop_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Stop App Api V1 Apps  App  Stop Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stop",
+        "tags": [
+          "apps"
+        ]
+      }
+    },
+    "/api/v1/apps/{app}/tokens": {
+      "get": {
+        "description": "Name, scope, creation, expiry and revocation \u2014 never the token itself.",
+        "operationId": "get_tokens_api_v1_apps__app__tokens_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "An application's API tokens",
+        "tags": [
+          "tokens"
+        ]
+      }
+    },
+    "/api/v1/audit": {
+      "get": {
+        "description": "A page of rows, newest first, filtered by ``app``, ``action`` and ``since``.",
+        "operationId": "audit_list_api_v1_audit_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "App"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The audit trail",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/v1/audit/{audit_id}": {
+      "get": {
+        "description": "One row by id; ``404 AUDIT_NOT_FOUND`` otherwise.",
+        "operationId": "audit_detail_api_v1_audit__audit_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "audit_id",
+            "required": true,
+            "schema": {
+              "title": "Audit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One audit row",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/v1/backups": {
+      "get": {
+        "description": "Each application's own ``db status``, its own ``backups/`` and, where WeightRoomGym has\ntaken any, the guarded-write undo copies (``GET /apps/{app}/db/backups``, api.md \u00a73).",
+        "operationId": "get_backups_api_v1_backups_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Every application's backups, curated and guarded-write",
+        "tags": [
+          "backups"
+        ]
+      }
+    },
+    "/api/v1/catalog": {
+      "get": {
+        "description": "The join, live \u2014 no second registry (spec \u00a77.9).",
+        "operationId": "get_catalog_api_v1_catalog_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Every model FreeWeight and LoadCoach know, joined by identity",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/dropin": {
+      "post": {
+        "description": "A multipart upload, or ``path`` naming a file already on the host (api.md \u00a75).",
+        "operationId": "post_dropin_api_v1_catalog_dropin_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_post_dropin_api_v1_catalog_dropin_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Copy a GGUF file into the configured model directory",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/pull": {
+      "post": {
+        "description": "Queues a ``catalog_pull`` job (row W9); its id opens ``\u2026/pull/{id}/stream``.",
+        "operationId": "post_pull_api_v1_catalog_pull_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PullBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pull a model through Ollama",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/pull/{job_id}/stream": {
+      "get": {
+        "description": "SSE of :class:`~weightroom.services.catalog.PullEvent` rows, in-memory only (module\ndocstring) \u2014 replayable within this process's lifetime, not across a restart.",
+        "operationId": "get_pull_stream_api_v1_catalog_pull__job_id__stream_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "last_event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One pull's progress",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/{ref}": {
+      "delete": {
+        "description": "Preview first (``Database Standards \u00a78``); a typed, re-authenticated confirm removes it.",
+        "operationId": "delete_catalog_entry_api_v1_catalog__ref__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ref",
+            "required": true,
+            "schema": {
+              "title": "Ref",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete a model everywhere, with cleanup",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/{ref}/enabled": {
+      "post": {
+        "description": "``ref``'s canonical id resolves to that application's own row id (ADR-0118).",
+        "operationId": "post_enabled_api_v1_catalog__ref__enabled_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ref",
+            "required": true,
+            "schema": {
+              "title": "Ref",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnabledBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enable or disable a model on one application",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations": {
+      "get": {
+        "description": "Most recently active first.",
+        "operationId": "api_list_api_v1_chat_conversations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Conversations",
+        "tags": [
+          "chat"
+        ]
+      },
+      "post": {
+        "description": "``backend`` is ``loadcoach`` or ``promptcadence``; there is no third value.",
+        "operationId": "api_create_api_v1_chat_conversations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewConversation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start a conversation",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversation_id}": {
+      "delete": {
+        "description": "Messages, events, attachment rows and files go with it; the audit trail stays.",
+        "operationId": "api_delete_api_v1_chat_conversations__conversation_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete a conversation",
+        "tags": [
+          "chat"
+        ]
+      },
+      "get": {
+        "description": "The conversation with its messages and their metadata.",
+        "operationId": "api_get_api_v1_chat_conversations__conversation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One conversation",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversation_id}/approvals/{approval_id}": {
+      "post": {
+        "description": "PromptCadence's ``approve``/``deny`` with the ``approve``-scoped token (ADR-0049).",
+        "operationId": "api_decide_api_v1_chat_conversations__conversation_id__approvals__approval_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "approval_id",
+            "required": true,
+            "schema": {
+              "title": "Approval Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve or deny a pending PromptCadence approval",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversation_id}/attachments": {
+      "post": {
+        "description": "Text and markdown only, at most ``[chat] max_attachment_bytes``.",
+        "operationId": "api_attach_api_v1_chat_conversations__conversation_id__attachments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_api_attach_api_v1_chat_conversations__conversation_id__attachments_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Attach a text or markdown file",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversation_id}/messages": {
+      "post": {
+        "description": "``202`` and the reply's id; the reply streams on ``\u2026/stream``.\n\n``attachment_ids`` is accepted for api.md's shape; every attachment of the conversation is\ncontext for every request regardless (``services/chat.py``'s ``_history``).",
+        "operationId": "api_send_api_v1_chat_conversations__conversation_id__messages_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewMessage"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send a message",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/conversations/{conversation_id}/stream": {
+      "get": {
+        "description": "SSE of the persisted events, resumed from ``Last-Event-ID`` (api.md \u00a76).",
+        "operationId": "api_stream_api_v1_chat_conversations__conversation_id__stream_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "last_event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The conversation's stream",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/costs": {
+      "get": {
+        "description": "Today's window and each application's app-wide ceiling verdict, where one applies.",
+        "operationId": "get_costs_api_v1_costs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "LoadLedger balances for PromptCadence and IdeaPress",
+        "tags": [
+          "costs"
+        ]
+      }
+    },
+    "/api/v1/costs/{app}": {
+      "get": {
+        "description": "``app`` must be one that mounts LoadLedger's tables \u2014 anything else is ``APP_UNKNOWN``,\nthe same as an unrecognised name anywhere else in the API.",
+        "operationId": "get_app_costs_api_v1_costs__app__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "title": "App",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One application's LoadLedger balance",
+        "tags": [
+          "costs"
+        ]
+      }
+    },
+    "/api/v1/db/backup": {
+      "post": {
+        "description": "``wr-gym db backup``, rotated against ``[storage] backup_retention``.",
+        "operationId": "post_self_backup_api_v1_db_backup_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "WeightRoomGym's own db backup",
+        "tags": [
+          "backups"
+        ]
+      }
+    },
+    "/api/v1/db/status": {
+      "get": {
+        "description": "``wr-gym db status``, in-process.",
+        "operationId": "get_self_status_api_v1_db_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "WeightRoomGym's own db status",
+        "tags": [
+          "backups"
+        ]
+      }
+    },
+    "/api/v1/db/upgrade": {
+      "post": {
+        "description": "``wr-gym db upgrade``, which takes its own backup first.",
+        "operationId": "post_self_upgrade_api_v1_db_upgrade_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "WeightRoomGym's own db upgrade",
+        "tags": [
+          "backups"
+        ]
+      }
+    },
+    "/api/v1/docs/adrs": {
+      "get": {
+        "operationId": "api_adrs_api_v1_docs_adrs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The ADR index",
+        "tags": [
+          "docs"
+        ]
+      }
+    },
+    "/api/v1/docs/page": {
+      "get": {
+        "operationId": "api_page_api_v1_docs_page_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One rendered document",
+        "tags": [
+          "docs"
+        ]
+      }
+    },
+    "/api/v1/docs/search": {
+      "get": {
+        "operationId": "api_search_api_v1_docs_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Full-text search",
+        "tags": [
+          "docs"
+        ]
+      }
+    },
+    "/api/v1/docs/tree": {
+      "get": {
+        "operationId": "api_tree_api_v1_docs_tree_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The directory tree under [docs] root",
+        "tags": [
+          "docs"
+        ]
+      }
+    },
+    "/api/v1/doctor": {
+      "get": {
+        "description": "Every finding, worst first, each with its evidence and the command that fixes it.",
+        "operationId": "get_doctor_api_v1_doctor_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Diagnose the host against the suite's own documents",
+        "tags": [
+          "doctor"
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "description": "The health report; ``200`` for ok/degraded, ``503`` when the database is unavailable.",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Component health",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/v1/jobs": {
+      "get": {
+        "description": "A page of jobs, filtered by ``state`` and ``kind``.",
+        "operationId": "get_jobs_api_v1_jobs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The queue, newest first",
+        "tags": [
+          "jobs"
+        ]
+      },
+      "post": {
+        "description": "``{kind, params}``, or ``{schedule_id}`` to run a schedule now; ``202`` with the job.",
+        "operationId": "post_job_api_v1_jobs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnqueueBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Queue a job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/schedules": {
+      "get": {
+        "description": "Each schedule with its next and last run, in UTC.",
+        "operationId": "get_schedules_api_v1_jobs_schedules_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Every schedule",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/schedules/{schedule_id}": {
+      "put": {
+        "description": "The cron, the parameters or the enabled flag; enabling validates the parameters.",
+        "operationId": "put_schedule_api_v1_jobs_schedules__schedule_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "schedule_id",
+            "required": true,
+            "schema": {
+              "title": "Schedule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change a schedule",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "description": "``404 JOB_NOT_FOUND`` for an id that is not in the queue.",
+        "operationId": "get_one_job_api_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One job, with its output",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}/cancel": {
+      "post": {
+        "description": "A queued job is cancelled; a running one is asked to stop; a finished one is\n``409 JOB_INVALID_STATE``.",
+        "operationId": "post_cancel_api_v1_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel a job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/login": {
+      "post": {
+        "description": "Mint a session; the cookie is the credential from here on.\n\nRaises:\n    Unauthorized: Wrong username or password (``401``).",
+        "operationId": "login_json_api_v1_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Log in (JSON)",
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/api/v1/logout": {
+      "post": {
+        "description": "Delete the session row and clear the cookie.",
+        "operationId": "logout_json_api_v1_logout_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Log out (JSON)",
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/api/v1/logs/stream": {
+      "get": {
+        "description": "SSE across several units, WeightRoomGym's own included; each frame names its ``app``.\n\n``apps`` is a comma-separated list; absent means all five. An unknown name is refused rather\nthan silently dropped \u2014 a unified stream missing one application looks identical to one whose\napplication is quiet.",
+        "operationId": "unified_log_stream_api_v1_logs_stream_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "apps",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Apps"
+            }
+          },
+          {
+            "in": "query",
+            "name": "backfill",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "title": "Backfill",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Live journal, several applications at once",
+        "tags": [
+          "apps"
+        ]
+      }
+    },
+    "/api/v1/ollama": {
+      "get": {
+        "description": "The unit state, the \u00a72.1 findings, whether the journal is readable and whether a restart\nis permitted as far as the last attempt showed.",
+        "operationId": "get_ollama_api_v1_ollama_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ollama's unit, the memory-safety checklist and the grant",
+        "tags": [
+          "ollama"
+        ]
+      }
+    },
+    "/api/v1/ollama/ps": {
+      "get": {
+        "description": "``/api/ps`` through ModelRack's client. A figure the provider omits is ``null``, not 0.",
+        "operationId": "get_ollama_ps_api_v1_ollama_ps_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "What Ollama is holding in memory",
+        "tags": [
+          "ollama"
+        ]
+      }
+    },
+    "/api/v1/ollama/restart": {
+      "post": {
+        "description": "Restart the system unit when polkit permits it; otherwise\n``403 OLLAMA_RESTART_NOT_PERMITTED`` carrying the rule text and the install command.",
+        "operationId": "restart_api_v1_ollama_restart_post",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Restart Api V1 Ollama Restart Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Restart Ollama",
+        "tags": [
+          "ollama"
+        ]
+      }
+    },
+    "/api/v1/reauth": {
+      "post": {
+        "description": "Check the password again and open the re-authentication window (ADR-0127 rule 6).\n\nThe open loopback install has no password and is told so; a wrong password is ``401``.",
+        "operationId": "reauth_api_v1_reauth_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Re-authenticate for a security action",
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "description": "ADR-0100's shape for the console itself (api.md \u00a79).",
+        "operationId": "get_own_settings_api_v1_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "WeightRoomGym's own runtime settings",
+        "tags": [
+          "settings"
+        ]
+      },
+      "put": {
+        "description": "The console's own six runtime keys; a config-only key is refused by name.\n\nRaises:\n    SettingConfigOnly: The key is config-only (``403``); the settings page writes the file.\n    SettingUnknown: The key is not a setting at all (``400``).\n    ValidationError: The value is the wrong type or outside its bounds.",
+        "operationId": "put_own_settings_api_v1_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change WeightRoomGym's own runtime settings",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/system/resident": {
+      "get": {
+        "description": "Ollama's ``/api/ps`` through ModelRack, and LoadCoach's own residency, each with its\nsource.",
+        "operationId": "resident_api_v1_system_resident_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Resident Api V1 System Resident Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Resident models, Ollama and LoadCoach",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/v1/system/status": {
+      "get": {
+        "description": "Spec \u00a717's machine view; every figure a later phase fills in is ``null`` here.",
+        "operationId": "status_api_v1_system_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Status Api V1 System Status Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The machine view",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/v1/system/telemetry/history": {
+      "get": {
+        "description": "Downsampled ``(at, value)`` pairs for ``figure`` over the trailing ``hours``.\n\nRaises:\n    ValueError: propagated as a ``400`` by the app's validation handler when ``figure`` is\n        not one of :data:`~weightroom.services.telemetry.FIGURE_COLUMNS`.",
+        "operationId": "telemetry_history_api_v1_system_telemetry_history_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "figure",
+            "required": true,
+            "schema": {
+              "title": "Figure",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hours",
+            "required": false,
+            "schema": {
+              "default": 24.0,
+              "maximum": 168.0,
+              "minimum": 0.1,
+              "title": "Hours",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One figure's history",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/v1/system/telemetry/stream": {
+      "get": {
+        "description": "SSE of ``telemetry.sampled`` events, resuming from ``Last-Event-ID`` within the window.",
+        "operationId": "telemetry_stream_api_v1_system_telemetry_stream_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "last_event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Live telemetry, replayable",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/v1/version": {
+      "get": {
+        "description": "Return the application version, the API major and the settings-schema version.",
+        "operationId": "version_api_v1_version_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Version Api V1 Version Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Application and API versions",
+        "tags": [
+          "system"
+        ]
+      }
+    }
+  }
+}

@@ -6,7 +6,7 @@ almost every decision this session would otherwise have to make.
 **Model:** **Opus 5 · high** — an upgrade from the scheduled *Sonnet 5 · high*. Reason below;
 **record the deviation in the handoff** so [model-assignment §3.5](docs/roadmap/model-assignment.md)'s
 distribution does not drift silently.
-**Repositories, in this order:** `/home/jpk/ai/suite/docs` (the amendments land first), then
+**Repositories, in this order:** `/home/jpk/ai/suite/WeightRoom/docs` (the amendments land first), then
 `/home/jpk/ai/suite/LoadCoach` (Python **3.14.4**, coverage floor **85 %**), then
 `/home/jpk/ai/suite/PromptCadence` (Python **3.13.15**, coverage floor **85 %**). Three repos, one
 session.

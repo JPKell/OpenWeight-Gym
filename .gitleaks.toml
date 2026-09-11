@@ -1,0 +1,21 @@
+# gitleaks configuration — see the `security` job in .github/workflows/ci.yml.
+#
+# The default rule set is kept in full; this file adds one allowlist and disables nothing (the
+# FreeWeight precedent: a rule is never turned off, and a finding is never allowlisted by
+# fingerprint, which carries a commit SHA and stops matching when the file moves).
+
+title = "WeightRoomGym"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "The redaction sweep's planted test secret is text, not a credential."
+# tests/security/test_redaction_sweep.py plants a LoadCoach token in a test console and asserts
+# that no audit row and no log line carries it. Row W10's first commit of that file (5fda55a)
+# spelled the value `lc-sweep-2f9c1e-must-never-appear`, which clears `generic-api-key`'s entropy
+# floor; the line now reads `planted sweep token must never appear`, which does not, but the
+# history scan CI runs still meets the earlier spelling. Both are matched here by their words —
+# a real credential never says "must never appear".
+regexTarget = "match"
+regexes = ['''LOADCOACH_TOKEN\s*=\s*["'][a-z0-9 -]*must[ -]never[ -]appear["']''']

@@ -7,7 +7,7 @@ not re-opened here. Rows W1+ (agentic, unattended allowed) build what W0's plan 
 **Ships:** no code. ADRs 0123+, `apps/weightroom/{spec,development-plan,api,data-model,risks}.md`,
 the restructured repository, updated references, a MirrorWall 0.3 design brief, and the W1+ rows
 written into `roadmap/weightroom-work.md` with their kickoff prompts.
-**Component:** the repository at `~/ai/suite/docs` (remote `JPKell/OpenWeight-Gym`), which this
+**Component:** the repository at `~/ai/suite/WeightRoom/docs` (remote `JPKell/OpenWeight-Gym`), which this
 row turns into `~/ai/suite/WeightRoom` with the documentation under `WeightRoom/docs/`.
 
 ---
@@ -93,7 +93,7 @@ of a running app, `runtime_profiles`, anything hashed into a fingerprint), and s
    `LLAMACPP_SETUP.md`, `MEMORY_SAFETY.md`, `LAN_ACCESS.md`, `LEARNING_PLAN.md`,
    `WALKTHROUGH.md`, `CODE_REVIEW_PLAN.md`, `README.md` → `docs/README.md`). History follows.
 2. Rename the checkout directory to `~/ai/suite/WeightRoom`. Leave a symlink
-   `~/ai/suite/docs → WeightRoom/docs` for one transition (say so in the handoff; the row that
+   `~/ai/suite/WeightRoom/docs → WeightRoom/docs` for one transition (say so in the handoff; the row that
    removes it is named in `outstanding-work.md`).
 3. Fix every reference to the old path: `~/ai/suite/CLAUDE.md` (the tree, "docs/ holds", the
    mirror rule), `FreeWeight/scripts/sync_docs.py` (its canonical source path),

@@ -31,7 +31,7 @@ which bwrap docker                                                    # this mac
 
 The handoff is `~/ai/suite/M6_HANDOFF.md`, section
 `# M6 Handoff — P12–P14 run (FreeWeight P12–P14, M6 closeout)`, entries `M6-1` … `M6-17`, plus the
-eighteen §20 criteria and ten gold-standard tables. The docs repository is `~/ai/suite/docs`
+eighteen §20 criteria and ten gold-standard tables. The docs repository is `~/ai/suite/WeightRoom/docs`
 (pushed at head `8c260f3`); `FreeWeight/docs/apps/freeweight/*.md` are byte-identical mirrors
 (`scripts/sync_docs.py --check` proves it). The generated `docs/configuration.md` and
 `docs/openapi.json` are CI-diffed against the code.

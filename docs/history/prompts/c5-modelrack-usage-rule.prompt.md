@@ -73,7 +73,7 @@ It is `high` for two reasons that have nothing to do with size:
   bump (spec §19) and this is a minor. Nothing in `types.py`'s public surface needs to move: the
   four token classes already exist on `baseaicore.TokenUsage`.
 * **Documentation is mirrored.** If you amend anything under
-  `/home/jpk/ai/suite/docs/packages/modelrack/`, edit the workspace copy first and re-verify the
+  `/home/jpk/ai/suite/WeightRoom/docs/packages/modelrack/`, edit the workspace copy first and re-verify the
   repo copy with `cmp`. Expect to amend nothing.
 
 ## Setup

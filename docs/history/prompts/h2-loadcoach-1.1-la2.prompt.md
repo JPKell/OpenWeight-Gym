@@ -3,7 +3,7 @@
 **Row:** H2 of [`docs/roadmap/outstanding-work.md`](docs/roadmap/outstanding-work.md) §1.
 **Model:** **Opus 5 · xhigh**, as scheduled ([model-assignment](docs/roadmap/model-assignment.md)).
 Routing semantics frozen into persisted explanations — the LoadCoach-P3 precedent, extended.
-**Repositories:** `/home/jpk/ai/suite/docs` (first, and this row's docs debt is large — §0.1), then
+**Repositories:** `/home/jpk/ai/suite/WeightRoom/docs` (first, and this row's docs debt is large — §0.1), then
 `/home/jpk/ai/suite/LoadCoach` (the whole weight).
 **Ships:** **`loadcoach 1.1.0` prepared, not published.** The version bump, the changelog move and
 the release commit are yours; **`git push`, the tag and the publish are the operator's** (standing
@@ -184,7 +184,7 @@ unproved.
 ## 1. Setup
 
 ```bash
-git -C /home/jpk/ai/suite/docs status -sb
+git -C /home/jpk/ai/suite/WeightRoom/docs status -sb
 git -C /home/jpk/ai/suite/LoadCoach status -sb
 source .venv/bin/activate && pip install -e ".[dev]"
 python -V && pip show modelrack baseaicore setspec | grep -E "^(Name|Version)"

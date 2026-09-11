@@ -25,7 +25,7 @@ the handoff; never stop to ask.
   pytest -m "not live and not performance"` green, `pytest --cov` at or above 85 %. `CHANGELOG.md`
   updated. One Conventional Commit per gate. **Name the interpreter and the invocation in the
   handoff.**
-* **Documentation is mirrored.** Edit `/home/jpk/ai/suite/docs/` first, then copy byte-identically
+* **Documentation is mirrored.** Edit `/home/jpk/ai/suite/WeightRoom/docs/` first, then copy byte-identically
   into `LoadCoach/docs/apps/loadcoach/`; verify with `cmp`. **`LoadCoach/docs/README.md` is a
   repo-local index — never overwrite it.** The `docs` repository is shared with two other rows
   running tonight: commit only the files you edited, by name, and never `git add -A`.

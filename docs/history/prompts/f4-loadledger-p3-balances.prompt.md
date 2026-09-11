@@ -3,7 +3,7 @@
 **Row:** F4 of [`docs/roadmap/outstanding-work.md`](docs/roadmap/outstanding-work.md) §1.
 **Model:** **Sonnet 5 · high**, as scheduled. Additive, against a spec that already describes the
 storage; the shape is decided and the arithmetic already exists.
-**Repositories, in this order:** `/home/jpk/ai/suite/docs` (the spec amendment first), then
+**Repositories, in this order:** `/home/jpk/ai/suite/WeightRoom/docs` (the spec amendment first), then
 `/home/jpk/ai/suite/py/LoadLedger`, then `/home/jpk/ai/suite/PromptCadence`, then `docs` again to
 close the row.
 **Ships:** `loadledger` **0.2.0** to PyPI. **You prepare the release; you do not push and you do not
@@ -77,7 +77,7 @@ row). F4 also commits to `docs`. So, before anything else:
 
 1. **`docs/history/handoffs/F3_HANDOFF.md` must exist at the workspace root.** If it does not, F3 has not finished —
    stop and say so rather than working alongside it in `docs`.
-2. **`git -C /home/jpk/ai/suite/docs status --short` must be empty.** If the docs tree carries
+2. **`git -C /home/jpk/ai/suite/WeightRoom/docs status --short` must be empty.** If the docs tree carries
    modifications you did not make, **stop and report them**; do not `git checkout --` anything.
    (Working-tree integrity, CLAUDE.md: a tracked file was destroyed this way on 2026-09-02.)
 3. **Expect `docs` `main` to be ahead of `origin/main`** with F3's commits — the operator pushes,
@@ -165,7 +165,7 @@ component directory, never the workspace root — nothing there is versioned.
   (integer-exact, no float, no recomputation from history, unpriced is never zero) before the row's
   reading list.
 * **Never `git add -A`.** Stage named paths. Commit at every boundary, not at the end.
-* **Docs first, mirrors after, `cmp`-proven.** Edit `~/ai/suite/docs/...`, then copy into the
+* **Docs first, mirrors after, `cmp`-proven.** Edit `~/ai/suite/WeightRoom/docs/...`, then copy into the
   component's `docs/` tree and prove byte-identity with `cmp`. Ruff skips `docs/` in every repo
   precisely so a mirror cannot drift by reformatting.
 
@@ -340,7 +340,7 @@ becomes one about a rendered spend. Add: a tier whose only debit was unpriced re
 zero; a tier with an untotalled estimate renders "at least"; the API and the CLI print the same
 figure for the same tier (the existing `projects` test is the pattern).
 
-**C7. Docs, then mirror.** In `~/ai/suite/docs`: `apps/promptcadence/lifecycle.md` §6 (the sentence
+**C7. Docs, then mirror.** In `~/ai/suite/WeightRoom/docs`: `apps/promptcadence/lifecycle.md` §6 (the sentence
 at ~line 286, "a tier has a *history* and not a balance — the ledger views report its debit
 count…"), `apps/promptcadence/spec.md` §7.2's `ledger show` line if its wording implies a count, and
 §17's `system/status` bullet if the per-tier figure appears there. Mirror into

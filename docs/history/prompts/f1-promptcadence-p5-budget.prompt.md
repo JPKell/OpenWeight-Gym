@@ -5,7 +5,7 @@
 §0.3 below says where the seam actually falls. If you are running this single-session, run the whole
 row at **Opus 5 · high**: the reconciliation is money-adjacent crash logic and §3.3 of
 [model-assignment](docs/roadmap/model-assignment.md) does not economize on it.
-**Repositories:** `/home/jpk/ai/suite/PromptCadence`, then `/home/jpk/ai/suite/docs`.
+**Repositories:** `/home/jpk/ai/suite/PromptCadence`, then `/home/jpk/ai/suite/WeightRoom/docs`.
 **Ships:** nothing to PyPI. `promptcadence` is not on PyPI at all and stays that way until **G1**
 (0.9.0b0, the M11 beta). Changelog under `## [Unreleased]`, no version bump, no tag.
 **Overnight:** permitted, but see §0.4 — this row has a genuine "stop and ask" shape at one point.
@@ -258,7 +258,7 @@ Kill −9 between the LoadCoach response and the debit. Recovery reconciles from
 * Extend the live journey (`tests/live/test_loadcoach_journey.py`) so a real run shows debits and a
   running balance. It must still pass with **no GPU, no Ollama and no network** on the fake provider
   (spec §20 #10) — E6 is what makes that reliable.
-* Then, in `/home/jpk/ai/suite/docs`, one commit: mark the **F1 row** done in
+* Then, in `/home/jpk/ai/suite/WeightRoom/docs`, one commit: mark the **F1 row** done in
   `roadmap/outstanding-work.md` §1 in the house shape (`**Done 2026-09-0X** (`docs/history/handoffs/F1_HANDOFF.md`;
   commits …)`), and record anything §0 got wrong. Mirror and `cmp`-prove any file PromptCadence
   copies.

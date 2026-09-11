@@ -5,7 +5,7 @@
 copy of a pattern that is already proven twice, not a design row. If you find yourself designing,
 stop and check §2.1 first: the answer is almost certainly already written in `docs/history/handoffs/C3_HANDOFF.md` §11.
 **Repositories:** `/home/jpk/ai/suite/py/Commissioner` (Python **3.13.15**, coverage floor **95 %**),
-plus `/home/jpk/ai/suite/docs` for any amendment you propose.
+plus `/home/jpk/ai/suite/WeightRoom/docs` for any amendment you propose.
 **Ships:** a **first publish** — `commissioner 0.1.0`.
 **You prepare the release and stop at the tag.** Tagging, the `pypi` environment approval and the
 post-publish install check are the human's ([outstanding-work §4](docs/roadmap/outstanding-work.md)).
@@ -106,7 +106,7 @@ python --version                  # confirm 3.13.15 rather than copying it from 
   pytest -m "not live and not performance"` all green, coverage ≥ **95 %**, `CHANGELOG.md` updated,
   one Conventional Commit per logical group. **Name the interpreter and the exact invocation in the
   handoff** (M5C-13).
-* **Documentation is mirrored.** Anything amended under `/home/jpk/ai/suite/docs/` is edited in the
+* **Documentation is mirrored.** Anything amended under `/home/jpk/ai/suite/WeightRoom/docs/` is edited in the
   workspace copy **first**, then re-copied into `py/Commissioner/docs/` and proven with `cmp`. Do
   not reflow markdown you edit.
 * **A new public name is a spec amendment, proposed, not a quiet deviation.** C1, C2, D1, E1 and E2

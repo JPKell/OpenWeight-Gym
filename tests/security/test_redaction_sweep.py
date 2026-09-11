@@ -20,7 +20,7 @@ from tests.security.test_audit_routes import EXERCISES, audit_console
 from tests.support import JSON_HEADERS, PASSWORD, Console
 from weightroom.domain.audit import REDACTED
 
-LOADCOACH_TOKEN = "lc-sweep-2f9c1e-must-never-appear"  # noqa: S105 — a planted test secret
+LOADCOACH_TOKEN = "planted sweep token must never appear"  # noqa: S105 — a planted test secret
 
 
 @pytest.fixture

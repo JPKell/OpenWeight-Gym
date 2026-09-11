@@ -83,7 +83,7 @@ git status --short        # must be empty before you start
   under `## [Unreleased]`, one Conventional Commit per logical group. **Name the interpreter and the
   exact invocation in the handoff** (M5C-13) — this venv is Python 3.13.15; confirm rather than
   copy. There is no `python3.12` on this machine.
-* **Documentation is mirrored.** Anything amended under `/home/jpk/ai/suite/docs/` is edited in the
+* **Documentation is mirrored.** Anything amended under `/home/jpk/ai/suite/WeightRoom/docs/` is edited in the
   workspace copy **first**, then re-copied into `PromptCadence/docs/` and verified with `cmp`. Do
   not reflow markdown you edit.
 

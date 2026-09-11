@@ -5,9 +5,10 @@
 every route below requires it except `GET /version` and the two trust routes. Every
 state-changing route requires MirrorWall's CSRF token (forms) or the same-origin checks of
 ADR-0126 rule 5 (JSON), and writes one `audit_log` row (spec §11 contract 2).
-**Status:** specified at row W0; the OpenAPI snapshot is committed when the routes exist
-([Gold Standards G7](../../standards/gold-standards.md)), and this document is regenerated to
-match it at W10.
+**Status:** the OpenAPI snapshot is [`docs/openapi.json`](../../openapi.json) in the WeightRoomGym
+repository ([Gold Standards G7](../../standards/gold-standards.md)), and
+`tests/contract/test_openapi_snapshot.py` holds this document to exactly the routes it serves
+(row W10).
 
 `{app}` is `freeweight` | `loadcoach` | `ideapress` | `promptcadence` throughout; an unknown
 value is `404 APP_UNKNOWN`.
@@ -24,7 +25,7 @@ value is `404 APP_UNKNOWN`.
 | `GET /system/telemetry/stream` | SSE, one `telemetry.sample` per interval, `—` for unavailable readings; replay from `Last-Event-ID` within the retained window |
 | `GET /system/telemetry/history?figure=gpu_util&hours=24` | Downsampled samples for one figure's history page |
 | `GET /system/resident` | Resident models: Ollama's `/api/ps` rows and LoadCoach's `/models` residency, each with `source` |
-| `GET /doctor` · `POST /doctor/run` | The last doctor report; run it now. Findings carry `severity`, `subject`, `rule` (`memory_safety.2.1.cap`, `lan.app_off_loopback`, …) and, where a root-owned fix exists, `command` — the text to run, never run |
+| `GET /doctor` | The doctor's report, run on each call (there is no stored last run and no separate trigger). Findings carry `severity` (`failure`/`warning`/`notice`/`unknown`/`ok`), `rule` (`memory.ollama.<key>`, `memory.unit.<app>`, `lan.bind.<app>`, `lan.caddy_leftover.<app>`, `lan.ollama_host`, `token.scope.<app>`, `version.<app>`, `revision.<app>`, `promptcadence.loadcoach_token`, `tls.expiry`, `linger`, `polkit.ollama_restart`, `disk.<app>`), `summary`, `evidence`, `document`, `app` and, where a root-owned fix exists, `command` — the text to run, never run. `wr-gym doctor` prints the same findings |
 
 ## 2. Applications
 
@@ -32,10 +33,11 @@ value is `404 APP_UNKNOWN`.
 |---|---|
 | `GET /apps` | The four, with `installed`, `executable`, `unit` (`active`/`activating`/`deactivating`/`inactive`/`failed`/`absent`/`unsupported`), `state` (the pill), `version`, `version_verdict`, `base_url`, `db_revision`, `known`. The version comes from each application's own `GET /api/v1/version`, which answers in either of two shapes ([ADR-0129](../../adr/0129-weightroom-reads-both-version-payload-shapes.md)) |
 | `GET /apps/{app}` · `GET /apps/{app}/health` | One application; its own `/api/v1/health` proxied verbatim with `source: "api"` or `{"state": "stopped"}` |
-| `POST /apps/{app}/start` · `/stop` · `/restart` | `systemctl --user <verb> <app>.service`; `202` with the audit id, then the unit state; `UNIT_UNSUPPORTED` without systemd, `UNIT_ACTION_FAILED` with systemd's message |
+| `POST /apps/{app}/start` · `POST /apps/{app}/stop` · `POST /apps/{app}/restart` | `systemctl --user <verb> <app>.service`; `202` with the audit id, then the unit state; `UNIT_UNSUPPORTED` without systemd, `UNIT_ACTION_FAILED` with systemd's message |
 | `GET /apps/{app}/logs?since=&until=&level=&q=` | Journal history, JSON lines, capped at 5 000 rows per page with a cursor |
 | `GET /apps/{app}/logs/stream` · `GET /logs/stream?apps=` | SSE of journal lines, one application or several; WeightRoomGym's own log under `weightroom` |
 | `GET /apps/{app}/config` | The raw `config.toml` text and its mtime (the editor's base) |
+| `GET /apps/{app}/tokens` | The application's API tokens as its own `token list --json` reports them (name, scopes, active), with which one is the console's — LoadCoach's and PromptCadence's; the other two issue none (row W4). Minting and revoking are page forms |
 | `GET /apps/{app}/settings/schema` | The application's schema document ([ADR-0127](../../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) rule 1), cached for 60 s; `APP_NOT_INSTALLED` when the executable is absent |
 | `GET /apps/{app}/settings` | Effective values with per-key `source` and `shadowed_by`, the runtime-changeable set, the security set |
 | `PUT /apps/{app}/settings` | `{"changes": {key: value}, "base_mtime": <st_mtime_ns>, "to_file": [key, …]}`. **There is no `reauth` field**: the re-authentication window is session state, not a bearer token (row W4 — see `history/handoffs/W4_HANDOFF.md`), so a security key needs a `POST /reauth` on the *same session* inside `auth.reauth_window_minutes` and nothing is carried on the write. `base_mtime` is `st_mtime_ns`, which a JSON integer holds exactly. Runtime keys go to the application's `PUT /settings`; file keys are written in place (`tomlkit`), validated via `config validate --file`, renamed with `.bak`. Answers per key: `applied` (live), `written` (pending restart), `unchanged`, `refused` (with the application's message). `CONFIG_CHANGED_ON_DISK` when `base_mtime` is stale; `REAUTH_REQUIRED` when a security key is present without a fresh re-authentication; a runtime key while the application is down is `refused` with `APP_STOPPED` naming the file, and `to_file` writes it there instead |
@@ -53,6 +55,8 @@ value is `404 APP_UNKNOWN`.
 | `POST /apps/{app}/db/write` | `{"sql": …, "tables_typed": ["samples", "run_tests"], "dry_run_id": …}`. **No re-authentication field**: a `POST /reauth` on the same session inside the window, as for security keys (row W4). Runs the guard in ADR-0133's order: `GUARD_STATEMENT_REFUSED`, `GUARD_TABLE_LOCKED`, `GUARD_TABLE_MISMATCH` (4), `GUARD_APP_RUNNING` (1), `GUARD_DRY_RUN_FAILED` (3 — the dry run is repeated and must match the id, and the statement is rolled back if its own counts differ), `GUARD_BACKUP_FAILED` (2), `GUARD_AUDIT_FAILED` (5); success returns the audit id, the backup path, the row count, the reached tables' changes and the checklist |
 | `GET /apps/{app}/db/status` · `POST /apps/{app}/db/backup` · `POST /apps/{app}/db/upgrade` · `POST /apps/{app}/db/restore` | Curated calls to the application's own `db` verbs (FreeWeight's `db vacuum` too, from the page). Each answers `{"verb", "argv", "ok", "output", "error"}` — a non-zero exit is `ok: false` in the application's own words, not an HTTP error. `restore` requires the unit stopped, `{"file": …, "name_typed": "<app>"}` and a fresh re-authentication |
 | `POST /apps/{app}/db/delete-results` | FreeWeight only ([ADR-0134](../../adr/0134-event-logs-go-with-their-deleted-parent-freeweight-deletes-its-own-results-and-guarded-write-backups-expire.md) rule 2). `{"scope": "model"\|"run"\|"suite"\|"before"\|"all", "selector": …}` → FreeWeight's own `POST /api/v1/database/delete-preview`, answered in the curated shape with `verb: "delete-preview"`, `argv: ["POST", url]` and FreeWeight's JSON as `output` (`run_count`, `removed_counts`, `preserved_counts`, `total_rows`, `token`, `will_backup`). With `"token"` and `"typed"` (the selector, or `all`) and a fresh re-authentication → FreeWeight's `DELETE /api/v1/database/results`, `verb: "delete-results"`. The application runs throughout. FreeWeight's refusal (a token a changed database invalidated) is `ok: false` in its own words; another application, another scope or a mistyped confirmation is `VALIDATION_ERROR` |
+| `GET /db/status` · `POST /db/backup` · `POST /db/upgrade` | WeightRoomGym's **own** database, in process (row W8): its revision and row counts, a backup into `<data>/backups/`, a migration to head. No restore route — a live restore cannot replace the pool serving it; that is the `self_restore` job (ADR-0136) or `wr-gym db restore` with the unit stopped |
+| `GET /backups` | Every application's `db status`, its own `backups/` directory and the guarded-write copies, in one document for the Backups page (row W8) |
 | `GET /apps/{app}/db/backups` | The guarded-write backups under WeightRoomGym's own `<data>/backups/<app>/`, newest first, each the undo of one raw write; kept 90 days by default and then removed, from row W8 (ADR-0134 rule 3) |
 
 ## 4. Prompts
@@ -72,7 +76,7 @@ value is `404 APP_UNKNOWN`.
 | `GET /ollama/ps` | `/api/ps` through ModelRack |
 | `POST /ollama/restart` | `systemctl restart ollama.service` when permitted; otherwise `OLLAMA_RESTART_NOT_PERMITTED` with `command` and the rule text ([ADR-0125](../../adr/0125-weightroom-drives-the-applications-through-systemd-user-units-it-writes.md) rule 5) |
 | `GET /catalog` | Models across applications joined by canonical identity; per row `apps: {name: {enabled, evidence, resident}}` |
-| `POST /catalog/pull` | `{"name": "gemma4:12b-it-q8_0"}` → the id of a queued `catalog_pull` job (row W9); `GET /catalog/pull/{id}/stream` is its live progress while this process executes it, `queued` before, and the job's own `done` after |
+| `POST /catalog/pull` · `GET /catalog/pull/{id}/stream` | `{"name": "gemma4:12b-it-q8_0"}` → the id of a queued `catalog_pull` job (row W9); `GET /catalog/pull/{id}/stream` is its live progress while this process executes it, `queued` before, and the job's own `done` after |
 | `POST /catalog/dropin` | Multipart upload or `{"path": …}` on the host; validated GGUF; copied into the model directory; each llama.cpp-configured application's `models refresh` is run |
 | `POST /catalog/{ref}/enabled` | `{"app": …, "enabled": false}` → that application's `POST /models/{ref}/enabled` |
 | `DELETE /catalog/{ref}` | `{"preview": true}` first (what would be removed where), then `{"confirm": "<ref typed>"}` |
@@ -83,7 +87,7 @@ value is `404 APP_UNKNOWN`.
 | Endpoint | Purpose |
 |---|---|
 | `GET /chat/conversations` · `POST /chat/conversations` | List; create with `{"backend": "loadcoach"|"promptcadence", "title", "task_profile"|"classification", "tier", "tools"}` |
-| `GET /chat/conversations/{id}` · `DELETE …` | The conversation with messages and their metadata |
+| `GET /chat/conversations/{id}` · `DELETE /chat/conversations/{id}` | The conversation with messages and their metadata |
 | `POST /chat/conversations/{id}/messages` | `{"text": …, "attachment_ids": […]}` → `202` and the message id; the reply streams |
 | `GET /chat/conversations/{id}/stream` | SSE: `message.delta` (`kind: "thinking"|"text"`), `message.thinking_done`, `message.done` (with `routing`, `usage`, `cost`), and for PromptCadence `plan`, `step`, `tool_call`, `egress_decision`, `approval_pending`, `halt` — each a persisted row, replayable by `Last-Event-ID` |
 | `POST /chat/conversations/{id}/attachments` | Multipart, text/markdown only, ≤ `chat.max_attachment_bytes` |
@@ -114,7 +118,7 @@ value is `404 APP_UNKNOWN`.
 | `POST /login` | Form: `username`, `password`, CSRF token → a new session (the id is regenerated on every login); `429 RATE_LIMITED` after `failed_login_per_minute` |
 | `POST /logout` | Deletes the session row and clears the cookie |
 | `POST /reauth` | Password again → the session's re-authentication window opens for `auth.reauth_window_minutes`, covering security keys and guarded writes ([ADR-0127](../../adr/0127-every-application-publishes-its-settings-schema-and-weightroom-generates-the-form.md) rule 6). It answers `{"reauth_at", "window_minutes", "cookie"}` and **issues no token**: the session cookie is the credential, already `__Host-`, `SameSite=strict` and behind the same-origin check on JSON writes, and a second one would only add something for a script to steal (row W4) |
-| `GET /trust` · `GET /trust/root.crt` | The fingerprint, the certificate, the per-OS steps; also served unauthenticated on the trust port and **only** there |
+| The trust page and `root.crt` | The fingerprint, the certificate, the per-OS steps; also served unauthenticated on the trust port and **only** there |
 | `GET /settings` · `PUT /settings` | WeightRoomGym's own runtime-changeable keys, ADR-0100's shape |
 
 ## 10. Errors

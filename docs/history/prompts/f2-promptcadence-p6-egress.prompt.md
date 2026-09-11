@@ -3,7 +3,7 @@
 **Row:** F2 of [`docs/roadmap/outstanding-work.md`](docs/roadmap/outstanding-work.md) §1.
 **Model:** **Opus 5 · high**, as scheduled. Fail-closed semantics and the violation path —
 adversarial-adjacent, and on §3.3's never-economize list.
-**Repositories:** `/home/jpk/ai/suite/PromptCadence`, then `/home/jpk/ai/suite/docs`.
+**Repositories:** `/home/jpk/ai/suite/PromptCadence`, then `/home/jpk/ai/suite/WeightRoom/docs`.
 **Ships:** nothing to PyPI. Changelog under `## [Unreleased]`, no version bump, no tag —
 `promptcadence` first publishes at **G1** (0.9.0b0, the M11 beta).
 **Overnight:** **no.** This row is on the security-adjacent side of §2.12's caveat — its failures
@@ -258,7 +258,7 @@ Wire `DeviationHandler` with the full lifecycle §5 category set: `tier_violatio
   loadcoach_has_no_remote_provider` or `UNPRICED_EGRESS_REFUSED` as documented. Those refusals are
   themselves tested behaviour, not incidental. (E4 recorded that the remote tiers are **not** in the
   shipped active defaults; configurable is not the same as shipped-on — keep it that way.)
-* Then `/home/jpk/ai/suite/docs`, one commit: mark the **F2 row** done in
+* Then `/home/jpk/ai/suite/WeightRoom/docs`, one commit: mark the **F2 row** done in
   `roadmap/outstanding-work.md` §1 (`**Done 2026-09-0X** (`docs/history/handoffs/F2_HANDOFF.md`; commits …)`), record
   §0.2's Commissioner cap as a named future item, and mirror + `cmp`-prove anything PromptCadence
   copies.

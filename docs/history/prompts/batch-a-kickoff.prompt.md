@@ -16,7 +16,7 @@ list.
 
 * **Work from inside a component directory, never the workspace root.** `/home/jpk/ai/suite` is a
   workspace; each component is an independent git repository. Part A1 works in
-  `/home/jpk/ai/suite/docs`; part A2 works in `/home/jpk/ai/suite/py/BaseAiCore`.
+  `/home/jpk/ai/suite/WeightRoom/docs`; part A2 works in `/home/jpk/ai/suite/py/BaseAiCore`.
 * **Read before writing**, in this order:
   [`docs/architecture/master-architecture.md`](docs/architecture/master-architecture.md) §§1–3, the
   component's section of [`docs/standards/gold-standards.md`](docs/standards/gold-standards.md) §2,
@@ -35,7 +35,7 @@ list.
   as local editable installs **does not apply to either part**. `baseaicore` imports the standard
   library only; adding any dependency to it would be an architecture violation, not a pinning
   question.
-* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/docs/` first,
+* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/WeightRoom/docs/` first,
   then copy byte-identically into the component repo's own `docs/`. Verify with `cmp`, never by eye.
 * **You are not authorised to tag or publish.** Tagging and the release workflow's `pypi`
   environment approval are the human's, per run. Prepare the release and say so; do not create the
@@ -299,7 +299,7 @@ Exports go in `__init__.py` and `__all__`.
 ### 4. Documentation, in the right order
 
 1. Update the **workspace** copies first:
-   `/home/jpk/ai/suite/docs/packages/baseaicore/spec.md` and `development-plan.md` (a new phase
+   `/home/jpk/ai/suite/WeightRoom/docs/packages/baseaicore/spec.md` and `development-plan.md` (a new phase
    section for this release, with demonstrable acceptance criteria — the house rule is that every
    phase states what to run and what a person should see).
 2. Copy byte-identically into `py/BaseAiCore/docs/packages/baseaicore/` and **verify with `cmp`**.

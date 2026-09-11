@@ -5,7 +5,7 @@
 — Opus; CutCtx wiring and the UI volume — Sonnet"); [model-assignment §3.5](../../roadmap/model-assignment.md)
 abolished splits on 2026-09-04 and the prose is kept only to say **where the hard part is**. Run the
 row whole.
-**Repositories:** `/home/jpk/ai/suite/PromptCadence`, then `/home/jpk/ai/suite/docs`.
+**Repositories:** `/home/jpk/ai/suite/PromptCadence`, then `/home/jpk/ai/suite/WeightRoom/docs`.
 **Ships:** **nothing.** `0.9.0b0` was cut at G1 and is on `main`; `1.0.0` is I2's. Everything this
 row writes goes under `## [Unreleased]`. No bump, no tag, no publish, and **never `git push`** — not
 even a dry run.

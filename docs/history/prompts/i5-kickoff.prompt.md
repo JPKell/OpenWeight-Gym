@@ -38,7 +38,7 @@ and record every judgement call in the handoff's decisions section rather than s
   pytest -m "not live and not performance"` green, plus `pytest --cov` at or above the 85 % floor.
   `CHANGELOG.md` updated. One Conventional Commit per gate. **Name the interpreter and the exact
   invocation in the handoff** (M5C-13).
-* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/docs/` first,
+* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/WeightRoom/docs/` first,
   then copy byte-identically into `PromptCadence/docs/apps/promptcadence/`. Verify with `cmp`, never
   by eye. `spec.md`, `lifecycle.md` and `development-plan.md` are the mirrored files; everything
   else under `PromptCadence/docs/` (`configuration.md`, `security.md`, `troubleshooting.md`,

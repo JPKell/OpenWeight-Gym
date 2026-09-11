@@ -36,7 +36,7 @@ a gate that goes red while its Ollama probe is loading models as unproven rather
   lint-imports && pytest -m "not live and not performance"` green, plus `pytest --cov` at or above
   the floor (85 % apps). `CHANGELOG.md` updated. One Conventional Commit per gate. **Name the
   interpreter and the exact invocation in the handoff** (M5C-13).
-* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/docs/` first,
+* **Documentation is mirrored.** Edit the workspace copy under `/home/jpk/ai/suite/WeightRoom/docs/` first,
   then copy byte-identically into the component's own `docs/`. Verify with `cmp`, never by eye.
 * **Do not push, do not tag, do not publish.** Standing instruction of 2026-09-04: commit as usual,
   never run `git push` in any suite repo — not even a dry run.

@@ -3,7 +3,7 @@
 **Row:** F3 of [`docs/roadmap/outstanding-work.md`](docs/roadmap/outstanding-work.md) §1.
 **Model:** **Opus 5 · xhigh**, as scheduled. The prefix-reuse property is exactly the
 intermittent-defect shape, and the conformance-test design is the judgment this row is paying for.
-**Repositories:** `/home/jpk/ai/suite/docs` (first — see §0.1), then `/home/jpk/ai/suite/py/ModelRack`,
+**Repositories:** `/home/jpk/ai/suite/WeightRoom/docs` (first — see §0.1), then `/home/jpk/ai/suite/py/ModelRack`,
 then `docs` again to close the row.
 **Ships:** nothing to PyPI. P7 rides the **0.7.0** release at row **H1**, together with D3's
 unreleased P6 work. Changelog under `## [Unreleased]`, **no version bump, no tag, no publish**.

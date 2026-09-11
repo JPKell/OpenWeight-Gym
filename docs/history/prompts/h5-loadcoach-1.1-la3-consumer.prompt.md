@@ -4,7 +4,7 @@
 **Model:** **Opus 5 · high**, as scheduled. The judgement is in §0.1 (a decided question that two
 ADRs answer differently), in the ordering of §0.2, and in refusing the join that looks like the
 feature working.
-**Repositories:** `/home/jpk/ai/suite/docs` first (gate A), then `/home/jpk/ai/suite/LoadCoach` (the
+**Repositories:** `/home/jpk/ai/suite/WeightRoom/docs` first (gate A), then `/home/jpk/ai/suite/LoadCoach` (the
 weight), then `/home/jpk/ai/suite/FreeWeight` (one live re-export, two follow-ups and one release
 commit), and `/home/jpk/ai/suite/PromptCadence` for a **three-line comment deletion** and nothing
 else.
@@ -170,7 +170,7 @@ passing**, and do not cut either release on it.
 ## 1. Setup
 
 ```bash
-git -C /home/jpk/ai/suite/docs status -sb
+git -C /home/jpk/ai/suite/WeightRoom/docs status -sb
 git -C /home/jpk/ai/suite/LoadCoach status -sb
 git -C /home/jpk/ai/suite/FreeWeight status -sb
 source .venv/bin/activate && pip install -e ".[dev]"

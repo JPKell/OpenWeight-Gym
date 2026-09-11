@@ -5,7 +5,7 @@ at the I3 interview as I5, renumbered I4 on 2026-09-06 so the table reads in exe
 **Model:** **Sonnet 5 · standard**, as scheduled ([model-assignment](docs/roadmap/model-assignment.md)).
 Daytime or overnight; nothing in this row needs a person to watch it. Record any deviation
 ([model-assignment §3.5](docs/roadmap/model-assignment.md)).
-**Repositories:** `/home/jpk/ai/suite/PromptCadence`, and `/home/jpk/ai/suite/docs` only if §0.2
+**Repositories:** `/home/jpk/ai/suite/PromptCadence`, and `/home/jpk/ai/suite/WeightRoom/docs` only if §0.2
 decision 2 produces an ADR. Nothing else — **LoadCoach is read, never edited.**
 **Ships:** **`promptcadence 1.0.1` prepared, not published** — the changelog, `__about__.py`, the
 regenerated `docs/openapi.json` and the release commit are yours; **`git push`, the tag and the
