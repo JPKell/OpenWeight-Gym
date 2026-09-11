@@ -113,6 +113,7 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
         "Tools",
         "Ledger",
         "Egress",
+        "System",
         "Settings",
         "Tokens",
         "Logs",
@@ -156,6 +157,7 @@ _PAGE_HREF: dict[str | tuple[str, str], str] = {
     "Tools": "/apps/{app}/tools",
     "Ledger": "/apps/{app}/ledger",
     "Egress": "/apps/{app}/egress",
+    "System": "/apps/{app}/system",
     # LoadCoach's own pages (row WP2), keyed by application: FreeWeight's Models, Evidence and
     # Adapters are other pages, built by another row.
     ("loadcoach", "Models"): "/apps/loadcoach/models",
@@ -177,7 +179,7 @@ def _page_href(app_name: str, label: str) -> str | None:
 
 
 _ADMIN_PAGES: frozenset[str] = frozenset(
-    {"Settings", "Provider", "Providers", "Tokens", "Prompts", "Logs", "Database"}
+    {"System", "Settings", "Provider", "Providers", "Tokens", "Prompts", "Logs", "Database"}
 )
 """The administrative pages, below the rule in an application's menu (design brief §4): the
 application's own subjects first, then what the console does to it."""

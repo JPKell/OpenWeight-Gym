@@ -35,6 +35,5 @@ alike. A declined call is as auditable as an approved one, so both are on one pa
 {{ empty_state("No egress decisions match this filter.", "Every decision", "/apps/promptcadence/egress") }}
 {% endif %}
 {% endif %}
-<p class="muted page-source">{{ sourced.detail }} — PromptCadence's API lists decisions oldest first
-with no cursor, so the newest are read from its database.</p>
+{{ page_source(sourced) }}
 {% endblock %}

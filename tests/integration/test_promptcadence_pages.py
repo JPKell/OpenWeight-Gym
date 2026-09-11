@@ -79,8 +79,17 @@ def _mock_api(router: Any, *, version: str = "1.3.3", **bodies: Any) -> dict[str
         "tools": _fixture("tools"),
         "ledger": _fixture("ledger"),
         "ledger/entries": _fixture("ledger-entries"),
+        "approvals-all": _fixture("approvals-all"),
+        "egress-decisions": _fixture("egress-newest"),
+        "health": _fixture("health"),
+        "system/status": _fixture("system-status"),
     }
     recorded.update({key.replace("__", "/"): value for key, value in bodies.items()})
+    # Every request ever raised is the same path as the pending list with `status=all` (row WPC1);
+    # registered first, so it wins for that query and the plain route answers the rest.
+    router.get(f"{PROMPTCADENCE_URL}/api/v1/approvals", params={"status": "all"}).mock(
+        return_value=httpx.Response(200, json=recorded.pop("approvals-all"))
+    )
     return {
         path: router.get(f"{PROMPTCADENCE_URL}/api/v1/{path}").mock(
             return_value=httpx.Response(200, json=body)
@@ -120,7 +129,8 @@ def test_running_pages_read_promptcadences_api(tmp_path: Path) -> None:
     assert "Every persisted event, in sequence order" in detail
     assert "data-log-stream" not in detail  # a completed trajectory has no live pane
     assert "Nothing is waiting for a person." in approvals
-    assert "From the database at revision 0011" in approvals  # the history's own source
+    assert "From the database" not in approvals  # both halves read the API since row WPC1
+    assert approvals.count("From the API") == 2
     assert "tools.agent.local_fast" in tiers
     assert "docker" in tools
     assert "read_file" in tools
@@ -128,8 +138,46 @@ def test_running_pages_read_promptcadences_api(tmp_path: Path) -> None:
     assert "tier:local_fast" in ledger
 
 
-def test_egress_is_read_newest_first_from_the_database_even_while_running(tmp_path: Path) -> None:
-    console, database = _console(tmp_path, state="active")
+def test_the_approval_history_and_egress_read_the_api_while_promptcadence_runs(
+    tmp_path: Path,
+) -> None:
+    console, _database = _console(tmp_path, state="active")
+    history = _fixture("approvals-all")
+    history["items"] = [
+        {
+            "request_id": "01REQUESTFROMTHEAPI000000A",
+            "trajectory_id": TRAJECTORY,
+            "kind": "ceiling_raise",
+            "status": "granted",
+            "reason": "budget_exceeded",
+            "step_ids": ["s1"],
+            "detail": {"scope": "trajectory", "step_id": "s1"},
+            "created_at": "2026-09-10T00:00:00Z",
+            "expires_at": "2026-09-10T00:15:00Z",
+            "resolved_at": "2026-09-10T00:01:00Z",
+            "approver_token_id": "weightroom",
+            "resolution_reason": None,
+            "age_seconds": 60.0,
+        }
+    ]
+    egress = _fixture("egress-newest")
+    with respx.mock(assert_all_called=False) as router:
+        routes = _mock_api(router, **{"approvals-all": history})
+        approvals = _page(console, f"{BASE}/approvals")
+        page = _page(console, f"{BASE}/egress?verdict=approved")
+    assert "01REQU" in approvals and "granted" in approvals
+    assert "From the database" not in approvals
+    sent = routes["egress-decisions"].calls.last.request.url.params
+    assert (sent["sort"], sent["verdict"], sent["limit"]) == ("-decided_at", "approved", "200")
+    first = egress["items"][0]
+    assert first["decision_id"][:6] in page
+    assert first["request"]["target"]["name"] in page
+    assert "From the API" in page
+    assert "From the database" not in page
+
+
+def test_stopped_egress_is_read_newest_first_from_the_database(tmp_path: Path) -> None:
+    console, database = _console(tmp_path, state="inactive")
     fill_rows(
         database,
         "egress_decisions",
@@ -147,14 +195,77 @@ def test_egress_is_read_newest_first_from_the_database_even_while_running(tmp_pa
             )
         ],
     )
-    with respx.mock(assert_all_called=False) as router:
-        _mock_api(router)
-        page = _page(console, f"{BASE}/egress")
-        denied = _page(console, f"{BASE}/egress?verdict=denied")
+    page = _page(console, f"{BASE}/egress")
+    denied = _page(console, f"{BASE}/egress?verdict=denied")
     assert page.index("newer_reason") < page.index("older_reason")
     assert "From the database at revision 0011" in page
     assert "newer_reason" in denied
     assert "older_reason" not in denied
+
+
+def test_the_system_page_reads_health_active_work_the_position_and_recovery(
+    tmp_path: Path,
+) -> None:
+    console, _database = _console(tmp_path, state="active")
+    status = _fixture("system-status")
+    status["active_trajectories"] = [
+        {"trajectory_id": TRAJECTORY, "state": "executing", "lease_owner": "host:1:worker",
+         "created_at": "2026-09-10T00:00:00Z"}
+    ]  # fmt: skip
+    status["pending_approvals"] = [
+        {"request_id": "01PENDINGREQUEST000000000A", "trajectory_id": TRAJECTORY,
+         "kind": "ceiling_raise", "reason": "budget_exceeded", "age_seconds": 125.4,
+         "expires_at": "2026-09-10T00:15:00Z"}
+    ]  # fmt: skip
+    status["last_recovery"] = {
+        "resumed": ["01RESUMED"], "finished": [], "halted": ["01HALTED"], "failed": [],
+        "deferred": [], "touched": 2,
+    }  # fmt: skip
+    with respx.mock(assert_all_called=False) as router:
+        _mock_api(router, **{"system/status": status})
+        text = _page(console, f"{BASE}/system")
+    assert '<a href="/apps/promptcadence/system" aria-current="page">System</a>' in text
+    for component in ("database", "loadcoach", "tiers", "tools"):
+        assert f">{component}<" in text, component
+    assert "125 s" in text
+    assert "ceiling_raise" in text
+    assert "01RESUMED" in text and "01HALTED" in text
+    assert "at most 20 USD" in text
+    assert 'href="/apps/promptcadence/tokens"' in text
+    assert "From the API" in text
+    nav = text.split('aria-label="Sections"', 1)[1].split("</nav>", 1)[0]
+    assert nav.index("<hr>") < nav.index("System") < nav.index("Settings")
+
+
+def test_a_503_health_keeps_the_status_and_names_the_refusal(tmp_path: Path) -> None:
+    console, _database = _console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        _mock_api(router)
+        router.get(f"{PROMPTCADENCE_URL}/api/v1/health").mock(
+            return_value=httpx.Response(503, json=_fixture("health"))
+        )
+        text = _page(console, f"{BASE}/system")
+    assert "HTTP_503" in text
+    assert "Nothing is planning or executing." in text
+
+
+def test_a_stopped_promptcadences_system_page_reads_only_from_its_api(tmp_path: Path) -> None:
+    console, _database = _console(tmp_path, state="inactive")
+    assert "reads only from its running API" in _page(console, f"{BASE}/system")
+
+
+def test_the_injection_corpus_renders_inert_on_the_system_page(tmp_path: Path) -> None:
+    console, _database = _console(tmp_path, state="active")
+    health = _fixture("health")
+    health["components"][0]["detail"] = HOSTILE
+    status = _fixture("system-status")
+    status["pending_approvals"] = [
+        {"request_id": "01PENDING", "trajectory_id": TRAJECTORY, "kind": "plan", "reason": HOSTILE}
+    ]
+    with respx.mock(assert_all_called=False) as router:
+        _mock_api(router, health=health, **{"system/status": status})
+        text = _page(console, f"{BASE}/system")
+    _assert_inert(text)
 
 
 def test_stopped_pages_read_the_database_with_a_start_beside_them(tmp_path: Path) -> None:

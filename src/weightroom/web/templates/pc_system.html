@@ -1,0 +1,104 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, card, table, empty_state, kv_list, status_dot %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_pc.html" import short, trajectory_link, state_badge %}
+{% block title %}System — PromptCadence — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>System {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/promptcadence/approvals">Approvals</a> · <a href="/apps/promptcadence/ledger">Ledger</a> · <a href="/apps/promptcadence/tokens">Tokens</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Health, what is running and waiting, today's position, the last recovery pass and the
+concurrency — as PromptCadence's own System page shows them, read from its running API.</p>
+{{ refusal(sourced.error) }}
+{% set data = sourced.data %}
+{% if data is not none %}
+{% set status = data.get("status") or {} %}
+{% set health = data.get("health") %}
+
+<h3>Components</h3>
+{{ refusal(data.get("health_error")) }}
+{% if health %}
+<p>{{ status_dot({"ok": "ok", "degraded": "degraded", "unavailable": "stopped"}.get(health.get("status"), "unknown"), label=health.get("status") or "unknown") }}
+<span class="muted">PromptCadence {{ health.get("version") or "—" }} · checked {{ health.get("checked_at") or "—" }}</span></p>
+{% set rows = [] %}
+{% for one in health.get("components") or [] %}
+{% set _ = rows.append([one.get("name") or "—", status_dot({"ok": "ok", "degraded": "degraded", "unavailable": "stopped"}.get(one.get("status"), "unknown"), label=one.get("status") or "unknown"), one.get("detail") or "—", one.get("checked_at") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Component", "mono": true}, {"label": "Status"}, {"label": "Detail"}, {"label": "Checked", "mono": true}], rows, caption="Health components", density="dense", row_count=rows | length) }}
+<p class="muted">A degraded component is not a failure to serve: an unreachable LoadCoach degrades the tiers
+that need it and the API keeps answering.</p>
+{% endif %}
+
+<h3>Active trajectories</h3>
+{% set active = status.get("active_trajectories") or [] %}
+{% if active %}
+{% set rows = [] %}
+{% for one in active %}
+{% set _ = rows.append([trajectory_link(one.get("trajectory_id")), state_badge(one.get("state")), short(one.get("lease_owner")), one.get("created_at") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Trajectory"}, {"label": "State"}, {"label": "Lease"}, {"label": "Created", "mono": true}], rows, caption="Planning and executing", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("Nothing is planning or executing.", "Trajectories", "/apps/promptcadence/trajectories") }}
+{% endif %}
+
+<h3>Pending approvals</h3>
+{% set pending = status.get("pending_approvals") or [] %}
+{% if pending %}
+{% set rows = [] %}
+{% for one in pending %}
+{% set _ = rows.append([short(one.get("request_id")), trajectory_link(one.get("trajectory_id")), one.get("kind") or "—", one.get("reason") or "—", ((one.get("age_seconds") | round(0) | int) ~ " s") if one.get("age_seconds") is number else "—", one.get("expires_at") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Request"}, {"label": "Trajectory"}, {"label": "Kind"}, {"label": "Reason"}, {"label": "Waiting", "numeric": true}, {"label": "Expires", "mono": true}], rows, caption="Oldest first; grant or deny them on the Approvals page", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("Nothing is waiting for a person.") }}
+{% endif %}
+
+<h3>Today</h3>
+{% set ledger = status.get("ledger") %}
+{% if ledger %}
+{% set day = ledger.get("day") or {} %}
+<ul class="card-grid">
+  {{ card("Day tokens left", day.get("tokens_remaining_display") or "—", note="UTC day " ~ (ledger.get("utc_day") or "—"), kind="figure") }}
+  {{ card("Day money left", day.get("money_remaining_display") or "—", note="the shared per-day ceiling", kind="figure") }}
+  {{ card("Unpriced debits", day.get("unpriced_debit_count") if day.get("unpriced_debit_count") is not none else "—", note="today", kind="figure") }}
+</ul>
+{% if ledger.get("projects") %}
+{% set rows = [] %}
+{% for one in ledger.get("projects") %}{% set _ = rows.append([one.get("project"), one.get("tokens_remaining_display") or "—", one.get("money_remaining_display") or "—", badge("binding", tone="warning") if one.get("binds") else "no"]) %}{% endfor %}
+{{ table([{"label": "Project"}, {"label": "Tokens left"}, {"label": "Money left"}, {"label": "Binds"}], rows, caption="Configured project ceilings", density="dense", row_count=rows | length) }}
+{% endif %}
+<p class="muted">Per-tier spend and the debits behind it are on the <a href="/apps/promptcadence/ledger">Ledger</a>.</p>
+{% else %}
+<p class="muted">PromptCadence reported no ledger position.</p>
+{% endif %}
+
+<h3>Recovery</h3>
+{% set recovery = status.get("last_recovery") %}
+{% if recovery %}
+{{ kv_list([
+  {"label": "Touched", "value": recovery.get("touched") if recovery.get("touched") is not none else "—"},
+  {"label": "Resumed", "value": (recovery.get("resumed") or []) | join(", ") or "none"},
+  {"label": "Finished", "value": (recovery.get("finished") or []) | join(", ") or "none"},
+  {"label": "Halted", "value": (recovery.get("halted") or []) | join(", ") or "none"},
+  {"label": "Failed", "value": (recovery.get("failed") or []) | join(", ") or "none"},
+  {"label": "Deferred", "value": (recovery.get("deferred") or []) | join(", ") or "none"},
+]) }}
+<p class="muted">A trajectory whose worker died mid-turn is reconciled against LoadCoach's own job record rather
+than re-run.</p>
+{% else %}
+{{ empty_state("No recovery pass has run in this process.") }}
+{% endif %}
+
+<h3>Access</h3>
+{{ kv_list([
+  {"label": "Concurrency", "value": status.get("max_concurrent_trajectories") if status.get("max_concurrent_trajectories") is not none else "—"},
+  {"label": "LoadCoach", "value": status.get("loadcoach_base_url") or "—"},
+]) }}
+<p class="muted">PromptCadence's API does not say how it authenticates — its own System page reads its bind from
+configuration the API does not serve. It is loopback-first, and every call this console makes carries
+the token on the <a href="/apps/promptcadence/tokens">Tokens</a> page.</p>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

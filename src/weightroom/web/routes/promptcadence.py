@@ -317,7 +317,9 @@ def _approvals(
     pending = read_app_page(
         request, view, api=lambda: pc.pending_api(client, settings), database=pc.pending_db
     )
-    history = read_app_page(request, view, api=None, database=pc.requests_db)
+    history = read_app_page(
+        request, view, api=lambda: pc.requests_api(client, settings), database=pc.requests_db
+    )
     return render_app_page(
         request,
         principal,
@@ -487,11 +489,14 @@ def egress_page(
 ) -> HTMLResponse:
     """Every decision about whether data could leave, newest first, approvals and refusals alike."""
     view = app_view(request, APP)
+    client, settings = request.app.state.http, request.app.state.settings
     wanted_verdict, wanted_trajectory = verdict or None, trajectory_id or None
     sourced = read_app_page(
         request,
         view,
-        api=None,
+        api=lambda: pc.egress_api(
+            client, settings, verdict=wanted_verdict, trajectory_id=wanted_trajectory
+        ),
         database=lambda handle: pc.egress_db(
             handle, verdict=wanted_verdict, trajectory_id=wanted_trajectory
         ),
@@ -507,4 +512,18 @@ def egress_page(
         verdict=wanted_verdict or "",
         verdicts=pc.VERDICTS,
         trajectory_id=wanted_trajectory or "",
+    )
+
+
+@ui_router.get(f"{BASE}/system", summary="System", response_class=HTMLResponse)
+def system_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+    """Health components, active work, pending approvals by age, today's position, the last
+    recovery pass and the concurrency — PromptCadence's own System page, over its API only."""
+    view = app_view(request, APP)
+    client, settings = request.app.state.http, request.app.state.settings
+    sourced = read_app_page(
+        request, view, api=lambda: pc.system_api(client, settings), database=None
+    )
+    return render_app_page(
+        request, principal, APP, "pc_system.html", selected="System", view=view, sourced=sourced
     )

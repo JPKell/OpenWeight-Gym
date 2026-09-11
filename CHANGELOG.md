@@ -7,6 +7,12 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **PromptCadence's System page** (row WPC1, spec §7.3 as amended 2026-09-10): its health
+  components with their status, the active trajectories, every pending approval with its age,
+  today's position, the last recovery pass (resumed, finished, halted, failed, deferred) and the
+  configured concurrency — PromptCadence's own System page, over its `/health` and
+  `/system/status` only; a `503` health keeps the rest of the page. PromptCadence's API does not
+  say how it authenticates, so the page links the Tokens page instead.
 - **LoadCoach's Models, Routing and Reliability pages under its tab** (row WP2), at parity with
   LoadCoach's own UI: **Models** (declared capabilities, the evidence summary, reliability,
   residency, the registration and egress class — `""` and `false` read *not recorded* — with each
@@ -54,8 +60,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   and why not), **Tools** (withheld tools with their cause, the isolation rung), **Ledger** (today's
   position, per-project and per-tier, the debits behind it) and **Egress** (newest first, by
   verdict and trajectory). A stopped PromptCadence's pages render from its database at a known
-  revision; the approval history and egress decisions read the database even while it runs,
-  because its API lists neither.
+  revision; while it runs, the approval history and the egress decisions read its API too, over
+  the two listings it gained at row WPC1 (`GET /approvals?status=all` without a trajectory, and
+  `GET /egress-decisions?sort=-decided_at`).
 - **PromptCadence's actions from its tab** (row WP1): **submit a trajectory** (classification,
   tools ticked from the registry — none ticked sends an empty allowlist, never an omitted one —
   tier, project, step and turn caps, planning, token and money budgets and the partial-pricing

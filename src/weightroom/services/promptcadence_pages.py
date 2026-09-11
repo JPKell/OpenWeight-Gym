@@ -6,11 +6,12 @@ Each page has two readers: one over PromptCadence's own ``/api/v1`` (through
 Which one runs is :mod:`~weightroom.services.app_pages`' decision, never this module's; what the
 rows say is rendered by the templates, escaped.
 
-Two readers use the database even while PromptCadence runs, because its API has no view of the
-subject (spec §7.3: "where the API has no view — a read of its database"): **every** approval
-request, resolved ones included (``GET /approvals`` lists pending ones, and resolved ones only per
-trajectory), and the egress decisions newest first (``GET /egress-decisions`` lists the oldest
-first with no cursor, so its first 200 are the wrong 200).
+Since row WPC1 every listing reads the API while PromptCadence answers: every approval request
+comes from ``GET /approvals?status=all`` with no trajectory, and the egress decisions newest first
+from ``GET /egress-decisions?sort=-decided_at`` — the two views PromptCadence's API lacked at WP1,
+when both pages read its database even while it ran. ``requests_db`` and ``egress_db`` remain the
+stopped readers. The System page reads only the API: health and the recovery pass live in the
+running process.
 """
 
 from __future__ import annotations
@@ -41,14 +42,17 @@ __all__ = [
     "TRAJECTORY_STATES",
     "VERDICTS",
     "TrajectoryNotRecorded",
+    "egress_api",
     "egress_db",
     "event_log_frames",
     "ledger_api",
     "ledger_db",
     "pending_api",
     "pending_db",
+    "requests_api",
     "requests_db",
     "segment",
+    "system_api",
     "tiers_api",
     "tools_api",
     "trajectories_api",
@@ -348,8 +352,22 @@ def pending_db(handle: AppDatabase) -> list[dict[str, Any]]:
     ]  # fmt: skip
 
 
+def requests_api(client: httpx.Client, settings: Settings) -> list[dict[str, Any]]:
+    """``GET /approvals?status=all``: every request ever raised, newest first — the first 200.
+
+    Raises:
+        AppRefused: PromptCadence refused (one older than row WPC1 answers the pending list here,
+            which the page cannot tell apart; its version range is what keeps that from happening).
+        AppUnreachable: It did not answer.
+    """
+    body = call(
+        client, settings, APP, "GET", "approvals", params={"status": "all", "limit": LIST_CAP}
+    )
+    return _items(body)
+
+
 def requests_db(handle: AppDatabase) -> list[dict[str, Any]]:
-    """Every approval request, newest first — resolved ones included, which the API cannot list."""
+    """Every approval request, newest first, resolved ones included, while PromptCadence is down."""
     return [
         _approval_row(row)
         for row in rows_where(handle, "approval_requests", order_by="created_at", limit=LIST_CAP)
@@ -434,6 +452,69 @@ def _egress_row(row: Mapping[str, Any]) -> dict[str, Any]:
         "policy": decision.get("policy_name"),
         "reason": decision.get("reason"),
         "decided_at": row.get("decided_at"),
+    }
+
+
+def egress_api(
+    client: httpx.Client, settings: Settings, *, verdict: str | None, trajectory_id: str | None
+) -> list[dict[str, Any]]:
+    """``GET /egress-decisions?sort=-decided_at``: the newest 200, under the stopped reader's names.
+
+    Each item is SetSpec's ``governance.egress_decision``; the page's columns are read out of it
+    here so the running and the stopped page render one shape.
+
+    Raises:
+        AppRefused: ``VALIDATION_ERROR`` for an unknown verdict, or another refusal.
+        AppUnreachable: It did not answer.
+    """
+    body = call(
+        client, settings, APP, "GET", "egress-decisions",
+        params={"sort": "-decided_at", "limit": LIST_CAP, "verdict": verdict,
+                "trajectory_id": trajectory_id},
+    )  # fmt: skip
+    rows = []
+    for one in _items(body):
+        request = one.get("request")
+        request = request if isinstance(request, Mapping) else {}
+        target = request.get("target")
+        target = target if isinstance(target, Mapping) else {}
+        rows.append(
+            {
+                "decision_id": one.get("decision_id"),
+                "verdict": one.get("verdict"),
+                "trajectory_id": request.get("run_id"),
+                "target": target.get("name"),
+                "classification": request.get("data_classification"),
+                "policy": one.get("policy_name"),
+                "reason": one.get("reason"),
+                "decided_at": one.get("decided_at"),
+            }
+        )
+    return rows
+
+
+def system_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /health`` and ``GET /system/status``: components, active work, the recovery pass.
+
+    ``/health`` answers ``503`` when a component is unavailable, and the console's client reads
+    any status of 400 or above as a refusal, so that case keeps the refusal beside the status
+    rather than failing the whole page.
+
+    Raises:
+        AppRefused: ``/system/status`` was refused.
+        AppUnreachable: It did not answer.
+    """
+    status = call(client, settings, APP, "GET", "system/status")
+    health: Any = None
+    health_error: SuiteError | None = None
+    try:
+        health = call(client, settings, APP, "GET", "health")
+    except SuiteError as exc:
+        health_error = exc
+    return {
+        "status": dict(status) if isinstance(status, Mapping) else {},
+        "health": dict(health) if isinstance(health, Mapping) else None,
+        "health_error": health_error,
     }
 
 

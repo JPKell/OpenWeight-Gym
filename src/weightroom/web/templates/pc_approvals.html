@@ -47,5 +47,5 @@ are recorded, not only the one that let work continue.</p>
 {{ empty_state("No approval request has been raised.") }}
 {% endif %}
 {% endif %}
-<p class="muted page-source">{{ history.detail }} — PromptCadence's API lists resolved requests only per trajectory.</p>
+{{ page_source(history) }}
 {% endblock %}
