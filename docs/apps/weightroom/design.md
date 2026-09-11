@@ -117,6 +117,9 @@ package-shaped so a move is a move.
 
 ## 6. What the four applications adopt later
 
+**Adopted at row WM2 (2026-09-10)** — `history/handoffs/WM2_HANDOFF.md`: each application opts in on
+the pages named below, and the tab strip renders only when its `[console] url` names the console.
+
 Rows after this arc: the 13 px scale and 32 px rows behind `data-density`, the status dot on their
 health pages, the meters in their telemetry bars, the log pane on run/job pages, the top-bar tab
 strip linking to WeightRoomGym and to each other. Nothing in MirrorWall 0.3 changes an application's
