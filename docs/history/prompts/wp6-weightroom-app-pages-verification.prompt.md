@@ -1,7 +1,7 @@
 # Kickoff — WP6: verification — every application tab, fully operating
 
 **Row:** WP6 (Opus 5 · high · attended · **never overnight**) — [`docs/roadmap/weightroom-work.md`](../../roadmap/weightroom-work.md).
-Runs after WP5. It is the last row of the WP arc ([`wp-app-pages-arc.prompt.md`](wp-app-pages-arc.prompt.md)).
+Runs after WP4 and WP5 are both merged into main. It is the last row of the WP arc ([`wp-app-pages-arc.prompt.md`](wp-app-pages-arc.prompt.md)).
 **Ships:** no code. A verdict, recorded verbatim, and new rows for whatever fails.
 **Component:** `~/ai/suite/WeightRoom` for the handoff and the roadmap only.
 

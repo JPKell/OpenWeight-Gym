@@ -1,7 +1,9 @@
 # Kickoff — WP3: application pages III — FreeWeight measurement
 
 **Row:** WP3 (Sonnet 5 · high) — [`docs/roadmap/weightroom-work.md`](../../roadmap/weightroom-work.md).
-Runs after WPC1 (operator, 2026-09-10). Part of the WP arc ([`wp-app-pages-arc.prompt.md`](wp-app-pages-arc.prompt.md)).
+Runs after WPC1 (operator, 2026-09-10), **at the same time as WP5**. It uses its own branch and
+worktree, under the parallel-row rules in `weightroom-work.md` §3: read them before the first
+commit. Part of the WP arc ([`wp-app-pages-arc.prompt.md`](wp-app-pages-arc.prompt.md)).
 **Ships:** unreleased. FreeWeight's Models, Runs, Results, Evidence, Adapters and Provider pages,
 at full parity with FreeWeight's own UI. Goals and grading are WP4's.
 **Component:** `~/ai/suite/WeightRoom`. `~/ai/suite/FreeWeight` for any missing API route (arc

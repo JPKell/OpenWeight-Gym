@@ -1,7 +1,8 @@
 # Kickoff — WP4: application pages IV — FreeWeight goals, calibration and grading
 
 **Row:** WP4 (Opus 5 · high · **never overnight**) — [`docs/roadmap/weightroom-work.md`](../../roadmap/weightroom-work.md).
-Runs after WP3. Part of the WP arc ([`wp-app-pages-arc.prompt.md`](wp-app-pages-arc.prompt.md)).
+Runs after WP3 is merged into main; if WP5 is still open, the parallel-row rules in
+`weightroom-work.md` §3 apply. Part of the WP arc ([`wp-app-pages-arc.prompt.md`](wp-app-pages-arc.prompt.md)).
 **Ships:** unreleased. FreeWeight's Goals page at full parity: authoring, starters, import/export,
 judges, calibration, grading and the report.
 **Component:** `~/ai/suite/WeightRoom`. `~/ai/suite/FreeWeight` for any missing API route.

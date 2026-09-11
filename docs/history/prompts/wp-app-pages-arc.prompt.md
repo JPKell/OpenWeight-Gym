@@ -102,7 +102,9 @@ scheduled them. This arc closes the gap.
 client and the Logs page. WP3 comes before WP4: the goals pages sit on the runs and results
 pages. WP2, WP3 and WP5 are independent of each other in substance. They still run one at a time,
 because each edits `rendering.py`, the audit registry, the OpenAPI snapshot and `api.md`.
-WP6 comes last.
+WP6 comes last. (**Amended by the operator on 2026-09-10:** WP3 and WP5 run at the same time, on
+separate branches. The order and the rules for running in parallel are in `weightroom-work.md` §3,
+which wins over this section.)
 
 ## 4. Rows to paste into `weightroom-work.md` §1
 
