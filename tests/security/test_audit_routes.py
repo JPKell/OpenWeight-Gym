@@ -414,13 +414,21 @@ _CATALOG_MODEL_ID = "01CATALOGEXERCISE000000001"
 def _seed_catalog_model(console: Console) -> str:
     """One LoadCoach model row, on the same fixture copy the ``console`` fixture already built —
     the catalog join has nothing to enable, drop in over or delete without one."""
+    import sqlite3
     from typing import cast
 
     state = cast(Any, console.client.app).state
     url, reason = effective_database_url(state.settings, "loadcoach")
     assert url is not None, reason
+    file = Path(url.removeprefix("sqlite:///"))
+    with sqlite3.connect(file) as connection:
+        seeded = connection.execute(
+            "SELECT 1 FROM models WHERE id = ?", (_CATALOG_MODEL_ID,)
+        ).fetchone()
+    if seeded:  # several exercises share one console in the redaction sweep
+        return _CATALOG_CANONICAL_ID
     fill_rows(
-        Path(url.removeprefix("sqlite:///")),
+        file,
         "models",
         [
             {
@@ -760,7 +768,9 @@ def console(tmp_path: Path) -> Console:
     return audit_console(tmp_path)
 
 
-def audit_console(tmp_path: Path, *, loadcoach_token: str | None = None) -> Console:
+def audit_console(
+    tmp_path: Path, *, loadcoach_token: str | None = None, server_toml: str = ""
+) -> Console:
     """The console every exercise in :data:`EXERCISES` runs against.
 
     Args:
@@ -768,6 +778,8 @@ def audit_console(tmp_path: Path, *, loadcoach_token: str | None = None) -> Cons
         loadcoach_token: When given, written to a token file named by ``[apps.loadcoach]
             api_key_file`` — a secret the redaction sweep (``test_redaction_sweep.py``) then
             asserts never reaches an audit row or a log line.
+        server_toml: Extra ``[server]`` lines — the sweep lifts the request rate limit, since it
+            runs every exercise through one console from one address.
     """
     # A fake host where loadcoach is installed and its unit exists, so the control routes have
     # something to act on and each writes exactly one row.
@@ -794,6 +806,7 @@ def audit_console(tmp_path: Path, *, loadcoach_token: str | None = None) -> Cons
     return build_console(
         tmp_path / "console",
         extra_toml=(
+            f"{server_toml}"
             f'[apps.loadcoach]\nexecutable = "{executable}"\n{token_line}'
             f'[apps.ideapress]\nexecutable = "{ideapress}"\nbase_url = "http://127.0.0.1:9"\n'
         ),

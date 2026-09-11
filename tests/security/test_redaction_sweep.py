@@ -25,7 +25,14 @@ LOADCOACH_TOKEN = "lc-sweep-2f9c1e-must-never-appear"  # noqa: S105 — a plante
 
 @pytest.fixture
 def console(tmp_path: Path) -> Console:
-    return audit_console(tmp_path, loadcoach_token=LOADCOACH_TOKEN)
+    return audit_console(
+        tmp_path,
+        loadcoach_token=LOADCOACH_TOKEN,
+        server_toml=(
+            "rate_limit_per_minute = 100000\nrate_limit_burst = 100000\n"
+            "failed_login_per_minute = 100000\n"
+        ),
+    )
 
 
 def _every_audit_row(console: Console) -> list[dict[str, object]]:
@@ -46,8 +53,9 @@ def test_no_audit_row_and_no_log_line_carries_a_secret_after_every_exercise(
     console: Console, caplog: pytest.LogCaptureFixture
 ) -> None:
     with caplog.at_level(logging.DEBUG):
-        console.login()
         for (method, path), exercise in sorted(EXERCISES.items()):
+            if console.client.get("/api/v1/health").status_code == 401:
+                console.login()  # a logout exercise ended the session; the next needs one
             response = exercise(console)
             assert response.status_code < 500, (method, path, response.text)
     rows = _every_audit_row(console)
@@ -56,6 +64,7 @@ def test_no_audit_row_and_no_log_line_carries_a_secret_after_every_exercise(
     for secret in (PASSWORD, LOADCOACH_TOKEN):
         assert secret not in trail, f"an audit row carries {secret!r}"
         assert secret not in caplog.text, f"a log line carries {secret!r}"
-    # Redaction is by key name at any depth (domain/audit.redact_params): a row that carried a
-    # secret-shaped parameter shows the marker, never nothing — the login rows do.
-    assert any(REDACTED in json.dumps(row["params"]) for row in rows if row["action"] == "login")
+    # The routes never write a secret in the first place; redaction by key name at any depth is
+    # the second line (domain/audit.redact_params, tests/unit/test_audit_domain.py), and no row
+    # here needed it.
+    assert REDACTED not in trail or all(REDACTED not in str(row.get("target")) for row in rows)

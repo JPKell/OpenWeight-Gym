@@ -222,22 +222,68 @@ def test_version_is_open_and_health_is_not(console: Console) -> None:
     assert console.client.get("/api/v1/health").status_code == 200
 
 
-# spec §14's own rows: fixation, expiry, logout, Sec-Fetch-Site, the trust listener — held by
-# tests/integration/test_auth_flow.py and tests/integration/test_trust_listener.py
+# spec §14's own rows, each held by a named test elsewhere. The registry below is the row's
+# checklist made executable (row W10): a renamed or deleted test fails here by name.
 
-
-def test_the_named_tests_exist() -> None:
-    root = Path(__file__).resolve().parents[1]
-    flow = (root / "integration" / "test_auth_flow.py").read_text(encoding="utf-8")
-    for name in (
+SPEC_14_ROWS: dict[str, tuple[str, ...]] = {
+    # session fixation, idle and absolute expiry, logout, the login brake
+    "integration/test_auth_flow.py": (
         "test_a_new_session_id_on_every_login",
         "test_idle_expiry_ends_the_session",
         "test_absolute_expiry_ends_the_session",
         "test_logout_deletes_the_row",
         "test_the_login_brake_is_five_per_minute",
-    ):
-        assert name in flow, name
-    trust = (root / "integration" / "test_trust_listener.py").read_text(encoding="utf-8")
-    assert "test_every_other_path_is_404" in trust
-    refusals = (root / "integration" / "test_runtime_refusals.py").read_text(encoding="utf-8")
-    assert "without_an_account_is_insecure_binding" in refusals
+        "test_the_stored_password_is_a_hash_with_its_parameters",
+        "test_a_lan_bind_with_no_account_is_never_open",
+    ),
+    # the trust listener serves two routes and refuses every other, never with a cookie
+    "integration/test_trust_listener.py": (
+        "test_root_crt_and_trust_answer_200_without_any_cookie",
+        "test_every_other_path_is_404",
+    ),
+    # the startup refusals off loopback
+    "integration/test_runtime_refusals.py": ("without_an_account_is_insecure_binding",),
+    # the guard's five conditions, each failed alone; the never-writable list by name
+    "unit/test_guard_domain.py": (
+        "test_each_condition_fails_alone",
+        "test_a_write_to_every_never_writable_table_is_refused_by_name",
+        "test_ddl_pragma_vacuum_and_everything_but_select_and_dml_are_refused_by_name",
+    ),
+    "integration/test_db_guard.py": (
+        "test_each_condition_failed_alone_refuses_with_its_code_and_writes_nothing",
+        "test_a_write_that_passes_all_five_conditions_lands_with_its_backup_and_its_row",
+    ),
+    # model output is data: the injection corpus against chat, and no host but the two backends
+    "security/test_chat_isolation.py": (
+        "test_the_injection_corpus_renders_inert_in_a_loadcoach_answer_and_its_thinking",
+        "test_the_injection_corpus_renders_inert_in_promptcadence_cards_and_halts",
+        "test_chat_contacts_no_host_but_the_two_configured_base_urls",
+    ),
+    # sudo is never invoked; subprocesses are argv lists over an allowlisted environment
+    "security/test_subprocess_discipline.py": (
+        "test_sudo_is_never_shaped_like_an_executable",
+        "test_no_module_runs_a_shell",
+        "test_every_subprocess_call_passes_a_list_and_an_environment",
+    ),
+    # every state-changing route audited; no audit row or log line carries a secret
+    "security/test_audit_routes.py": (
+        "test_each_state_changing_route_writes_exactly_one_audit_row",
+    ),
+    "security/test_redaction_sweep.py": (
+        "test_no_audit_row_and_no_log_line_carries_a_secret_after_every_exercise",
+    ),
+    # the docs viewer serves only under [docs] root; a symlink out is refused
+    "unit/test_docs.py": ("test_a_symlinked_file_pointing_out_of_the_root_is_refused",),
+    # the console serves with no network at all
+    "e2e/test_network_isolation.py": (
+        "test_every_page_renders_with_every_application_stopped_and_no_socket",
+    ),
+}
+
+
+@pytest.mark.parametrize(("file", "names"), sorted(SPEC_14_ROWS.items()))
+def test_the_named_tests_exist(file: str, names: tuple[str, ...]) -> None:
+    root = Path(__file__).resolve().parents[1]
+    text = (root / file).read_text(encoding="utf-8")
+    for name in names:
+        assert name in text, f"{file} no longer holds {name}"
