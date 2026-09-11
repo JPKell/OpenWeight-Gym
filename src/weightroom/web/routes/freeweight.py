@@ -23,6 +23,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response, Streamin
 
 from weightroom.services import freeweight_actions as actions
 from weightroom.services import freeweight_pages as fw
+from weightroom.services.app_api import outcome_of
 from weightroom.services.app_api import stream as app_stream
 from weightroom.services.audit import record
 from weightroom.services.auth import require_fresh_reauth
@@ -148,7 +149,8 @@ def discover_from_page(request: Request, principal: CurrentOperator) -> HTMLResp
         outcome = actions.discover(client, settings)
     except SuiteError as exc:
         _audit(
-            request, principal, "freeweight.discover", target=None, outcome="refused", params={},
+            request, principal, "freeweight.discover", target=None,
+            outcome=outcome_of(exc), params={},
             message=exc.message,
         )  # fmt: skip
         return _models(request, principal, filters={}, action_error=exc)
@@ -176,7 +178,7 @@ def enabled_from_page(  # noqa: PLR0913 — one parameter per form field
     except SuiteError as exc:
         _audit(
             request, principal, "catalog.enabled", target=canonical_id or model_ref,
-            outcome="refused", params=params, message=exc.message,
+            outcome=outcome_of(exc), params=params, message=exc.message,
         )  # fmt: skip
         return _models(request, principal, filters={}, action_error=exc)
     _audit(
@@ -436,7 +438,7 @@ def cancel_from_page(request: Request, principal: CurrentOperator, run_id: str) 
         outcome = actions.cancel_run(client, settings, run_id)
     except SuiteError as exc:
         _audit(
-            request, principal, "freeweight.run_cancel", target=run_id, outcome="refused",
+            request, principal, "freeweight.run_cancel", target=run_id, outcome=outcome_of(exc),
             params={}, message=exc.message,
         )  # fmt: skip
         return _run(request, principal, run_id, action_error=exc)
@@ -471,7 +473,7 @@ def repeat_from_page(
         outcome = actions.repeat_run(client, settings, run_id, force=forced, label=label)
     except SuiteError as exc:
         _audit(
-            request, principal, "freeweight.run_repeat", target=run_id, outcome="refused",
+            request, principal, "freeweight.run_repeat", target=run_id, outcome=outcome_of(exc),
             params=params, message=exc.message,
         )  # fmt: skip
         return _run(
@@ -1007,7 +1009,8 @@ def provider_from_page(  # noqa: PLR0913 — one parameter per form field, as Fa
         actions.save_provider(client, settings, values, base_digest=base_digest)
     except SuiteError as exc:
         _audit(
-            request, principal, "freeweight.provider_save", target="provider", outcome="refused",
+            request, principal, "freeweight.provider_save", target="provider",
+            outcome=outcome_of(exc),
             params={"fields": changed, "touched_security": security}, message=exc.message,
             security=bool(security),
         )  # fmt: skip

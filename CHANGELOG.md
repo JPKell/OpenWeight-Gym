@@ -71,6 +71,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   the operator submitted as its target and the refusing party's own words as its message. The
   audit-route test gained the matching half: a route that renders a refusal now needs a refusal
   exercise beside its success exercise.
+- **A call slower than its timeout was reported as the application's refusal** (row WPF1, from
+  WP6 finding 3). *Refresh from provider* rendered *freeweight did not answer POST
+  /api/v1/models/discover: timed out* and left a `refused` audit row, while FreeWeight carried on
+  hashing 195 GB of GGUF files and stored 27 models four minutes later: the call was slow, and
+  FreeWeight had refused nothing. A timeout is now its own error — the same `APP_UNREACHABLE`
+  code, so a client that branches on the code sees no change — saying that the application may
+  still be doing the work, that nothing was cancelled and that nothing was sent again. Its audit
+  row is `pending`, the outcome vocabulary's word for *no state moved that we know of*, across
+  every action of all four application tabs. A GGUF drop-in no longer reports an application as
+  refreshed when its discovery pass did not answer. Spec §11 contract 2 now states both rules.
 - A form with a `fieldset` overflowed a phone (row WP4's phone demonstration): a fieldset's
   default `min-width: min-content` let a select whose options carry scale descriptors widen
   FreeWeight's grading form to 839 px on a 412 px screen, and taps on *Save and go on* landed on

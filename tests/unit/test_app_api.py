@@ -9,7 +9,14 @@ import pytest
 import respx
 
 from weightroom.config import Settings, load_settings
-from weightroom.services.app_api import AppRefused, call, download, stream
+from weightroom.services.app_api import (
+    AppRefused,
+    AppTimedOut,
+    call,
+    download,
+    outcome_of,
+    stream,
+)
 from weightroom.services.apps import AppUnreachable
 
 BASE = "http://127.0.0.1:8768"
@@ -76,6 +83,62 @@ def test_no_answer_and_a_body_that_is_not_json_are_unreachable(settings: Setting
             call(client, settings, "promptcadence", "GET", "tools")
         with pytest.raises(AppUnreachable):
             call(client, settings, "promptcadence", "GET", "tiers")
+
+
+def test_an_application_slower_than_the_timeout_is_not_a_refusal(settings: Settings) -> None:
+    """WP6 finding 3: a call the console stopped waiting for was reported as the application's
+    refusal, while FreeWeight went on working and finished the job four minutes later.
+
+    A real server, answering after the console has given up, rather than a mocked exception: the
+    type httpx raises for a slow answer is the whole point of the distinction.
+    """
+    import threading
+    import time
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    class Slow(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:  # noqa: N802 — BaseHTTPRequestHandler's own name
+            time.sleep(0.6)
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, *_args: object) -> None:
+            """Quiet: the handler's default writes every request to stderr."""
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Slow)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    config = Path(str(settings.apps.promptcadence.api_key_file)).with_name("slow.toml")
+    config.write_text(
+        f'[apps.promptcadence]\nbase_url = "http://127.0.0.1:{server.server_address[1]}"\n'
+    )
+    slow_settings = load_settings(config_path=config).settings
+    try:
+        with httpx.Client() as client, pytest.raises(AppTimedOut) as caught:
+            call(
+                client,
+                slow_settings,
+                "promptcadence",
+                "POST",
+                "models/discover",
+                timeout_seconds=0.1,
+            )
+    finally:
+        server.shutdown()
+    assert "may still be doing the work" in caught.value.message
+    assert caught.value.code == AppUnreachable.code  # a client branching on the code sees no change
+    assert outcome_of(caught.value) == "pending"
+
+
+@respx.mock
+def test_a_refusal_the_application_sent_is_audited_as_one(settings: Settings) -> None:
+    """The other half: an answer *is* the application's word, and stays ``refused``."""
+    respx.post(f"{BASE}/api/v1/models/discover").mock(
+        return_value=httpx.Response(409, json={"error": {"code": "PROVIDER_UNAVAILABLE"}})
+    )
+    with httpx.Client() as client, pytest.raises(AppRefused) as caught:
+        call(client, settings, "promptcadence", "POST", "models/discover")
+    assert outcome_of(caught.value) == "refused"
+    assert outcome_of(AppUnreachable("nothing answered", details={})) == "refused"
 
 
 @respx.mock

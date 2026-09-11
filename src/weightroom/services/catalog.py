@@ -591,7 +591,7 @@ def _refresh_after_dropin(
 ) -> tuple[str, ...]:
     refreshed = []
     for target in targets:
-        _call(
+        answered = _call(
             settings,
             target.app,
             "POST",
@@ -599,7 +599,11 @@ def _refresh_after_dropin(
             client=client,
             timeout=_DISCOVER_TIMEOUT_SECONDS,
         )
-        refreshed.append(target.app)
+        # Only an application that answered is named as refreshed. A discovery pass that timed
+        # out or failed left `_call` with `None`, and reporting it as refreshed told the operator
+        # the new file had been seen when it had not (row WPF1; WP6 finding 3's neighbour).
+        if answered is not None:
+            refreshed.append(target.app)
     return tuple(refreshed)
 
 

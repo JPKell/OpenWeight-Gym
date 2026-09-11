@@ -164,6 +164,42 @@ def test_refresh_shows_freeweights_counts_and_writes_one_audit_row(tmp_path: Pat
     assert row["outcome"] == "ok"
 
 
+def test_a_refresh_slower_than_the_timeout_is_pending_not_freeweights_refusal(
+    tmp_path: Path,
+) -> None:
+    """WP6 finding 3: *Refresh from provider* was audited ``refused`` after the console stopped
+    waiting, while FreeWeight carried on hashing 195 GB and stored 27 models four minutes later.
+
+    A timeout is what the console did, not what FreeWeight said: the row is ``pending`` and the
+    page says the work may still be running.
+    """
+    console, _database = freeweight_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        route_for(router, "POST", "models/discover").mock(
+            side_effect=httpx.ReadTimeout("timed out")
+        )
+        response = post(console, f"{BASE}/models/discover", {})
+    assert response.status_code == 200
+    assert "may still be doing the work" in response.text
+    (row,) = audit(console, "freeweight.discover")
+    assert row["outcome"] == "pending"
+
+
+def test_freeweights_own_refusal_of_a_refresh_is_still_refused(tmp_path: Path) -> None:
+    """The other half of finding 3: an answer FreeWeight sent stays FreeWeight's refusal."""
+    console, _database = freeweight_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        route_for(router, "POST", "models/discover").mock(
+            return_value=_refusal("PROVIDER_UNAVAILABLE", "The provider did not answer.", {}, 503)
+        )
+        response = post(console, f"{BASE}/models/discover", {})
+    assert response.status_code == 200
+    (row,) = audit(console, "freeweight.discover")
+    assert row["outcome"] == "refused"
+
+
 def test_disable_is_the_catalogs_call_with_a_json_body_and_returns_to_the_page(
     tmp_path: Path,
 ) -> None:

@@ -22,6 +22,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response, Streamin
 
 from weightroom.services import promptcadence_actions as actions
 from weightroom.services import promptcadence_pages as pc
+from weightroom.services.app_api import outcome_of
 from weightroom.services.app_api import stream as app_stream
 from weightroom.services.audit import record
 from weightroom.web.routes.apps import app_view, read_app_page, render_app_page
@@ -200,7 +201,7 @@ def submit_from_page(  # noqa: PLR0913 — one parameter per form field, as Fast
         document = actions.submit(client, settings, body)
     except SuiteError as exc:
         _audit(
-            request, principal, "trajectory.submit", target=None, outcome="refused",
+            request, principal, "trajectory.submit", target=None, outcome=outcome_of(exc),
             params=params, message=exc.message,
         )  # fmt: skip
         return _trajectories(
@@ -269,7 +270,7 @@ def cancel_from_page(request: Request, principal: CurrentOperator, trajectory_id
         document = actions.cancel(client, settings, trajectory_id)
     except SuiteError as exc:
         _audit(
-            request, principal, "trajectory.cancel", target=trajectory_id, outcome="refused",
+            request, principal, "trajectory.cancel", target=trajectory_id, outcome=outcome_of(exc),
             params={}, message=exc.message,
         )  # fmt: skip
         return _trajectory(request, principal, trajectory_id, action_error=exc)
@@ -367,7 +368,7 @@ def _decide(
         )
     except SuiteError as exc:
         _audit(
-            request, principal, action, target=trajectory_id, outcome="refused",
+            request, principal, action, target=trajectory_id, outcome=outcome_of(exc),
             params={"raised": raised}, message=exc.message,
         )  # fmt: skip
         return _approvals(request, principal, action_error=exc)

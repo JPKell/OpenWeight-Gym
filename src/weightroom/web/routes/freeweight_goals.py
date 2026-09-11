@@ -23,7 +23,7 @@ from fastapi import APIRouter, File, Form, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from weightroom.services import freeweight_goals as goals
-from weightroom.services.app_api import download
+from weightroom.services.app_api import download, outcome_of
 from weightroom.services.apps import AppUnreachable
 from weightroom.services.freeweight_pages import _document, segment
 from weightroom.web.routes.apps import app_view, read_app_page, render_app_page
@@ -79,8 +79,8 @@ def _refused(  # noqa: PLR0913 — every field of the refused action's one audit
     params: Mapping[str, Any] | None = None,
 ) -> None:
     _audit(
-        request, principal, action, target=target, outcome="refused", params=dict(params or {}),
-        message=exc.message,
+        request, principal, action, target=target, outcome=outcome_of(exc),
+        params=dict(params or {}), message=exc.message,
     )  # fmt: skip
 
 

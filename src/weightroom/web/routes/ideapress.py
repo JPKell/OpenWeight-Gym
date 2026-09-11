@@ -24,6 +24,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response, Streamin
 
 from weightroom.services import ideapress_actions as actions
 from weightroom.services import ideapress_pages as ip
+from weightroom.services.app_api import outcome_of
 from weightroom.services.app_api import stream as app_stream
 from weightroom.services.audit import record
 from weightroom.services.chat import render_reply
@@ -191,7 +192,7 @@ def create_from_page(  # noqa: PLR0913 — one parameter per form field
         )  # fmt: skip
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.project_create", target=None, outcome="refused",
+            request, principal, "ideapress.project_create", target=None, outcome=outcome_of(exc),
             params=params, message=exc.message,
         )  # fmt: skip
         return _projects(request, principal, create_error=exc, form=form)
@@ -278,7 +279,8 @@ def edit_from_page(  # noqa: PLR0913 — one parameter per form field
         )  # fmt: skip
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.project_update", target=project_id, outcome="refused",
+            request, principal, "ideapress.project_update", target=project_id,
+            outcome=outcome_of(exc),
             params=params, message=exc.message,
         )  # fmt: skip
         return _project(request, principal, project_id, action_error=exc, form=form)
@@ -328,7 +330,8 @@ def delete_from_page(
         )
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.project_delete", target=project_id, outcome="refused",
+            request, principal, "ideapress.project_delete", target=project_id,
+            outcome=outcome_of(exc),
             params={"preview": not typed, "archive": archiving}, message=exc.message,
         )  # fmt: skip
         return _project(request, principal, project_id, action_error=exc)
@@ -420,7 +423,8 @@ def test_from_page(
         tested = actions.test_backend(client, settings, mode)
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.backend_test", target=mode or None, outcome="refused",
+            request, principal, "ideapress.backend_test", target=mode or None,
+            outcome=outcome_of(exc),
             params={"mode": mode or None}, message=exc.message,
         )  # fmt: skip
         return _backends(request, principal, action_error=exc)
@@ -500,7 +504,7 @@ def plan_from_page(request: Request, principal: CurrentOperator, project_id: str
         answer = actions.start_plan(client, settings, project_id)
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.plan_run", target=project_id, outcome="refused",
+            request, principal, "ideapress.plan_run", target=project_id, outcome=outcome_of(exc),
             params={}, message=exc.message,
         )  # fmt: skip
         return _plan(request, principal, project_id, action_error=exc)
@@ -538,7 +542,7 @@ def plan_edit_from_page(  # noqa: PLR0913 — one parameter per form field
         actions.edit_plan(client, settings, project_id, body)
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.plan_edit", target=project_id, outcome="refused",
+            request, principal, "ideapress.plan_edit", target=project_id, outcome=outcome_of(exc),
             params={"operation": operation or None}, message=exc.message,
         )  # fmt: skip
         return _plan(request, principal, project_id, action_error=exc, form=form)
@@ -560,7 +564,8 @@ def research_from_page(request: Request, principal: CurrentOperator, project_id:
         answer = actions.start_stage(client, settings, project_id, "research", {})
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.research_run", target=project_id, outcome="refused",
+            request, principal, "ideapress.research_run", target=project_id,
+            outcome=outcome_of(exc),
             params={}, message=exc.message,
         )  # fmt: skip
         return _plan(request, principal, project_id, action_error=exc)
@@ -608,7 +613,7 @@ def stage_from_page(  # noqa: PLR0913 — one parameter per form field
         answer = actions.start_stage(client, settings, project_id, stage, body)
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.stage_run", target=project_id, outcome="refused",
+            request, principal, "ideapress.stage_run", target=project_id, outcome=outcome_of(exc),
             params=params, message=exc.message,
         )  # fmt: skip
         return _project(request, principal, project_id, action_error=exc, run_form=form)
@@ -695,7 +700,7 @@ def cancel_from_page(
         answer = actions.cancel_task(client, settings, project_id, task_id)
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.stage_cancel", target=task_id, outcome="refused",
+            request, principal, "ideapress.stage_cancel", target=task_id, outcome=outcome_of(exc),
             params={"project_id": project_id}, message=exc.message,
         )  # fmt: skip
         return _task(request, principal, project_id, task_id, action_error=exc)
@@ -811,7 +816,7 @@ def revise_from_page(
         answer = actions.revise_unit(client, settings, project_id, unit_key, instructions)
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.unit_revise", target=project_id, outcome="refused",
+            request, principal, "ideapress.unit_revise", target=project_id, outcome=outcome_of(exc),
             params=params, message=exc.message,
         )  # fmt: skip
         return _unit(
@@ -839,7 +844,7 @@ def resume_from_page(
         answer = actions.resume_unit(client, settings, project_id, unit_key)
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.unit_resume", target=project_id, outcome="refused",
+            request, principal, "ideapress.unit_resume", target=project_id, outcome=outcome_of(exc),
             params={"unit": unit_key}, message=exc.message,
         )  # fmt: skip
         return _unit(request, principal, project_id, unit_key, action_error=exc)
@@ -926,7 +931,8 @@ def export_from_page(
         written = actions.write_export(client, settings, project_id, fmt)
     except SuiteError as exc:
         _audit(
-            request, principal, "ideapress.export_write", target=project_id, outcome="refused",
+            request, principal, "ideapress.export_write", target=project_id,
+            outcome=outcome_of(exc),
             params={"format": fmt}, message=exc.message,
         )  # fmt: skip
         return _export(request, principal, project_id, action_error=exc)

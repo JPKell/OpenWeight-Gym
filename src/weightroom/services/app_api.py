@@ -24,7 +24,15 @@ from weightroom.services.apps import AppUnreachable, bearer_token
 if TYPE_CHECKING:
     from weightroom.config import Settings
 
-__all__ = ["DEFAULT_TIMEOUT_SECONDS", "AppRefused", "call", "refusal", "stream"]
+__all__ = [
+    "DEFAULT_TIMEOUT_SECONDS",
+    "AppRefused",
+    "AppTimedOut",
+    "call",
+    "outcome_of",
+    "refusal",
+    "stream",
+]
 
 DEFAULT_TIMEOUT_SECONDS: Final = 10.0
 STREAM_TIMEOUT: Final = httpx.Timeout(connect=5.0, read=900.0, write=30.0, pool=5.0)
@@ -43,6 +51,48 @@ class AppRefused(SuiteError):
     """
 
     code: ClassVar[str] = "APP_REFUSED"
+
+
+class AppTimedOut(AppUnreachable):
+    """The console gave up waiting. The application may still be doing the work.
+
+    A distinct type, and the same ``APP_UNREACHABLE`` code: a client that branches on the code is
+    right either way — nothing came back — while the console itself must not report the two the
+    same way. WP6 watched *Refresh from provider* be audited ``refused`` while FreeWeight went on
+    hashing 195 GB and stored 27 models four minutes later (finding 3): the call was slow, and
+    FreeWeight had refused nothing. :func:`outcome_of` is where that distinction reaches a row.
+    """
+
+
+def outcome_of(error: BaseException) -> str:
+    """The audit outcome for one failed call: ``pending`` for a timeout, else ``refused``.
+
+    Args:
+        error: The exception a route caught around an application call.
+
+    Returns:
+        ``pending`` — the outcome vocabulary's word for *no state moved that we know of* — when
+        the console stopped waiting, because whether the application did the work is exactly what
+        is not known; ``refused`` for anything the application itself said no to.
+    """
+    return "pending" if isinstance(error, AppTimedOut) else "refused"
+
+
+def _unreachable(
+    app: str, method: str, path: str, exc: httpx.HTTPError, timeout_seconds: float
+) -> AppUnreachable:
+    """The error for a call that brought nothing back, saying which of the two it was."""
+    route = f"{method} /api/v1/{path.lstrip('/')}"
+    if isinstance(exc, httpx.TimeoutException):
+        return AppTimedOut(
+            f"{app} has not answered {route} within {timeout_seconds:g} s, so the console stopped "
+            f"waiting. {app.capitalize()} may still be doing the work — nothing was cancelled and "
+            f"nothing was sent again. Check the page again shortly.",
+            details={"app": app, "path": path, "timeout_seconds": timeout_seconds},
+        )
+    return AppUnreachable(
+        f"{app} did not answer {route}: {exc}", details={"app": app, "path": path}
+    )
 
 
 def _url(settings: Settings, app: str, path: str) -> str:
@@ -120,6 +170,7 @@ def call(
 
     Raises:
         AppRefused: The application answered 400 or above, in its own words.
+        AppTimedOut: It had not answered within ``timeout_seconds``; it may still be working.
         AppUnreachable: It did not answer, or answered with a body that is not JSON.
     """
     query = {key: value for key, value in (params or {}).items() if value is not None}
@@ -133,10 +184,7 @@ def call(
             timeout=timeout_seconds,
         )
     except httpx.HTTPError as exc:
-        raise AppUnreachable(
-            f"{app} did not answer {method} /api/v1/{path.lstrip('/')}: {exc}",
-            details={"app": app, "path": path},
-        ) from exc
+        raise _unreachable(app, method, path, exc, timeout_seconds) from exc
     if response.status_code >= 400:  # noqa: PLR2004 — the HTTP error boundary
         raise refusal(app, response)
     if not response.content:
@@ -174,6 +222,7 @@ def text(
 
     Raises:
         AppRefused: The application answered 400 or above, in its own words.
+        AppTimedOut: It had not answered within ``timeout_seconds``; it may still be working.
         AppUnreachable: It did not answer.
     """
     query = {key: value for key, value in (params or {}).items() if value is not None}
@@ -186,10 +235,7 @@ def text(
             timeout=timeout_seconds,
         )
     except httpx.HTTPError as exc:
-        raise AppUnreachable(
-            f"{app} did not answer GET /api/v1/{path.lstrip('/')}: {exc}",
-            details={"app": app, "path": path},
-        ) from exc
+        raise _unreachable(app, "GET", path, exc, timeout_seconds) from exc
     if response.status_code >= 400:  # noqa: PLR2004 — the HTTP error boundary
         raise refusal(app, response)
     return response.headers.get("content-type", "text/plain; charset=utf-8"), response.text
@@ -293,10 +339,7 @@ def download(
     try:
         response = client.send(request, stream=True)
     except httpx.HTTPError as exc:
-        raise AppUnreachable(
-            f"{app} did not answer GET /api/v1/{path.lstrip('/')}: {exc}",
-            details={"app": app, "path": path},
-        ) from exc
+        raise _unreachable(app, "GET", path, exc, STREAM_TIMEOUT.read or 0.0) from exc
     if response.status_code >= 400:  # noqa: PLR2004 — the HTTP error boundary
         response.read()
         response.close()

@@ -22,6 +22,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response, Streamin
 
 from weightroom.services import loadcoach_actions as actions
 from weightroom.services import loadcoach_pages as lc
+from weightroom.services.app_api import outcome_of
 from weightroom.services.app_api import stream as app_stream
 from weightroom.services.audit import record
 from weightroom.services.auth import require_fresh_reauth
@@ -126,7 +127,8 @@ def discover_from_page(request: Request, principal: CurrentOperator) -> HTMLResp
         outcome = actions.discover(client, settings)
     except SuiteError as exc:
         _audit(
-            request, principal, "loadcoach.discover", target=None, outcome="refused", params={},
+            request, principal, "loadcoach.discover", target=None,
+            outcome=outcome_of(exc), params={},
             message=exc.message,
         )  # fmt: skip
         return _models(request, principal, action_error=exc)
@@ -153,7 +155,7 @@ def enabled_from_page(  # noqa: PLR0913 — one parameter per form field
     except SuiteError as exc:
         _audit(
             request, principal, "catalog.enabled", target=canonical_id or model_ref,
-            outcome="refused", params=params, message=exc.message,
+            outcome=outcome_of(exc), params=params, message=exc.message,
         )  # fmt: skip
         return _models(request, principal, action_error=exc)
     _audit(
@@ -177,7 +179,7 @@ def warm_from_page(
     except SuiteError as exc:
         _audit(
             request, principal, "loadcoach.warm", target=canonical_id or model_ref,
-            outcome="refused", params={"model_ref": model_ref}, message=exc.message,
+            outcome=outcome_of(exc), params={"model_ref": model_ref}, message=exc.message,
         )  # fmt: skip
         return _models(request, principal, action_error=exc)
     job_id = str(outcome.get("job_id") or "")
@@ -324,7 +326,7 @@ def explain_from_page(  # noqa: PLR0913 — one parameter per form field, as Fas
         explained = actions.explain(client, settings, body)
     except SuiteError as exc:
         _audit(
-            request, principal, "loadcoach.route", target=task or None, outcome="refused",
+            request, principal, "loadcoach.route", target=task or None, outcome=outcome_of(exc),
             params=params, message=exc.message,
         )  # fmt: skip
         return _routing(request, principal, explain_error=exc, form=form)
@@ -547,7 +549,7 @@ def queue_control_from_page(
         flags = actions.queue_control(client, settings, verb)
     except SuiteError as exc:
         _audit(
-            request, principal, action, target="queue", outcome="refused",
+            request, principal, action, target="queue", outcome=outcome_of(exc),
             params={"confirmed": True}, message=exc.message,
         )  # fmt: skip
         return _queue(request, principal, action_error=exc)
@@ -659,7 +661,7 @@ def submit_job_from_page(  # noqa: PLR0913 — one parameter per form field, as 
             principal,
             "loadcoach.job_submit",
             target=None,
-            outcome="refused",
+            outcome=outcome_of(exc),
             params=params,
             message=exc.message,
         )
@@ -744,7 +746,7 @@ def cancel_job_from_page(request: Request, principal: CurrentOperator, job_id: s
         outcome = actions.cancel_job(client, settings, job_id)
     except SuiteError as exc:
         _audit(
-            request, principal, "loadcoach.job_cancel", target=job_id, outcome="refused",
+            request, principal, "loadcoach.job_cancel", target=job_id, outcome=outcome_of(exc),
             params={}, message=exc.message,
         )  # fmt: skip
         return _job(request, principal, job_id, action_error=exc)
@@ -780,7 +782,7 @@ def feedback_from_page(  # noqa: PLR0913 — one parameter per form field
         actions.send_feedback(client, settings, job_id, body)
     except SuiteError as exc:
         _audit(
-            request, principal, "loadcoach.job_feedback", target=job_id, outcome="refused",
+            request, principal, "loadcoach.job_feedback", target=job_id, outcome=outcome_of(exc),
             params=params, message=exc.message,
         )  # fmt: skip
         return _job(request, principal, job_id, action_error=exc)
@@ -849,7 +851,7 @@ def import_from_page(
         outcome = actions.import_evidence(client, settings, body)
     except SuiteError as exc:
         _audit(
-            request, principal, "loadcoach.evidence_import", target=None, outcome="refused",
+            request, principal, "loadcoach.evidence_import", target=None, outcome=outcome_of(exc),
             params=params, message=exc.message,
         )  # fmt: skip
         return _evidence(request, principal, action_error=exc)
@@ -972,7 +974,7 @@ def provider_from_page(  # noqa: PLR0913 — one parameter per form field, as Fa
             actions.delete_registration(client, settings, wanted)
         except SuiteError as exc:
             _audit(
-                request, principal, audit_action, target=wanted, outcome="refused",
+                request, principal, audit_action, target=wanted, outcome=outcome_of(exc),
                 params={"preview": False}, message=exc.message, security=True,
             )  # fmt: skip
             return _providers(request, acting, action_error=exc)
@@ -1009,7 +1011,7 @@ def provider_from_page(  # noqa: PLR0913 — one parameter per form field, as Fa
         actions.save_registration(client, settings, wanted, values, base_digest=base_digest)
     except SuiteError as exc:
         _audit(
-            request, principal, audit_action, target=wanted or None, outcome="refused",
+            request, principal, audit_action, target=wanted or None, outcome=outcome_of(exc),
             params={"created": created, "fields": changed, "touched_security": security},
             message=exc.message, security=bool(security),
         )  # fmt: skip

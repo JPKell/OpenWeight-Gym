@@ -417,7 +417,12 @@ records in its own `audit_log`. It never mounts a package table of its own.
    curated operations, catalog changes, prompt overrides, job runs, alert acknowledgements,
    login and logout, TLS rotation. The row names the operator, the time, the target, the
    parameters (secrets redacted) and the outcome; `GET /audit` is the trail. A test enumerates
-   the state-changing routes and asserts each writes one.
+   the state-changing routes and asserts each writes one. **A refusal is an outcome, not an
+   absence**: a write WeightRoomGym refused, or the application did, leaves that same one row with
+   `outcome = "refused"`, and the test exercises that half beside the success. **A call
+   WeightRoomGym stopped waiting for is `pending`, never `refused`** — a timeout is what the
+   console did, not what the application said, and whether the work landed is exactly what is not
+   known (row WPF1, from WP6 findings 2 and 3).
 3. **A raw write passes the five-part guard or does not happen**, and the never-writable
    tables are refused by name ([ADR-0124](../../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md)).
 4. **A schema WeightRoomGym does not know degrades by name.** Each application's
