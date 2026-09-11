@@ -44,10 +44,9 @@ installed on this machine; the clean venv is the same isolation.
 2. **The mirror rule is byte-identical** (kickoff): `FreeWeight/scripts/sync_docs.py` now copies
    verbatim and `--check` passes exactly when `cmp` does; `CLAUDE.md` says so. Every mirror in the
    five repositories was already `cmp`-identical.
-3. **The verification (Gate D) was not run by this session.** It needs an independent device
-   and a session with permission to say *not ready*; this session is on the reference machine.
-   The kickoff for that run is `history/prompts/w10-verification.prompt.md`, with the table of
-   what the local evidence (§4) did and did not reach. **WR-1.0 and WR-α are not declared.**
+3. **The verification (Gate D) was run host-side, not from an independent device** (the
+   operator's choice at the review; §5). The kickoff for the independent run is
+   `history/prompts/w10-verification.prompt.md`. **WR-1.0 and WR-α are not declared.**
 4. **`requirements/ci.lock` is not re-cut.** `pyproject.toml` now requires
    `mirrorwall>=0.3.1,<0.4` (W3's `TODO` closed) but a hashed lock needs the artifact on an
    index; `0.3.1` is prepared, not published. CI's test jobs stay red on the `0.2.2` pin until the
@@ -167,10 +166,29 @@ approval (no remote tier configured). All in `history/prompts/w10-verification.p
 
 ## 5. The verdict
 
-**Not recorded.** Gate D — the independent-device run over spec §20 — has not been performed
-(§2 item 3). The operator runs `history/prompts/w10-verification.prompt.md` from a laptop or a
-phone on the LAN; its verdict is written into this section verbatim, and a *not ready* becomes
-rows in `roadmap/weightroom-work.md`, not fixes.
+**Host-side run, 2026-09-10 (operator's choice at the review): every criterion this machine can
+show passed; not independent, so WR-1.0 and WR-α stay undeclared.** Run by this session against
+the live console (`weightroom.service`, `1.0.0`, `7acc212`) over HTTPS with the console's CA,
+logged in as `jpk` after the operator's password reset (§6 item 3); the script and its output are
+in the session scratchpad; the audit trail holds the run (46 rows by `jpk`).
+
+| # | Seen |
+|---|---|
+| 1 | `https://10.77.10.84:8769` and `https://jordan-main.local:8769` verify with the CA (`ssl_verify=0`); `/api/v1/version` → `1.0.0`; login `201`; the four applications as units. **The client device step is not done** — no device but the host |
+| 2 | Every action below left a row with the operator's name: `unit.stop`/`unit.start` ×4, `db.query`, `db.dry_run`, `db.guarded_write` ×3 (one refused), `settings.write` ×4, `reauth`, `chat.create`/`chat.message` ×2, `login` |
+| 3 | LoadCoach stopped: dry run → checklist (1 pass "unit inactive, port closed", 3 pass "1 rows", 2/4/5 pending); write without re-authentication → `403 REAUTH_REQUIRED`; with it → `200`, backup `backups/loadcoach/20260911T020338…-guarded-write.sqlite3`, audit `01M2739HAMYZJD7RV4TKX9TGDH`; the undo `DELETE` → `200`; `tables_typed` wrong → `400 GUARD_TABLE_MISMATCH` condition 4; `DELETE FROM jobs` → `403 GUARD_TABLE_LOCKED`; LoadCoach running again → `409 GUARD_APP_RUNNING` condition 1 |
+| 4 | Console's own `alerts.interval_seconds` 30 → 31 → 30 through `PUT /api/v1/settings`, no restart; PromptCadence `logging.level` written to its `config.toml` with the three comment lines intact and `.bak` beside it; a security key (`approval.mode`) on a fresh session → `403 REAUTH_REQUIRED`, file unchanged; inside the window → written, the audit row `security: true`, `touched_security: true` |
+| 5 | 62/62 runtime-changeable and security keys of `promptcadence config schema --json` are fields on `/apps/promptcadence/settings` |
+| 6 | LoadCoach: "Reply with exactly five words." → `Sure, I will comply now.` with thinking, routing and usage on the message; PromptCadence: "State in one sentence what 2+2 is." → `2+2 equals 4.` with routing and usage, no halt. **No inline approval** — no remote tier is configured, so no hybrid gate fired |
+| 7 | All four stopped from the API (`202` each); every tab `200` saying *stopped* with a start form; the shell `200`; all four started again and `ok` |
+| 8 | Fixture only (`loadcoach-unknown-9999`); not on a real database |
+| 9 | §4.3 |
+| 10 | §1 (`unshare -rn`, the fake `systemctl`, the network-isolation e2e) |
+| 11 | Read against Gold Standards §2: the import-linter contracts, the audit registry, the guard tests, the degradation registry, the trust listener, the sudo grep, the no-network suite |
+
+The operator's independent run (`history/prompts/w10-verification.prompt.md`) still owns the
+verdict word; what it adds over this table is criterion 1's device step and an eye that did not
+write the code.
 
 ## 6. For the operator
 
@@ -180,7 +198,9 @@ rows in `roadmap/weightroom-work.md`, not fixes.
    against it; push WeightRoom and see CI green for the first time since W3; run the verification
    (§5); on *ready*, declare WR-α and WR-1.0 in `weightroom-work.md` §5 and tag `v1.0.0` on the
    release commit. The PromptCadence minor and the IdeaPress and FreeWeight patches ride with it.
-3. **Your console was touched** (§2 item 5): the leaf re-issued twice under the same root (no
+3. **Your operator password was reset** (`wr-gym operator password jpk`, two sessions revoked) so
+   the host-side run could log in; the value is in the session scratchpad only. **Set your own
+   again** with the same command. **Your console was touched** (§2 item 5): the leaf re-issued twice under the same root (no
    device re-trusts), the database migrated `0004` → `0008` (its pre-migration backup kept) and
    restored once from a backup of itself (the pre-restore copy kept; nothing between the two was
    written by anyone but this row), and the process replaced by `weightroom.service`. Five units
@@ -189,7 +209,10 @@ rows in `roadmap/weightroom-work.md`, not fixes.
    (`[docs] root` is empty, the checkout's own `docs/`), the user units, the shell profiles, VS
    Code's settings — nothing named it. If something else did, it will say so by failing to find
    `~/ai/suite/docs`.
-5. **Left on the machine:** `backups/manual-…` consumed by the restore (its content is the live
+5. **Left on the machine:** two conversations titled "W10 verification" in the console's chat;
+   two guarded-write backups under `backups/loadcoach/` (the insert and its undo — the
+   `feedback` row `01W10VERIFY00000000000001` is gone); `~/.config/promptcadence/config.toml.bak`
+   (the file itself is byte-identical to before); `backups/manual-…` consumed by the restore (its content is the live
    database), `backups/pre-restore-…` and `pre-migration-0004-…` (both under `backup_retention`),
    `restores/01M271N49J6M5XP14HQ39TAWJN.json`. The scratchpad venv and wheels go with the session.
 6. **Not done, by design:** the kickoff's `pipx install` (no `pipx` here — a clean venv instead);
