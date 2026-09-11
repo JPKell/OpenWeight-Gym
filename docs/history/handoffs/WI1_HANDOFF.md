@@ -206,7 +206,7 @@ environ-verified pid.
 * **W10** takes §5 items 4a–4c with its Settings and audit passes if the operator agrees; 4d belongs
   with W10's hardening.
 * §5 item 4g did not wait for a row: the operator had it fixed and cleaned in this session (§7).
-* **`ideapress db backup` cannot write a backup** (§7) — a small IdeaPress row, or W10's hardening.
+* **`ideapress db backup` cannot write a backup** (§7) — added to W10's row (operator, 2026-09-10).
 * **If `inference.mode` or `logging.level` should be changeable from a form without a file edit**,
   that is an ADR first (§2 item 2), not a registry line.
 
@@ -261,4 +261,4 @@ environ-verified pid.
   hands `weightsdb.backup` the destination *directory*, which it treats as the backup file:
   `IsADirectoryError: … backups/wi1-cleanup`, with or without `--output`. It fails before writing
   or deleting anything. The backups above were taken by calling `weightsdb.backup` with a file
-  path. Not fixed.
+  path. Not fixed; the operator put it in W10's row.
