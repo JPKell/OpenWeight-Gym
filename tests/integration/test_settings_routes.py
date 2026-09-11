@@ -176,6 +176,12 @@ def test_the_applications_own_refusal_is_surfaced_verbatim_and_nothing_lands(
     assert "refuse_me is not a configuration key" in response.json()["error"]["message"]
     assert config.read_text() == "[execution]\nmax_attempts = 3\n"
     assert not config.with_name("config.toml.bak").exists()
+    # And it left the one row a successful write leaves (spec §11 contract 2; WP6 finding 2).
+    rows = console.client.get("/api/v1/audit?action=settings.write", headers=JSON_HEADERS).json()
+    newest = rows["items"][0] if isinstance(rows, dict) else rows[0]
+    assert newest["outcome"] == "refused"
+    assert newest["target"] == "execution.refuse_me"
+    assert "refuse_me is not a configuration key" in newest["message"]
 
 
 def test_an_unknown_key_is_refused_by_name_and_the_rest_still_lands(tmp_path: Path) -> None:

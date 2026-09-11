@@ -41,6 +41,8 @@ from weightroom.services.auth import ReauthRequired, require_fresh_reauth
 from weightroom.services.config_files import parse_or_reason, write_config
 from weightroom.services.settings_forms import (
     REDACTED,
+    KeyOutcome,
+    SaveResult,
     SettingsForm,
     live_settings_with_definitions,
     read_schema_document,
@@ -50,7 +52,7 @@ from weightroom.services.settings_forms import (
 from weightroom.web.session import CurrentOperator, now_of, reauthenticated
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Mapping, Sequence
 
     from weightroom.services.auth import Principal
 
@@ -309,6 +311,51 @@ def _audit_write(
     )
 
 
+def _audit_refusal(
+    request: Request,
+    principal: Principal,
+    app: str,
+    *,
+    keys: Sequence[str],
+    message: str,
+    code: str | None,
+    security: bool = False,
+    raw: bool = False,
+) -> None:
+    """The ``settings.write`` row a **refused** write leaves (spec §11 contract 2).
+
+    A refusal is an outcome, not an absence. WP6 found two refused ``POST
+    /apps/freeweight/settings`` requests answered ``200`` with the refusal rendered and no row for
+    either, while the same page's successes each left one and LoadCoach's provider refusal left its
+    own (finding 2). Every path here that answers the operator a refusal — a stale base, the
+    application's own validation, a password, the re-authentication window, a field that will not
+    parse — records it through :func:`_audit_write`, so one write is one row whatever its outcome.
+
+    Args:
+        request: The request, for the database, the clock and the request id.
+        principal: The operator.
+        app: Whose configuration was being written.
+        keys: The keys the operator submitted; ``<config.toml>`` when the write was the whole file
+            or nothing parsed.
+        message: The refusal, in the refusing party's own words.
+        code: The spec §13 code behind it, when there is one.
+        security: Whether a security key was in scope, for the row's ``touched_security``.
+        raw: Whether the write came from the raw editor.
+    """
+    named = tuple(keys) or ("<config.toml>",)
+    _audit_write(
+        request,
+        principal,
+        app,
+        result=SaveResult(
+            outcomes=tuple(KeyOutcome(key, "refused", message, code) for key in named),
+            base_mtime=None,
+        ),
+        security=security,
+        raw=raw,
+    )
+
+
 # --- JSON ------------------------------------------------------------------------------------
 
 
@@ -364,18 +411,35 @@ def put_settings(
         ConfigChangedOnDisk: ``base_mtime`` is stale; nothing was written.
         ConfigValidationFailed: The application refused the candidate file.
     """
+    from baseaicore import SuiteError
+
     name = require_settings_app(app)
     form, view = form_for(request, name)
-    security = _guard_security_keys(request, principal, form, body.changes)
-    result = save_settings(
-        request.app.state.settings,
-        name,
-        body.changes,
-        form=form,
-        base_mtime=body.base_mtime if body.base_mtime is not None else form.base_mtime,
-        to_file=frozenset(body.to_file),
-        apply_runtime=_runtime_applier(request, name, view),
-    )
+    security = False
+    try:
+        security = _guard_security_keys(request, principal, form, body.changes)
+        result = save_settings(
+            request.app.state.settings,
+            name,
+            body.changes,
+            form=form,
+            base_mtime=body.base_mtime if body.base_mtime is not None else form.base_mtime,
+            to_file=frozenset(body.to_file),
+            apply_runtime=_runtime_applier(request, name, view),
+        )
+    except SuiteError as exc:
+        # The refusal still answers through the error handler; the row is written here, because
+        # that handler knows nothing about the write it refused (spec §11 contract 2).
+        _audit_refusal(
+            request,
+            principal,
+            name,
+            keys=sorted(body.changes),
+            message=exc.message,
+            code=exc.code,
+            security=security,
+        )
+        raise
     audit_id = _audit_write(request, principal, name, result=result, security=security)
     request.app.state.schemas.forget(name)
     return JSONResponse(content={**result.as_json(), "audit_id": audit_id})
@@ -447,10 +511,18 @@ def put_own_settings(
         SettingUnknown: The key is not a setting at all (``400``).
         ValidationError: The value is the wrong type or outside its bounds.
     """
+    from baseaicore import SuiteError
+
     from weightroom.services.settings import runtime_settings_document, write_runtime_settings
 
     state = request.app.state
-    write_runtime_settings(state.database, body, settings=state.settings, now=now_of(request))
+    try:
+        write_runtime_settings(state.database, body, settings=state.settings, now=now_of(request))
+    except SuiteError as exc:
+        _audit_refusal(
+            request, principal, "weightroom", keys=sorted(body), message=exc.message, code=exc.code
+        )
+        raise
     record(
         state.database,
         action="settings.write",
@@ -519,22 +591,29 @@ def own_settings_page(request: Request, principal: CurrentOperator) -> HTMLRespo
     return _render(request, principal, "weightroom")
 
 
-def _submitted(raw: Mapping[str, Any], form: SettingsForm) -> tuple[dict[str, Any], list[str]]:
-    """Every ``field:<key>`` in the post, parsed to its own type; the unparseable named."""
+def _submitted(
+    raw: Mapping[str, Any], form: SettingsForm
+) -> tuple[dict[str, Any], list[tuple[str, str]]]:
+    """Every ``field:<key>`` in the post, parsed to its own type; the unparseable named.
+
+    Returns:
+        The typed changes, and ``(key, reason)`` for each field that could not become its own
+        type — the key beside the reason so the refusal's audit row names it (row WPF1).
+    """
     changes: dict[str, Any] = {}
-    problems: list[str] = []
+    problems: list[tuple[str, str]] = []
     for name, value in raw.items():
         if not name.startswith(_FIELD_PREFIX):
             continue
         key = name[len(_FIELD_PREFIX) :]
         one = form.field_for(key)
         if one is None:
-            problems.append(f"{key} is not a setting this application recognises.")
+            problems.append((key, f"{key} is not a setting this application recognises."))
             continue
         try:
             changes[key] = one.parse(str(value))
         except ValueError as exc:
-            problems.append(str(exc))
+            problems.append((key, str(exc)))
     return changes, problems
 
 
@@ -564,15 +643,35 @@ def _save_from_form(
         # The *clear* button: the stored row goes, the key returns to the file's value; every
         # other field on the page is left as it is (WI1 §5 item 4b).
         changes, problems = {cleared: None}, []
+    submitted = sorted(changes) or [key for key, _reason in problems]
     password = str(raw.get("password") or "")
     if password:
         fresh = reauthenticated(request, principal, password)
         if fresh is None:
-            return _render(request, principal, app, error="That password is not the operator's.")
+            refusal = "That password is not the operator's."
+            _audit_refusal(
+                request,
+                principal,
+                app,
+                keys=submitted,
+                message=refusal,
+                code="REAUTH_REQUIRED",
+                security=True,
+            )
+            return _render(request, principal, app, error=refusal)
         principal = fresh
     try:
         security = _guard_security_keys(request, principal, form, changes)
     except ReauthRequired as exc:
+        _audit_refusal(
+            request,
+            principal,
+            app,
+            keys=submitted,
+            message=exc.message,
+            code=exc.code,
+            security=True,
+        )
         return _render(request, principal, app, error=exc.message)
     base = raw.get("base_mtime")
     to_file = frozenset(str(raw.get("to_file") or "").split(",")) - {""}
@@ -587,7 +686,28 @@ def _save_from_form(
             apply_runtime=_runtime_applier(request, app, view),
         )
     except (ConfigChangedOnDisk, ConfigValidationFailed) as exc:
+        _audit_refusal(
+            request,
+            principal,
+            app,
+            keys=submitted,
+            message=exc.message,
+            code=exc.code,
+            security=security,
+        )
         return _render(request, principal, app, error=exc.message)
+    if problems:
+        # A field that would not parse never reached `save_settings`, so its refusal has to join
+        # the result rather than being rendered beside an `ok` row (row WPF1).
+        result = SaveResult(
+            outcomes=result.outcomes
+            + tuple(
+                KeyOutcome(key, "refused", reason, "VALIDATION_ERROR") for key, reason in problems
+            ),
+            base_mtime=result.base_mtime,
+            backup=result.backup,
+            pending_restart=result.pending_restart,
+        )
     _audit_write(request, principal, app, result=result, security=security, cleared=cleared)
     state.schemas.forget(app)
     notice = _notice(result)
@@ -599,7 +719,7 @@ def _save_from_form(
         app,
         result=result,
         notice=notice,
-        error="; ".join(problems) or None,
+        error="; ".join(reason for _key, reason in problems) or None,
     )
 
 
@@ -638,26 +758,42 @@ def save_raw_from_page(
     value rather than sending it.
     """
     from weightroom.services.config_files import ConfigChangedOnDisk, ConfigValidationFailed
-    from weightroom.services.settings_forms import KeyOutcome, SaveResult
 
     name = require_settings_app(app)
     state = request.app.state
     form, _view = form_for(request, name)
+    whole = ("<whole file>",)
+    security = bool(form.security_keys)
     if password:
         fresh = reauthenticated(request, principal, password)
         if fresh is None:
-            return _render(
+            refusal = "That password is not the operator's."
+            _audit_refusal(
                 request,
                 principal,
                 name,
-                error="That password is not the operator's.",
-                show_raw=True,
+                keys=whole,
+                message=refusal,
+                code="REAUTH_REQUIRED",
+                security=True,
+                raw=True,
             )
+            return _render(request, principal, name, error=refusal, show_raw=True)
         principal = fresh
     syntax = parse_or_reason(text)
     if syntax is not None:
-        return _render(request, principal, name, error=f"Not valid TOML: {syntax}", show_raw=True)
-    security = bool(form.security_keys)
+        refusal = f"Not valid TOML: {syntax}"
+        _audit_refusal(
+            request,
+            principal,
+            name,
+            keys=whole,
+            message=refusal,
+            code="VALIDATION_ERROR",
+            security=security,
+            raw=True,
+        )
+        return _render(request, principal, name, error=refusal, show_raw=True)
     try:
         if security:
             require_fresh_reauth(principal, now=now_of(request), auth=state.settings.auth)
@@ -667,9 +803,19 @@ def save_raw_from_page(
             Path(form.config_path),
             text,
             base_mtime=int(base_mtime) if base_mtime else None,
-            keys=("<whole file>",),
+            keys=whole,
         )
     except (ReauthRequired, ConfigChangedOnDisk, ConfigValidationFailed) as exc:
+        _audit_refusal(
+            request,
+            principal,
+            name,
+            keys=whole,
+            message=exc.message,
+            code=exc.code,
+            security=security,
+            raw=True,
+        )
         return _render(request, principal, name, error=exc.message, show_raw=True)
     result = SaveResult(
         outcomes=(KeyOutcome("<whole file>", "written"),),

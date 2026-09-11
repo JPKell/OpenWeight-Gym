@@ -3,6 +3,10 @@
 The test enumerates the app's routes rather than listing them: a new ``POST``/``PUT``/``PATCH``/
 ``DELETE`` route fails this suite until it has an entry in :data:`EXERCISES`, and every entry is
 run and must add exactly one row. Later rows inherit both halves.
+
+:data:`EXERCISES` exercises each route's **success**. A route that catches a refusal and answers
+the operator anyway has a second entry in :data:`REFUSALS`, whose row must be there too and must
+say ``refused`` — the half WP6 found missing on the settings routes (row WPF1).
 """
 
 from __future__ import annotations
@@ -1147,6 +1151,58 @@ EXERCISES.update(
 )
 
 
+def _settings_form_stale(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form(
+        "/apps/loadcoach/settings", {"field:execution.max_attempts": "9", "base_mtime": "1"}
+    )
+
+
+def _own_settings_form_wrong_password(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form(
+        "/settings", {"field:telemetry.interval_ms": "1750", "password": "not the password"}
+    )
+
+
+def _settings_raw_broken(console: Console) -> Any:  # noqa: ANN401
+    return console.post_form(
+        "/apps/loadcoach/settings/raw", {"text": "[server\n", "base_mtime": ""}
+    )
+
+
+def _settings_put_stale(console: Console) -> Any:  # noqa: ANN401
+    return console.client.put(
+        "/api/v1/apps/loadcoach/settings",
+        json={"changes": {"execution.max_attempts": 9}, "base_mtime": 1},
+        headers=JSON_HEADERS,
+    )
+
+
+def _own_settings_put_unknown(console: Console) -> Any:  # noqa: ANN401
+    return console.client.put("/api/v1/settings", json={"nowhere.at_all": 1}, headers=JSON_HEADERS)
+
+
+REFUSALS: dict[tuple[str, str], Exercise] = {
+    ("POST", "/apps/{app}/settings"): _settings_form_stale,
+    ("POST", "/settings"): _own_settings_form_wrong_password,
+    ("POST", "/apps/{app}/settings/raw"): _settings_raw_broken,
+    ("PUT", "/api/v1/apps/{app}/settings"): _settings_put_stale,
+    ("PUT", "/api/v1/settings"): _own_settings_put_unknown,
+}
+"""One **refused** call per route that can refuse a write and still answer the operator a page.
+
+Spec §11 contract 2 counts a refusal as an outcome, not as an absence: WP6 found two refused
+``POST /apps/freeweight/settings`` requests that left no row at all while the same route's
+successes each left one (finding 2, row WPF1). :data:`EXERCISES` above exercises the success of
+every state-changing route; a route belongs here as well when it catches a refusal — a stale base,
+the application's own validation, a password, a re-authentication window, an unparseable field —
+rather than letting it reach the error handler unrecorded.
+
+The settings routes are the five that did. Every other route that renders an application's refusal
+already audits it on that path (the ``outcome="refused"`` in each tab's own ``_audit`` helper), and
+several :data:`EXERCISES` entries are themselves refusals for that reason.
+"""
+
+
 def _state_changing_routes(console: Console) -> set[tuple[str, str]]:
     found: set[tuple[str, str]] = set()
     for path, route in api_routes(console.client.app):
@@ -1158,6 +1214,12 @@ def _state_changing_routes(console: Console) -> set[tuple[str, str]]:
 def _rows(console: Console) -> int:
     with console.database.read() as session:
         return int(session.execute(select(func.count()).select_from(AuditLog)).scalar_one())
+
+
+def _newest_outcome(console: Console) -> str:
+    with console.database.read() as session:
+        row = session.execute(select(AuditLog).order_by(AuditLog.id.desc()).limit(1)).scalar_one()
+        return str(row.outcome)
 
 
 @pytest.fixture
@@ -1228,3 +1290,19 @@ def test_each_state_changing_route_writes_exactly_one_audit_row(
     response = EXERCISES[(method, path)](console)
     assert response.status_code < 400, (method, path, response.text)
     assert _rows(console) == before + 1, (method, path)
+
+
+def test_every_refusal_exercise_names_a_route_that_has_a_success_exercise() -> None:
+    assert set(REFUSALS) <= set(EXERCISES), sorted(set(REFUSALS) - set(EXERCISES))
+
+
+@pytest.mark.parametrize(("method", "path"), sorted(REFUSALS))
+def test_each_refused_write_writes_exactly_one_refused_row(
+    console: Console, method: str, path: str
+) -> None:
+    """Spec §11 contract 2: a refusal is an outcome, and leaves the same one row a success does."""
+    console.login()
+    before = _rows(console)
+    REFUSALS[(method, path)](console)
+    assert _rows(console) == before + 1, (method, path)
+    assert _newest_outcome(console) == "refused", (method, path)
