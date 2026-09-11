@@ -307,13 +307,13 @@ def test_chat_adds_at_most_thirty_milliseconds_before_the_first_token(
     assert added <= 30
 
 
-# --- JS per page ≤ 60 KB of the console's own, the pinned libraries budgeted by name (ADR-0138) --
+# --- JS per page ≤ 120 KB in total, ECharts and mermaid aside (ADR-0139) -------------------------
 
 _SCRIPT_SRC = re.compile(r'<script[^>]+src="([^"]+)"')
 _INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", re.S)
-_VENDORED = ("vendor/mermaid/", "vendor/echarts/", "vendor/htmx/")
-"""ADR-0138 rule 2: the pinned libraries, by path — nothing else is excluded from the count."""
-_HTMX_PAIR_BUDGET_BYTES = 64 * 1024
+_LOADED_WHERE_USED = ("vendor/mermaid/", "vendor/echarts/")
+"""Spec §15's two exceptions, by path: they load only on the page that uses them."""
+_TOTAL_BUDGET_BYTES = 120 * 1024
 
 
 def _pages(console: Console) -> Iterator[str]:
@@ -328,33 +328,28 @@ def _pages(console: Console) -> Iterator[str]:
             yield path
 
 
-def test_javascript_per_page_stays_under_sixty_kilobytes(console: Console) -> None:
-    own: dict[str, int] = {}
-    whole: dict[str, int] = {}
-    htmx_pair = 0
-    counted: set[str] = set()
+def test_javascript_per_page_stays_under_the_total_budget(console: Console) -> None:
+    totals: dict[str, int] = {}
+    sizes: dict[str, int] = {}
     for path in sorted(set(_pages(console))):
         response = console.client.get(path, headers={"Accept": "text/html"})
         if response.status_code != 200:
             continue
-        inline = sum(len(script) for script in _INLINE_SCRIPT.findall(response.text))
-        own[path] = inline
-        whole[path] = inline
+        total = sum(len(script) for script in _INLINE_SCRIPT.findall(response.text))
         for src in _SCRIPT_SRC.findall(response.text):
-            asset = console.client.get(src)
-            assert asset.status_code == 200, (path, src)
-            counted.add(src.split("?")[0])
-            whole[path] += len(asset.content)
-            if "vendor/htmx/" in src:
-                htmx_pair = max(htmx_pair, len(asset.content))
-            if not any(name in src for name in _VENDORED):
-                own[path] += len(asset.content)
-    worst_path, worst = max(own.items(), key=lambda item: item[1])
-    print("\ncounted:", ", ".join(sorted(counted)))  # noqa: T201 — ADR-0138 rule 2
-    _report(f"own JS on the heaviest page ({worst_path})", worst / 1024, 60, unit="KB")
-    total_kib = whole[worst_path] / 1024
-    print(f"\nJS in total on the same page, vendored included: {total_kib:.1f} KB")  # noqa: T201
-    assert worst <= 60 * 1024, own
-    pair = sum(len(console.client.get(src).content) for src in counted if "vendor/htmx/" in src)
-    _report("htmx + its SSE extension at the pin", pair / 1024, 64, unit="KB")
-    assert pair <= _HTMX_PAIR_BUDGET_BYTES
+            if any(name in src for name in _LOADED_WHERE_USED):
+                continue
+            name = src.split("?")[0]
+            if name not in sizes:
+                asset = console.client.get(src)
+                assert asset.status_code == 200, (path, src)
+                sizes[name] = len(asset.content)
+            total += sizes[name]
+        totals[path] = total
+    worst_path, worst = max(totals.items(), key=lambda item: item[1])
+    for name, size in sorted(sizes.items()):
+        print(f"\n  {size / 1024:6.1f} KB  {name}")  # noqa: T201 — ADR-0139 rule 2
+    htmx_pair = sum(size for name, size in sizes.items() if "vendor/htmx/" in name)
+    print(f"\n  {htmx_pair / 1024:6.1f} KB  htmx + its SSE extension together")  # noqa: T201
+    _report(f"JS in total on the heaviest page ({worst_path})", worst / 1024, 120, unit="KB")
+    assert worst <= _TOTAL_BUDGET_BYTES, totals

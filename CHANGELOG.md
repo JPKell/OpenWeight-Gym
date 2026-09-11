@@ -51,9 +51,10 @@ carries.
   (`history/handoffs/W9_HANDOFF.md` §5 items 5f–5h).
 
 ### Changed
-- **Spec §15's JavaScript budget is the console's own scripts** (ADR-0138): htmx and its SSE
-  extension (ADR-0128), ECharts and mermaid are excluded and budgeted by name; the total is
-  reported beside the part — 30 KiB own, 89 KiB in all on the heaviest page at this release.
+- **Spec §15's JavaScript budget is one total, 120 KB** (ADR-0139, superseding ADR-0138 the same
+  day at the operator's review): everything a shell page downloads, htmx and its SSE extension
+  (ADR-0128) included; only ECharts and mermaid, which load where used, are outside it. 89 KiB
+  on the heaviest page at this release; the test prints the breakdown.
 - `mirrorwall>=0.3.1,<0.4` (W3's `TODO` closed): the shell needs `mw:telemetry`,
   `product_href`, `theme_control`, the multipart CSRF fix and `log_pane`'s `sse-close`.
 - `MEMORY_SAFETY.md` §2.3 fires a capped transient unit rather than a 131 072-token request
@@ -67,6 +68,10 @@ carries.
 - `tests/unit/test_cli.py::test_units_sync_writes_reports_and_audits` pins `PATH`, so an
   activated virtualenv (where `wr-gym` resolves and a fifth unit is written) no longer fails it
   (WI1 §5 item 4d).
+- `wr-gym jobs run … --wait` follows a `self_restore` to its end: the handle that queued the job
+  is closed before the wait and each poll opens its own, so the database file the helper swaps
+  in (ADR-0136) is the one read — the live run at W10 showed a completed restore as *still
+  running* for the whole timeout.
 
 ### Removed
 - The `~/ai/suite/docs` symlink of the W0–W10 transition; every kickoff prompt and comment that

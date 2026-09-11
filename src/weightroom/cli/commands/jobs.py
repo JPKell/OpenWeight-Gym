@@ -140,6 +140,7 @@ def run(
 
     from weightroom.cli._backend import fail, open_ready_database
     from weightroom.services.audit import record_cli
+    from weightroom.services.database import Database
     from weightroom.services.jobs import enqueue, get_job
 
     params = _params(param)
@@ -163,20 +164,26 @@ def run(
             target=job.id,
             params={"kind": job.kind, "params": job.params},
         )
-        if not wait:
-            typer.echo(
-                json.dumps(job.as_json())
-                if json_output
-                else f"queued {job.id}; the serving console's worker runs it"
-            )
-            return
-        deadline = time.monotonic() + timeout
-        while not job.finished:
-            if time.monotonic() >= deadline:
-                typer.echo(f"Job {job.id} is still {job.state} after {timeout:g}s.", err=True)
-                raise typer.Exit(4)
-            time.sleep(1.0)
-            job = get_job(database, job.id)
+        url = _settings.storage.database_url or ""
+    if not wait:
+        typer.echo(
+            json.dumps(job.as_json())
+            if json_output
+            else f"queued {job.id}; the serving console's worker runs it"
+        )
+        return
+    # The handle that queued the job is closed before the wait: a self_restore's helper replaces
+    # the database *file* (ADR-0136), and a handle opened before the swap keeps reading the old
+    # inode — at W10 that showed a completed restore as "still running" for the whole timeout.
+    # Each poll opens its own.
+    deadline = time.monotonic() + timeout
+    while not job.finished:
+        if time.monotonic() >= deadline:
+            typer.echo(f"Job {job.id} is still {job.state} after {timeout:g}s.", err=True)
+            raise typer.Exit(4)
+        time.sleep(1.0)
+        with Database.from_url(url) as fresh:
+            job = get_job(fresh, job.id)
     typer.echo(json.dumps(job.as_json()) if json_output else _job_line(job))
     raise typer.Exit(_EXIT_BY_STATE.get(job.state, 5))
 

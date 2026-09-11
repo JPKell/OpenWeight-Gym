@@ -1,6 +1,6 @@
 # ADR-0138 — The per-page JavaScript budget excludes the vendored libraries, and names them
 
-**Status:** Accepted (2026-09-10)
+**Status:** Superseded by [ADR-0139](0139-the-per-page-javascript-budget-is-a-total-of-120-kb.md) (2026-09-10, the operator's review the same day: one total, 120 KB, no exclusion list)
 **Relates to:** [ADR-0128](0128-weightroom-adopts-htmx-through-mirrorwall-0-3.md) (htmx and its
 SSE extension vendored by MirrorWall 0.3, opted into per page), [ADR-0020](0020-server-rendered-html-with-progressive-enhancement.md)
 (server-rendered HTML, behaviour in modules).

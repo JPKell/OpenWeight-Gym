@@ -96,6 +96,39 @@ def test_waiting_on_a_job_no_worker_takes_exits_four(tmp_path: Path) -> None:
     assert "still queued" in err
 
 
+def test_waiting_follows_the_job_into_a_database_file_swapped_underneath(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ADR-0136's helper replaces the database file; --wait must see the completion the
+    restored file carries, not the old inode's row (row W10 §4.4: 'still running' at 180 s)."""
+    import sqlite3
+    import time
+
+    config = _config(tmp_path)
+    live = tmp_path / "db.sqlite3"
+
+    def swap_once(_seconds: float) -> None:
+        copy = tmp_path / "restored.sqlite3"
+        source, target = sqlite3.connect(live), sqlite3.connect(copy)
+        source.backup(target)  # the WAL included, as weightsdb's own backup does
+        target.execute("UPDATE jobs SET state = 'completed'")
+        target.commit()
+        source.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        source.close()  # sqlite3's `with` ends a transaction, not the connection
+        target.close()
+        for sidecar in ("-wal", "-shm"):  # what weightsdb.restore removes before the swap
+            (tmp_path / f"db.sqlite3{sidecar}").unlink(missing_ok=True)
+        copy.replace(live)
+        monkeypatch.setattr(time, "sleep", lambda _s: None)
+
+    monkeypatch.setattr(time, "sleep", swap_once)
+    code, out, _err = _run(
+        "jobs", "run", "docs_index", "--wait", "--timeout", "10", "--config", config
+    )
+    assert code == 0, out
+    assert "completed" in out
+
+
 def test_restore_self_refuses_a_receipt_that_is_not_one_of_its_own(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

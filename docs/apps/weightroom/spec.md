@@ -553,7 +553,7 @@ overhead is what is budgeted:
 | Guarded write, end to end (excluding the backup copy) | ≤ 2 s |
 | Docs page render, 40 KB markdown | ≤ 100 ms; search over the whole tree ≤ 200 ms |
 | Chat first token after LoadCoach's first chunk | ≤ 30 ms added latency |
-| JS per page | ≤ 60 KB of the console's own JavaScript, excluding the pinned libraries — htmx and its SSE extension, ECharts, mermaid — which load only where used and are budgeted by name ([ADR-0138](../../adr/0138-the-per-page-javascript-budget-excludes-the-vendored-libraries-and-names-them.md)) |
+| JS per page | ≤ 120 KB in total, excluding ECharts and mermaid, which load only on pages that use them ([ADR-0139](../../adr/0139-the-per-page-javascript-budget-is-a-total-of-120-kb.md)) |
 
 `sweatmeter`'s sampling overhead stays under its own 1 % budget; WeightRoomGym adds no second
 sampler.
