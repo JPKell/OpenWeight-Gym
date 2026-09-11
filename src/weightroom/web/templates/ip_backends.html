@@ -1,0 +1,67 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_ip.html" import state_badge, measure %}
+{% block title %}Backends — IdeaPress — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Backends {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/ideapress/projects">Projects</a> · <a href="/apps/ideapress/settings">Settings</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Where IdeaPress sends a prompt: the selected backend and its fallback. A remote one carries the
+author's content off this machine, and says so here. Reachability is a live probe, so this page reads
+only IdeaPress's running API.</p>
+{{ refusal(action_error) }}
+{% if tested %}
+<section class="card" role="status">
+  <h3>Round trip: {{ tested.get("mode") or "—" }} {{ state_badge(tested.get("status")) }}</h3>
+  {{ kv_list([
+    {"label": "Latency", "value": measure(tested.get("latency_ms"), "ms")},
+    {"label": "Endpoint", "value": tested.get("base_url") or "—"},
+    {"label": "Backend version", "value": tested.get("version") or "—"},
+    {"label": "Remote", "value": "yes" if tested.get("is_remote") else ("no" if tested.get("is_remote") is not none else "—")},
+    {"label": "Models", "value": measure(tested.get("model_count"))},
+    {"label": "Detail", "value": tested.get("detail") or "—"},
+  ]) }}
+  {% if tested.get("models") %}<p class="mono kit-output">{{ tested.get("models") | join(", ") }}</p>{% endif %}
+</section>
+{% endif %}
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% for b in sourced.data["backends"] %}
+<section class="card">
+  <h3>{{ b.get("mode") or "—" }}
+    {% if b.get("selected") %}{{ badge("selected", tone="success") }}{% endif %}
+    {% if b.get("fallback") %}{{ badge("fallback") }}{% endif %}
+    {% if b.get("pinned") %}{{ badge("pinned") }}{% endif %}
+    {% if b.get("egress") is none %}{{ badge("egress unknown", tone="warning") }}
+    {% elif b.get("egress") %}{{ badge("sends content off this machine", tone="warning") }}
+    {% else %}{{ badge("stays on this machine", tone="success") }}{% endif %}</h3>
+  {{ kv_list([
+    {"label": "Reachable", "value": "yes" if b.get("available") else "no"},
+    {"label": "Status", "value": b.get("status") or "—"},
+    {"label": "Endpoint", "value": b.get("base_url") or "—"},
+    {"label": "Models", "value": measure(b.get("model_count"))},
+    {"label": "Latency", "value": measure(b.get("latency_ms"), "ms")},
+    {"label": "Detail", "value": b.get("detail") or "—"},
+  ]) }}
+  {% if b.get("capabilities") %}
+  <p class="muted">Capabilities:
+  {% for name, on in b.get("capabilities") | dictsort %}{{ badge(name ~ (" yes" if on else " no"), tone="neutral") }} {% endfor %}</p>
+  {% endif %}
+  {% if sourced.live %}
+  <form method="post" action="/apps/ideapress/backends/test" class="kit-actions">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="mode" value="{{ b.get('mode') or '' }}">
+    <button type="submit">Test {{ b.get("mode") }}</button>
+    <span class="muted">A health check and the model list; nothing is generated.</span>
+  </form>
+  {% endif %}
+</section>
+{% else %}
+{{ empty_state("No backend is configured.") }}
+{% endfor %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

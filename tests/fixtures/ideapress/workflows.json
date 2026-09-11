@@ -1,0 +1,106 @@
+{
+  "workflows": [
+    {
+      "id": "standard",
+      "stages": [
+        {
+          "gate": "Every requirement has an ID and a checkable statement",
+          "ordinal": 1,
+          "stage": "requirements",
+          "uses_model": true
+        },
+        {
+          "gate": "Every note cites an available source",
+          "ordinal": 2,
+          "stage": "research",
+          "uses_model": false
+        },
+        {
+          "gate": "Structure valid; no uncited claim",
+          "ordinal": 3,
+          "stage": "research_synthesis",
+          "uses_model": true
+        },
+        {
+          "gate": "Every blocking requirement assigned to >= 1 unit",
+          "ordinal": 4,
+          "stage": "outline",
+          "uses_model": true
+        },
+        {
+          "gate": "Non-empty; length band; structure",
+          "ordinal": 5,
+          "stage": "draft",
+          "uses_model": true
+        },
+        {
+          "gate": "Deterministic checks pass",
+          "ordinal": 6,
+          "stage": "validate",
+          "uses_model": false
+        },
+        {
+          "gate": "Re-validated",
+          "ordinal": 7,
+          "stage": "repair",
+          "uses_model": true
+        },
+        {
+          "gate": "Runs to completion",
+          "ordinal": 8,
+          "stage": "audit_fast",
+          "uses_model": true
+        },
+        {
+          "gate": "Runs to completion",
+          "ordinal": 9,
+          "stage": "audit_deep",
+          "uses_model": true
+        },
+        {
+          "gate": "Every unsupported claim becomes a finding",
+          "ordinal": 10,
+          "stage": "fact_check",
+          "uses_model": true
+        },
+        {
+          "gate": "Runs to completion",
+          "ordinal": 11,
+          "stage": "critique",
+          "uses_model": true
+        },
+        {
+          "gate": "Re-validated and re-audited",
+          "ordinal": 12,
+          "stage": "revise",
+          "uses_model": true
+        },
+        {
+          "gate": "Every blocking requirement satisfied",
+          "ordinal": 13,
+          "stage": "coverage",
+          "uses_model": false
+        },
+        {
+          "gate": "Atomic write",
+          "ordinal": 14,
+          "stage": "commit",
+          "uses_model": false
+        },
+        {
+          "gate": "Runs to completion",
+          "ordinal": 15,
+          "stage": "project_review",
+          "uses_model": true
+        },
+        {
+          "gate": "Deterministic render",
+          "ordinal": 16,
+          "stage": "export",
+          "uses_model": false
+        }
+      ],
+      "version": "1.0"
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "archived_at": null,
+  "author_material": {
+    "audience": "writers new to local models"
+  },
+  "brief": "An article for writers on running models locally. It must state that inference runs entirely on the reader's own machine and that no document content is uploaded anywhere. Background: https://docs.example/local-inference and https://blocked.example/tracking",
+  "completed_at": null,
+  "content_type": "article",
+  "content_type_version": "1.0",
+  "created_at": "2026-09-11T06:40:37.064260+00:00",
+  "id": "01M27K4PP8AY6CN0BGB04B99JR",
+  "plan": {
+    "blocking": 1,
+    "requirements": 2,
+    "units": 2
+  },
+  "running_task_id": null,
+  "slug": "local-inference-for-writers",
+  "stages": [
+    {
+      "completed_at": "2026-09-11T06:40:37.401823+00:00",
+      "error_code": null,
+      "error_text": null,
+      "options": {
+        "instructions": "Say that no network is involved at any point."
+      },
+      "stage": "revise",
+      "started_at": "2026-09-11T06:40:37.371521+00:00",
+      "state": "completed",
+      "stream_url": "/api/v1/projects/01M27K4PP8AY6CN0BGB04B99JR/tasks/01M27K4PZVYBPJJPDYV8BTHRYG/stream",
+      "task_id": "01M27K4PZVYBPJJPDYV8BTHRYG",
+      "units_completed": 1,
+      "units_paused": 0,
+      "units_total": 1
+    },
+    {
+      "completed_at": "2026-09-11T06:40:37.331941+00:00",
+      "error_code": null,
+      "error_text": null,
+      "options": {},
+      "stage": "draft",
+      "started_at": "2026-09-11T06:40:37.258610+00:00",
+      "state": "completed",
+      "stream_url": "/api/v1/projects/01M27K4PP8AY6CN0BGB04B99JR/tasks/01M27K4PWA86G0DCFJMTWVDA07/stream",
+      "task_id": "01M27K4PWA86G0DCFJMTWVDA07",
+      "units_completed": 2,
+      "units_paused": 0,
+      "units_total": 2
+    },
+    {
+      "completed_at": "2026-09-11T06:40:37.242815+00:00",
+      "error_code": null,
+      "error_text": null,
+      "options": {},
+      "stage": "draft",
+      "started_at": "2026-09-11T06:40:37.202519+00:00",
+      "state": "cancelled",
+      "stream_url": "/api/v1/projects/01M27K4PP8AY6CN0BGB04B99JR/tasks/01M27K4PTJSX5B841MR09PX0W8/stream",
+      "task_id": "01M27K4PTJSX5B841MR09PX0W8",
+      "units_completed": 0,
+      "units_paused": 1,
+      "units_total": 2
+    },
+    {
+      "completed_at": "2026-09-11T06:40:37.127323+00:00",
+      "error_code": null,
+      "error_text": null,
+      "options": {},
+      "stage": "outline",
+      "started_at": "2026-09-11T06:40:37.100895+00:00",
+      "state": "completed",
+      "stream_url": "/api/v1/projects/01M27K4PP8AY6CN0BGB04B99JR/tasks/01M27K4PQCESAD1301VRGRS7SD/stream",
+      "task_id": "01M27K4PQCESAD1301VRGRS7SD",
+      "units_completed": 2,
+      "units_paused": 0,
+      "units_total": 2
+    },
+    {
+      "completed_at": "2026-09-11T06:40:37.080625+00:00",
+      "error_code": null,
+      "error_text": null,
+      "options": {},
+      "stage": "research",
+      "started_at": "2026-09-11T06:40:37.069072+00:00",
+      "state": "completed",
+      "stream_url": "/api/v1/projects/01M27K4PP8AY6CN0BGB04B99JR/tasks/01M27K4PPD751KVHZ5ENZTKR5Y/stream",
+      "task_id": "01M27K4PPD751KVHZ5ENZTKR5Y",
+      "units_completed": 0,
+      "units_paused": 0,
+      "units_total": 0
+    }
+  ],
+  "status": "planning",
+  "title": "Local inference for writers",
+  "units": [
+    {
+      "content_hash": "sha256:eeaa0bce9958229471e7cc1e0924c05790a97ee00cadc3325d380d0dc2089777",
+      "coverage": {
+        "satisfied": 1,
+        "total": 2
+      },
+      "goal": "Say plainly where inference runs.",
+      "last_validation": {
+        "at": "2026-09-11T06:40:37.378279+00:00",
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking_failures": 0,
+        "failures": 0,
+        "passed": true,
+        "stage": "revise"
+      },
+      "ordinal": 1,
+      "paused_reason": null,
+      "requirement_keys": [
+        "R-001",
+        "R-002"
+      ],
+      "state": "committed",
+      "title": "Where the work happens",
+      "unit_key": "U-01",
+      "version": 2,
+      "word_count": 47
+    },
+    {
+      "content_hash": "sha256:3f0b6f969aa84e7d09e863eeae85e1933a746d97f3f5dc57538bc5816c4a94ec",
+      "coverage": {
+        "satisfied": 1,
+        "total": 1
+      },
+      "goal": "Be honest about the trade.",
+      "last_validation": {
+        "at": "2026-09-11T06:40:37.304928+00:00",
+        "attempt_id": "01M27K4PXR695BSXG79V5SK7XG",
+        "blocking_failures": 0,
+        "failures": 0,
+        "passed": true,
+        "stage": "draft"
+      },
+      "ordinal": 2,
+      "paused_reason": null,
+      "requirement_keys": [
+        "R-001"
+      ],
+      "state": "committed",
+      "title": "What it costs",
+      "unit_key": "U-02",
+      "version": 1,
+      "word_count": 33
+    }
+  ],
+  "updated_at": "2026-09-11T06:40:37.126226+00:00",
+  "workflow_id": "standard",
+  "workflow_version": "1.0"
+}

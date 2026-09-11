@@ -1,0 +1,61 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% block title %}{{ workflow_id or "Workflows" }} — IdeaPress — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>{% if workflow_id %}Workflow {{ workflow_id }}{% else %}Workflows{% endif %} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions">{% if workflow_id %}<a href="/apps/ideapress/workflows">All workflows</a> · {% endif %}<a href="/apps/ideapress/projects">Projects</a> · <a href="/apps/ideapress/settings">Change a limit or a binding</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">A workflow is IdeaPress's stage table, in order: which stages use a model, which are gates
+Python decides, and the model bound to each. It lives in IdeaPress's running process, so this page
+reads only its API.</p>
+{{ refusal(sourced.error) }}
+{% set values = (defaults or {}).get("settings") or {} %}
+{% set definitions = (defaults or {}).get("definitions") or {} %}
+{% if sourced.data is not none %}
+{% for wf in sourced.data["workflows"] %}
+<section class="card">
+  <h3>{% if workflow_id %}{{ wf.get("id") }}{% else %}<a href="/apps/ideapress/workflows/{{ wf.get('id') | urlencode }}">{{ wf.get("id") }}</a>{% endif %}
+    <span class="muted">version {{ wf.get("version") or "—" }}</span></h3>
+  {% set rows = [] %}
+  {% for st in wf.get("stages") or [] %}
+  {% set binding = values.get("models.stages." ~ st.get("stage")) %}
+  {% set _ = rows.append([
+    st.get("ordinal") if st.get("ordinal") is not none else "—",
+    st.get("stage") or "—",
+    "a model" if st.get("uses_model") else "Python",
+    (badge(st.get("gate") if st.get("gate") is string else "gate", tone="warning") if st.get("gate") else "—"),
+    (binding if binding else "—") if st.get("uses_model") else "—"
+  ]) %}
+  {% endfor %}
+  {{ table([
+    {"label": "#", "mono": true}, {"label": "Stage", "mono": true}, {"label": "Done by"},
+    {"label": "Gate"}, {"label": "Bound model", "mono": true}
+  ], rows, caption="Stages, in the order they run", density="dense", complete=true, row_count=rows | length) }}
+</section>
+{% else %}
+{{ empty_state("IdeaPress ships no workflow.") }}
+{% endfor %}
+
+<h3>The limits a run uses</h3>
+{% if defaults %}
+{% set rows = [] %}
+{% for key, value in values | dictsort %}
+{% if key.startswith("workflow.") %}
+{% set _ = rows.append([key, value if value is not none else "—", (definitions.get(key) or {}).get("source") or "—", (definitions.get(key) or {}).get("applies") or "—"]) %}
+{% endif %}
+{% endfor %}
+{{ table([
+  {"label": "Setting", "mono": true}, {"label": "Effective value", "mono": true}, {"label": "From"},
+  {"label": "Applies"}
+], rows, caption="Workflow limits, as IdeaPress resolves them now", density="dense", complete=true, row_count=rows | length) }}
+<p class="muted">A value stored on the Settings page applies as the next stage starts; a stage run can
+override <code>max_revision_rounds</code> and the model for that run alone.</p>
+{% else %}
+<p class="muted">IdeaPress's runtime settings could not be read.</p>
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

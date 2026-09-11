@@ -7,6 +7,23 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **IdeaPress's Projects, Workflows and Backends pages under its tab** (row WP5 Gate B), at parity
+  with IdeaPress's own UI: **Projects** (newest activity first, by status and content type, with
+  IdeaPress's cursor; the create form with title, content type, a workflow from
+  `GET /workflows`, brief and author material as a JSON object), **one project** (its fields,
+  brief and author material, the plan summary as figures, every unit with its state, version,
+  coverage and last validation, and the stage history newest first), an **edit** form that says a
+  save never recompiles requirements, and a **delete** that shows IdeaPress's own preview first,
+  offers to archive the project before anything is removed, and deletes only once the title
+  IdeaPress answers is typed. **Workflows** (stage order, which stages use a model and the model
+  bound to each, gates, and the workflow limits a run uses from `GET /settings`) and **Backends**
+  (mode, selected/fallback/pinned, reachability, capabilities, whether content leaves the machine,
+  and the round-trip **Test** with its latency, model list and version). Each action is one audit
+  row (`ideapress.project_create`, `ideapress.project_update`, `ideapress.project_delete` —
+  its preview `pending` — and `ideapress.backend_test`), never carrying a title, brief or author
+  material. A stopped IdeaPress's projects read its database; Workflows and Backends say they
+  read only its running API. The fixtures are IdeaPress's own application answering over its
+  scripted backend, with the database it left (`ideapress-0011-journey`).
 - **PromptCadence's System page** (row WPC1, spec §7.3 as amended 2026-09-10): its health
   components with their status, the active trajectories, every pending approval with its age,
   today's position, the last recovery pass (resumed, finished, halted, failed, deferred) and the

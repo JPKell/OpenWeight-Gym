@@ -1,0 +1,52 @@
+{
+  "editable_states": [
+    "paused",
+    "planned"
+  ],
+  "project_id": "01M27K4PP8AY6CN0BGB04B99JR",
+  "requirements": [
+    {
+      "blocking": true,
+      "checks": "contains any of: 'own machine'",
+      "key": "R-001",
+      "mechanical": true,
+      "quote": "inference runs entirely on the reader's own machine",
+      "source": "brief",
+      "text": "The unit must be explicit about where inference happens.",
+      "units": [
+        "U-01",
+        "U-02"
+      ]
+    },
+    {
+      "blocking": false,
+      "checks": "no deterministic check — evaluated by audit only",
+      "key": "R-002",
+      "mechanical": false,
+      "quote": "no document content is uploaded anywhere",
+      "source": "brief",
+      "text": "The unit should keep a plain register.",
+      "units": [
+        "U-01"
+      ]
+    }
+  ],
+  "units": [
+    {
+      "goal": "Say plainly where inference runs.",
+      "key": "U-01",
+      "requirements": "R-001, R-002",
+      "state": "committed",
+      "target_words": 50,
+      "title": "Where the work happens"
+    },
+    {
+      "goal": "Be honest about the trade.",
+      "key": "U-02",
+      "requirements": "R-001",
+      "state": "committed",
+      "target_words": 50,
+      "title": "What it costs"
+    }
+  ]
+}

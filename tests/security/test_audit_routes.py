@@ -884,6 +884,63 @@ EXERCISES.update(
 )
 
 
+def _ip_form(
+    path: str, data: dict[str, str], *, reply: tuple[str, str, int, Any] | None = None
+) -> Exercise:
+    """A form post from IdeaPress's tab (row WP5), IdeaPress answering ``reply`` to the action and
+    its recordings to every read the page it renders makes."""
+
+    def exercise(console: Console) -> Any:  # noqa: ANN401
+        import httpx
+        import respx
+
+        from tests.support import mock_ideapress, mock_loadcoach
+
+        # The audit console points IdeaPress at a closed port for the guard's tests; the mocks
+        # answer wherever this console was told IdeaPress listens.
+        base_url = str(console.settings.apps.ideapress.base_url).rstrip("/")
+        with respx.mock(assert_all_called=False) as router:
+            mock_loadcoach(router)
+            mock_ideapress(router, base_url=base_url)
+            if reply is not None:
+                method, action, status_code, body = reply
+                router.request(method, f"{base_url}/api/v1/{action}").mock(
+                    return_value=httpx.Response(status_code, json=body)
+                )
+            return console.post_form(path, data)
+
+    return exercise
+
+
+_IP_PROJECT = "01M27K4PP8AY6CN0BGB04B99JR"
+
+EXERCISES.update(
+    {
+        ("POST", "/apps/ideapress/projects"): _ip_form(
+            "/apps/ideapress/projects",
+            {"title": "An audit exercise."},
+            reply=("POST", "projects", 201, {"id": _IP_PROJECT}),
+        ),
+        ("POST", "/apps/ideapress/projects/{project_id}/edit"): _ip_form(
+            f"/apps/ideapress/projects/{_IP_PROJECT}/edit",
+            {"title": "An audit exercise."},
+            reply=("PUT", f"projects/{_IP_PROJECT}", 200, {}),
+        ),
+        # No title typed: IdeaPress's own preview, a pending row, and nothing deleted.
+        ("POST", "/apps/ideapress/projects/{project_id}/delete"): _ip_form(
+            f"/apps/ideapress/projects/{_IP_PROJECT}/delete",
+            {},
+            reply=("DELETE", f"projects/{_IP_PROJECT}", 200, {"deleted": False}),
+        ),
+        ("POST", "/apps/ideapress/backends/test"): _ip_form(
+            "/apps/ideapress/backends/test",
+            {"mode": "ollama"},
+            reply=("POST", "backends/test", 200, {"mode": "ollama", "status": "ok"}),
+        ),
+    }
+)
+
+
 def _state_changing_routes(console: Console) -> set[tuple[str, str]]:
     found: set[tuple[str, str]] = set()
     for path, route in api_routes(console.client.app):

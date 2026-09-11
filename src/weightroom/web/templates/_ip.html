@@ -1,0 +1,29 @@
+{#- IdeaPress's vocabulary as WeightRoom renders it (row WP5). Every helper builds markup rather than
+    concatenating it: a title, a brief or a unit's text is escaped text, and no call site can switch
+    that off. Dictionary fields are read with `.get`, because the environment is StrictUndefined and
+    an application omitting an optional key is not a page error. -#}
+{% from "mirrorwall/components.html" import badge %}
+
+{% macro short(value) -%}
+{%- if value and value | length > 14 -%}
+<span class="mono kit-id" title="{{ value }}">{{ value[:6] }}…{{ value[-4:] }}</span>
+{%- elif value -%}
+<span class="mono kit-id">{{ value }}</span>
+{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro state_badge(state) -%}
+{{ badge(state or "—", tone={"committed": "success", "completed": "success", "complete": "success", "ok": "success", "passed": "success", "paused": "warning", "cancelled": "warning", "interrupted": "warning", "degraded": "warning", "failed": "danger", "unavailable": "danger"}.get(state, "neutral")) }}
+{%- endmacro %}
+
+{% macro project_link(project) -%}
+<a href="/apps/ideapress/projects/{{ project.get('id') | urlencode }}">{{ project.get("title") or project.get("id") or "—" }}</a>
+{%- endmacro %}
+
+{% macro measure(value, unit="") -%}
+{#- A number with its unit, or an em dash for one nobody reported — never a fabricated zero
+    (ADR-0016). -#}
+{%- if value is none or value == "" -%}
+<span class="muted" title="not reported; not the same as zero">—</span>
+{%- else -%}{{ value }}{% if unit %} {{ unit }}{% endif %}{%- endif -%}
+{%- endmacro %}

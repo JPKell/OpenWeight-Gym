@@ -1,0 +1,52 @@
+id: 1
+event: stage.started
+data: {"generated_at":"2026-09-11T06:40:37.252Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{},"event":"stage.started","message":"draft started","occurred_at":"2026-09-11T06:40:37.203031+00:00","sequence":1,"type":"stage.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 2
+event: unit.started
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"unit_key":"U-01"},"event":"unit.started","message":"U-01: Where the work happens","occurred_at":"2026-09-11T06:40:37.209037+00:00","sequence":2,"type":"unit.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 3
+event: attempt.started
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":1,"stage":"draft","unit_key":"U-01"},"event":"attempt.started","message":"U-01: draft attempt 1 of 3","occurred_at":"2026-09-11T06:40:37.210925+00:00","sequence":3,"type":"attempt.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 4
+event: validation.completed
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":1,"failures":[{"check":"minimum_words","detail":"11 words; at least 25 expected","severity":"blocking"},{"check":"requirement:R-001:must_contain_any","detail":"R-001: none of own machine appears","severity":"blocking"}],"passed":false,"unit_key":"U-01"},"event":"validation.completed","message":"U-01: 2 blocking, 0 advisory, of 23 checks","occurred_at":"2026-09-11T06:40:37.217499+00:00","sequence":4,"type":"validation.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 5
+event: attempt.started
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":2,"stage":"repair","unit_key":"U-01"},"event":"attempt.started","message":"U-01: repair attempt 2 of 3","occurred_at":"2026-09-11T06:40:37.219339+00:00","sequence":5,"type":"attempt.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 6
+event: validation.completed
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":2,"failures":[{"check":"minimum_words","detail":"11 words; at least 25 expected","severity":"blocking"},{"check":"requirement:R-001:must_contain_any","detail":"R-001: none of own machine appears","severity":"blocking"}],"passed":false,"unit_key":"U-01"},"event":"validation.completed","message":"U-01: 2 blocking, 0 advisory, of 23 checks","occurred_at":"2026-09-11T06:40:37.225568+00:00","sequence":6,"type":"validation.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 7
+event: attempt.started
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":3,"stage":"repair","unit_key":"U-01"},"event":"attempt.started","message":"U-01: repair attempt 3 of 3","occurred_at":"2026-09-11T06:40:37.227424+00:00","sequence":7,"type":"attempt.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 8
+event: validation.completed
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":3,"failures":[{"check":"minimum_words","detail":"11 words; at least 25 expected","severity":"blocking"},{"check":"requirement:R-001:must_contain_any","detail":"R-001: none of own machine appears","severity":"blocking"}],"passed":false,"unit_key":"U-01"},"event":"validation.completed","message":"U-01: 2 blocking, 0 advisory, of 23 checks","occurred_at":"2026-09-11T06:40:37.233368+00:00","sequence":8,"type":"validation.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 9
+event: unit.paused
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"reason":"3 repair attempts did not clear validation: minimum_words, requirement:R-001:must_contain_any","unit_key":"U-01"},"event":"unit.paused","message":"U-01: 3 repair attempts did not clear validation: minimum_words, requirement:R-001:must_contain_any","occurred_at":"2026-09-11T06:40:37.234299+00:00","sequence":9,"type":"unit.paused","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 10
+event: unit.started
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"unit_key":"U-02"},"event":"unit.started","message":"U-02: What it costs","occurred_at":"2026-09-11T06:40:37.235188+00:00","sequence":10,"type":"unit.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 11
+event: attempt.started
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":1,"stage":"draft","unit_key":"U-02"},"event":"attempt.started","message":"U-02: draft attempt 1 of 3","occurred_at":"2026-09-11T06:40:37.236484+00:00","sequence":11,"type":"attempt.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 12
+event: validation.completed
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":1,"failures":[{"check":"minimum_words","detail":"11 words; at least 25 expected","severity":"blocking"},{"check":"requirement:R-001:must_contain_any","detail":"R-001: none of own machine appears","severity":"blocking"}],"passed":false,"unit_key":"U-02"},"event":"validation.completed","message":"U-02: 2 blocking, 0 advisory, of 23 checks","occurred_at":"2026-09-11T06:40:37.241916+00:00","sequence":12,"type":"validation.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 13
+event: stage.failed
+data: {"generated_at":"2026-09-11T06:40:37.253Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"error_code":null,"state":"cancelled"},"event":"stage.failed","message":"cancelled","occurred_at":"2026-09-11T06:40:37.243265+00:00","sequence":13,"type":"stage.failed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+

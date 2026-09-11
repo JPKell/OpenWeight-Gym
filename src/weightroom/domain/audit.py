@@ -96,6 +96,12 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         # preview is a `pending` row, and a changed security key or a removal is a `security` row.
         "loadcoach.provider_save",
         "loadcoach.provider_delete",
+        # WP5 Gate B. From IdeaPress's tab: a project created, edited or deleted (the delete's
+        # preview is a `pending` row), and a backend's round-trip test.
+        "ideapress.project_create",
+        "ideapress.project_update",
+        "ideapress.project_delete",
+        "ideapress.backend_test",
     }
 )
 """The closed action vocabulary."""

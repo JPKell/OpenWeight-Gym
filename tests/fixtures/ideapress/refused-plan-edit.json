@@ -1,0 +1,22 @@
+{
+  "body": {
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "details": {
+        "editable_states": [
+          "paused",
+          "planned"
+        ],
+        "operation": "reorder",
+        "protected_unit_keys": [
+          "U-01",
+          "U-02"
+        ]
+      },
+      "message": "U-01, U-02 are not in a state a structural edit may touch: a reorder renumbers units, and renumbering a unit that already holds committed text would separate that text from the plan that describes it. Finished work is never rolled back by a later change (workflows §9). Reassign requirements or edit goals instead, which change no unit's identity.",
+      "request_id": "01M27K4Q4GCV7WFSY03R005PM2",
+      "timestamp": "2026-09-11T06:40:37.522Z"
+    }
+  },
+  "status": 400
+}

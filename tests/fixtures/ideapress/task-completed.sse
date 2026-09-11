@@ -1,0 +1,76 @@
+id: 1
+event: stage.started
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{},"event":"stage.started","message":"draft started","occurred_at":"2026-09-11T06:40:37.259117+00:00","sequence":1,"type":"stage.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 2
+event: unit.reset
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"previous_state":"drafting","unit_key":"U-02"},"event":"unit.reset","message":"U-02: an earlier run left it in 'drafting'; reset to paused","occurred_at":"2026-09-11T06:40:37.262257+00:00","sequence":2,"type":"unit.reset","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 3
+event: unit.started
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"unit_key":"U-01"},"event":"unit.started","message":"U-01: Where the work happens","occurred_at":"2026-09-11T06:40:37.264075+00:00","sequence":3,"type":"unit.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 4
+event: attempt.started
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":1,"stage":"draft","unit_key":"U-01"},"event":"attempt.started","message":"U-01: draft attempt 1 of 3","occurred_at":"2026-09-11T06:40:37.265468+00:00","sequence":4,"type":"attempt.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 5
+event: validation.completed
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":1,"failures":[],"passed":true,"unit_key":"U-01"},"event":"validation.completed","message":"U-01: 23 checks passed","occurred_at":"2026-09-11T06:40:37.271988+00:00","sequence":5,"type":"validation.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 6
+event: audit.completed
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"findings":[],"round":0,"score":1.0,"stage":"audit_fast","unit_key":"U-01"},"event":"audit.completed","message":"U-01: audit_fast: no findings (score 1.00)","occurred_at":"2026-09-11T06:40:37.278056+00:00","sequence":6,"type":"audit.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 7
+event: critique.completed
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"rationale":"it meets the bar","round":0,"unit_key":"U-01","verdict":"acceptable"},"event":"critique.completed","message":"U-01: acceptable","occurred_at":"2026-09-11T06:40:37.292486+00:00","sequence":7,"type":"critique.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 8
+event: review.stopped
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"detail":"the critique did not ask for a revision","escalations":0,"rejected_revisions":0,"rounds":0,"stop_reason":"critique_satisfied","unit_key":"U-01"},"event":"review.stopped","message":"U-01: critique_satisfied — the critique did not ask for a revision","occurred_at":"2026-09-11T06:40:37.293831+00:00","sequence":8,"type":"review.stopped","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 9
+event: coverage.completed
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"entries":[{"detail":"found: own machine","requirement_key":"R-001","satisfied":true,"satisfied_by":"deterministic_check"},{"detail":"no deterministic check, and no audit has attested it met","requirement_key":"R-002","satisfied":false,"satisfied_by":"unsatisfied"}],"satisfied":true,"unit_key":"U-01"},"event":"coverage.completed","message":"U-01: 1/2 requirements satisfied, 1 by a deterministic check","occurred_at":"2026-09-11T06:40:37.294400+00:00","sequence":9,"type":"coverage.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 10
+event: unit.committed
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"content_hash":"sha256:01955df0bf2058912e1103399567e333c124917abe6048fa89711806a490bdfa","model_guaranteed_requirements":[],"unit_key":"U-01","version":1,"word_count":43},"event":"unit.committed","message":"U-01: version 1 committed (43 words)","occurred_at":"2026-09-11T06:40:37.298402+00:00","sequence":10,"type":"unit.committed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 11
+event: unit.started
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"unit_key":"U-02"},"event":"unit.started","message":"U-02: What it costs","occurred_at":"2026-09-11T06:40:37.301644+00:00","sequence":11,"type":"unit.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 12
+event: attempt.started
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":1,"stage":"draft","unit_key":"U-02"},"event":"attempt.started","message":"U-02: draft attempt 1 of 3","occurred_at":"2026-09-11T06:40:37.303819+00:00","sequence":12,"type":"attempt.started","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 13
+event: validation.completed
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"attempt":1,"failures":[],"passed":true,"unit_key":"U-02"},"event":"validation.completed","message":"U-02: 23 checks passed","occurred_at":"2026-09-11T06:40:37.311728+00:00","sequence":13,"type":"validation.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 14
+event: audit.completed
+data: {"generated_at":"2026-09-11T06:40:37.350Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"findings":[],"round":0,"score":1.0,"stage":"audit_fast","unit_key":"U-02"},"event":"audit.completed","message":"U-02: audit_fast: no findings (score 1.00)","occurred_at":"2026-09-11T06:40:37.318236+00:00","sequence":14,"type":"audit.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 15
+event: critique.completed
+data: {"generated_at":"2026-09-11T06:40:37.351Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"rationale":"it meets the bar","round":0,"unit_key":"U-02","verdict":"acceptable"},"event":"critique.completed","message":"U-02: acceptable","occurred_at":"2026-09-11T06:40:37.327655+00:00","sequence":15,"type":"critique.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 16
+event: review.stopped
+data: {"generated_at":"2026-09-11T06:40:37.351Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"detail":"the critique did not ask for a revision","escalations":0,"rejected_revisions":0,"rounds":0,"stop_reason":"critique_satisfied","unit_key":"U-02"},"event":"review.stopped","message":"U-02: critique_satisfied — the critique did not ask for a revision","occurred_at":"2026-09-11T06:40:37.328393+00:00","sequence":16,"type":"review.stopped","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 17
+event: coverage.completed
+data: {"generated_at":"2026-09-11T06:40:37.351Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"entries":[{"detail":"found: own machine","requirement_key":"R-001","satisfied":true,"satisfied_by":"deterministic_check"}],"satisfied":true,"unit_key":"U-02"},"event":"coverage.completed","message":"U-02: 1/1 requirements satisfied, 1 by a deterministic check","occurred_at":"2026-09-11T06:40:37.328847+00:00","sequence":17,"type":"coverage.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 18
+event: unit.committed
+data: {"generated_at":"2026-09-11T06:40:37.351Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"content_hash":"sha256:3f0b6f969aa84e7d09e863eeae85e1933a746d97f3f5dc57538bc5816c4a94ec","model_guaranteed_requirements":[],"unit_key":"U-02","version":1,"word_count":33},"event":"unit.committed","message":"U-02: version 1 committed (33 words)","occurred_at":"2026-09-11T06:40:37.330685+00:00","sequence":18,"type":"unit.committed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 19
+event: stage.completed
+data: {"generated_at":"2026-09-11T06:40:37.351Z","generator":{"name":"ideapress","version":"1.5.0"},"payload":{"data":{"error_code":null,"state":"completed"},"event":"stage.completed","message":"completed","occurred_at":"2026-09-11T06:40:37.332570+00:00","sequence":19,"type":"stage.completed","unit_key":null},"schema":"event.envelope","schema_version":"1.0"}
+
