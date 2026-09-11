@@ -113,7 +113,14 @@ Each one below offers <em>save to the file instead</em>, which takes effect at t
           {%- if one.secret %} {{ badge("secret", tone="neutral", title="Never rendered; leave it as ******** to keep it.") }}{% endif %}
         </td>
         <td>
-          {% if one.runtime and form.running %}{{ badge("live", tone="success", title="Saved through the application's own PUT /settings; no restart.") }}
+          {% if one.runtime and form.running and one.applies %}{{ badge(one.applies | replace("_", " "), tone="warning", title="Saved through the application's own PUT /settings; it says the value applies at " ~ (one.applies | replace("_", " ")) ~ ", not at once.") }}
+          {% elif one.runtime and form.running %}{{ badge("live", tone="success", title="Saved through the application's own PUT /settings; no restart.") }}
+          {% endif %}
+          {% if one.runtime and form.running and one.stored %}
+            <button type="submit" name="clear" value="{{ one.key }}" data-variant="quiet"
+                    title="Remove the stored row; the key reads its config.toml value again.">clear</button>
+          {% endif %}
+          {% if one.runtime and form.running %}
           {% elif one.runtime %}{{ badge("live", tone="neutral", title=app ~ " is stopped; this key has no runtime path.") }}
             <button type="submit" name="to_file_now" value="{{ one.key }}" data-variant="quiet"
                     onclick="document.getElementById('to-file').value='{{ one.key }}'">to file</button>

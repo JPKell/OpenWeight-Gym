@@ -40,8 +40,9 @@ from weightroom.services.audit import record
 from weightroom.services.auth import ReauthRequired, require_fresh_reauth
 from weightroom.services.config_files import parse_or_reason, write_config
 from weightroom.services.settings_forms import (
+    REDACTED,
     SettingsForm,
-    live_settings,
+    live_settings_with_definitions,
     read_schema_document,
     save_settings,
     settings_form,
@@ -139,8 +140,11 @@ def form_for(request: Request, app: str, *, refresh: bool = False) -> tuple[Sett
         refresh=refresh,
     )
     live: Mapping[str, Any] = {}
+    definitions: Mapping[str, Mapping[str, Any]] = {}
     if view is not None and document is not None:
-        live, live_error = live_settings(state.settings, app, view, client=state.http)
+        live, definitions, live_error = live_settings_with_definitions(
+            state.settings, app, view, client=state.http
+        )
         if live_error:
             logger.info("settings.live_unavailable", extra={"app": app, "reason": live_error})
     elif app == "weightroom" and state.database is not None:
@@ -155,6 +159,7 @@ def form_for(request: Request, app: str, *, refresh: bool = False) -> tuple[Sett
             document_error=error,
             view=view,
             live=live,
+            live_definitions=definitions,
             config_path=own_config if app == "weightroom" else None,
         ),
         view,
@@ -243,10 +248,26 @@ def _guard_security_keys(
     Raises:
         ReauthRequired: One is, and the session has not re-authenticated recently enough.
     """
-    touched = form.security_keys & set(keys)
+    touched = {key for key in form.security_keys & set(keys) if _would_change(form, key, keys[key])}
     if touched:
         require_fresh_reauth(principal, now=now_of(request), auth=request.app.state.settings.auth)
     return bool(touched)
+
+
+def _would_change(form: SettingsForm, key: str, value: Any) -> bool:  # noqa: ANN401 — the submitted value
+    """Whether a submitted value differs from the field's current one.
+
+    The page posts every field, so a security key the operator left alone arrives with every
+    save; counting it re-authenticated a change to an unrelated key and stamped the audit row
+    ``touched_security`` (row W10; ``history/handoffs/WI1_HANDOFF.md`` §5 item 4c). The same
+    rule ``save_settings`` reports ``unchanged`` by.
+    """
+    field = form.field_for(key)
+    if field is None:
+        return True
+    if field.secret and value == REDACTED:
+        return False
+    return bool(value != field.value)
 
 
 def _audit_write(
@@ -257,6 +278,7 @@ def _audit_write(
     result: Any,
     security: bool,
     raw: bool = False,
+    cleared: str = "",
 ) -> str:
     """The one ``settings.write`` row every write path leaves (spec §11 contract 2)."""
     refused = result.refused
@@ -279,6 +301,7 @@ def _audit_write(
             # `key`, and a redacted boolean reads like a leak that was caught rather than a flag.
             "touched_security": security,
             "raw_editor": raw,
+            "cleared": cleared or None,
         },
         message="; ".join(f"{one.key}: {one.message}" for one in refused) or None,
         security=security,
@@ -536,6 +559,11 @@ def _save_from_form(
     state = request.app.state
     form, view = form_for(request, app)
     changes, problems = _submitted(raw, form)
+    cleared = str(raw.get("clear") or "")
+    if cleared:
+        # The *clear* button: the stored row goes, the key returns to the file's value; every
+        # other field on the page is left as it is (WI1 §5 item 4b).
+        changes, problems = {cleared: None}, []
     password = str(raw.get("password") or "")
     if password:
         fresh = reauthenticated(request, principal, password)
@@ -560,9 +588,11 @@ def _save_from_form(
         )
     except (ConfigChangedOnDisk, ConfigValidationFailed) as exc:
         return _render(request, principal, app, error=exc.message)
-    _audit_write(request, principal, app, result=result, security=security)
+    _audit_write(request, principal, app, result=result, security=security, cleared=cleared)
     state.schemas.forget(app)
     notice = _notice(result)
+    if cleared and result.keys_with("applied"):
+        notice = f"{cleared} cleared; the application reads its configured value again."
     return _render(
         request,
         principal,

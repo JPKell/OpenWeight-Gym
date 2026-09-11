@@ -264,6 +264,9 @@ def test_units_sync_writes_reports_and_audits(
         f'[apps.loadcoach]\nexecutable = "{application}"\n'
     )
     _fake_host(monkeypatch)
+    # `units sync` writes weightroom.service too when `wr-gym` is on PATH (an activated venv), so
+    # the count below depended on the shell that ran the test (WI1 §5 item 4d). Pin the PATH.
+    monkeypatch.setenv("PATH", str(tmp_path))
     code, out, err = _run("units", "sync", "--config", str(file), "--diff")
     assert code == 0, err
     assert "loadcoach      written" in out

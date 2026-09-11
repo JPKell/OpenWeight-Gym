@@ -18,7 +18,7 @@ import respx
 
 from tests.integration.test_jobs_queue import T0, database, services_for, settings_for
 from tests.support import fake_application
-from weightroom.domain.jobs import JOB_KINDS
+from weightroom.domain.jobs import JOB_KINDS, SUITE_RUN_SCOPE_PREFIX
 from weightroom.services.job_kinds import EXECUTORS
 from weightroom.services.jobs import (
     JobContext,
@@ -28,6 +28,7 @@ from weightroom.services.jobs import (
     OutputBuffer,
     claim_next,
     enqueue,
+    list_jobs,
 )
 
 if TYPE_CHECKING:
@@ -73,10 +74,10 @@ def _script(path: Path, body: str) -> Path:
 
 
 def _systemd_run(tmp_path: Path) -> Path:
-    """Records its argv, then runs what follows its nine scope arguments — as the real one does."""
+    """Records its argv, then runs what follows its ten scope arguments — as the real one does."""
     record = tmp_path / "systemd-run.argv"
     return _script(
-        tmp_path / "systemd-run", f'printf "%s\\n" "$@" > {record}\nshift 9\nexec "$@"\n'
+        tmp_path / "systemd-run", f'printf "%s\\n" "$@" > {record}\nshift 10\nexec "$@"\n'
     )
 
 
@@ -125,10 +126,11 @@ def test_a_suite_run_is_launched_under_the_memory_cap_with_freewights_own_flags(
     )
     assert outcome == Outcome("completed")
     argv = (tmp_path / "systemd-run.argv").read_text().splitlines()
-    assert argv[:9] == [
+    assert argv[:10] == [
         "--user",
         "--scope",
         "--quiet",
+        f"--unit={SUITE_RUN_SCOPE_PREFIX}{_job.id}",
         "-p",
         "MemoryHigh=20G",
         "-p",
@@ -136,7 +138,7 @@ def test_a_suite_run_is_launched_under_the_memory_cap_with_freewights_own_flags(
         "-p",
         "MemorySwapMax=0",
     ]
-    assert argv[9:14] == [str(freeweight.resolve()), "run", "start", "--model", "ollama/qwen3:8b"]
+    assert argv[10:15] == [str(freeweight.resolve()), "run", "start", "--model", "ollama/qwen3:8b"]
     assert ("--allow-prompt-override" in argv) is allow
     assert RUN_ID in text
 
@@ -307,7 +309,10 @@ def test_a_pull_holds_ollamas_progress_for_the_page_and_summarises_it_on_the_job
         database, settings_for(tmp_path), services, "catalog_pull", {"name": "gemma3:1b"}
     )
     assert outcome == Outcome("completed")
-    assert text.splitlines() == ["pulling manifest", "downloading", "success"]
+    assert text.splitlines()[:3] == ["pulling manifest", "downloading", "success"]
+    queued, _more = list_jobs(database, kind="model_refresh", limit=10)
+    assert [one.state for one in queued] == ["queued"], "a successful pull queues the refresh"
+    assert text.splitlines()[3] == f"queued model_refresh {queued[0].id}"
     held = services.pulls.get(job.id)
     assert held is not None
     assert held.ok

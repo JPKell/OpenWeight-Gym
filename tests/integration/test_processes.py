@@ -142,9 +142,10 @@ def test_the_child_environment_is_the_allowlist_and_carries_no_secret(
     log = _install_fake(host)
     _controller(host).act("loadcoach.service", "start")
     env = _calls(log)[0]["env"]
-    assert set(env) <= {*ENV_ALLOWLIST, "LC_ALL"}
+    assert set(env) <= {*ENV_ALLOWLIST, "LC_ALL", "PYTHONUNBUFFERED"}
     assert "must-not-leak" not in json.dumps(env)
     assert env["LC_ALL"] == "C"
+    assert env["PYTHONUNBUFFERED"] == "1"  # W9 §5 item 5h: a child's lines arrive as written
 
 
 def test_show_asks_for_every_property_in_one_call_and_parses_the_records(host: Path) -> None:

@@ -40,6 +40,7 @@ __all__ = [
     "JOB_STATES",
     "REFRESH_TARGETS",
     "SELF_RESTORE_CONFIRMATION",
+    "SUITE_RUN_SCOPE_PREFIX",
     "TERMINAL_STATES",
     "TRANSITIONS",
     "WORKER_LOST",
@@ -99,6 +100,13 @@ carried forward. A lost lease fails those with :data:`WORKER_LOST` (queue-and-sc
 """
 
 WORKER_LOST: Final = "worker_lost"
+
+SUITE_RUN_SCOPE_PREFIX: Final = "wr-gym-fwrun-"
+"""The transient scope a `freeweight_suite_run` job launches under: `wr-gym-fwrun-<job id>.scope`.
+
+Named rather than left to `systemd-run`'s `run-r<hex>.scope`, so the memory-cap alert source can
+recognise a kill inside one (row W10; `history/handoffs/W9_HANDOFF.md` §5 item 5g).
+"""
 
 BACKUP_TARGETS: Final[tuple[str, ...]] = (
     "freeweight",

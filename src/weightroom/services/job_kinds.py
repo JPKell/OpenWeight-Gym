@@ -39,6 +39,7 @@ from typing import TYPE_CHECKING, Any, Final
 from baseaicore import SuiteError
 
 from weightroom.config import APPLICATIONS
+from weightroom.domain.jobs import SUITE_RUN_SCOPE_PREFIX
 from weightroom.services.apps import AppNotInstalled
 from weightroom.services.catalog import catalog_entries, run_pull
 from weightroom.services.db_curated import delete_results, run_curated, run_self_curated
@@ -49,6 +50,7 @@ from weightroom.services.jobs import (
     FINISHED_RETENTION_DAYS,
     Executor,
     Outcome,
+    enqueue,
     run_streaming,
     trim_finished_jobs,
 )
@@ -134,6 +136,7 @@ def freeweight_suite_run(context: JobContext) -> Outcome:
             "The run was not started.",
         )
     argv = [wrapper, "--user", "--scope", "--quiet"]
+    argv += [f"--unit={SUITE_RUN_SCOPE_PREFIX}{context.job.id}"]
     argv += ["-p", f"MemoryHigh={host.memory_high}", "-p", f"MemoryMax={host.memory_max}"]
     argv += ["-p", "MemorySwapMax=0", executable, "run", "start"]
     argv += ["--model", str(params["model"]), "--suite", str(params["suite"]), "--json"]
@@ -325,6 +328,10 @@ def catalog_pull(context: JobContext) -> Outcome:
             context.output.line(text)
             shown = text
     if pull.ok:
+        # A pull changes Ollama, not FreeWeight's or LoadCoach's models tables; the model reaches
+        # the catalog only once they refresh (W9 §5 item 5f), so that refresh is queued here.
+        follow_up = enqueue(context.database, kind="model_refresh", params=None, now=context.now())
+        context.output.line(f"queued model_refresh {follow_up.id}")
         return Outcome("completed")
     if events and events[-1].status == "cancelled":
         return Outcome("cancelled", "the pull stopped on the operator's cancel")

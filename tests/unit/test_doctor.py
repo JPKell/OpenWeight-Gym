@@ -284,3 +284,100 @@ def test_the_cli_prints_findings_and_exits_one_on_a_problem(
         assert json.loads(result.output)["findings"]
     else:
         assert result.output.strip()
+
+
+# --- Row W10: PromptCadence's LoadCoach token check, on its card (W6 §8 item 4) -----------------
+
+
+def _promptcadence_view(*, running: bool = True) -> AppView:
+    return AppView(
+        name="promptcadence",
+        installed=True,
+        executable="/opt/promptcadence",
+        unit="promptcadence.service",
+        unit_state="active" if running else "inactive",
+        uptime_seconds=1.0 if running else None,
+        restarts=None,
+        base_url="http://127.0.0.1:8768",
+        version="1.3.3" if running else None,
+        verdict="ok" if running else "unreadable",
+        supported_range=">=1.3,<2",
+    )
+
+
+def _health(component: dict[str, Any] | None) -> dict[str, Any]:
+    components = [] if component is None else [component]
+    return {"status": "ok", "application": "promptcadence", "components": components}
+
+
+@pytest.mark.parametrize(
+    ("component", "severity", "fragment"),
+    [
+        (
+            {
+                "name": "loadcoach",
+                "status": "ok",
+                "detail": "loadcoach reports ok",
+                "data": {"token_accepted": True},
+            },
+            "ok",
+            "accepts its token",
+        ),
+        (
+            {
+                "name": "loadcoach",
+                "status": "degraded",
+                "detail": "loadcoach answers but refuses the configured token (401)",
+                "data": {"token_accepted": False},
+            },
+            "failure",
+            "refuses the token",
+        ),
+        (
+            {"name": "loadcoach", "status": "degraded", "detail": "unreachable: down", "data": {}},
+            "unknown",
+            "LoadCoach did not answer it",
+        ),
+        (None, "unknown", "upgrade promptcadence"),
+    ],
+)
+def test_promptcadences_loadcoach_token_check_is_repeated_on_its_card(
+    tmp_path: Path, respx_mock: Any, component: dict[str, Any] | None, severity: str, fragment: str
+) -> None:
+    import httpx
+
+    respx_mock.get("http://127.0.0.1:8768/api/v1/health").mock(
+        return_value=httpx.Response(200, json=_health(component))
+    )
+    with httpx.Client() as http:
+        finding = _rule(
+            _report(
+                tmp_path,
+                FakeSystemdController(),
+                forms={},
+                views=[_promptcadence_view()],
+                http=http,
+            ),
+            "promptcadence.loadcoach_token",
+        )
+    assert finding is not None
+    assert finding.severity == severity
+    assert fragment in finding.summary + finding.command
+    assert finding.app == "promptcadence"
+
+
+def test_a_stopped_promptcadence_leaves_the_token_check_unknown(tmp_path: Path) -> None:
+    import httpx
+
+    with httpx.Client() as http:
+        finding = _rule(
+            _report(
+                tmp_path,
+                FakeSystemdController(),
+                forms={},
+                views=[_promptcadence_view(running=False)],
+                http=http,
+            ),
+            "promptcadence.loadcoach_token",
+        )
+    assert finding is not None and finding.severity == "unknown"

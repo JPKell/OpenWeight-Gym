@@ -187,6 +187,9 @@ def child_environment() -> dict[str, str]:
     """The allowlisted environment every child of this module gets."""
     env = {key: os.environ[key] for key in ENV_ALLOWLIST if key in os.environ}
     env["LC_ALL"] = "C"
+    # A suite CLI's JSON lines reach a job's output only at exit when stdout is a pipe (block
+    # buffered); unbuffered, a run id is visible while the run is going (W9 §5 item 5h).
+    env["PYTHONUNBUFFERED"] = "1"
     return env
 
 

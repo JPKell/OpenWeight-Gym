@@ -226,6 +226,15 @@ UNNAMED = _entry(
     "s=1;i=3", 12, "llama-server invoked oom-killer: gfp_mask=0xcc0(GFP_KERNEL), order=0"
 )
 BEFORE_THE_WINDOW = _entry("s=1;i=0", -3600, "ollama.service: Failed with result 'oom-kill'.")
+SCOPE_KILL = _entry(
+    "s=1;i=4",
+    13,
+    "oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=user.slice,mems_allowed=0,"
+    "oom_memcg=/user.slice/user-1000.slice/user@1000.service/app.slice/"
+    "wr-gym-fwrun-01M26MTDZCXP3ZR99EWDN53AT4.scope,task=llama-server,pid=5151,uid=1000",
+    _TRANSPORT="kernel",
+    SYSLOG_IDENTIFIER="kernel",
+)
 
 
 def test_memory_cap_fires_on_a_kill_line_naming_ollama_within_the_window_and_only_then(
@@ -264,6 +273,25 @@ def test_memory_cap_fires_on_a_kill_line_naming_ollama_within_the_window_and_onl
 def settings_for_database(database: Database) -> Any:  # noqa: ANN401 — Settings, for the one source
     """The memory-cap source reads only ``[host] ollama_unit`` from settings."""
     return SimpleNamespace(host=SimpleNamespace(ollama_unit="ollama.service"))
+
+
+def test_memory_cap_watches_the_scopes_the_console_launches_for_a_suite_run(
+    database: Database,
+) -> None:
+    """W9 §5 item 5g: a kill inside `wr-gym-fwrun-<job>.scope` is a firing, named by the scope."""
+
+    def runner(argv: Sequence[str], env: object, timeout: float) -> CommandResult:
+        if "--user" in argv:
+            return CommandResult(tuple(argv), 0, json.dumps(SCOPE_KILL), "")
+        return CommandResult(tuple(argv), 1, "", "")
+
+    source = memory_cap_source(
+        settings_for_database(database), which=lambda _name: "/usr/bin/journalctl", runner=runner
+    )
+    reading = source(T0, T0 + 30 * SECOND)
+    assert [firing.subject for firing in reading.firing] == [
+        "wr-gym-fwrun-01M26MTDZCXP3ZR99EWDN53AT4.scope"
+    ]
 
 
 def test_memory_cap_without_journalctl_or_with_a_refused_journal_says_so() -> None:

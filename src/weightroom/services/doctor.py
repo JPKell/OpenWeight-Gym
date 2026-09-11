@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import getpass
 import shutil
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
@@ -30,11 +31,12 @@ from typing import TYPE_CHECKING, Any, Final
 from weightroom.config import APPLICATIONS, LOOPBACK_HOSTS, data_dir
 from weightroom.domain.ollama import APPLY_SCRIPT
 from weightroom.domain.units import MEMORY_CAPPED, unit_name
+from weightroom.services.apps import AppUnreachable, app_health
 from weightroom.services.ollama import POLKIT_INSTALL_COMMAND, POLKIT_RULE_PATH, ollama_report
 from weightroom.services.processes import UnitUnsupported
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Iterable, Sequence
 
     import httpx
 
@@ -455,6 +457,100 @@ def _version_findings(views: Sequence[AppView]) -> list[Finding]:
     return findings
 
 
+def _promptcadence_loadcoach_findings(
+    settings: Settings, views: Sequence[AppView], *, http: httpx.Client | None
+) -> list[Finding]:
+    """PromptCadence's own check that LoadCoach answers and accepts its token, on its card.
+
+    Read from PromptCadence's ``/api/v1/health`` — the ``loadcoach`` component's
+    ``data.token_accepted`` (``promptcadence`` ≥ the W10 build; W6 §8 item 4) — never re-derived
+    here: the token PromptCadence presents is the one that matters, and only it can present it.
+    """
+    view = next((one for one in views if one.name == "promptcadence"), None)
+    if view is None or not view.installed:
+        return []
+    document = "spec §7.6; PromptCadence api.md §1"
+    if http is None or not view.running or view.verdict == "unreadable":
+        return [
+            Finding(
+                rule="promptcadence.loadcoach_token",
+                severity="unknown",
+                summary="PromptCadence's LoadCoach token check was not read; it is not running.",
+                evidence=f"unit {view.unit_state}",
+                document=document,
+                app="promptcadence",
+            )
+        ]
+    try:
+        body = app_health(settings, "promptcadence", view, client=http)
+    except AppUnreachable as exc:
+        return [
+            Finding(
+                rule="promptcadence.loadcoach_token",
+                severity="unknown",
+                summary="PromptCadence's health did not answer, so its LoadCoach check is unread.",
+                evidence=exc.message,
+                document=document,
+                app="promptcadence",
+            )
+        ]
+    components = body.get("components") if isinstance(body, Mapping) else None
+    component = next(
+        (
+            one
+            for one in (components or [])
+            if isinstance(one, Mapping) and one.get("name") == "loadcoach"
+        ),
+        None,
+    )
+    data = component.get("data") if isinstance(component, Mapping) else None
+    accepted = data.get("token_accepted") if isinstance(data, Mapping) else None
+    detail = str(component.get("detail") or "") if isinstance(component, Mapping) else ""
+    if component is None or accepted is None:
+        return [
+            Finding(
+                rule="promptcadence.loadcoach_token",
+                severity="unknown",
+                summary=(
+                    "PromptCadence did not say whether LoadCoach accepts its token"
+                    + (": LoadCoach did not answer it." if component is not None else ".")
+                ),
+                evidence=detail or "no loadcoach component in its health",
+                command="" if component is not None else "# upgrade promptcadence",
+                document=document,
+                app="promptcadence",
+            )
+        ]
+    if accepted is True:
+        return [
+            Finding(
+                rule="promptcadence.loadcoach_token",
+                severity="ok",
+                summary="LoadCoach answers PromptCadence and accepts its token.",
+                evidence=detail,
+                document=document,
+                app="promptcadence",
+            )
+        ]
+    return [
+        Finding(
+            rule="promptcadence.loadcoach_token",
+            severity="failure",
+            summary=(
+                "LoadCoach refuses the token PromptCadence presents; nothing it runs can reach "
+                "a model."
+            ),
+            evidence=detail,
+            command=(
+                "# re-issue it from /apps/promptcadence/tokens, or: "
+                "loadcoach token create promptcadence --scope write"
+            ),
+            document=document,
+            app="promptcadence",
+        )
+    ]
+
+
 def _revision_findings(settings: Settings, database: Database | None) -> list[Finding]:
     """Each application's schema revision is one this console knows (``SCHEMA_UNKNOWN``)."""
     if database is None:
@@ -627,6 +723,7 @@ def diagnose(
     tls: TlsStatus | None = None,
     database: Database | None = None,
     client: httpx.Client | None = None,
+    http: httpx.Client | None = None,
     user: str | None = None,
 ) -> Report:
     """Run every rule and return the findings, worst first.
@@ -642,6 +739,8 @@ def diagnose(
         database: The console's own database, for the known-revision and polkit-grant rules.
         client: An HTTP client; unused by the rules that read Ollama's unit, present for the ones
             that may later need it.
+        http: The client the applications are reached with, for PromptCadence's LoadCoach token
+            check; ``None`` leaves that finding ``unknown``.
         user: Whose lingering to check; the process owner by default.
 
     Returns:
@@ -657,6 +756,7 @@ def diagnose(
     findings.extend(_token_scope_findings(settings))
     findings.extend(_caddy_findings(forms))
     findings.extend(_version_findings(views))
+    findings.extend(_promptcadence_loadcoach_findings(settings, views, http=http))
     findings.extend(_revision_findings(settings, database))
     findings.extend(_tls_finding(settings, tls))
     findings.extend(_linger_finding(controller, user=owner))

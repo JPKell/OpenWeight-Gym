@@ -547,3 +547,84 @@ def test_the_consoles_own_security_key_needs_the_password_too(tmp_path: Path) ->
     )
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "REAUTH_REQUIRED"
+
+
+# --- Row W10: what the application says about a stored row (WI1 §5 items 4a–4c) ------------------
+
+
+def test_a_stored_row_shows_when_it_applies_and_the_page_can_clear_it(
+    tmp_path: Path, respx_mock: Any
+) -> None:
+    """IdeaPress's document states ``applies`` and ``stored`` per key: the page shows the word
+    rather than *live*, offers *clear* for a stored row, and clearing sends ``null`` through the
+    application's own ``PUT /settings`` — the one audited path (ADR-0124)."""
+    import httpx
+
+    console, config = _console(tmp_path, app="ideapress", running=True)
+    console.login()
+    respx_mock.get("http://127.0.0.1:8767/api/v1/version").mock(
+        return_value=httpx.Response(200, json={"application": "ideapress", "version": "1.5.0"})
+    )
+    respx_mock.get("http://127.0.0.1:8767/api/v1/settings").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "settings": {
+                    "workflow.max_revision_rounds": 2,
+                    "workflow.max_attempts_per_stage": 3,
+                },
+                "definitions": {
+                    "workflow.max_revision_rounds": {"stored": 2, "applies": "next_stage"},
+                    "workflow.max_attempts_per_stage": {"stored": None, "applies": "next_stage"},
+                },
+            },
+        )
+    )
+    route = respx_mock.put("http://127.0.0.1:8767/api/v1/settings").mock(
+        return_value=httpx.Response(200, json={"settings": {"workflow.max_revision_rounds": 3}})
+    )
+    page = console.client.get("/apps/ideapress/settings", headers={"Accept": "text/html"}).text
+    assert "next stage" in page and 'value="workflow.max_revision_rounds"' in page
+    assert page.count('name="clear"') == 1  # only the key with a stored row offers it
+
+    response = console.post_form(
+        "/apps/ideapress/settings",
+        {
+            "field:workflow.max_revision_rounds": "2",
+            "field:workflow.max_attempts_per_stage": "3",
+            "clear": "workflow.max_revision_rounds",
+            "base_mtime": str(_base_mtime(console, "ideapress") or ""),
+        },
+    )
+    assert response.status_code == 200
+    assert "workflow.max_revision_rounds cleared" in response.text
+    assert json.loads(route.calls.last.request.content) == {"workflow.max_revision_rounds": None}
+    assert config.read_text() == ""
+    rows = console.client.get("/api/v1/audit?action=settings.write", headers=JSON_HEADERS).json()
+    newest = rows["items"][0] if isinstance(rows, dict) else rows[0]
+    assert newest["params"]["cleared"] == "workflow.max_revision_rounds"
+    assert newest["params"]["touched_security"] is False
+
+
+def test_a_security_key_posted_unchanged_is_not_a_touched_security_key(tmp_path: Path) -> None:
+    """The page posts every field; a security key left as it was neither needs the password nor
+    marks the audit row ``touched_security`` (WI1 §5 item 4c)."""
+    console, config = _console(
+        tmp_path, config_toml='[server]\nhost = "127.0.0.1"\n[execution]\nmax_attempts = 3\n'
+    )
+    console.login()
+    response = console.post_form(
+        "/apps/loadcoach/settings",
+        {
+            "field:server.host": "127.0.0.1",
+            "field:execution.max_attempts": "9",
+            "base_mtime": str(_base_mtime(console, "loadcoach")),
+        },
+    )
+    assert response.status_code == 200
+    assert "1 written to the file" in response.text
+    assert tomllib.loads(config.read_text())["execution"]["max_attempts"] == 9
+    rows = console.client.get("/api/v1/audit?action=settings.write", headers=JSON_HEADERS).json()
+    newest = rows["items"][0] if isinstance(rows, dict) else rows[0]
+    assert newest["params"]["touched_security"] is False
+    assert newest["security"] is False

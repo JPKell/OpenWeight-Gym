@@ -757,6 +757,18 @@ def _rows(console: Console) -> int:
 
 @pytest.fixture
 def console(tmp_path: Path) -> Console:
+    return audit_console(tmp_path)
+
+
+def audit_console(tmp_path: Path, *, loadcoach_token: str | None = None) -> Console:
+    """The console every exercise in :data:`EXERCISES` runs against.
+
+    Args:
+        tmp_path: A fresh directory.
+        loadcoach_token: When given, written to a token file named by ``[apps.loadcoach]
+            api_key_file`` — a secret the redaction sweep (``test_redaction_sweep.py``) then
+            asserts never reaches an audit row or a log line.
+    """
     # A fake host where loadcoach is installed and its unit exists, so the control routes have
     # something to act on and each writes exactly one row.
     # A real executable answering ADR-0127's two verbs, so the settings routes have a document
@@ -774,10 +786,15 @@ def console(tmp_path: Path) -> Console:
     )
     # And a prompt pack, answered before the fake's own verbs, for the prompt editor's routes.
     ideapress = prompt_application(tmp_path, "ideapress", [HELLO_RECORD], fallback=ideapress)
+    token_line = ""
+    if loadcoach_token is not None:
+        token_file = tmp_path / "loadcoach.token"
+        token_file.write_text(loadcoach_token + "\n", encoding="utf-8")
+        token_line = f'api_key_file = "{token_file}"\n'
     return build_console(
         tmp_path / "console",
         extra_toml=(
-            f'[apps.loadcoach]\nexecutable = "{executable}"\n'
+            f'[apps.loadcoach]\nexecutable = "{executable}"\n{token_line}'
             f'[apps.ideapress]\nexecutable = "{ideapress}"\nbase_url = "http://127.0.0.1:9"\n'
         ),
         systemd=FakeSystemdController(states={"loadcoach.service": "active"}),

@@ -78,6 +78,7 @@ def doctor(
             tls=tls,
             database=database,
             client=client,
+            http=client,
         )
     if json_output:
         typer.echo(json.dumps(report.as_json(), indent=2))

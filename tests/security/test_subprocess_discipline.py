@@ -114,4 +114,4 @@ def test_the_environment_allowlist_holds_no_credential_shaped_name() -> None:
 
     pattern = re.compile(r"(?i)token|key|secret|password|auth|cookie")
     assert not [name for name in ENV_ALLOWLIST if pattern.search(name)]
-    assert set(child_environment()) <= {*ENV_ALLOWLIST, "LC_ALL"}
+    assert set(child_environment()) <= {*ENV_ALLOWLIST, "LC_ALL", "PYTHONUNBUFFERED"}

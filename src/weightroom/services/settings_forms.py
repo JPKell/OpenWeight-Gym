@@ -68,6 +68,7 @@ __all__ = [
     "config_file_path",
     "is_secret_key",
     "live_settings",
+    "live_settings_with_definitions",
     "read_schema_document",
     "save_settings",
     "settings_form",
@@ -136,6 +137,11 @@ class FormField:
         choices: The permitted values, when the schema states an ``enum``.
         live: Whether ``value`` came from the running application rather than the file.
         in_file: Whether the file names this key at all.
+        applies: When a stored value takes effect, in the application's own word (IdeaPress:
+            ``next_stage``), or ``""`` when its document states none — then a runtime key is
+            applied live (row W10; ``history/handoffs/WI1_HANDOFF.md`` §5 item 4a).
+        stored: Whether the running application holds a stored row for this key — one a
+            *clear* hands back to configuration (WI1 §5 item 4b).
     """
 
     key: str
@@ -154,6 +160,8 @@ class FormField:
     choices: tuple[str, ...] = ()
     live: bool = False
     in_file: bool = False
+    applies: str = ""
+    stored: bool = False
 
     @property
     def value_text(self) -> str:
@@ -678,8 +686,24 @@ def live_settings(
         ``({key: value}, None)``, or ``({}, reason)``. Never raises: the file path is always
         offered instead (ADR-0127 rule 4).
     """
+    values, _definitions, error = live_settings_with_definitions(settings, app, view, client=client)
+    return values, error
+
+
+def live_settings_with_definitions(
+    settings: Settings, app: str, view: AppView, *, client: httpx.Client
+) -> tuple[dict[str, Any], dict[str, Mapping[str, Any]], str | None]:
+    """:func:`live_settings`, keeping the document's per-key ``definitions`` beside the values.
+
+    A definition is what the application says about one runtime key — IdeaPress's carry
+    ``stored`` (the row, or ``null``) and ``applies`` (``next_stage``); LoadCoach's and
+    PromptCadence's documents carry none. Only those two fields are read here.
+
+    Returns:
+        ``(values, definitions, error)`` — ``definitions`` is ``{}`` when the document has none.
+    """
     if app == "weightroom" or not view.running or not view.reachable:
-        return {}, None
+        return {}, {}, None
     headers = {}
     token = bearer_token(settings, app)
     if token:
@@ -691,20 +715,26 @@ def live_settings(
             timeout=_LIVE_TIMEOUT_SECONDS,
         )
     except httpx.HTTPError as exc:
-        return {}, f"{app} is running but did not answer GET /api/v1/settings: {exc}"
+        return {}, {}, f"{app} is running but did not answer GET /api/v1/settings: {exc}"
     if response.status_code >= 400:  # noqa: PLR2004 — the HTTP error boundary
         # The application's own words, never a rewrite: a `401 UNAUTHORIZED` here means this
         # console has no token for it ([apps.<app>] api_key_file, ADR-0126 rule 8), which is a
         # different fix from a malformed answer and must not be reported as one.
-        return {}, f"{app} refused GET /api/v1/settings: {_error_message(response)}"
+        return {}, {}, f"{app} refused GET /api/v1/settings: {_error_message(response)}"
     try:
         body = response.json()
     except ValueError as exc:
-        return {}, f"{app}'s GET /api/v1/settings did not answer JSON: {exc}"
+        return {}, {}, f"{app}'s GET /api/v1/settings did not answer JSON: {exc}"
     values = body.get("settings") if isinstance(body, Mapping) else None
     if not isinstance(values, Mapping):
-        return {}, f"{app}'s GET /api/v1/settings answered an unexpected shape."
-    return {str(key): value for key, value in values.items()}, None
+        return {}, {}, f"{app}'s GET /api/v1/settings answered an unexpected shape."
+    raw_definitions = body.get("definitions") if isinstance(body, Mapping) else None
+    definitions = {
+        str(key): entry
+        for key, entry in (raw_definitions or {}).items()
+        if isinstance(raw_definitions, Mapping) and isinstance(entry, Mapping)
+    }
+    return {str(key): value for key, value in values.items()}, definitions, None
 
 
 def _error_message(response: httpx.Response) -> str:
@@ -743,6 +773,7 @@ def settings_form(
     document_error: str | None,
     view: AppView | None = None,
     live: Mapping[str, Any] | None = None,
+    live_definitions: Mapping[str, Mapping[str, Any]] | None = None,
     config_path: Path | None = None,
     now: float | None = None,
 ) -> SettingsForm:
@@ -765,6 +796,7 @@ def settings_form(
     path = config_file_path(document, app=app, fallback=config_path)
     text, file_data, parse_error = _read_toml(path)
     live_values = dict(live or {})
+    definitions = dict(live_definitions or {})
     problems = [str(one) for one in (document or {}).get("problems", []) or []]
     if parse_error:
         problems.append(parse_error)
@@ -823,6 +855,7 @@ def settings_form(
                         source=sources.get(key, "default"),
                         file_data=file_data,
                         live_values=live_values,
+                        definition=definitions.get(key),
                         defs=defs,
                     )
                     for key in section_keys
@@ -860,6 +893,7 @@ def _build_field(
     source: str,
     file_data: Mapping[str, Any],
     live_values: Mapping[str, Any],
+    definition: Mapping[str, Any] | None = None,
 ) -> FormField:
     """One leaf, composed from the document, the file and the running application."""
     minimum, maximum = _bounds_of(schema)
@@ -900,6 +934,8 @@ def _build_field(
         choices=_choices_of(schema, defs),
         live=live,
         in_file=in_file,
+        applies=str((definition or {}).get("applies") or "") if runtime else "",
+        stored=bool(runtime and definition is not None and definition.get("stored") is not None),
     )
 
 

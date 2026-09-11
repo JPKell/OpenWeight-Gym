@@ -58,6 +58,7 @@ def _report(request: Request) -> Report:
         tls=state.tls,
         database=state.database,
         client=state.ollama_http,
+        http=state.http,
     )
 
 

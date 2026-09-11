@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import shutil
 import threading
 import time
@@ -51,6 +52,7 @@ from weightroom.domain.alerts import (
     Reading,
     decide,
 )
+from weightroom.domain.jobs import SUITE_RUN_SCOPE_PREFIX
 from weightroom.domain.units import unit_name
 from weightroom.infrastructure.db.models import Alert, AlertHistory
 from weightroom.services.apps import bearer_token
@@ -456,11 +458,16 @@ def app_down_source(
     return read
 
 
+_SUITE_RUN_SCOPE = re.compile(re.escape(SUITE_RUN_SCOPE_PREFIX) + r"[0-9A-Za-z]+\.scope")
+"""The scope `freeweight_suite_run` launches under (`domain/jobs.SUITE_RUN_SCOPE_PREFIX`)."""
+
+
 def _named_unit(message: str, unit: str, watched: Sequence[str]) -> str | None:
     for candidate in watched:
         if candidate in message or unit == candidate:
             return candidate
-    return None
+    scope = _SUITE_RUN_SCOPE.search(message) or _SUITE_RUN_SCOPE.search(unit)
+    return scope.group(0) if scope else None
 
 
 def memory_cap_source(
