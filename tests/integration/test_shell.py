@@ -132,11 +132,13 @@ def test_an_applications_side_nav_names_its_built_pages_and_the_unbuilt_ones(
     # Built at W4, so they are links now, not stubs.
     assert 'href="/apps/loadcoach/settings"' in page
     assert 'href="/apps/loadcoach/tokens"' in page
-    # Database is built (W7), so a link; a page with no row yet says so honestly; and a page that
-    # is deliberately somebody else's says where it lives instead of naming a row (W4).
+    # Database is built (W7) and Logs (WP1), so links; a page not built yet names the row that
+    # builds it; and a page that is still somebody else's says where it lives (W4, until WP2).
     assert 'href="/apps/loadcoach/database"' in page
+    assert 'href="/apps/loadcoach/logs"' in page
     assert 'title="coming in phase W7"' not in page
-    assert "not yet scheduled" in page
+    assert '<li title="coming in row WP2">Routing</li>' in page
+    assert "not yet scheduled" not in page
     assert "ADR-0117" in page
 
 

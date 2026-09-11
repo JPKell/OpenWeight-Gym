@@ -1,0 +1,52 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, pagination %}
+{% from "_app_page.html" import refusal, level_badge %}
+{% block title %}Logs — {{ view.name | app_label }} — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Logs {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/api/v1/apps/{{ view.name }}/logs">JSON</a> · <a href="/logs">Every unit</a></div>
+</div>
+{% include "_app_state.html" %}
+
+<form class="filter-bar" action="/apps/{{ view.name }}/logs" method="get" role="search">
+  <div class="field"><label for="log-since">Since</label>
+    <input id="log-since" name="since" value="{{ filters.since or '' }}" placeholder="-1h, 2026-09-10 12:00"></div>
+  <div class="field"><label for="log-until">Until</label>
+    <input id="log-until" name="until" value="{{ filters.until or '' }}"></div>
+  <div class="field"><label for="log-level">Level and worse</label>
+    <select id="log-level" name="level">
+      <option value=""{{ ' selected' if not filters.level else '' }}>Every level</option>
+      {% for one in levels %}<option value="{{ one }}"{{ ' selected' if filters.level == one else '' }}>{{ one }}</option>{% endfor %}
+    </select></div>
+  <div class="field"><label for="log-q">Text</label>
+    <input id="log-q" name="q" type="search" value="{{ filters.q or '' }}" placeholder="matched literally"></div>
+  <button type="submit">Filter</button>
+</form>
+
+{{ refusal(error) }}
+{% if journal is not none %}
+{% if journal.lines %}
+{% set columns = [{"label": "Time", "mono": true}, {"label": "Level"}, {"label": "Process", "mono": true}, {"label": "Message"}] %}
+{% set rows = [] %}
+{% for line in journal.lines %}
+{% set _ = rows.append([
+  line.at.isoformat(timespec="seconds"),
+  level_badge(line.level),
+  (line.identifier or "—") ~ ("[" ~ line.pid ~ "]" if line.pid else ""),
+  line.text or line.message
+]) %}
+{% endfor %}
+{{ table(columns, rows, caption="Journal history, newest first", density="dense", complete=journal.next_cursor is none, row_count=rows | length) }}
+{{ pagination(next_href=next_href, summary=("capped at " ~ cap ~ " rows" if journal.capped else none)) }}
+{% else %}
+{{ empty_state("No journal lines match this filter.", "Every line", "/apps/" ~ view.name ~ "/logs") }}
+{% endif %}
+{% endif %}
+
+<h3>Live</h3>
+{% set stream_url = "/api/v1/apps/" ~ view.name ~ "/logs/stream" %}
+{% include "_log_pane.html" %}
+<p class="muted page-source">From the journal: <code>journalctl --user -u {{ view.unit }}</code> ·
+   <code>wr-gym logs {{ view.name }} --follow</code></p>
+{% endblock %}

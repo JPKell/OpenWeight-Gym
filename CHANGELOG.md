@@ -6,7 +6,21 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **A Logs page under every application's tab** (row WP1): the unit's journal history, filtered
+  by time, level-and-worse and literal text and paged by cursor, above its live pane.
+- **The page kit every application page is built on** (row WP1): `services/app_api.py`, one
+  client for the applications' own APIs (the bearer from `api_key_file`, a timeout per call, a
+  refusal carried through with the application's own code, SSE streams proxied with
+  `Last-Event-ID`); `services/app_pages.py`, spec §7.3's source rule decided once (the API while
+  the application answers, its database at a known revision while it does not, degraded by name
+  outside the version range); `render_app_page` and `_app_state.html`, so a stopped
+  application's page carries a Start that returns the operator to that page.
+
+### Changed
+- An application's left menu is two sections: its own pages, a rule, then Settings, Tokens,
+  Prompts, Logs and Database (design brief §4). A page not built yet names the row that builds it
+  (`coming in row WP2`) instead of *not yet scheduled*.
 
 ## [1.0.0] — 2026-09-10
 

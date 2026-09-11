@@ -119,12 +119,27 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
         "Database",
     ),
 }
-"""Spec §7.3's menu, per application. Only ``Overview`` is built before W4–W9 land the rest."""
+"""Spec §7.3's menu, per application; :data:`_PAGE_HREF` says which of them this build serves."""
 
-_PAGE_PHASE: dict[str, str] = {}
-"""Where a still-unbuilt page's kickoff already names a row; everything else is not yet
-scheduled in ``roadmap/weightroom-work.md`` (a documentation gap W3 noted rather than invented
-an answer to — the handoffs record it)."""
+_PAGE_PHASE: dict[tuple[str, str], str] = {
+    **{
+        ("loadcoach", label): "WP2"
+        for label in ("Models", "Routing", "Queue", "Evidence", "Adapters", "Reliability")
+    },
+    **{
+        ("freeweight", label): "WP3"
+        for label in ("Models", "Runs", "Results", "Evidence", "Adapters")
+    },
+    ("freeweight", "Goals"): "WP4",
+    **{("ideapress", label): "WP5" for label in ("Projects", "Units", "Workflows", "Backends")},
+    **{
+        ("promptcadence", label): "WP1"
+        for label in ("Trajectories", "Approvals", "Tiers", "Tools", "Ledger", "Egress")
+    },
+}
+"""The row in ``roadmap/weightroom-work.md`` that builds each still-unbuilt page, keyed by
+application as well as label: FreeWeight's Models and LoadCoach's are two rows. W3 left every
+page *not yet scheduled* (its handoff §2.4); the WP rows schedule them all."""
 
 _PAGE_ELSEWHERE: dict[str, str] = {
     "Provider": "edited on the application's own provider page (ADR-0117)",
@@ -142,8 +157,15 @@ _PAGE_HREF: dict[str, str] = {
     "Tokens": "/apps/{app}/tokens",
     "Prompts": "/apps/{app}/prompts",
     "Database": "/apps/{app}/database",
+    "Logs": "/apps/{app}/logs",
 }
 """Where a built page lives; anything absent is still a stub."""
+
+_ADMIN_PAGES: frozenset[str] = frozenset(
+    {"Settings", "Provider", "Providers", "Tokens", "Prompts", "Logs", "Database"}
+)
+"""The administrative pages, below the rule in an application's menu (design brief §4): the
+application's own subjects first, then what the console does to it."""
 
 _NO_TOKENS: frozenset[str] = frozenset({"ideapress"})
 """IdeaPress has no token surface at all — no ``token`` CLI verb and no token table (W4)."""
@@ -172,24 +194,28 @@ def app_label(name: str) -> str:
 
 
 def app_side_nav(app_name: str, *, selected: str = "Overview") -> tuple[dict[str, Any], ...]:
-    """The section :func:`~mirrorwall.side_nav` renders for an application: its built pages.
+    """The two sections :func:`~mirrorwall.side_nav` renders for an application: its built pages.
 
-    The macro's ``link`` shape has no inert state, so a page this build has not shipped yet is
-    never handed to it as a dead ``href=""`` link — :func:`app_side_nav_stubs` renders those
-    separately, in WeightRoomGym's own markup (design brief §5: one consumer stays here).
+    The application's own subjects come first under its name, then the macro's rule, then the
+    administrative pages (:data:`_ADMIN_PAGES`, design brief §4). The macro's ``link`` shape has no
+    inert state, so a page this build has not shipped yet is never handed to it as a dead
+    ``href=""`` link — :func:`app_side_nav_stubs` renders those separately, in WeightRoomGym's own
+    markup (design brief §5: one consumer stays here).
     """
+    links = [
+        {
+            "label": label,
+            "href": _PAGE_HREF[label].format(app=app_name),
+            "selected": label == selected,
+        }
+        for label in _built_pages(app_name)
+    ]
     return (
         {
             "title": app_label(app_name),
-            "links": [
-                {
-                    "label": label,
-                    "href": _PAGE_HREF[label].format(app=app_name),
-                    "selected": label == selected,
-                }
-                for label in _built_pages(app_name)
-            ],
+            "links": [x for x in links if x["label"] not in _ADMIN_PAGES],
         },
+        {"title": "", "links": [x for x in links if x["label"] in _ADMIN_PAGES]},
     )
 
 
@@ -211,8 +237,8 @@ def app_side_nav_stubs(app_name: str) -> tuple[dict[str, str], ...]:
         elif label == "Tokens":
             title = f"{app_label(app_name)} has no API tokens"
         else:
-            phase = _PAGE_PHASE.get(label)
-            title = f"coming in phase {phase}" if phase else "not yet scheduled"
+            row = _PAGE_PHASE.get((app_name, label))
+            title = f"coming in row {row}" if row else "not yet scheduled"
         stubs.append({"label": label, "title": title})
     return tuple(stubs)
 

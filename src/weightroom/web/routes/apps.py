@@ -50,9 +50,12 @@ from weightroom.web.csrf import render_form_page
 from weightroom.web.session import CurrentOperator
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Mapping, Sequence
+    from collections.abc import AsyncIterator, Callable, Mapping, Sequence
 
     from weightroom.services.alerts import Banner
+    from weightroom.services.app_pages import Sourced
+    from weightroom.services.auth import Principal
+    from weightroom.services.db_reader import AppDatabase
 
 __all__ = [
     "CONTROL_VERBS",
@@ -465,12 +468,77 @@ def apps_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
     return render_shell_page(request, "apps.html", page="apps", principal=principal)
 
 
+def render_app_page(
+    request: Request,
+    principal: Principal,
+    app: str,
+    template_name: str,
+    /,
+    *,
+    selected: str,
+    view: AppView | None = None,
+    **context: Any,
+) -> HTMLResponse:
+    """Render a page under one application's tab: the shell, its menu, its state (row WP1).
+
+    Every page an application's tab opens goes through this, so the tab, the two-section menu with
+    ``selected`` current, the version footer and the unbuilt-page stubs are decided once. The
+    template receives ``view`` and includes ``_app_state.html`` for the stopped state.
+
+    Args:
+        request: The request.
+        principal: The signed-in operator.
+        app: One of the four, already checked.
+        template_name: The page's template.
+        selected: The menu entry to mark current (spec §7.3's label: ``"Trajectories"``).
+        view: The application's view when the route already read one; read here otherwise.
+        **context: The page's own context.
+    """
+    from weightroom.web.rendering import app_side_nav, app_side_nav_stubs
+
+    shown = view if view is not None else _view(request, app)
+    return render_shell_page(
+        request,
+        template_name,
+        page="apps",
+        principal=principal,
+        app=app,
+        view=shown,
+        active_app=app,
+        nav_sections=app_side_nav(app, selected=selected),
+        nav_footer=f"{APP_LABELS.get(app, app)} {shown.version or '—'}",
+        side_nav_stubs=app_side_nav_stubs(app),
+        **context,
+    )
+
+
+def read_app_page[T](
+    request: Request,
+    view: AppView,
+    *,
+    api: Callable[[], T],
+    database: Callable[[AppDatabase], T] | None,
+) -> Sourced[T]:
+    """:func:`weightroom.services.app_pages.read`, with this request's database opener bound."""
+    from weightroom.services.app_pages import read
+    from weightroom.services.db_reader import open_app_database
+
+    state = request.app.state
+    return read(
+        view,
+        api=api,
+        database=database,
+        open_database=lambda: open_app_database(
+            state.settings, state.database, view.name, urls=state.database_urls, now=_now()
+        ),
+    )
+
+
 @ui_router.get("/apps/{app}", summary="One application's page", response_class=HTMLResponse)
 def app_page(request: Request, principal: CurrentOperator, app: str) -> HTMLResponse:
     """One application's Overview: the pill, four figures, the primary table, the log tail."""
     name = require_app(app)
     from weightroom.services.overview import overview_for
-    from weightroom.web.rendering import app_side_nav, app_side_nav_stubs
 
     view = _view(request, name)
     overview = overview_for(
@@ -480,19 +548,88 @@ def app_page(request: Request, principal: CurrentOperator, app: str) -> HTMLResp
         database=request.app.state.database,
         client=request.app.state.http,
     )
-    return render_shell_page(
+    return render_app_page(
         request,
+        principal,
+        name,
         "app.html",
-        page="apps",
-        principal=principal,
+        selected="Overview",
         view=view,
         overview=overview,
         applications=APPLICATIONS,
-        active_app=name,
-        nav_sections=app_side_nav(name, selected="Overview"),
-        nav_footer=f"{APP_LABELS.get(name, name)} {view.version or '—'}",
-        side_nav_stubs=app_side_nav_stubs(name),
     )
+
+
+@ui_router.get("/apps/{app}/logs", summary="One application's journal", response_class=HTMLResponse)
+def app_logs_page(
+    request: Request,
+    principal: CurrentOperator,
+    app: str,
+    since: str | None = None,
+    until: str | None = None,
+    level: str | None = None,
+    q: str | None = None,
+    cursor: str | None = None,
+) -> HTMLResponse:
+    """The journal's history for one unit, filterable and paged, above its live pane."""
+    from urllib.parse import urlencode
+
+    from baseaicore import SuiteError
+
+    from weightroom.services.journal import PRIORITY_NAMES
+
+    name = require_app(app)
+    filters = {
+        "since": since or None,
+        "until": until or None,
+        "level": level or None,
+        "q": q or None,
+    }
+    reader: JournalReader = request.app.state.journal
+    journal = None
+    error: SuiteError | None = None
+    try:
+        journal = reader.history(
+            [unit_name(name)],
+            since=filters["since"],
+            until=filters["until"],
+            level=filters["level"],
+            query=filters["q"],
+            limit=DEFAULT_PAGE_LIMIT,
+            cursor=cursor or None,
+        )
+    except SuiteError as exc:
+        error = exc
+    next_href = None
+    if journal is not None and journal.next_cursor:
+        query = {key: value for key, value in filters.items() if value}
+        next_href = f"/apps/{name}/logs?" + urlencode({**query, "cursor": journal.next_cursor})
+    return render_app_page(
+        request,
+        principal,
+        name,
+        "app_logs.html",
+        selected="Logs",
+        journal=journal,
+        error=error,
+        filters=filters,
+        levels=tuple(PRIORITY_NAMES[key] for key in sorted(PRIORITY_NAMES)),
+        next_href=next_href,
+        cap=JOURNAL_PAGE_CAP,
+    )
+
+
+def _back_to(app: str, next_path: str | None) -> str:
+    """Where the control form returns to: ``next`` when it is a page of this application's tab.
+
+    Anything else — another application, another host, a scheme-relative ``//`` — is the Overview,
+    so the field cannot become an open redirect.
+    """
+    home = f"/apps/{app}"
+    if next_path and (next_path == home or next_path.startswith(home + "/")):
+        if "//" not in next_path and "\\" not in next_path:
+            return next_path
+    return home
 
 
 @ui_router.post("/apps/{app}/control", summary="Start, stop or restart from the page")
@@ -501,15 +638,17 @@ def control_from_page(
     principal: CurrentOperator,
     app: str,
     verb: Annotated[Literal["start", "stop", "restart"], Form()],
+    next_path: Annotated[str | None, Form(alias="next")] = None,
 ) -> Response:
     """The one form-post control route; see this module's docstring for why there is one.
 
     The verb is a ``Literal``, so a field outside the three is a ``400 VALIDATION_ERROR`` from
     FastAPI's own validation rather than an exception this handler has to invent a code for.
+    ``next`` returns the operator to the page under this application's tab they pressed it on.
     """
     name = require_app(app)
     _control(request, principal, name, verb)
-    return RedirectResponse(f"/apps/{name}", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(_back_to(name, next_path), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @ui_router.get("/logs", summary="The unified log page", response_class=HTMLResponse)

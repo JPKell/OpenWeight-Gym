@@ -1,0 +1,30 @@
+{#- The application's state, the same under every page of its tab (spec §7.3): why process control
+    cannot work on this host, the control form, a version outside the range.
+
+    The Overview passes `full_controls` and shows all three buttons. Every other page shows the form
+    only while the application is not running, so a stopped application's page carries a working
+    Start beside its disabled actions. The form posts `next`, and the control route sends the
+    operator back to the page they pressed it on (it accepts only a path under this application). -#}
+{% if view.unit_state == "unsupported" %}
+<p class="notice">Process control is <strong>unsupported on this host</strong>: there is no
+<code>systemctl</code> on <code>PATH</code>. Every other page works (ADR-0125 rule 7).</p>
+{% elif not view.installed %}
+<p class="notice">{{ view.name | app_label }} is <strong>not installed</strong> — no executable was found, so
+it has no unit. Set <code>[apps.{{ view.name }}] executable</code> in WeightRoom's
+configuration and run <code>wr-gym units sync</code>.</p>
+{% elif full_controls | default(false) or not view.running %}
+<form method="post" action="/apps/{{ view.name }}/control" class="field">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <input type="hidden" name="next" value="{{ current_path }}">
+  <button type="submit" name="verb" value="start" {% if view.running %}disabled{% endif %}>Start</button>
+  <button type="submit" name="verb" value="stop" {% if not view.running %}disabled{% endif %}>Stop</button>
+  <button type="submit" name="verb" value="restart" {% if not view.running %}disabled{% endif %}>Restart</button>
+</form>
+{% endif %}
+
+{% if view.verdict not in ("ok", "unreadable") %}
+<p class="notice">{{ view.name | app_label }} reports version <strong>{{ view.version }}</strong>, which is
+outside the range WeightRoom {{ console_version }} speaks to
+(<code>{{ view.supported_range }}</code>). Its pages are degraded by name rather than guessed at
+(<code>APP_VERSION_MISMATCH</code>, spec §19).</p>
+{% endif %}
