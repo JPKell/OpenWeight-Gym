@@ -1,0 +1,72 @@
+{#- FreeWeight's vocabulary as WeightRoom renders it (row WP3). Every macro builds markup from values,
+    so a model's name, a label or a sample's text reaches the page as escaped text. Fields are read
+    with `.get`: the environment is StrictUndefined, and FreeWeight omitting an optional key is not a
+    page error. `—` stands for a value nobody reported, never for zero (ADR-0016). -#}
+{% from "mirrorwall/components.html" import badge %}
+
+{% macro model_link(model_id, canonical_id) -%}
+{%- if model_id -%}
+<a class="mono" href="/apps/freeweight/models/{{ model_id | urlencode }}" title="{{ model_id }}">{{ canonical_id or model_id }}</a>
+{%- else -%}<span class="mono">{{ canonical_id or "—" }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro run_link(run_id) -%}
+{%- if run_id -%}
+<a class="mono kit-id" href="/apps/freeweight/runs/{{ run_id | urlencode }}" title="{{ run_id }}">{{ run_id[:10] }}…</a>
+{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro short(value) -%}
+{%- if value and value | length > 16 -%}<span class="mono kit-id" title="{{ value }}">{{ value[:12] }}…</span>
+{%- elif value -%}<span class="mono kit-id">{{ value }}</span>
+{%- else -%}<span class="muted">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro status_badge(value) -%}
+{%- set tones = {"completed": "success", "scored": "success", "failed": "danger", "cancelled": "warning", "interrupted": "warning", "cancelling": "warning"} -%}
+{{ badge(value or "—", tone=tones.get(value, "neutral")) }}
+{%- endmacro %}
+
+{% macro value(number, reason=none, fmt="%.4g") -%}
+{%- if number is number and number is not sameas true and number is not sameas false -%}{{ fmt | format(number) }}
+{%- else -%}<span class="muted" title="{{ reason or 'not reported; not the same as zero' }}">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro yes_no(flag) -%}
+{%- if flag is none -%}<span class="muted">—</span>{%- elif flag -%}yes{%- else -%}no{%- endif -%}
+{%- endmacro %}
+
+{% macro model_switch(model, next_path) -%}
+{#- ADR-0118's switch. Imported `with context`: the form carries the CSRF token. -#}
+<form method="post" action="/apps/freeweight/models/{{ model.get('id') | urlencode }}/enabled" class="kit-actions">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <input type="hidden" name="enabled" value="{{ 'false' if model.get('enabled') else 'true' }}">
+  <input type="hidden" name="canonical_id" value="{{ model.get('canonical_id') or '' }}">
+  <input type="hidden" name="next" value="{{ next_path }}">
+  <button type="submit">{{ "Disable" if model.get("enabled") else "Enable" }}</button>
+</form>
+{%- endmacro %}
+
+{% macro chart(one) -%}
+{#- One telemetry series, drawn as FreeWeight's own run page draws it: axis from zero, a reading
+    nobody could take left out of the line, the figures beside it as text. -#}
+<figure class="fw-chart">
+  <figcaption id="fw-chart-{{ one.key }}">{{ one.label }}</figcaption>
+  <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-labelledby="fw-chart-{{ one.key }}">
+    <polyline points="{{ one.points }}" fill="none" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"></polyline>
+  </svg>
+  <p class="muted">Axis 0 – {{ "%.2f" | format(one.maximum) }} {{ one.unit }} · min {{ "%.2f" | format(one.minimum) }} ·
+  mean {{ "%.2f" | format(one.mean) }} · {{ one.reported }} reported, {{ one.missing }} not readable</p>
+</figure>
+{%- endmacro %}
+
+{% macro styles() -%}
+<style>
+  /* FreeWeight's pages (row WP3): the telemetry charts in both themes (the stroke follows the text
+     colour), and a record's long text wrapped rather than widening the page. */
+  .fw-charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px 16px; }
+  .fw-chart { margin: 0; }
+  .fw-chart svg { width: 100%; height: 96px; color: var(--mw-accent, currentColor); border-bottom: 1px solid var(--mw-border); }
+  .fw-chart figcaption { font-size: var(--mw-font-size-sm, 12px); }
+</style>
+{%- endmacro %}

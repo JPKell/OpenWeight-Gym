@@ -1,0 +1,93 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link, short, status_badge %}
+{% block title %}Runs — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Runs {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/models">Models</a> · <a href="/jobs">Jobs</a></div>
+</div>
+{% include "_app_state.html" %}
+
+{% if runs.live %}
+<details class="card kit-form"{% if start_error %} open{% endif %}>
+  <summary><strong>Start a run</strong> <span class="muted">— one model against one suite, launched as the console's capped <code>freeweight_suite_run</code> job</span></summary>
+  {{ refusal(start_error) }}
+  <p class="muted">The run executes in a transient scope under the host memory cap (<code>[host] memory_high</code>/<code>memory_max</code>,
+  swap denied — ADR-0119), so a model that does not fit is killed rather than thrashing the machine. The page follows the job
+  until FreeWeight names the run, then opens it.</p>
+  <form method="post" action="/apps/freeweight/runs">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <div class="field"><label for="fw-start-model">Model</label>
+      {% if models %}
+      <select id="fw-start-model" name="model" required>
+        {% for one in models %}<option value="{{ one.get('canonical_id') }}"{{ " selected" if form.get("model") == one.get("canonical_id") else "" }}>{{ one.get("canonical_id") }}</option>{% endfor %}
+      </select>
+      <span class="field-hint">Enabled models only (ADR-0118).</span>
+      {% else %}
+      <input id="fw-start-model" name="model" value="{{ form.get('model', '') }}" required>
+      <span class="field-hint">No enabled model is listed; <a href="/apps/freeweight/models">refresh from the provider</a> first.</span>
+      {% endif %}</div>
+    <div class="field"><label for="fw-start-suite">Suite</label>
+      {% if benchmarks %}
+      <select id="fw-start-suite" name="suite" required>
+        {% for one in benchmarks %}<option value="{{ one.get('key') }}"{{ " selected" if form.get("suite") == one.get("key") else "" }}>{{ one.get("key") }} {{ one.get("version") or "" }} · {{ one.get("test_count") }} test{{ "" if one.get("test_count") == 1 else "s" }}</option>{% endfor %}
+      </select>
+      {% else %}
+      <input id="fw-start-suite" name="suite" value="{{ form.get('suite', '') }}" required placeholder="native.echo">
+      {% endif %}</div>
+    <div class="field"><label for="fw-start-label">Label</label>
+      <input id="fw-start-label" name="label" value="{{ form.get('label', '') }}" maxlength="120"></div>
+    <div class="kit-wide"><button type="submit" data-variant="primary">Start run</button></div>
+  </form>
+</details>
+{% endif %}
+
+<form method="get" action="/apps/freeweight/runs" class="filter-bar" aria-label="Run filters">
+  <div class="field"><label for="fw-runs-status">Status</label>
+    <select id="fw-runs-status" name="status">
+      <option value="">any</option>
+      {% for one in statuses %}<option value="{{ one }}"{{ " selected" if filters.status == one else "" }}>{{ one }}</option>{% endfor %}
+    </select></div>
+  <div class="field"><label for="fw-runs-model">Model</label><input id="fw-runs-model" name="model" value="{{ filters.model }}" placeholder="canonical ID or name"></div>
+  <div class="field"><label for="fw-runs-suite">Suite</label><input id="fw-runs-suite" name="suite" value="{{ filters.suite }}" placeholder="native.performance"></div>
+  <div class="field"><label for="fw-runs-machine">Machine fingerprint</label><input id="fw-runs-machine" name="machine" value="{{ filters.machine }}"></div>
+  <div class="field"><label for="fw-runs-label">Label</label><input id="fw-runs-label" name="label" value="{{ filters.label }}"></div>
+  <div class="field"><label for="fw-runs-adapter">Adapter</label><input id="fw-runs-adapter" name="adapter" value="{{ filters.adapter }}" placeholder="name or digest"></div>
+  <div class="field"><label for="fw-runs-since">Since (RFC 3339)</label><input id="fw-runs-since" name="since" value="{{ filters.since }}" placeholder="2026-09-01T00:00:00Z"></div>
+  <div class="field"><label for="fw-runs-until">Until</label><input id="fw-runs-until" name="until" value="{{ filters.until }}"></div>
+  <button type="submit">Apply</button>
+  <a href="/apps/freeweight/runs">Clear</a>
+</form>
+{% if not runs.live and (filters.since or filters.until) %}
+<p class="muted">The date window applies only while FreeWeight answers; this list is not narrowed by it.</p>
+{% endif %}
+
+{{ refusal(runs.error) }}
+{% set data = runs.data %}
+{% if data is not none %}
+{% if data.get("items") %}
+{% set rows = [] %}
+{% for run in data.get("items") %}
+{% set suite = run.get("suite") or {} %}
+{% set _ = rows.append([
+  run_link(run.get("id")),
+  status_badge(run.get("status")),
+  (suite.get("key") or "—") ~ " " ~ (suite.get("version") or ""),
+  run.get("model") or "—",
+  run.get("adapter") or "—",
+  run.get("label") or "—",
+  short(run.get("machine_fingerprint")),
+  run.get("created_at") or "—",
+  run.get("completed_at") or "—"
+]) %}
+{% endfor %}
+{{ table([{"label": "Run"}, {"label": "Status"}, {"label": "Suite"}, {"label": "Model", "mono": true}, {"label": "Adapter"}, {"label": "Label"}, {"label": "Machine"}, {"label": "Created", "mono": true}, {"label": "Completed", "mono": true}], rows, caption="Runs, newest first", density="dense", complete=next_href is none, row_count=rows | length) }}
+{% if next_href %}<p><a href="{{ next_href }}">Next page</a></p>{% endif %}
+{% else %}
+{{ empty_state("No run matches. A run measures one model against one suite; native.echo is the self-test that exercises the whole engine in under a minute.") }}
+{% endif %}
+{% endif %}
+{{ page_source(runs) }}
+{% endblock %}

@@ -103,16 +103,19 @@ def _wake(request: Request) -> None:
         worker.wake()
 
 
-def _enqueue(
+def enqueue_job(
     request: Request,
     principal: Principal,
     *,
     kind: str,
     params: dict[str, Any],
     schedule_id: str | None,
-    name_typed: str,
+    name_typed: str = "",
 ) -> JobView:
-    """Queue one job — or a schedule's kind and parameters, run now — and audit it once."""
+    """Queue one job — or a schedule's kind and parameters, run now — and audit it once.
+
+    Also FreeWeight's Runs page's *Start* (row WP3): a run it starts is this `job.enqueue` row.
+    """
     state = request.app.state
     now = now_of(request)
     security = False
@@ -260,7 +263,7 @@ def get_jobs(
 @router.post("/jobs", status_code=status.HTTP_202_ACCEPTED, summary="Queue a job")
 def post_job(request: Request, principal: CurrentOperator, body: EnqueueBody) -> JSONResponse:
     """``{kind, params}``, or ``{schedule_id}`` to run a schedule now; ``202`` with the job."""
-    job = _enqueue(
+    job = enqueue_job(
         request,
         principal,
         kind=body.kind,
@@ -378,7 +381,7 @@ def enqueue_from_page(
     acting = _acting(request, principal, password)
     try:
         parsed = {} if schedule_id else _parsed(request, acting, "job.enqueue", kind, params)
-        job = _enqueue(
+        job = enqueue_job(
             request,
             acting,
             kind=kind,

@@ -1,0 +1,899 @@
+"""weightroom.services.freeweight_pages — the data behind FreeWeight's tab (row WP3).
+
+Each page has a reader over FreeWeight's own ``/api/v1`` (through
+:mod:`~weightroom.services.app_api`) for while it answers, and — for what spec §7.3 has the
+database answer when FreeWeight is stopped: the models and runs listings, one run, its samples, one
+sample — a reader over its database that shapes rows into the API document's names, so one template
+renders both. Which one runs is :mod:`~weightroom.services.app_pages`' decision, never this
+module's. What only FreeWeight's own arithmetic produces — whether a model has results, a telemetry
+window, a comparison verdict, an export — has no database reader and renders ``—`` when stopped
+(ADR-0016), never a number recomputed here.
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, ClassVar, Final
+from urllib.parse import quote
+
+from baseaicore import SuiteError
+from mirrorwall import Event, format_frame
+from setspec import GeneratorInfo
+
+from weightroom.__about__ import __version__
+from weightroom.services.app_api import AppRefused, call, lines
+from weightroom.services.app_pages import rows_where
+from weightroom.services.chat_loadcoach import iter_frames
+
+if TYPE_CHECKING:
+    import httpx
+
+    from weightroom.config import Settings
+    from weightroom.services.db_reader import AppDatabase
+
+__all__ = [
+    "APP",
+    "RUN_FILTERS",
+    "RUN_STATUSES",
+    "TERMINAL_RUN_STATUSES",
+    "NotRecorded",
+    "benchmarks_api",
+    "charts",
+    "evidence_record",
+    "model_api",
+    "model_db",
+    "models_api",
+    "models_db",
+    "run_api",
+    "run_db",
+    "run_log_frames",
+    "runs_api",
+    "runs_db",
+    "sample_api",
+    "sample_db",
+    "samples_api",
+    "samples_db",
+    "segment",
+]
+
+APP: Final = "freeweight"
+PAGE_ROWS: Final = 50
+LIST_CAP: Final = 500
+"""A table larger than this is read in part when FreeWeight is stopped; its API pages everything."""
+
+RUN_STATUSES: Final[tuple[str, ...]] = (
+    "queued",
+    "preparing",
+    "warming",
+    "running",
+    "cancelling",
+    "completed",
+    "failed",
+    "cancelled",
+    "interrupted",
+)
+"""FreeWeight's ``RunStatus`` members, in its declaration order."""
+TERMINAL_RUN_STATUSES: Final[frozenset[str]] = frozenset(
+    {"completed", "failed", "cancelled", "interrupted"}
+)
+TERMINAL_RUN_EVENTS: Final[frozenset[str]] = frozenset(
+    {"run.completed", "run.failed", "run.cancelled", "run.interrupted"}
+)
+"""FreeWeight's ``_TERMINAL_EVENT_TYPES``: its stream closes after one of these."""
+RUN_FILTERS: Final[tuple[str, ...]] = (
+    "status",
+    "model",
+    "suite",
+    "machine",
+    "label",
+    "adapter",
+    "since",
+    "until",
+)
+"""``GET /runs``' filters (api.md §4), in the order the Runs page's form offers them."""
+
+_ERROR_EVENTS: Final[frozenset[str]] = frozenset({"run.failed", "test.failed", "sample.failed"})
+_WARNING_EVENTS: Final[frozenset[str]] = frozenset(
+    {"run.cancelled", "run.interrupted", "run.degraded", "test.skipped"}
+)
+_GENERATOR = GeneratorInfo(name="weightroom", version=__version__)
+
+
+class NotRecorded(SuiteError):
+    """FreeWeight's database holds no such record, or more than one matches a prefix."""
+
+    code: ClassVar[str] = "NOT_FOUND"
+
+
+def segment(value: str) -> str:
+    """``value`` quoted as one path segment, so an id can never add a segment or a query."""
+    return quote(value, safe="")
+
+
+def _loads(value: Any) -> Any:  # noqa: ANN401 — a stored JSON column, whatever it holds
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except ValueError:
+            return value
+    return value
+
+
+def _document(body: Any) -> dict[str, Any]:  # noqa: ANN401 — the application's JSON body
+    return dict(body) if isinstance(body, Mapping) else {}
+
+
+def _listed(body: Any, key: str) -> list[dict[str, Any]]:  # noqa: ANN401 — a JSON body
+    found = body.get(key) if isinstance(body, Mapping) else None
+    return [dict(one) for one in found or [] if isinstance(one, Mapping)]
+
+
+def _one(handle: AppDatabase, table_name: str, ref: str, what: str) -> dict[str, Any]:
+    """One row by its ULID or an unambiguous prefix of it (ADR-0024).
+
+    Raises:
+        NotRecorded: Nothing matches, or more than one row does.
+    """
+    wanted = ref.strip()
+    if wanted:
+        exact = rows_where(handle, table_name, equals={"id": wanted}, limit=1)
+        if exact:
+            return exact[0]
+    matches = [
+        row
+        for row in rows_where(handle, table_name, limit=LIST_CAP)
+        if wanted and str(row.get("id") or "").startswith(wanted)
+    ]
+    if len(matches) == 1:
+        return matches[0]
+    raise NotRecorded(
+        f"FreeWeight's database holds no {what} {ref!r}."
+        if not matches
+        else f"{ref!r} is ambiguous: {len(matches)} {what}s start with it.",
+        details={what: ref},
+    )
+
+
+def _names(handle: AppDatabase) -> dict[str, dict[Any, Any]]:
+    """The ids a run row carries, mapped to the names its API document uses."""
+    return {
+        "models": {
+            row.get("id"): row.get("canonical_id")
+            for row in rows_where(handle, "models", limit=LIST_CAP)
+        },
+        "suites": {
+            row.get("id"): (row.get("key"), row.get("version"))
+            for row in rows_where(handle, "benchmark_suites", limit=LIST_CAP)
+        },
+        "machines": {
+            row.get("id"): row.get("machine_fingerprint")
+            for row in rows_where(handle, "machines", limit=LIST_CAP)
+        },
+        "profiles": {
+            row.get("id"): row.get("profile_hash")
+            for row in rows_where(handle, "runtime_profiles", limit=LIST_CAP)
+        },
+        "adapters": {
+            row.get("id"): row.get("name") for row in rows_where(handle, "adapters", limit=LIST_CAP)
+        },
+    }
+
+
+# --- Models ---------------------------------------------------------------------------------------
+
+
+def models_api(
+    client: httpx.Client, settings: Settings, *, has_results: str | None, sort: str | None
+) -> list[dict[str, Any]]:
+    """``GET /models``: every identity with its latest descriptor, ``enabled`` and ``has_results``.
+
+    Raises:
+        AppRefused: FreeWeight refused (``VALIDATION_ERROR`` for an unknown ``sort``).
+        AppUnreachable: It did not answer.
+    """
+    body = call(
+        client, settings, APP, "GET", "models",
+        params={"has_results": has_results, "sort": sort}, timeout_seconds=30.0,
+    )  # fmt: skip
+    return _listed(body, "items")
+
+
+def _descriptor(row: Mapping[str, Any]) -> dict[str, Any]:
+    """A ``model_descriptors`` row under ``GET /models/{ref}``' descriptor names."""
+    keys = (
+        "observed_at", "family", "architecture", "parameter_count", "active_parameter_count",
+        "expert_count", "quantization", "weight_format", "size_bytes", "max_context",
+        "embedding_dim", "layers", "attention_heads",
+    )  # fmt: skip
+    return {key: row.get(key) for key in keys}
+
+
+def _identity(row: Mapping[str, Any]) -> dict[str, Any]:
+    keys = (
+        "id", "canonical_id", "provider_kind", "provider_model_name", "artifact_digest",
+        "identity_confidence", "first_seen_at", "last_seen_at",
+    )  # fmt: skip
+    return {**{key: row.get(key) for key in keys}, "enabled": bool(row.get("enabled"))}
+
+
+def models_db(handle: AppDatabase, *, sort: str | None) -> list[dict[str, Any]]:
+    """The ``models`` table with each one's latest descriptor, newest sighting first.
+
+    ``has_results`` is ``None``: it is FreeWeight's join over its runs and metrics, and a stopped
+    FreeWeight's page says so rather than recomputing it.
+
+    Raises:
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    latest: dict[Any, Mapping[str, Any]] = {}
+    for row in rows_where(handle, "model_descriptors", order_by="observed_at", limit=LIST_CAP * 4):
+        latest.setdefault(row.get("model_id"), row)
+    models = []
+    for row in rows_where(handle, "models", order_by="last_seen_at", limit=LIST_CAP):
+        descriptor = latest.get(row.get("id")) or {}
+        models.append(
+            {
+                **_identity(row),
+                "quantization": descriptor.get("quantization"),
+                "parameter_count": descriptor.get("parameter_count"),
+                "max_context": descriptor.get("max_context"),
+                "family": descriptor.get("family"),
+                "has_results": None,
+            }
+        )
+    key = (sort or "").removeprefix("-")
+    if key in {"canonical_id", "last_seen_at"}:
+        models.sort(key=lambda one: str(one.get(key) or ""), reverse=(sort or "").startswith("-"))
+    return models
+
+
+def evidence_record(envelope: Mapping[str, Any]) -> dict[str, Any]:
+    """One ``capability.evidence`` envelope's payload, with the columns the pages show lifted out.
+
+    ``payload`` stays whole beside them, so a page can show the record as FreeWeight exported it.
+    """
+    payload = _document(_document(envelope).get("payload"))
+    model = _document(payload.get("model"))
+    adapter = _document(payload.get("adapter"))
+    return {
+        "capability_id": payload.get("capability_id"),
+        "subject": model.get("canonical_id"),
+        "adapter": adapter.get("name") or None,
+        "score": payload.get("score"),
+        "confidence": payload.get("confidence"),
+        "sample_count": payload.get("sample_count"),
+        "excluded_count": payload.get("excluded_count"),
+        "measured_at": payload.get("measured_at"),
+        "computed_at": payload.get("computed_at"),
+        "runtime_profile_hash": payload.get("runtime_profile_hash"),
+        "machine_fingerprint": payload.get("machine_fingerprint"),
+        "policy_version": payload.get("policy_version"),
+        "contributing_metrics": payload.get("contributing_metrics") or [],
+        "source_run_ids": payload.get("source_run_ids") or [],
+        "goal_hash": payload.get("goal_hash"),
+        "score_method_mix": payload.get("score_method_mix"),
+        "judge_set": payload.get("judge_set"),
+        "calibration": payload.get("calibration"),
+        "judge_validity_factor": payload.get("judge_validity_factor"),
+        "schema_version": _document(envelope).get("schema_version"),
+        "payload": payload,
+    }
+
+
+def model_api(
+    client: httpx.Client,
+    settings: Settings,
+    model_ref: str,
+    *,
+    suite: str | None,
+    runtime_profile: str | None,
+    cursor: str | None,
+) -> dict[str, Any]:
+    """``GET /models/{ref}``, a page of its ``/results`` and its ``GET /evidence?model=``.
+
+    The evidence is read separately and a refusal of it leaves ``None``, so the identity and the
+    results still render.
+
+    Raises:
+        AppRefused: ``MODEL_NOT_FOUND``, an ambiguous prefix, or a refused results filter.
+        AppUnreachable: It did not answer.
+    """
+    path = f"models/{segment(model_ref)}"
+    model = _document(call(client, settings, APP, "GET", path, timeout_seconds=30.0))
+    results = _document(
+        call(
+            client, settings, APP, "GET", f"{path}/results",
+            params={"suite": suite, "runtime_profile_hash": runtime_profile, "cursor": cursor,
+                    "limit": PAGE_ROWS},
+            timeout_seconds=30.0,
+        )
+    )  # fmt: skip
+    evidence: list[dict[str, Any]] | None
+    try:
+        body = call(
+            client, settings, APP, "GET", "evidence",
+            params={"model": model.get("id") or model_ref, "limit": LIST_CAP},
+        )  # fmt: skip
+        evidence = [evidence_record(item) for item in _listed(body, "items")]
+    except AppRefused:
+        evidence = None
+    return {
+        "model": model,
+        "results": _listed(results, "items"),
+        "next_cursor": results.get("next_cursor"),
+        "evidence": evidence,
+    }
+
+
+def model_db(handle: AppDatabase, model_ref: str) -> dict[str, Any]:
+    """One model by ULID or prefix, its descriptor history and its stored evidence rows.
+
+    Its results are FreeWeight's query over five tables, read only from its API (``None``).
+
+    Raises:
+        NotRecorded: Nothing matches ``model_ref``, or more than one model does.
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    row = _one(handle, "models", model_ref, "model")
+    history = [
+        _descriptor(one)
+        for one in rows_where(
+            handle, "model_descriptors", equals={"model_id": row.get("id")},
+            order_by="observed_at", limit=LIST_CAP,
+        )
+    ]  # fmt: skip
+    names = _names(handle)
+    evidence = [
+        {
+            "capability_id": one.get("capability_id"),
+            "subject": one.get("subject_canonical_id"),
+            "adapter": names["adapters"].get(one.get("adapter_id")),
+            "score": one.get("score"),
+            "confidence": one.get("confidence"),
+            "sample_count": one.get("sample_count"),
+            "excluded_count": one.get("excluded_count"),
+            "measured_at": one.get("measured_at"),
+            "computed_at": one.get("computed_at"),
+            "runtime_profile_hash": names["profiles"].get(one.get("runtime_profile_id")),
+            "machine_fingerprint": names["machines"].get(one.get("machine_id")),
+            "policy_version": one.get("policy_version"),
+            "contributing_metrics": _loads(one.get("contributing_metrics_json")) or [],
+            "source_run_ids": _loads(one.get("source_run_ids_json")) or [],
+            "goal_hash": one.get("goal_hash"),
+            "score_method_mix": _loads(one.get("score_method_mix_json")),
+            "judge_set": _loads(one.get("judge_set_json")),
+            "calibration": _loads(one.get("calibration_json")),
+            "judge_validity_factor": one.get("judge_validity_factor"),
+            "schema_version": None,
+            "payload": None,
+        }
+        for one in rows_where(
+            handle, "capability_evidence", equals={"model_id": row.get("id")},
+            order_by="capability_id", descending=False, limit=LIST_CAP,
+        )
+    ]  # fmt: skip
+    return {
+        "model": {
+            **_identity(row),
+            "aliases": _loads(row.get("aliases_json")) or [],
+            "resolved_alias": None,
+            "latest_descriptor": history[0] if history else None,
+            "descriptor_history": history,
+        },
+        "results": None,
+        "next_cursor": None,
+        "evidence": evidence,
+    }
+
+
+def benchmarks_api(client: httpx.Client, settings: Settings) -> list[dict[str, Any]]:
+    """``GET /benchmarks``: the suites the run engine can execute — what *Start* may name.
+
+    Raises:
+        AppRefused: FreeWeight refused.
+        AppUnreachable: It did not answer.
+    """
+    return _listed(call(client, settings, APP, "GET", "benchmarks", timeout_seconds=30.0), "items")
+
+
+# --- Runs -----------------------------------------------------------------------------------------
+
+
+def runs_api(
+    client: httpx.Client, settings: Settings, filters: Mapping[str, str | None], cursor: str | None
+) -> dict[str, Any]:
+    """``GET /runs``: one page, newest first, filtered as api.md §4 allows.
+
+    Raises:
+        AppRefused: A refused filter (``MODEL_NOT_FOUND``, a malformed instant, a forged cursor).
+        AppUnreachable: It did not answer.
+    """
+    params = {key: filters.get(key) or None for key in RUN_FILTERS}
+    body = call(
+        client, settings, APP, "GET", "runs",
+        params={**params, "cursor": cursor, "limit": PAGE_ROWS}, timeout_seconds=30.0,
+    )  # fmt: skip
+    page = _document(_document(body).get("page"))
+    return {
+        "items": _listed(body, "runs"),
+        "next_cursor": page.get("next_cursor"),
+        "next_page": None,
+    }
+
+
+def _run_row(row: Mapping[str, Any], names: Mapping[str, Mapping[Any, Any]]) -> dict[str, Any]:
+    """A ``runs`` row under ``GET /runs``' names."""
+    key, version = names["suites"].get(row.get("suite_id"), (None, None))
+    return {
+        "id": row.get("id"),
+        "status": row.get("status"),
+        "suite": {"key": key, "version": version},
+        "model": names["models"].get(row.get("model_id")),
+        "label": row.get("label"),
+        "created_at": row.get("created_at"),
+        "started_at": row.get("started_at"),
+        "completed_at": row.get("completed_at"),
+        "reproducibility_fingerprint": row.get("reproducibility_fingerprint"),
+        "error": (
+            {"code": row.get("error_code"), "message": row.get("error_text")}
+            if row.get("error_code")
+            else None
+        ),
+        "machine_fingerprint": names["machines"].get(row.get("machine_id")),
+        "runtime_profile_hash": names["profiles"].get(row.get("runtime_profile_id")),
+        "adapter": names["adapters"].get(row.get("adapter_id")),
+    }
+
+
+def runs_db(handle: AppDatabase, filters: Mapping[str, str | None], page: int) -> dict[str, Any]:
+    """The ``runs`` table, newest first, one numbered page.
+
+    ``status`` and ``label`` filter in the query; ``model`` (by canonical ID), ``suite``,
+    ``machine`` and ``adapter`` filter the rows read; ``since`` and ``until`` apply only while
+    FreeWeight answers, since the stored timestamp's text is not RFC 3339 and is never parsed here.
+
+    Raises:
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    page = max(1, page)
+    names = _names(handle)
+    rows = rows_where(
+        handle, "runs", equals={"status": filters.get("status"), "label": filters.get("label")},
+        order_by="created_at", limit=LIST_CAP,
+    )  # fmt: skip
+    wanted = {key: filters.get(key) for key in ("model", "suite", "machine", "adapter")}
+    runs = []
+    for run in (_run_row(row, names) for row in rows):
+        found = {
+            "model": run["model"],
+            "suite": run["suite"]["key"],
+            "machine": run["machine_fingerprint"],
+            "adapter": run["adapter"],
+        }
+        if all(not value or found[key] == value for key, value in wanted.items()):
+            runs.append(run)
+    start = (page - 1) * PAGE_ROWS
+    return {
+        "items": runs[start : start + PAGE_ROWS],
+        "next_cursor": None,
+        "next_page": page + 1 if len(runs) > start + PAGE_ROWS else None,
+    }
+
+
+def _chart(key: str, label: str, unit: str, values: Sequence[Any]) -> dict[str, Any] | None:
+    """One series as an inline SVG polyline in a 100 × 100 box, axis from zero.
+
+    FreeWeight's own run page draws it this way: a reading nobody could take is left out of the
+    line rather than drawn as zero, and a series with no reading at all is no chart.
+    """
+    numbers = [value for value in values if isinstance(value, (int, float))]
+    if not numbers:
+        return None
+    top = max(numbers)
+    span = top if top > 0 else 1.0
+    step = 100.0 / (len(values) - 1) if len(values) > 1 else 0.0
+    points = " ".join(
+        f"{index * step:.2f},{100.0 - (value / span) * 100.0:.2f}"
+        for index, value in enumerate(values)
+        if isinstance(value, (int, float))
+    )
+    return {
+        "key": key,
+        "label": label,
+        "unit": unit,
+        "points": points,
+        "minimum": min(numbers),
+        "maximum": top,
+        "mean": sum(numbers) / len(numbers),
+        "reported": len(numbers),
+        "missing": len(values) - len(numbers),
+    }
+
+
+def charts(telemetry: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """``GET /runs/{id}/telemetry`` as the run page's charts: host first, then per device.
+
+    Per device, never combined: there is no machine-wide GPU figure (ADR-0027 §5).
+    """
+    series: list[tuple[str, str, str, Sequence[Any]]] = [
+        ("cpu", "Host CPU utilization (%)", "%", telemetry.get("cpu_percent") or []),
+        ("ram", "Host RAM used (bytes)", "bytes", telemetry.get("ram_used_bytes") or []),
+    ]
+    for gpu in _listed(telemetry, "gpus"):
+        index = gpu.get("gpu_index")
+        series += [
+            (f"gpu{index}-util", f"GPU {index} utilization (%)", "%",
+             gpu.get("utilization_percent") or []),
+            (f"gpu{index}-vram", f"GPU {index} VRAM used (bytes)", "bytes",
+             gpu.get("vram_used_bytes") or []),
+            (f"gpu{index}-power", f"GPU {index} power (W)", "W", gpu.get("power_watts") or []),
+            (f"gpu{index}-temp", f"GPU {index} temperature (°C)", "°C",
+             gpu.get("temperature_c") or []),
+        ]  # fmt: skip
+    return [chart for chart in (_chart(*one) for one in series) if chart is not None]
+
+
+def run_api(client: httpx.Client, settings: Settings, run_id: str) -> dict[str, Any]:
+    """``GET /runs/{id}`` and ``GET /runs/{id}/telemetry`` as the page's charts.
+
+    A refused telemetry read leaves ``charts`` ``None``, so the run still renders.
+
+    Raises:
+        AppRefused: ``RUN_NOT_FOUND`` or an ambiguous prefix.
+        AppUnreachable: It did not answer.
+    """
+    run = _document(call(client, settings, APP, "GET", f"runs/{segment(run_id)}"))
+    full = str(run.get("id") or run_id)
+    try:
+        telemetry: dict[str, Any] | None = _document(
+            call(client, settings, APP, "GET", f"runs/{segment(full)}/telemetry",
+                 timeout_seconds=30.0)
+        )  # fmt: skip
+    except AppRefused:
+        telemetry = None
+    return {
+        "run": run,
+        "charts": None if telemetry is None else charts(telemetry),
+        "telemetry_samples": None if telemetry is None else telemetry.get("sample_count"),
+        "events": None,
+    }
+
+
+def run_db(handle: AppDatabase, run_id: str) -> dict[str, Any]:
+    """One run's rows under ``GET /runs/{id}``' names, with its stored events for the timeline.
+
+    Its telemetry charts are ``None``: the series is FreeWeight's reading of its telemetry tables,
+    served by its API.
+
+    Raises:
+        NotRecorded: Nothing matches ``run_id``, or more than one run does.
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    row = _one(handle, "runs", run_id, "run")
+    run = _run_row(row, _names(handle))
+    mine = {"run_id": row.get("id")}
+    definitions = {
+        one.get("id"): one
+        for one in rows_where(
+            handle, "benchmark_tests", equals={"suite_id": row.get("suite_id")}, limit=LIST_CAP
+        )
+    }
+    tests = []
+    for one in rows_where(handle, "run_tests", equals=mine, limit=LIST_CAP):
+        definition = definitions.get(one.get("test_id")) or {}
+        tests.append(
+            {
+                "id": one.get("id"),
+                "key": definition.get("key") or "unknown",
+                "name": definition.get("name") or "unknown",
+                "status": one.get("status"),
+                "skip_reason": one.get("skip_reason"),
+                "completed_cases": one.get("completed_cases"),
+                "total_cases": one.get("total_cases"),
+                "repetitions": one.get("repetitions"),
+                "error": (
+                    {"code": one.get("error_code"), "message": one.get("error_text")}
+                    if one.get("error_code")
+                    else None
+                ),
+            }
+        )
+    # ponytail: the per-sample metric rows are read and dropped here, capped; a run with more than
+    # the cap's metric rows shows only some aggregates when stopped. A `sample_id IS NULL` filter in
+    # rows_where would lift it.
+    metrics = [
+        {
+            "metric_key": one.get("metric_key"),
+            "run_test_id": one.get("run_test_id"),
+            "value": "unsupported" if one.get("unavailable_reason") else one.get("numeric_value"),
+            "unavailable_reason": one.get("unavailable_reason"),
+            "unit": one.get("unit"),
+            "aggregation": one.get("aggregation"),
+            "higher_is_better": bool(one.get("higher_is_better")),
+            "sample_count": one.get("sample_count"),
+            "excluded_count": one.get("excluded_count"),
+            "gpu_index": one.get("gpu_index"),
+            "stddev": one.get("stddev"),
+            "coefficient_of_variation": one.get("coefficient_of_variation"),
+        }
+        for one in rows_where(
+            handle, "metric_values", equals=mine, order_by="metric_key", descending=False,
+            limit=LIST_CAP * 4,
+        )
+        if one.get("sample_id") is None
+    ]  # fmt: skip
+    events = rows_where(
+        handle, "run_events", equals=mine, order_by="sequence", descending=False, limit=LIST_CAP * 2
+    )
+    run.update(
+        {
+            "effective_config": _loads(row.get("effective_config_json")),
+            "last_event_sequence": events[-1].get("sequence") if events else 0,
+            "tests": tests,
+            "metrics": metrics,
+            "provenance": {
+                "served_context": row.get("served_context"),
+                "served_context_source": row.get("served_context_source"),
+                "gpu_index": row.get("gpu_index"),
+                "multi_gpu_visible": bool(row.get("multi_gpu_visible")),
+                "telemetry_overhead_percent": row.get("telemetry_overhead_percent"),
+                "prompt_pack": {
+                    "id": row.get("prompt_pack_id"),
+                    "version": row.get("prompt_pack_version"),
+                    "hash": row.get("prompt_pack_hash"),
+                },
+                "fingerprint_document": _loads(row.get("fingerprint_document_json")) or {},
+            },
+            "degradations": _loads(row.get("degradations_json")) or [],
+        }
+    )
+    return {
+        "run": run,
+        "charts": None,
+        "telemetry_samples": None,
+        "events": [
+            {
+                "sequence": one.get("sequence"),
+                "timestamp": one.get("timestamp"),
+                "type": one.get("event_type"),
+                "message": one.get("message"),
+            }
+            for one in events
+        ],
+    }
+
+
+def run_log_frames(chunks: Iterable[str]) -> Iterator[str]:
+    """FreeWeight's ``/runs/{id}/events`` as the console's log-pane frames.
+
+    Each frame keeps **FreeWeight's own sequence** as its SSE ``id``, so a pane whose connection
+    drops reconnects with ``Last-Event-ID``, the proxy carries it through, and FreeWeight replays
+    from there: no event is shown twice or lost. The pane closes with ``log.closed`` on the terminal
+    event, on the console's own ``error`` frame, or when FreeWeight closes the stream.
+
+    Args:
+        chunks: :func:`~weightroom.services.app_api.stream`'s text.
+
+    Yields:
+        SSE frames, ``log`` then one ``log.closed``.
+    """
+    sequence = 0
+
+    def frame(kind: str, payload: dict[str, Any]) -> str:
+        return format_frame(
+            Event(sequence=sequence, type=kind, payload=payload), generator=_GENERATOR
+        )
+
+    for one in iter_frames(lines(chunks)):
+        if one.event == "stream.closed":
+            break
+        envelope = _document(one.data)
+        payload = _document(envelope.get("payload"))
+        if one.event == "error":
+            message = f"{payload.get('code')}: {payload.get('message')}"
+            yield frame("log", {"at": envelope.get("generated_at"), "app": "error", "level": "err",
+                                "message": message})  # fmt: skip
+            break
+        if isinstance(payload.get("sequence"), int):
+            sequence = int(payload["sequence"])
+        progress = _document(payload.get("progress"))
+        message = str(payload.get("message") or "")
+        if progress:
+            message = f"{message} ({progress.get('completed')}/{progress.get('total')})".strip()
+        level = (
+            "err" if one.event in _ERROR_EVENTS
+            else "warning" if one.event in _WARNING_EVENTS
+            else "info"
+        )  # fmt: skip
+        yield frame(
+            "log",
+            {"at": payload.get("timestamp"), "app": one.event, "level": level, "message": message},
+        )
+        if one.event in TERMINAL_RUN_EVENTS:
+            break
+    yield frame("log.closed", {"reason": "the run's stream ended"})
+
+
+# --- Samples --------------------------------------------------------------------------------------
+
+
+def _test_of(run: Mapping[str, Any], run_test_id: str) -> dict[str, Any] | None:
+    return next((one for one in _listed(run, "tests") if one.get("id") == run_test_id), None)
+
+
+def samples_api(
+    client: httpx.Client, settings: Settings, run_id: str, run_test_id: str, cursor: str | None
+) -> dict[str, Any]:
+    """The run, its test, and one page of ``GET /runs/{id}/tests/{test}/samples``.
+
+    Raises:
+        AppRefused: ``RUN_NOT_FOUND`` for a run or a test that is not the run's, or a forged cursor.
+        AppUnreachable: It did not answer.
+    """
+    run = _document(call(client, settings, APP, "GET", f"runs/{segment(run_id)}"))
+    body = _document(
+        call(
+            client, settings, APP, "GET",
+            f"runs/{segment(run_id)}/tests/{segment(run_test_id)}/samples",
+            params={"limit": PAGE_ROWS, "cursor": cursor}, timeout_seconds=30.0,
+        )
+    )  # fmt: skip
+    page = _document(body.get("page"))
+    return {
+        "run": run,
+        "test": _test_of(run, run_test_id),
+        "items": _listed(body, "samples"),
+        "next_cursor": page.get("next_cursor"),
+        "next_page": None,
+    }
+
+
+def _sample_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    keys = (
+        "id", "case_id", "ordinal", "repetition", "status", "score", "score_method",
+        "response_hash", "response_text", "output_chars", "input_tokens", "output_tokens",
+        "client_wall_ms", "finish_reason", "prompt_id", "prompt_version", "client_ttft_ms",
+    )  # fmt: skip
+    return {
+        **{key: row.get(key) for key in keys},
+        "error": (
+            {"code": row.get("error_code"), "message": row.get("error_text")}
+            if row.get("error_code")
+            else None
+        ),
+        "detail": _loads(row.get("result_json")) or {},
+    }
+
+
+def samples_db(handle: AppDatabase, run_id: str, run_test_id: str, page: int) -> dict[str, Any]:
+    """The run, its test, and one numbered page of the test's samples in declaration order.
+
+    Raises:
+        NotRecorded: No such run, or the test is not one of its tests.
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    page = max(1, page)
+    run = run_db(handle, run_id)["run"]
+    test = _test_of(run, run_test_id)
+    if test is None:
+        raise NotRecorded(
+            f"Run {run.get('id')!r} has no test {run_test_id!r}.",
+            details={"run": run.get("id"), "run_test": run_test_id},
+        )
+    rows = sorted(
+        rows_where(handle, "samples", equals={"run_test_id": run_test_id}, limit=LIST_CAP * 4),
+        key=lambda one: (one.get("ordinal") or 0, one.get("repetition") or 0, str(one.get("id"))),
+    )
+    start = (page - 1) * PAGE_ROWS
+    return {
+        "run": run,
+        "test": test,
+        "items": [_sample_row(one) for one in rows[start : start + PAGE_ROWS]],
+        "next_cursor": None,
+        "next_page": page + 1 if len(rows) > start + PAGE_ROWS else None,
+    }
+
+
+def sample_api(client: httpx.Client, settings: Settings, sample_id: str) -> dict[str, Any]:
+    """``GET /samples/{id}``: the case inspector's document.
+
+    Raises:
+        AppRefused: ``NOT_FOUND``.
+        AppUnreachable: It did not answer.
+    """
+    return _document(
+        call(client, settings, APP, "GET", f"samples/{segment(sample_id)}", timeout_seconds=30.0)
+    )
+
+
+def sample_db(handle: AppDatabase, sample_id: str) -> dict[str, Any]:
+    """One sample, its tool calls, criterion scores and juror verdicts, from the database.
+
+    The telemetry inside the sample's window is FreeWeight's reconstruction (``None`` here).
+
+    Raises:
+        NotRecorded: No such sample.
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    found = rows_where(handle, "samples", equals={"id": sample_id}, limit=1) if sample_id else []
+    if not found:
+        raise NotRecorded(
+            f"FreeWeight's database holds no sample {sample_id!r}.", details={"sample": sample_id}
+        )
+    row = found[0]
+
+    def first(table_name: str, row_id: Any) -> dict[str, Any]:  # noqa: ANN401 — a stored id
+        found = rows_where(handle, table_name, equals={"id": row_id}, limit=1) if row_id else []
+        return found[0] if found else {}
+
+    run_test = first("run_tests", row.get("run_test_id"))
+    definition = first("benchmark_tests", run_test.get("test_id"))
+    run = first("runs", run_test.get("run_id"))
+    scores = []
+    for score in rows_where(
+        handle, "criterion_scores", equals={"sample_id": row.get("id")}, order_by="criterion_key",
+        descending=False, limit=LIST_CAP,
+    ):  # fmt: skip
+        verdicts = rows_where(
+            handle, "judge_verdicts", equals={"criterion_score_id": score.get("id")},
+            order_by="juror_ordinal", descending=False, limit=LIST_CAP,
+        )  # fmt: skip
+        scores.append(
+            {
+                **{key: score.get(key) for key in ("criterion_key", "rung", "raw_score", "weight",
+                                                    "status", "skip_reason")},
+                "gated": bool(score.get("gated")),
+                "verdicts": [
+                    {
+                        **{key: one.get(key) for key in ("juror_canonical_id", "repetition",
+                                                          "grade", "pairwise_choice", "rationale",
+                                                          "refused_reason")},
+                        "remote": bool(one.get("remote")),
+                    }
+                    for one in verdicts
+                ],
+            }
+        )  # fmt: skip
+    sample_keys = (
+        "id", "case_id", "ordinal", "repetition", "status", "created_at", "started_at",
+        "finish_reason", "prompt_id", "prompt_version", "prompt_hash", "rendered_prompt_hash",
+        "response_hash", "response_text", "score", "score_method", "input_tokens",
+        "output_tokens", "thinking_tokens", "output_chars", "client_wall_ms", "client_ttft_ms",
+    )  # fmt: skip
+    return {
+        "sample": {
+            **{key: row.get(key) for key in sample_keys},
+            "error": (
+                {"code": row.get("error_code"), "message": row.get("error_text")}
+                if row.get("error_code")
+                else None
+            ),
+            "result": _loads(row.get("result_json")),
+        },
+        "run_id": run.get("id"),
+        "run_status": run.get("status"),
+        "run_test_id": row.get("run_test_id"),
+        "run_test_key": definition.get("key"),
+        "tool_calls": [
+            {
+                **{key: one.get(key) for key in ("turn_index", "call_index", "tool_name",
+                                                  "expected_tool", "correct_tool",
+                                                  "correct_arguments", "status", "latency_ms")},
+                "schema_valid": bool(one.get("schema_valid")),
+                "arguments": _loads(one.get("arguments_json")),
+            }
+            for one in rows_where(
+                handle, "tool_calls", equals={"sample_id": row.get("id")}, order_by="turn_index",
+                descending=False, limit=LIST_CAP,
+            )
+        ],
+        "criterion_scores": scores,
+        "telemetry": None,
+    }  # fmt: skip

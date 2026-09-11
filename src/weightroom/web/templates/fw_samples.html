@@ -1,0 +1,44 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link, status_badge, value %}
+{% block title %}Samples — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data or {} %}
+{% set test = data.get("test") or {} %}
+<div class="page-head">
+  <h2>Samples {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/runs/{{ run_id | urlencode }}#tests">The run</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+<p><strong>{{ test.get("name") or run_test_id }}</strong> <span class="muted">{{ test.get("key") or "" }}</span> · run {{ run_link((data.get("run") or {}).get("id") or run_id) }} ·
+{{ status_badge(test.get("status")) }} · {{ test.get("completed_cases") }} / {{ test.get("total_cases") }} cases × {{ test.get("repetitions") }} repetitions</p>
+{% if data.get("items") %}
+{% set rows = [] %}
+{% for sample in data.get("items") %}
+{% set _ = rows.append([
+  sample.get("case_id") or "—",
+  value(sample.get("repetition"), fmt="%d"),
+  status_badge(sample.get("status")),
+  ((sample.get("prompt_id") or "") ~ " " ~ (sample.get("prompt_version") or "")) if sample.get("prompt_id") else "—",
+  value(sample.get("score"), (sample.get("error") or {}).get("code") or "not scored", fmt="%.3f"),
+  sample.get("score_method") or "—",
+  value(sample.get("output_tokens"), fmt="%d"),
+  value(sample.get("output_chars"), fmt="%d"),
+  value(sample.get("client_ttft_ms"), "only a streamed call has a first-token moment", fmt="%.1f"),
+  value(sample.get("client_wall_ms"), fmt="%.1f"),
+  sample.get("finish_reason") or "—",
+  (sample.get("error") or {}).get("code") or "—",
+  ('<a href="/apps/freeweight/samples/' ~ ((sample.get("id") or "") | urlencode) ~ '">inspect</a>') | safe
+]) %}
+{% endfor %}
+{{ table([{"label": "Case", "mono": true}, {"label": "Rep", "numeric": true}, {"label": "Status"}, {"label": "Prompt", "mono": true}, {"label": "Score", "numeric": true}, {"label": "Method"}, {"label": "Output tokens", "numeric": true}, {"label": "Output chars", "numeric": true}, {"label": "TTFT ms", "numeric": true}, {"label": "Wall ms", "numeric": true}, {"label": "Finish"}, {"label": "Error", "mono": true}, {"label": "Inspect"}], rows, caption="A sample that could not be scored shows — and keeps its row: excluded from the aggregate, not from the count", density="dense", complete=next_href is none, row_count=rows | length) }}
+{% if next_href %}<p><a href="{{ next_href }}">Next page</a></p>{% endif %}
+{% else %}
+{{ empty_state("This test has not produced a sample.") }}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

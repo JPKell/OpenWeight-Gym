@@ -1,0 +1,264 @@
+id: 1
+event: run.started
+data: {"generated_at":"2026-09-11T06:30:53.230Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"model":"ollama/smollm2:135m@sha256:9077fe9d2ae1","suite":"native.performance"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTEMCZZ41VABVPE19GNZ8","message":"Run started: native.performance against ollama/smollm2:135m@sha256:9077fe9d2ae1.","sequence":1,"timestamp":"2026-09-10T21:50:43.851Z","type":"run.started"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 2
+event: test.started
+data: {"generated_at":"2026-09-11T06:30:53.230Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"measurement_class":"warm","run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","test":"performance.prompt_processing"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTKM4ZV5Y4BQC47B5ETBV","message":"Test performance.prompt_processing started.","sequence":2,"timestamp":"2026-09-10T21:50:48.964Z","type":"test.started"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 3
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.230Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-65536","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":1,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTKMBQ5S4C7R5VSJ9APZ1","message":"performance.prompt_processing prompt-65536 rep 1: skipped","progress":{"completed":1,"total":54},"sequence":3,"timestamp":"2026-09-10T21:50:48.970Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 4
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-65536","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":2,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTKMDW5RY2ZCYQWVQ7AZS","message":"performance.prompt_processing prompt-65536 rep 2: skipped","progress":{"completed":2,"total":54},"sequence":4,"timestamp":"2026-09-10T21:50:48.973Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 5
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-65536","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":3,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTKMFXP3DXYS7ZNFPDEW1","message":"performance.prompt_processing prompt-65536 rep 3: skipped","progress":{"completed":3,"total":54},"sequence":5,"timestamp":"2026-09-10T21:50:48.975Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 6
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-2048","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTKPZF7GKBCQNQ04S06JQ","message":"performance.prompt_processing prompt-2048 rep 1: completed","progress":{"completed":4,"total":54},"sequence":6,"timestamp":"2026-09-10T21:50:49.054Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 7
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-2048","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTKRGY75PWTGQGS4M3HFW","message":"performance.prompt_processing prompt-2048 rep 2: completed","progress":{"completed":5,"total":54},"sequence":7,"timestamp":"2026-09-10T21:50:49.103Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 8
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-2048","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTKT24RR94S5NRD906FR6","message":"performance.prompt_processing prompt-2048 rep 3: completed","progress":{"completed":6,"total":54},"sequence":8,"timestamp":"2026-09-10T21:50:49.154Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 9
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-4096","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTKWVPF34RRR3FX3D9V43","message":"performance.prompt_processing prompt-4096 rep 1: completed","progress":{"completed":7,"total":54},"sequence":9,"timestamp":"2026-09-10T21:50:49.242Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 10
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-4096","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTKYM6YTPZRWSKSV4WYH4","message":"performance.prompt_processing prompt-4096 rep 2: completed","progress":{"completed":8,"total":54},"sequence":10,"timestamp":"2026-09-10T21:50:49.299Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 11
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-4096","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTM0BADSSWWJ0BRFHBBVM","message":"performance.prompt_processing prompt-4096 rep 3: completed","progress":{"completed":9,"total":54},"sequence":11,"timestamp":"2026-09-10T21:50:49.354Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 12
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-32768","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":1,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTM0DXTM83CY6CR8X00BZ","message":"performance.prompt_processing prompt-32768 rep 1: skipped","progress":{"completed":10,"total":54},"sequence":12,"timestamp":"2026-09-10T21:50:49.357Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 13
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-32768","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":2,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTM0F2X4QE0M597XAAP9M","message":"performance.prompt_processing prompt-32768 rep 2: skipped","progress":{"completed":11,"total":54},"sequence":13,"timestamp":"2026-09-10T21:50:49.359Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 14
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-32768","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":3,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTM0H6J1BYG3AB09VS3PZ","message":"performance.prompt_processing prompt-32768 rep 3: skipped","progress":{"completed":12,"total":54},"sequence":14,"timestamp":"2026-09-10T21:50:49.361Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 15
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-128","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTM5YFFGH55RKW4AJTCF7","message":"performance.prompt_processing prompt-128 rep 1: completed","progress":{"completed":13,"total":54},"sequence":15,"timestamp":"2026-09-10T21:50:49.533Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 16
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-128","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMABZ1Y75Q6FS2Q5PVA8","message":"performance.prompt_processing prompt-128 rep 2: completed","progress":{"completed":14,"total":54},"sequence":16,"timestamp":"2026-09-10T21:50:49.674Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 17
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-128","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMEPJ0NRGSG2ATZFBQ2Y","message":"performance.prompt_processing prompt-128 rep 3: completed","progress":{"completed":15,"total":54},"sequence":17,"timestamp":"2026-09-10T21:50:49.813Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 18
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-1024","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMGJF7DSRYV0SZJTZSC1","message":"performance.prompt_processing prompt-1024 rep 1: completed","progress":{"completed":16,"total":54},"sequence":18,"timestamp":"2026-09-10T21:50:49.873Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 19
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-1024","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMJ1CMA206N0X7QDTPPB","message":"performance.prompt_processing prompt-1024 rep 2: completed","progress":{"completed":17,"total":54},"sequence":19,"timestamp":"2026-09-10T21:50:49.921Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 20
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-1024","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMKCGMVBGG3PP4YCXJFB","message":"performance.prompt_processing prompt-1024 rep 3: completed","progress":{"completed":18,"total":54},"sequence":20,"timestamp":"2026-09-10T21:50:49.964Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 21
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-8192","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":1,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMKESK6V3XQ4QT5YFMNV","message":"performance.prompt_processing prompt-8192 rep 1: skipped","progress":{"completed":19,"total":54},"sequence":21,"timestamp":"2026-09-10T21:50:49.966Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 22
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-8192","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":2,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMKF8H7BBMV70K6QDMEH","message":"performance.prompt_processing prompt-8192 rep 2: skipped","progress":{"completed":20,"total":54},"sequence":22,"timestamp":"2026-09-10T21:50:49.967Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 23
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-8192","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":3,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMKHEGHTBNV6XM3E26ME","message":"performance.prompt_processing prompt-8192 rep 3: skipped","progress":{"completed":21,"total":54},"sequence":23,"timestamp":"2026-09-10T21:50:49.968Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 24
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-16384","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":1,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMKJ0A2AQNZCFTB4JDJW","message":"performance.prompt_processing prompt-16384 rep 1: skipped","progress":{"completed":22,"total":54},"sequence":24,"timestamp":"2026-09-10T21:50:49.970Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 25
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-16384","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":2,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMKM9SHQ0YFEHRF254BY","message":"performance.prompt_processing prompt-16384 rep 2: skipped","progress":{"completed":23,"total":54},"sequence":25,"timestamp":"2026-09-10T21:50:49.972Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 26
+event: test.progress
+data: {"generated_at":"2026-09-11T06:30:53.231Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-16384","error_code":"CONTEXT_LIMIT_EXCEEDED","repetition":3,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":null,"status":"skipped"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MTMKNTV98SY03JKHNMPHN","message":"performance.prompt_processing prompt-16384 rep 3: skipped","progress":{"completed":24,"total":54},"sequence":26,"timestamp":"2026-09-10T21:50:49.973Z","type":"test.progress"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 27
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-512","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MV65R98EB0P810QVRDG33","message":"performance.prompt_processing prompt-512 rep 1: completed","progress":{"completed":25,"total":54},"sequence":27,"timestamp":"2026-09-10T21:51:07.959Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 28
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-512","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MVQT9NJE7JF7PME12NJP6","message":"performance.prompt_processing prompt-512 rep 2: completed","progress":{"completed":26,"total":54},"sequence":28,"timestamp":"2026-09-10T21:51:26.024Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 29
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"prompt-512","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MW9DCMHD114KJH0YY3BPF","message":"performance.prompt_processing prompt-512 rep 3: completed","progress":{"completed":27,"total":54},"sequence":29,"timestamp":"2026-09-10T21:51:44.043Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 30
+event: test.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"run_test_id":"01M26MTJ1SAQDDVHR4ESBYCBX2","status":"completed","test":"performance.prompt_processing"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MW9DDBKQZYPGANDK1YBZ3","message":"Test performance.prompt_processing completed.","progress":{"completed":27,"total":54},"sequence":30,"timestamp":"2026-09-10T21:51:44.045Z","type":"test.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 31
+event: test.started
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"measurement_class":"warm","run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","test":"performance.decode_throughput"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MWE9QCJ4J637BAEVRMJ9P","message":"Test performance.decode_throughput started.","sequence":31,"timestamp":"2026-09-10T21:51:49.047Z","type":"test.started"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 32
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-1024","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MWEJCKKFVQX6MDC6VMHM1","message":"performance.decode_throughput decode-1024 rep 1: completed","progress":{"completed":28,"total":54},"sequence":32,"timestamp":"2026-09-10T21:51:49.324Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 33
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-1024","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MWERJK1QA7PZ7KPWB1K56","message":"performance.decode_throughput decode-1024 rep 2: completed","progress":{"completed":29,"total":54},"sequence":33,"timestamp":"2026-09-10T21:51:49.522Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 34
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-1024","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26MWEYMM13DCSX38QEYYJY0","message":"performance.decode_throughput decode-1024 rep 3: completed","progress":{"completed":30,"total":54},"sequence":34,"timestamp":"2026-09-10T21:51:49.716Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 35
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-256","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26N0XXR7W9YPZDZ3WM1GKVY","message":"performance.decode_throughput decode-256 rep 1: completed","progress":{"completed":31,"total":54},"sequence":35,"timestamp":"2026-09-10T21:54:16.119Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 36
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-256","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26N5ATDFTSPR5PWPD8PNP9B","message":"performance.decode_throughput decode-256 rep 2: completed","progress":{"completed":32,"total":54},"sequence":36,"timestamp":"2026-09-10T21:56:40.396Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 37
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-256","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26N9QPES7B5XH8G8AK13R3E","message":"performance.decode_throughput decode-256 rep 3: completed","progress":{"completed":33,"total":54},"sequence":37,"timestamp":"2026-09-10T21:59:04.654Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 38
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-128","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26N9QSYC6JST36VCBN6GH1A","message":"performance.decode_throughput decode-128 rep 1: completed","progress":{"completed":34,"total":54},"sequence":38,"timestamp":"2026-09-10T21:59:04.765Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 39
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.232Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-128","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26N9QX8K8KP6569BM8JJ2FG","message":"performance.decode_throughput decode-128 rep 2: completed","progress":{"completed":35,"total":54},"sequence":39,"timestamp":"2026-09-10T21:59:04.872Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 40
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-128","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26N9R0HYVM43ZB7NCXWNENX","message":"performance.decode_throughput decode-128 rep 3: completed","progress":{"completed":36,"total":54},"sequence":40,"timestamp":"2026-09-10T21:59:04.976Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 41
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-512","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26N9RE6WWRQFGY42RZ641VR","message":"performance.decode_throughput decode-512 rep 1: completed","progress":{"completed":37,"total":54},"sequence":41,"timestamp":"2026-09-10T21:59:05.413Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 42
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-512","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26N9RVNPMWNX55S78G6F13B","message":"performance.decode_throughput decode-512 rep 2: completed","progress":{"completed":38,"total":54},"sequence":42,"timestamp":"2026-09-10T21:59:05.844Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 43
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-512","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26N9S949MXM30KF3N20KQVD","message":"performance.decode_throughput decode-512 rep 3: completed","progress":{"completed":39,"total":54},"sequence":43,"timestamp":"2026-09-10T21:59:06.275Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 44
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-32","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NE6CY59ERR4GCJ045507Q","message":"performance.decode_throughput decode-32 rep 1: completed","progress":{"completed":40,"total":54},"sequence":44,"timestamp":"2026-09-10T22:01:30.781Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 45
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-32","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NE6KYF07748NQW2DWE4CD","message":"performance.decode_throughput decode-32 rep 2: completed","progress":{"completed":41,"total":54},"sequence":45,"timestamp":"2026-09-10T22:01:31.005Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 46
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"decode-32","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NE6RSS9YT9A1M6JAYXE66","message":"performance.decode_throughput decode-32 rep 3: completed","progress":{"completed":42,"total":54},"sequence":46,"timestamp":"2026-09-10T22:01:31.161Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 47
+event: test.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"run_test_id":"01M26MTJ1VF5DSTD52TKC7R8EM","status":"completed","test":"performance.decode_throughput"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NE6RTXZ8APT7DK6492DQ0","message":"Test performance.decode_throughput completed.","progress":{"completed":42,"total":54},"sequence":47,"timestamp":"2026-09-10T22:01:31.162Z","type":"test.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 48
+event: test.started
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"measurement_class":"warm","run_test_id":"01M26MTJ1WRD1086VX8G6N6Z42","test":"performance.combined_request"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NEBN5F65180M2B9JQ2Z3X","message":"Test performance.combined_request started.","sequence":48,"timestamp":"2026-09-10T22:01:36.164Z","type":"test.started"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 49
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"combined-long","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1WRD1086VX8G6N6Z42","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NJS9Z3W6YH0E85YSGCQ7Q","message":"performance.combined_request combined-long rep 1: completed","progress":{"completed":43,"total":54},"sequence":49,"timestamp":"2026-09-10T22:04:01.214Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 50
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"combined-long","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1WRD1086VX8G6N6Z42","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NQ754MYAMRAVCPGPKRSVD","message":"performance.combined_request combined-long rep 2: completed","progress":{"completed":44,"total":54},"sequence":50,"timestamp":"2026-09-10T22:06:26.467Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 51
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"combined-long","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1WRD1086VX8G6N6Z42","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NVMVSD7ZETXFV9SB1WGST","message":"performance.combined_request combined-long rep 3: completed","progress":{"completed":45,"total":54},"sequence":51,"timestamp":"2026-09-10T22:08:51.577Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 52
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"combined-short","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1WRD1086VX8G6N6Z42","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NW6RDJRX5Z1R7ZM2363GK","message":"performance.combined_request combined-short rep 1: completed","progress":{"completed":46,"total":54},"sequence":52,"timestamp":"2026-09-10T22:09:09.900Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 53
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"combined-short","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1WRD1086VX8G6N6Z42","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NWRQ8QAF1W80XDZ60Y37A","message":"performance.combined_request combined-short rep 2: completed","progress":{"completed":47,"total":54},"sequence":53,"timestamp":"2026-09-10T22:09:28.296Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 54
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"combined-short","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1WRD1086VX8G6N6Z42","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXAKGCFXAMK5B7BGHFZNA","message":"performance.combined_request combined-short rep 3: completed","progress":{"completed":48,"total":54},"sequence":54,"timestamp":"2026-09-10T22:09:46.608Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 55
+event: test.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"run_test_id":"01M26MTJ1WRD1086VX8G6N6Z42","status":"completed","test":"performance.combined_request"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXAKH0G8YZ0Z5FWAP0JT0","message":"Test performance.combined_request completed.","progress":{"completed":48,"total":54},"sequence":55,"timestamp":"2026-09-10T22:09:46.609Z","type":"test.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 56
+event: test.started
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"measurement_class":"warm","run_test_id":"01M26MTJ1XP81Z56XXH5521G49","test":"performance.streaming_latency"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXFFWNB20NJ70SVRK8FF4","message":"Test performance.streaming_latency started.","sequence":56,"timestamp":"2026-09-10T22:09:51.611Z","type":"test.started"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 57
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"stream-latency","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1XP81Z56XXH5521G49","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXFNSM9W0TGDPA0HRA8K6","message":"performance.streaming_latency stream-latency rep 1: completed","progress":{"completed":49,"total":54},"sequence":57,"timestamp":"2026-09-10T22:09:51.801Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 58
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"stream-latency","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1XP81Z56XXH5521G49","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXFWHJG1AVPDT3SM7EZEV","message":"performance.streaming_latency stream-latency rep 2: completed","progress":{"completed":50,"total":54},"sequence":58,"timestamp":"2026-09-10T22:09:52.017Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 59
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"stream-latency","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1XP81Z56XXH5521G49","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXG36R8PRBX6PXHEXNKBX","message":"performance.streaming_latency stream-latency rep 3: completed","progress":{"completed":51,"total":54},"sequence":59,"timestamp":"2026-09-10T22:09:52.229Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 60
+event: test.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"run_test_id":"01M26MTJ1XP81Z56XXH5521G49","status":"completed","test":"performance.streaming_latency"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXG3728B1GESHVNFNQ18N","message":"Test performance.streaming_latency completed.","progress":{"completed":51,"total":54},"sequence":60,"timestamp":"2026-09-10T22:09:52.231Z","type":"test.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 61
+event: test.started
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"measurement_class":"cold","run_test_id":"01M26MTJ1XP81Z56XXH5521G4A","test":"performance.cold_load"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXMZJKX83HPE2HPV03C3C","message":"Test performance.cold_load started.","sequence":61,"timestamp":"2026-09-10T22:09:57.234Z","type":"test.started"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 62
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"cold-load","error_code":null,"repetition":1,"run_test_id":"01M26MTJ1XP81Z56XXH5521G4A","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXN17CR82033XM30T29FJ","message":"performance.cold_load cold-load rep 1: completed","progress":{"completed":52,"total":54},"sequence":62,"timestamp":"2026-09-10T22:09:57.287Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 63
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.233Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"cold-load","error_code":null,"repetition":2,"run_test_id":"01M26MTJ1XP81Z56XXH5521G4A","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXN2P4RMBA2KW0DWEXQYJ","message":"performance.cold_load cold-load rep 2: completed","progress":{"completed":53,"total":54},"sequence":63,"timestamp":"2026-09-10T22:09:57.333Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 64
+event: sample.completed
+data: {"generated_at":"2026-09-11T06:30:53.234Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"case_id":"cold-load","error_code":null,"repetition":3,"run_test_id":"01M26MTJ1XP81Z56XXH5521G4A","score":1.0,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXN46YE4AMRSNQDACE1JM","message":"performance.cold_load cold-load rep 3: completed","progress":{"completed":54,"total":54},"sequence":64,"timestamp":"2026-09-10T22:09:57.381Z","type":"sample.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 65
+event: test.completed
+data: {"generated_at":"2026-09-11T06:30:53.234Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"run_test_id":"01M26MTJ1XP81Z56XXH5521G4A","status":"completed","test":"performance.cold_load"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXN471J8XQG8AC455WYCM","message":"Test performance.cold_load completed.","progress":{"completed":54,"total":54},"sequence":65,"timestamp":"2026-09-10T22:09:57.383Z","type":"test.completed"},"schema":"event.envelope","schema_version":"1.0"}
+
+id: 66
+event: run.completed
+data: {"generated_at":"2026-09-11T06:30:53.234Z","generator":{"name":"freeweight","version":"1.2.1"},"payload":{"data":{"error_code":null,"status":"completed"},"entity":{"id":"01M26MTEM1SGTMWVB3PR6EXY8F","kind":"run"},"event_id":"01M26NXN6JGVWKW05P51DXFN0Q","message":"Run completed.","sequence":66,"timestamp":"2026-09-10T22:09:57.458Z","type":"run.completed"},"schema":"event.envelope","schema_version":"1.0"}
+

@@ -884,6 +884,66 @@ EXERCISES.update(
 )
 
 
+def _fw_form(
+    path: str, data: dict[str, str], *, reply: tuple[str, str, int, Any] | None = None
+) -> Exercise:
+    """A form post from FreeWeight's tab (row WP3), FreeWeight answering ``reply`` to the action and
+    an empty document to every read the page it renders makes. LoadCoach answers its version probe:
+    the audit console installs it, and a page's tabs probe it (row WP1's handoff §3)."""
+
+    def exercise(console: Console) -> Any:  # noqa: ANN401
+        import httpx
+        import respx
+
+        from tests.support import FREEWEIGHT_URL, mock_freeweight, mock_loadcoach
+
+        with respx.mock(assert_all_called=False) as router:
+            mock_freeweight(router)
+            mock_loadcoach(router)
+            if reply is not None:
+                method, action, status_code, body = reply
+                router.request(
+                    method, url__regex=rf"{FREEWEIGHT_URL}/api/v1/{action}(\?.*)?$"
+                ).mock(return_value=httpx.Response(status_code, json=body))
+            router.get(url__regex=rf"{FREEWEIGHT_URL}/api/v1/.*").mock(
+                return_value=httpx.Response(200, json={})
+            )
+            return console.post_form(path, data)
+
+    return exercise
+
+
+_FW_MODEL = "01M26MN12V1DGS767ENPN75HMB"
+_FW_RUN = "01M26MTEM1SGTMWVB3PR6EXY8F"
+
+EXERCISES.update(
+    {
+        ("POST", "/apps/freeweight/models/discover"): _fw_form(
+            "/apps/freeweight/models/discover", {}, reply=("POST", "models/discover", 200, {})
+        ),
+        ("POST", "/apps/freeweight/models/{model_ref}/enabled"): _fw_form(
+            f"/apps/freeweight/models/{_FW_MODEL}/enabled",
+            {"enabled": "false"},
+            reply=("POST", f"models/{_FW_MODEL}/enabled", 200, {}),
+        ),
+        # Starting a run is W9's job: its one row is the queue's `job.enqueue`.
+        ("POST", "/apps/freeweight/runs"): _fw_form(
+            "/apps/freeweight/runs", {"model": "ollama/qwen3:8b", "suite": "native.echo"}
+        ),
+        ("POST", "/apps/freeweight/runs/{run_id}/cancel"): _fw_form(
+            f"/apps/freeweight/runs/{_FW_RUN}/cancel",
+            {},
+            reply=("POST", f"runs/{_FW_RUN}/cancel", 202, {"id": _FW_RUN}),
+        ),
+        ("POST", "/apps/freeweight/runs/{run_id}/repeat"): _fw_form(
+            f"/apps/freeweight/runs/{_FW_RUN}/repeat",
+            {"label": "an audit exercise"},
+            reply=("POST", f"runs/{_FW_RUN}/repeat", 201, {"id": "01AUDITREPEAT"}),
+        ),
+    }
+)
+
+
 def _state_changing_routes(console: Console) -> set[tuple[str, str]]:
     found: set[tuple[str, str]] = set()
     for path, route in api_routes(console.client.app):

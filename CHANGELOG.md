@@ -7,6 +7,23 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **FreeWeight's Models and Runs pages under its tab** (row WP3), at parity with FreeWeight's own
+  UI: **Models** (latest descriptor, whether each has results, sort, **Refresh from provider**
+  with the added/updated/unchanged counts, and ADR-0118's switch through the catalog's own call),
+  **one model** (identity, aliases, latest descriptor, descriptor history, its evidence, and its
+  results filtered by suite and runtime profile), **Runs** (status, model, suite, machine, label,
+  adapter and date filters over FreeWeight's cursor), **Start a run** over `GET /benchmarks` —
+  which enqueues W9's `freeweight_suite_run` job, so the run executes under ADR-0119's memory cap,
+  and the page follows the job until FreeWeight names the run — **one run** (provenance,
+  degradations, the fingerprint document, tests, metrics, telemetry charts, and its events live
+  with FreeWeight's own sequence as the SSE id, so a reconnect resumes where it dropped),
+  **cancel** (`409 RUN_NOT_CANCELLABLE` rendered as itself), **repeat** with force and label (a
+  refusal names every blocker; a forced repeat's divergence shows among the new run's
+  degradations), a test's **samples** over FreeWeight's cursor, and the **case inspector** with
+  every model- and juror-written text escaped. A stopped FreeWeight's pages read its database at
+  revision `0010`. Each action is one audit row (`freeweight.discover`, `catalog.enabled`,
+  `job.enqueue`, `freeweight.run_cancel`, `freeweight.run_repeat`).
+- `freeweight_suite_run` takes an optional `label`, passed as `run start --label`.
 - **PromptCadence's System page** (row WPC1, spec §7.3 as amended 2026-09-10): its health
   components with their status, the active trajectories, every pending approval with its age,
   today's position, the last recovery pass (resumed, finished, halted, failed, deferred) and the

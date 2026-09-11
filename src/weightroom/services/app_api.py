@@ -209,6 +209,68 @@ def stream(
         yield _error_frame(AppUnreachable.code, f"{app} did not answer: {exc}")
 
 
+def download(
+    client: httpx.Client,
+    settings: Settings,
+    app: str,
+    path: str,
+    *,
+    params: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, str], Iterator[bytes]]:
+    """Open one of an application's streamed downloads, refused before the first byte is sent.
+
+    The status is read before the body, so an application's refusal (FreeWeight's 500-run export
+    limit) reaches the page as itself rather than as an error glued onto a half-sent file.
+
+    Args:
+        client: The pooled HTTP client.
+        settings: The validated settings.
+        app: One of the four.
+        path: The download's path under ``/api/v1``.
+        params: Query parameters; ``None`` values are dropped.
+
+    Returns:
+        ``(headers, body)``: the application's ``content-type`` and ``content-disposition``, and
+        its bytes as they arrive — the connection closes when the body is exhausted or dropped.
+
+    Raises:
+        AppRefused: The application answered 400 or above, in its own words.
+        AppUnreachable: It did not answer.
+    """
+    query = {key: value for key, value in (params or {}).items() if value is not None}
+    request = client.build_request(
+        "GET",
+        _url(settings, app, path),
+        params=query,
+        headers=_headers(settings, app),
+        timeout=STREAM_TIMEOUT,
+    )
+    try:
+        response = client.send(request, stream=True)
+    except httpx.HTTPError as exc:
+        raise AppUnreachable(
+            f"{app} did not answer GET /api/v1/{path.lstrip('/')}: {exc}",
+            details={"app": app, "path": path},
+        ) from exc
+    if response.status_code >= 400:  # noqa: PLR2004 — the HTTP error boundary
+        response.read()
+        response.close()
+        raise refusal(app, response)
+    kept = {
+        name: response.headers[name]
+        for name in ("content-type", "content-disposition")
+        if name in response.headers
+    }
+
+    def body() -> Iterator[bytes]:
+        try:
+            yield from response.iter_bytes()
+        finally:
+            response.close()
+
+    return kept, body()
+
+
 def lines(chunks: Iterable[str]) -> Iterator[str]:
     """Stream text chunks as whole lines; a chunk boundary can fall anywhere in a frame."""
     buffer = ""

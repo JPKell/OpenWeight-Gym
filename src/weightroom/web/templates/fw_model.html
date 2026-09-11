@@ -1,0 +1,104 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link, short, value, model_switch with context %}
+{% block title %}Model — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data or {} %}
+{% set model = data.get("model") %}
+<div class="page-head">
+  <h2>Model {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/models">Every model</a>{% if model %} · <a href="/apps/freeweight/runs?model={{ (model.get('canonical_id') or '') | urlencode }}">Its runs</a>{% endif %}</div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(sourced.error) }}
+{% if model %}
+<p class="mono">{{ model.get("canonical_id") or model_ref }}</p>
+{% if model.get("resolved_alias") %}<p class="muted">Resolved from <code>{{ model.get("resolved_alias") }}</code> through the provider; FreeWeight recorded the alias.</p>{% endif %}
+{% if sourced.live and model.get("id") %}{{ model_switch(model, current_path) }}{% endif %}
+{{ kv_list([
+  {"label": "Reference", "value": model.get("id") or "—"},
+  {"label": "Provider kind", "value": model.get("provider_kind") or "—"},
+  {"label": "Provider's name", "value": model.get("provider_model_name") or "—"},
+  {"label": "Digest", "value": model.get("artifact_digest") or "— (identified by name only)"},
+  {"label": "Identity confidence", "value": model.get("identity_confidence") or "—"},
+  {"label": "Enabled", "value": "yes" if model.get("enabled") else "no — a run naming it is refused (ADR-0118)"},
+  {"label": "First seen", "value": model.get("first_seen_at") or "—"},
+  {"label": "Last seen", "value": model.get("last_seen_at") or "—"},
+]) }}
+
+{% if model.get("aliases") %}
+<h3>Known aliases</h3>
+{% set rows = [] %}
+{% for one in model.get("aliases") %}{% set _ = rows.append([one.get("alias") if one is mapping else one, (one.get("resolved_at") if one is mapping else none) or "—"]) %}{% endfor %}
+{{ table([{"label": "Alias", "mono": true}, {"label": "Resolved", "mono": true}], rows, density="dense", row_count=rows | length) }}
+{% endif %}
+
+<h3>Latest descriptor</h3>
+{% set latest = model.get("latest_descriptor") %}
+{% if latest %}
+{{ kv_list([
+  {"label": "Family", "value": latest.get("family") or "—"},
+  {"label": "Architecture", "value": latest.get("architecture") or "—"},
+  {"label": "Parameters", "value": latest.get("parameter_count") if latest.get("parameter_count") is not none else "—"},
+  {"label": "Active parameters", "value": latest.get("active_parameter_count") if latest.get("active_parameter_count") is not none else "—"},
+  {"label": "Experts", "value": latest.get("expert_count") if latest.get("expert_count") is not none else "—"},
+  {"label": "Quantization", "value": latest.get("quantization") or "—"},
+  {"label": "Weight format", "value": latest.get("weight_format") or "—"},
+  {"label": "Size", "value": (latest.get("size_bytes") | bytes_human) if latest.get("size_bytes") is number else "—"},
+  {"label": "Max context", "value": latest.get("max_context") if latest.get("max_context") is not none else "—"},
+  {"label": "Layers", "value": latest.get("layers") if latest.get("layers") is not none else "—"},
+  {"label": "Attention heads", "value": latest.get("attention_heads") if latest.get("attention_heads") is not none else "—"},
+  {"label": "Observed", "value": latest.get("observed_at") or "—"},
+]) }}
+{% else %}
+<p class="muted">No descriptor has been recorded for this identity yet.</p>
+{% endif %}
+
+{% set history = model.get("descriptor_history") or [] %}
+{% if history | length > 1 %}
+<h3>Descriptor history</h3>
+{% set rows = [] %}
+{% for one in history %}{% set _ = rows.append([one.get("observed_at") or "—", one.get("family") or "—", one.get("quantization") or "—", value(one.get("parameter_count"), fmt="%d"), value(one.get("max_context"), fmt="%d"), (one.get("size_bytes") | bytes_human) if one.get("size_bytes") is number else "—"]) %}{% endfor %}
+{{ table([{"label": "Observed", "mono": true}, {"label": "Family"}, {"label": "Quantization"}, {"label": "Parameters", "numeric": true}, {"label": "Context", "numeric": true}, {"label": "Size", "numeric": true}], rows, caption=(history | length) ~ " snapshots, most recent first; each is immutable once recorded", density="dense", row_count=rows | length) }}
+{% endif %}
+
+<h3>Evidence</h3>
+{% set evidence = data.get("evidence") %}
+{% if evidence is none %}
+<p class="muted">FreeWeight did not answer its evidence for this model.</p>
+{% elif evidence %}
+{% set rows = [] %}
+{% for one in evidence %}
+{% set _ = rows.append([one.get("capability_id") or "—", one.get("adapter") or "bare base", value(one.get("score"), fmt="%.3f"), value(one.get("confidence"), fmt="%.2f"), value(one.get("sample_count"), fmt="%d"), one.get("measured_at") or "—", short(one.get("runtime_profile_hash")), short(one.get("machine_fingerprint"))]) %}
+{% endfor %}
+{{ table([{"label": "Capability", "mono": true}, {"label": "Subject"}, {"label": "Score", "numeric": true}, {"label": "Confidence", "numeric": true}, {"label": "Samples", "numeric": true}, {"label": "Measured", "mono": true}, {"label": "Runtime profile"}, {"label": "Machine"}], rows, caption="A capability nobody measured is absent, never scored zero", density="dense", row_count=rows | length) }}
+<p class="muted"><a href="/apps/freeweight/evidence?model={{ (model.get('id') or '') | urlencode }}">Every factor behind these scores</a></p>
+{% else %}
+<p class="muted">No evidence: nothing measured on this model has produced a capability record.</p>
+{% endif %}
+
+<h3 id="results">Results</h3>
+{% if data.get("results") is none %}
+<p class="muted">A model's results are FreeWeight's query over its runs, read only from its running API.</p>
+{% else %}
+<form method="get" action="/apps/freeweight/models/{{ model_ref | urlencode }}" class="filter-bar" aria-label="Result filters">
+  <div class="field"><label for="fw-model-suite">Suite</label><input id="fw-model-suite" name="suite" value="{{ filters.suite }}" placeholder="native.performance"></div>
+  <div class="field"><label for="fw-model-profile">Runtime profile hash</label><input id="fw-model-profile" name="runtime_hash" value="{{ filters.runtime_hash }}"></div>
+  <button type="submit">Apply</button>
+</form>
+{% set results = data.get("results") %}
+{% if results %}
+{% set rows = [] %}
+{% for one in results %}
+{% set _ = rows.append([one.get("metric_key") or "—", value(one.get("value"), one.get("unavailable_reason")), one.get("unit") or "—", value(one.get("sample_count"), fmt="%d"), value(one.get("excluded_count"), fmt="%d"), (one.get("suite") or "—") ~ " " ~ (one.get("suite_version") or ""), one.get("run_test_key") or "run", short(one.get("runtime_profile_hash")), short(one.get("machine_fingerprint")), run_link(one.get("run_id")), one.get("created_at") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Metric", "mono": true}, {"label": "Value", "numeric": true}, {"label": "Unit"}, {"label": "n", "numeric": true}, {"label": "Excluded", "numeric": true}, {"label": "Suite"}, {"label": "Test"}, {"label": "Runtime profile"}, {"label": "Machine"}, {"label": "Run"}, {"label": "Created", "mono": true}], rows, caption="Completed runs' metrics for this model, newest first", density="dense", complete=next_href is none, row_count=rows | length) }}
+{% if next_href %}<p><a href="{{ next_href }}">Next page</a></p>{% endif %}
+{% else %}
+{{ empty_state("Nothing measured on this model under these filters.", "Start a run", "/apps/freeweight/runs") }}
+{% endif %}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

@@ -80,6 +80,7 @@ def test_a_schedule_is_listed_and_changed_with_parameters_merged(tmp_path: Path)
         "model": "ollama/qwen3:8b",
         "suite": "native.performance",
         "allow_prompt_override": False,
+        "label": None,
     }
     assert changed["cron"] == "0 1 * * *"
     code, out, _ = _run("jobs", "schedule", "--config", config)

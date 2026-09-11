@@ -213,7 +213,18 @@ def test_parameters_are_filled_with_defaults_and_unknown_keys_refused() -> None:
     assert validate_params("docs_index", None) == {}
     assert validate_params(
         "freeweight_suite_run", {"model": "ollama/qwen3:8b", "suite": "native.performance"}
-    ) == {"model": "ollama/qwen3:8b", "suite": "native.performance", "allow_prompt_override": False}
+    ) == {
+        "model": "ollama/qwen3:8b",
+        "suite": "native.performance",
+        "allow_prompt_override": False,
+        "label": None,
+    }
+    assert (
+        validate_params(
+            "freeweight_suite_run", {"model": "m", "suite": "native.x", "label": " q8 "}
+        )["label"]
+        == "q8"
+    )
     with pytest.raises(JobParamsInvalid):
         validate_params("docs_index", {"root": "/"})
     with pytest.raises(JobParamsInvalid):

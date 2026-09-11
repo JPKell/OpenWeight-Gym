@@ -1,0 +1,1 @@
+{"enabled":false,"directory":null,"note":"adapters are not configured: set [adapters] directory to the directory holding your adapter artifacts and their reviewed manifests. Empty means off, deliberately.","adapters":[],"invalid":[],"drafts":[],"unmanifested":[]}
