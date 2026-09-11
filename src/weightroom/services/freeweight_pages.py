@@ -1010,10 +1010,12 @@ def evidence_api(
         params={**params, "cursor": cursor, "limit": PAGE_ROWS}, timeout_seconds=30.0,
     )  # fmt: skip
     page = _document(_document(body).get("page"))
-    return {
-        "items": [evidence_record(item) for item in _listed(body, "items")],
-        "next_cursor": page.get("next_cursor"),
-    }
+    items = [evidence_record(item) for item in _listed(body, "items")]
+    # FreeWeight's reading of each record at this instant — staleness and the confidence factors —
+    # travels beside the envelopes, one per item in the same order (api.md §6, row WP4).
+    for item, explained in zip(items, _listed(body, "explanations"), strict=False):
+        item["explanation"] = explained
+    return {"items": items, "next_cursor": page.get("next_cursor")}
 
 
 # --- Machines -------------------------------------------------------------------------------------

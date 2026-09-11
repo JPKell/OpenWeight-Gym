@@ -10,7 +10,7 @@
 {% macro refusal(error) -%}
 {#- A refusal in the refuser's own words: an application's code when it was the application
     (`app_api.AppRefused` carries it as `app_code`), the console's code otherwise. -#}
-{% if error %}<p class="notice" role="alert"><strong><code>{{ error.details.get("app_code") or error.code }}</code></strong> {{ error.message }}</p>{% endif %}
+{% if error %}<p class="error-state" role="alert"><strong><code>{{ error.details.get("app_code") or error.code }}</code></strong> {{ error.message }}</p>{% endif %}
 {%- endmacro %}
 
 {% macro level_badge(level) -%}

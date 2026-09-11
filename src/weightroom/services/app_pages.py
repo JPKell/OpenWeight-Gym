@@ -27,6 +27,8 @@ from baseaicore import SuiteError
 from sqlalchemy import column, inspect, select, table
 from sqlalchemy.exc import SQLAlchemyError
 
+from weightroom.config import APP_LABELS
+from weightroom.services.app_api import AppRefused
 from weightroom.services.apps import AppVersionMismatch
 from weightroom.services.db_reader import ReadFailed, TableUnknown, statement_deadline
 
@@ -82,9 +84,10 @@ def read[T](
         refusal, unreachable database and unknown revision becomes ``source="none"`` with the
         error attached, so a page renders it rather than an error page.
     """
+    label = APP_LABELS.get(view.name, view.name)
     if view.pill == "version mismatch":
         mismatch = AppVersionMismatch(
-            f"{view.name} {view.version} is outside the range this console speaks to "
+            f"{label} {view.version} is outside the range this console speaks to "
             f"({view.supported_range}); its pages are degraded by name rather than guessed at.",
             details={"app": view.name, "version": view.version},
         )
@@ -92,12 +95,18 @@ def read[T](
     if api is not None and view.running and view.reachable:
         try:
             return Sourced("api", "From the API", api())
+        except AppRefused as exc:
+            # A refusal is an answer: the footer says the API answered, and the refusal box above
+            # it says what it answered.
+            return Sourced(
+                "none", f"From the API, which refused this page: {exc.message}", None, exc
+            )
         except SuiteError as exc:
             return Sourced("none", f"The API did not answer this page: {exc.message}", None, exc)
     if database is None:
         return Sourced(
             "none",
-            f"{view.name} is not answering, and this page reads only from its running API.",
+            f"{label} is not answering, and this page reads only from its running API.",
             None,
         )
     try:

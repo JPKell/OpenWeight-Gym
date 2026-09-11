@@ -1,0 +1,289 @@
+{
+  "draft_id": "01M27T29YGG2WET5HN0SSF5C3E",
+  "step": "criteria",
+  "slug": "brand_voice",
+  "name": "House style compliance",
+  "intent": "Copy that obeys a defined house style: our words, our register, our shape, our reading level. The point of this pack is that a style guide is mostly a list, and a list is a rule.",
+  "criteria": [
+    {
+      "key": "banned_terms",
+      "name": "No banned terms",
+      "intent": "The style guide's own do-not-use list. A hard gate: using a banned term is disqualifying, not gradual.",
+      "rung": "rule",
+      "weight": 0.2,
+      "scale_points": 5,
+      "descriptors": {},
+      "rule": {
+        "type": "forbidden_phrases",
+        "case_sensitive": false,
+        "phrases": [
+          "best-in-class",
+          "world-class",
+          "synergy",
+          "revolutionary",
+          "cutting-edge",
+          "disruptive",
+          "utilize",
+          "solutioning",
+          "empower your",
+          "unlock",
+          "guru",
+          "ninja",
+          "rockstar"
+        ],
+        "max_hits": 3
+      },
+      "graded_alike": null,
+      "one_quality": null,
+      "split_from": null,
+      "needs_descriptors": false,
+      "needs_attention": false
+    },
+    {
+      "key": "required_disclosures",
+      "name": "Required disclosures present",
+      "intent": "Everything the guide says must appear, appears. A list again.",
+      "rung": "rule",
+      "weight": 0.15,
+      "scale_points": 5,
+      "descriptors": {},
+      "rule": {
+        "type": "required_phrases",
+        "case_sensitive": false,
+        "min_occurrences": 1,
+        "phrases": [
+          "support",
+          "documentation"
+        ]
+      },
+      "graded_alike": null,
+      "one_quality": null,
+      "split_from": null,
+      "needs_descriptors": false,
+      "needs_attention": false
+    },
+    {
+      "key": "register",
+      "name": "Plain, unhyped register",
+      "intent": "The guide bans hype adverbs and demands ordinary words. Both are countable.",
+      "rung": "rule",
+      "weight": 0.15,
+      "scale_points": 5,
+      "descriptors": {},
+      "rule": {
+        "type": "vocabulary_profile",
+        "banned_register": [
+          "amazing",
+          "incredible",
+          "effortlessly",
+          "simply",
+          "just",
+          "obviously",
+          "literally",
+          "insanely"
+        ],
+        "type_token_ratio": {
+          "min": 0.3
+        }
+      },
+      "graded_alike": null,
+      "one_quality": null,
+      "split_from": null,
+      "needs_descriptors": false,
+      "needs_attention": false
+    },
+    {
+      "key": "reading_level",
+      "name": "Reading level in band",
+      "intent": "The guide sets grade 8-12. A formula answers that exactly, for free, every time.",
+      "rung": "rule",
+      "weight": 0.1,
+      "scale_points": 5,
+      "descriptors": {},
+      "rule": {
+        "type": "readability",
+        "metric": "flesch_kincaid_grade",
+        "min": 7.0,
+        "max": 12.0,
+        "tolerance": 3.0
+      },
+      "graded_alike": null,
+      "one_quality": null,
+      "split_from": null,
+      "needs_descriptors": false,
+      "needs_attention": false
+    },
+    {
+      "key": "shape",
+      "name": "Documented shape",
+      "intent": "Headings, a short list, no code. The guide is explicit and so is this.",
+      "rung": "rule",
+      "weight": 0.1,
+      "scale_points": 5,
+      "descriptors": {},
+      "rule": {
+        "type": "structure",
+        "headings": {
+          "min": 1,
+          "max": 4
+        },
+        "max_heading_depth": 3,
+        "list_items": {
+          "min": 2,
+          "max": 8
+        },
+        "code_blocks": {
+          "max": 0
+        }
+      },
+      "graded_alike": null,
+      "one_quality": null,
+      "split_from": null,
+      "needs_descriptors": false,
+      "needs_attention": false
+    },
+    {
+      "key": "tone_fit",
+      "name": "Tone fits the persona",
+      "intent": "What is left once the rules have run: does it sound like us. Judged, and only 30% of the weight, which is the lesson.",
+      "rung": "judge",
+      "weight": 0.3,
+      "scale_points": 5,
+      "descriptors": {
+        "5": "Reads as the house persona throughout: direct, warm, never salesy, never stiff.",
+        "4": "Mostly on persona, with one passage that drifts formal or chatty.",
+        "3": "Recognisably the brand in places; generic marketing prose elsewhere.",
+        "2": "Generic throughout, with the persona surfacing once.",
+        "1": "Could have been written for any company; nothing of the persona survives."
+      },
+      "rule": null,
+      "graded_alike": null,
+      "one_quality": null,
+      "split_from": null,
+      "needs_descriptors": false,
+      "needs_attention": false
+    }
+  ],
+  "tasks": [
+    {
+      "key": "release_note",
+      "name": "Release note: automatic pre-migration backup",
+      "prompt_text": "Write a short release note for a backup feature that now runs automatically before every schema migration. Include a heading, two or three bullet points, and tell the reader where the support and documentation links are. Plain language, no hype.",
+      "is_starter": true
+    },
+    {
+      "key": "help_article",
+      "name": "Help article: restoring a backup",
+      "prompt_text": "Write a short help article explaining how a customer restores a backup. Include a heading, a numbered list of two to five steps, and point them at the support and documentation links if the restore refuses. Plain language, no hype.",
+      "is_starter": true
+    }
+  ],
+  "forked_from": "brand_voice",
+  "saved_slug": null,
+  "created_at": "2026-09-11T08:41:38.512Z",
+  "updated_at": "2026-09-11T08:41:38.513Z",
+  "questions": [
+    "Could two people who both read your description grade the same text the same way?",
+    "Is this one quality, or two stuck together?"
+  ],
+  "proposals": [
+    {
+      "criterion": "banned_terms",
+      "rule_type": "forbidden_phrases",
+      "parameters": {
+        "case_sensitive": false,
+        "phrases": [
+          "best-in-class",
+          "world-class",
+          "synergy",
+          "revolutionary",
+          "cutting-edge",
+          "disruptive",
+          "utilize",
+          "solutioning",
+          "empower your",
+          "unlock",
+          "guru",
+          "ninja",
+          "rockstar"
+        ],
+        "max_hits": 3
+      },
+      "explanation": "You accepted this rule.",
+      "accepted": true
+    },
+    {
+      "criterion": "required_disclosures",
+      "rule_type": "required_phrases",
+      "parameters": {
+        "case_sensitive": false,
+        "min_occurrences": 1,
+        "phrases": [
+          "support",
+          "documentation"
+        ]
+      },
+      "explanation": "You accepted this rule.",
+      "accepted": true
+    },
+    {
+      "criterion": "register",
+      "rule_type": "vocabulary_profile",
+      "parameters": {
+        "banned_register": [
+          "amazing",
+          "incredible",
+          "effortlessly",
+          "simply",
+          "just",
+          "obviously",
+          "literally",
+          "insanely"
+        ],
+        "type_token_ratio": {
+          "min": 0.3
+        }
+      },
+      "explanation": "You accepted this rule.",
+      "accepted": true
+    },
+    {
+      "criterion": "reading_level",
+      "rule_type": "readability",
+      "parameters": {
+        "metric": "flesch_kincaid_grade",
+        "min": 7.0,
+        "max": 12.0,
+        "tolerance": 3.0
+      },
+      "explanation": "You accepted this rule.",
+      "accepted": true
+    },
+    {
+      "criterion": "shape",
+      "rule_type": "structure",
+      "parameters": {
+        "headings": {
+          "min": 1,
+          "max": 4
+        },
+        "max_heading_depth": 3,
+        "list_items": {
+          "min": 2,
+          "max": 8
+        },
+        "code_blocks": {
+          "max": 0
+        }
+      },
+      "explanation": "You accepted this rule.",
+      "accepted": true
+    }
+  ],
+  "weight_shift": {
+    "deterministic": 0.7,
+    "judged": 0.3,
+    "sentence": "70% of this goal's weight is now scored by rules — free, exact, and they never disagree with you. The remaining 30% is what the jury has to grade, and what calibration has to measure."
+  },
+  "grading_cost": "Next you will grade 12 samples on 1 judged criterion. Budget about 24 minutes, in one sitting if you can — your grades are the ground truth for everything that follows, and the wizard saves them as you go, so you can stop and come back."
+}

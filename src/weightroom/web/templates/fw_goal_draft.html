@@ -1,0 +1,149 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import link %}
+{% from "_fw_goals.html" import percent, csrf with context %}
+{% block title %}Draft — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set draft = sourced.data %}
+{% set here = "/apps/freeweight/goals/drafts/" ~ (draft_id | urlencode) %}
+{% set off = not sourced.live %}
+<div class="page-head">
+  <h2>{{ draft.get("name") if draft else "Draft" }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/goals">Every goal</a> · <a href="#step-criteria">Criteria</a> · <a href="#step-rules">Rules</a> ·
+  <a href="#step-tasks">Tasks</a> · <a href="#step-save">Save</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{{ refusal(sourced.error) }}
+{% if draft %}
+{% set questions = draft.get("questions") or ["", ""] %}
+<p class="kit-live">{{ draft.get("intent") }}</p>
+<p class="muted">FreeWeight's draft{% if draft.get("forked_from") %}, customised from the starter <span class="mono">{{ draft.get("forked_from") }}</span>{% endif %}.
+Each step is saved in FreeWeight as it is taken; last changed {{ draft.get("updated_at") or "—" }}.
+{% if draft.get("saved_slug") %}Written as {{ link("/apps/freeweight/goals/" ~ (draft.get("saved_slug") | urlencode), draft.get("saved_slug")) }}.{% endif %}</p>
+
+<h3 id="step-criteria">Criteria</h3>
+<p class="muted">Of each criterion, two questions — they are most of what the wizard adds. If the answer to the second is "two", split it:
+nothing is split for you.</p>
+<ul>{% for question in questions %}<li><strong>{{ question }}</strong></li>{% endfor %}</ul>
+{% for one in draft.get("criteria") or [] %}
+{% set key = one.get("key") or "" %}
+{% set points = one.get("scale_points") or 5 %}
+{% set described = one.get("descriptors") or {} %}
+<details class="card kit-details"{% if one.get("needs_descriptors") or one.get("needs_attention") %} open{% endif %}>
+  <summary><strong>{{ one.get("name") }}</strong> <span class="mono kit-id">{{ key }}</span> · {{ one.get("rung") }} · {{ percent(one.get("weight")) }}
+  {%- if one.get("split_from") %} · split from <span class="mono">{{ one.get("split_from") }}</span>{% endif %}
+  {%- if one.get("needs_descriptors") %} {{ badge("describe its scale", tone="warning") }}{% endif %}
+  {%- if one.get("needs_attention") %} {{ badge("consider splitting", tone="warning") }}{% endif %}</summary>
+  {% if one.get("intent") %}<p class="muted">{{ one.get("intent") }}</p>{% endif %}
+  {% if one.get("rule") %}{{ json_viewer(one.get("rule"), label="Its rule") }}{% endif %}
+  <form method="post" action="{{ here }}/criteria" class="kit-form">
+    {{ csrf() }}
+    <input type="hidden" name="action" value="answer"><input type="hidden" name="criterion" value="{{ key }}">
+    <fieldset class="field"><legend>{{ questions[0] }}</legend>
+      <label class="kit-check"><input type="radio" name="graded_alike" value="yes"{{ " checked" if one.get("graded_alike") is sameas true else "" }}> yes</label>
+      <label class="kit-check"><input type="radio" name="graded_alike" value="no"{{ " checked" if one.get("graded_alike") is sameas false else "" }}> no</label></fieldset>
+    <fieldset class="field"><legend>{{ questions[1] }}</legend>
+      <label class="kit-check"><input type="radio" name="one_quality" value="yes"{{ " checked" if one.get("one_quality") is sameas true else "" }}> one</label>
+      <label class="kit-check"><input type="radio" name="one_quality" value="no"{{ " checked" if one.get("one_quality") is sameas false else "" }}> two</label></fieldset>
+    <div class="kit-wide"><button type="submit"{% if off %} disabled{% endif %}>Record the answers</button></div>
+  </form>
+  {% if one.get("rung") == "judge" %}
+  <p class="muted">{{ described | length }} of {{ points }} points described. A jury given "rate it 1 to {{ points }}" and nothing else agrees with nobody.</p>
+  <form method="post" action="{{ here }}/criteria" class="kit-form">
+    {{ csrf() }}
+    <input type="hidden" name="action" value="describe"><input type="hidden" name="criterion" value="{{ key }}">
+    <div class="field"><label for="fw-d-points-{{ loop.index }}">Scale</label>
+      <select id="fw-d-points-{{ loop.index }}" name="points">{% for size in [3, 5, 7] %}<option value="{{ size }}"{{ " selected" if points == size else "" }}>{{ size }} points</option>{% endfor %}</select></div>
+    <div class="field kit-wide"><label for="fw-d-top-{{ loop.index }}">The best it could be</label>
+      <textarea id="fw-d-top-{{ loop.index }}" name="top" rows="2" required>{{ described.get(points | string, "") }}</textarea></div>
+    <div class="field kit-wide"><label for="fw-d-middle-{{ loop.index }}">The middle</label>
+      <textarea id="fw-d-middle-{{ loop.index }}" name="middle" rows="2" required>{{ described.get(((points + 1) // 2) | string, "") }}</textarea></div>
+    <div class="field kit-wide"><label for="fw-d-bottom-{{ loop.index }}">The worst it could be</label>
+      <textarea id="fw-d-bottom-{{ loop.index }}" name="bottom" rows="2" required>{{ described.get("1", "") }}</textarea></div>
+    <div class="kit-wide"><button type="submit"{% if off %} disabled{% endif %}>Describe the scale</button></div>
+  </form>
+  {% endif %}
+  {% if one.get("needs_attention") %}
+  <form method="post" action="{{ here }}/criteria" class="kit-form">
+    {{ csrf() }}
+    <input type="hidden" name="action" value="split"><input type="hidden" name="criterion" value="{{ key }}">
+    <div class="field"><label for="fw-s-first-{{ loop.index }}">First half</label><input id="fw-s-first-{{ loop.index }}" name="first" required></div>
+    <div class="field"><label for="fw-s-second-{{ loop.index }}">Second half</label><input id="fw-s-second-{{ loop.index }}" name="second" required></div>
+    <div class="kit-wide"><button type="submit"{% if off %} disabled{% endif %}>Split into two</button></div>
+  </form>
+  {% endif %}
+</details>
+{% else %}
+<p class="muted">No criteria yet: add the first quality you want, in your own words.</p>
+{% endfor %}
+<form method="post" action="{{ here }}/criteria" class="card kit-form">
+  {{ csrf() }}
+  <input type="hidden" name="action" value="add">
+  <div class="field"><label for="fw-c-name">Criterion</label><input id="fw-c-name" name="name" required value="{{ form.get('name', '') if form.get('action') == 'add' else '' }}" placeholder="Dry wit, never winking"></div>
+  <div class="field kit-wide"><label for="fw-c-intent">What do you mean by it?</label><textarea id="fw-c-intent" name="intent" rows="2">{{ form.get("intent", "") if form.get("action") == "add" else "" }}</textarea></div>
+  <div class="kit-wide"><button type="submit"{% if off %} disabled{% endif %}>Add the criterion</button></div>
+</form>
+
+<h3 id="step-rules">Rules that could carry part of it</h3>
+<p class="notice" role="status">{{ (draft.get("weight_shift") or {}).get("sentence") or "—" }}</p>
+<p class="muted">FreeWeight proposes and applies nothing: a rule carries a criterion only once you accept it here, one proposal at a time, with its
+parameters as you leave them. Skipping one is leaving it.</p>
+{% for proposal in draft.get("proposals") or [] %}
+<details class="card kit-details">
+  <summary><span class="mono">{{ proposal.get("criterion") }}</span> → <code>{{ proposal.get("rule_type") }}</code>{% if proposal.get("accepted") %} {{ badge("accepted", tone="success") }}{% endif %}</summary>
+  <p class="muted">{{ proposal.get("explanation") }}</p>
+  {% if proposal.get("accepted") %}
+  {{ json_viewer(proposal.get("parameters") or {}, label="Its parameters") }}
+  {% else %}
+  <form method="post" action="{{ here }}/rules" class="kit-form">
+    {{ csrf() }}
+    <input type="hidden" name="criterion" value="{{ proposal.get('criterion') }}">
+    <input type="hidden" name="rule_type" value="{{ proposal.get('rule_type') }}">
+    <div class="field kit-wide"><label for="fw-p-{{ loop.index }}">Parameters (editable JSON)</label>
+      <textarea id="fw-p-{{ loop.index }}" name="parameters" rows="6" class="mono" spellcheck="false">{{ proposal.get("parameters") | tojson(indent=2) }}</textarea></div>
+    <div class="kit-wide"><button type="submit"{% if off %} disabled{% endif %}>Accept this rule</button></div>
+  </form>
+  {% endif %}
+</details>
+{% else %}
+<p class="muted">No rule matches how these criteria are described. That is a normal answer: some qualities need a judge, and calibration will
+say how far the jury agrees with you about them.</p>
+{% endfor %}
+
+<h3 id="step-tasks">Your tasks</h3>
+{% if draft.get("tasks") %}
+{% set rows = [] %}
+{% for one in draft.get("tasks") %}
+{% set _ = rows.append([one.get("name") or "—", one.get("key") or "—", one.get("prompt_text") or "—", badge("starter — replace it", tone="warning") if one.get("is_starter") else "yours"]) %}
+{% endfor %}
+{{ table([{"label": "Task"}, {"label": "Key", "mono": true}, {"label": "Prompt"}, {"label": "Whose"}], rows, caption="A voice measured on someone else's prompts is not your voice", density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">No tasks yet: a goal with no task has nothing for a model to answer.</p>
+{% endif %}
+<form method="post" action="{{ here }}/tasks" class="card kit-form">
+  {{ csrf() }}
+  <div class="field"><label for="fw-t-name">Task</label><input id="fw-t-name" name="name" required value="{{ form.get('name', '') if form.get('prompt_text') else '' }}"></div>
+  <div class="field kit-wide"><label for="fw-t-prompt">The prompt, exactly as you would give it</label>
+    <textarea id="fw-t-prompt" name="prompt_text" rows="5" required>{{ form.get("prompt_text", "") }}</textarea></div>
+  <div class="kit-wide"><button type="submit"{% if off %} disabled{% endif %}>Add the task</button></div>
+</form>
+<p class="warning-state">{{ draft.get("grading_cost") or "—" }}</p>
+
+<h3 id="step-save">Save</h3>
+<p class="muted">The slug becomes the pack's directory, a URL and the capability its evidence is emitted under, <code>user.&lt;slug&gt;</code>:
+pick one you will recognise.</p>
+<form method="post" action="{{ here }}/save" class="card kit-form">
+  {{ csrf() }}
+  <div class="field"><label for="fw-save-name">Name</label><input id="fw-save-name" name="name" value="{{ form.get('name', draft.get('name') or '') if form.get('slug') is not none and form.get('slug') != '' else draft.get('name') or '' }}"></div>
+  <div class="field"><label for="fw-save-slug">Slug</label><input id="fw-save-slug" name="slug" value="{{ form.get('slug') or draft.get('slug') or '' }}" autocapitalize="off" pattern="[a-z][a-z0-9_]*"></div>
+  <div class="kit-wide"><button type="submit" data-variant="primary"{% if off %} disabled{% endif %}>Write the pack</button></div>
+</form>
+<form method="post" action="{{ here }}/delete" class="kit-actions">
+  {{ csrf() }}
+  <button type="submit"{% if off %} disabled{% endif %}>Abandon the draft</button>
+</form>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

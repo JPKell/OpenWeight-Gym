@@ -951,6 +951,68 @@ EXERCISES.update(
 )
 
 
+_FW_GOAL = "wp4_voice"
+_FW_DRAFT = "01M27T29YGG2WET5HN0SSF5C3E"
+_FW_GOAL_PACK = '{"slug": "wp4_voice"}'
+
+EXERCISES.update(
+    {
+        # Row WP4 Gate A: FreeWeight's Goals page. FreeWeight answers each action; a deletion with
+        # no slug typed, and an edit whose dry run separates, are `pending` preview rows.
+        ("POST", "/apps/freeweight/goals"): _fw_form(
+            "/apps/freeweight/goals",
+            {"goal": _FW_GOAL_PACK, "tasks": "[]"},
+            reply=("POST", "goals", 201, {"slug": _FW_GOAL}),
+        ),
+        ("POST", "/apps/freeweight/goals/import"): _fw_form(
+            "/apps/freeweight/goals/import",
+            {"bundle": '{"files": {}}'},
+            reply=("POST", "goals/import", 201, {"slug": _FW_GOAL}),
+        ),
+        ("POST", "/apps/freeweight/goals/starters/{starter}/fork"): _fw_form(
+            "/apps/freeweight/goals/starters/creative_voice/fork",
+            {"slug": _FW_GOAL},
+            reply=("POST", "goals/starters/creative_voice/fork", 201, {"slug": _FW_GOAL}),
+        ),
+        ("POST", "/apps/freeweight/goals/starters/{starter}/customise"): _fw_form(
+            "/apps/freeweight/goals/starters/creative_voice/customise",
+            {},
+            reply=("POST", "goals/drafts", 201, {"draft_id": _FW_DRAFT}),
+        ),
+        ("POST", "/apps/freeweight/goals/drafts"): _fw_form(
+            "/apps/freeweight/goals/drafts",
+            {"intent": "Essays that sound like me."},
+            reply=("POST", "goals/drafts", 201, {"draft_id": _FW_DRAFT}),
+        ),
+        ("POST", "/apps/freeweight/goals/drafts/{draft_id}/save"): _fw_form(
+            f"/apps/freeweight/goals/drafts/{_FW_DRAFT}/save",
+            {},
+            reply=("POST", f"goals/drafts/{_FW_DRAFT}/save", 200, {"goal": {"slug": _FW_GOAL}}),
+        ),
+        ("POST", "/apps/freeweight/goals/drafts/{draft_id}/delete"): _fw_form(
+            f"/apps/freeweight/goals/drafts/{_FW_DRAFT}/delete",
+            {},
+            reply=("DELETE", f"goals/drafts/{_FW_DRAFT}", 204, None),
+        ),
+        ("POST", "/apps/freeweight/goals/drafts/{draft_id}/{step}"): _fw_form(
+            f"/apps/freeweight/goals/drafts/{_FW_DRAFT}/tasks",
+            {"name": "Warehouse", "prompt_text": "Write about the night."},
+            reply=("POST", f"goals/drafts/{_FW_DRAFT}/tasks", 200, {"draft_id": _FW_DRAFT}),
+        ),
+        ("POST", "/apps/freeweight/goals/{slug}/delete"): _fw_form(
+            f"/apps/freeweight/goals/{_FW_GOAL}/delete",
+            {},
+            reply=("DELETE", f"goals/{_FW_GOAL}", 200, {"orphaned_runs": 0, "destroyed_grades": 0}),
+        ),
+        ("POST", "/apps/freeweight/goals/{slug}/edit"): _fw_form(
+            f"/apps/freeweight/goals/{_FW_GOAL}/edit",
+            {"goal": _FW_GOAL_PACK, "tasks": "[]"},
+            reply=("PUT", f"goals/{_FW_GOAL}", 200, {"hash_change": {"separates": False}}),
+        ),
+    }
+)
+
+
 def _ip_form(
     path: str, data: dict[str, str], *, reply: tuple[str, str, int, Any] | None = None
 ) -> Exercise:

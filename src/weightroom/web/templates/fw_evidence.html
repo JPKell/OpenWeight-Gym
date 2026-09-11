@@ -2,6 +2,13 @@
 {% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
 {% from "_app_page.html" import page_source, refusal %}
 {% from "_fw.html" import run_link, short, value, machine_link %}
+{% macro staleness(explained) -%}
+{#- FreeWeight's staleness verdict for one record, as of the request that read it (api.md §6). -#}
+{%- set now = (explained or {}).get("staleness") or {} -%}
+{%- if now.get("stale") is sameas true -%}{{ badge("stale", tone="warning", title=(now.get("reasons") or []) | join(" ")) }}
+{%- elif now.get("stale") is sameas false -%}{{ badge("fresh", tone="success") }}
+{%- else -%}<span class="muted" title="not served by this FreeWeight">—</span>{%- endif -%}
+{%- endmacro %}
 {% block title %}Evidence — FreeWeight — WeightRoom{% endblock %}
 {% block page_content %}
 <div class="page-head">
@@ -39,18 +46,31 @@ A <code>user.*</code> record carries its goal hash, jury and calibration beside 
   record.get("measured_at") or "—",
   short(record.get("runtime_profile_hash")),
   machine_link(record.get("machine_fingerprint")),
-  record.get("schema_version") or "—"
+  record.get("schema_version") or "—",
+  staleness(record.get("explanation"))
 ]) %}
 {% endfor %}
-{{ table([{"label": "Capability", "mono": true}, {"label": "Subject", "mono": true}, {"label": "Score", "numeric": true}, {"label": "Confidence", "numeric": true}, {"label": "Samples", "numeric": true}, {"label": "Measured", "mono": true}, {"label": "Runtime profile"}, {"label": "Machine"}, {"label": "Schema"}], rows, caption="Current records, by capability", density="dense", complete=next_href is none, row_count=rows | length) }}
+{{ table([{"label": "Capability", "mono": true}, {"label": "Subject", "mono": true}, {"label": "Score", "numeric": true}, {"label": "Confidence", "numeric": true}, {"label": "Samples", "numeric": true}, {"label": "Measured", "mono": true}, {"label": "Runtime profile"}, {"label": "Machine"}, {"label": "Schema"}, {"label": "Staleness"}], rows, caption="Current records, by capability", density="dense", complete=next_href is none, row_count=rows | length) }}
 {% if next_href %}<p><a href="{{ next_href }}">Next page</a></p>{% endif %}
 
 <h3>Why each score is what it is</h3>
-<p class="muted">What FreeWeight exports with each record. The staleness badge and the six confidence factors its own page shows are
-computed inside FreeWeight and are not on its API, so they are not repeated here.</p>
+<p class="muted">What FreeWeight exports with each record, and beside it FreeWeight's own reading of the record now: whether it is stale —
+its freshness decayed below the threshold, or its environment drifted — and the six factors its confidence is the product of.</p>
 {% for record in data.get("items") %}
 {% set calibration = record.get("calibration") or {} %}
-<details class="kit-details"><summary><span class="mono">{{ record.get("capability_id") }}</span> on <span class="mono">{{ record.get("subject") or "—" }}</span>{% if record.get("adapter") %} + {{ record.get("adapter") }}{% endif %} — {{ value(record.get("score"), fmt="%.3f") }}</summary>
+{% set explained = record.get("explanation") or {} %}
+{% set factors = explained.get("confidence_factors") or {} %}
+<details class="kit-details"><summary><span class="mono">{{ record.get("capability_id") }}</span> on <span class="mono">{{ record.get("subject") or "—" }}</span>{% if record.get("adapter") %} + {{ record.get("adapter") }}{% endif %} — {{ value(record.get("score"), fmt="%.3f") }} {{ staleness(record.get("explanation")) }}</summary>
+{% if explained %}
+{% set rows = [] %}
+{% for name in ["sample_factor", "consistency_factor", "freshness_factor", "environment_factor", "identity_factor", "judge_validity_factor"] %}{% set _ = rows.append([name, value(factors.get(name), fmt="%.3f")]) %}{% endfor %}
+{% set _ = rows.append(["confidence", value(factors.get("confidence"), fmt="%.3f")]) %}
+{{ table([{"label": "Confidence factor", "mono": true}, {"label": "Value", "numeric": true}], rows, caption="Multiplied into the confidence, as FreeWeight stored them", density="dense", row_count=rows | length) }}
+{% set now = explained.get("staleness") or {} %}
+<p class="muted">Freshness now {{ value(now.get("freshness_factor"), fmt="%.2f") }} after {{ value(now.get("age_days"), fmt="%.0f") }} day(s){% if now.get("drift") %}; drifted: {{ now.get("drift") | join(", ") }}{% endif %}.{% for reason in now.get("reasons") or [] %} {{ reason }}{% endfor %}</p>
+{% else %}
+<p class="muted">This FreeWeight serves no staleness or confidence factors with its records.</p>
+{% endif %}
 {% set rows = [] %}
 {% for metric in record.get("contributing_metrics") or [] %}{% set _ = rows.append([metric.get("metric_key") or "—", value(metric.get("weight"), fmt="%.2f"), value(metric.get("sample_count"), fmt="%d")]) %}{% endfor %}
 {% if rows %}{{ table([{"label": "Contributing metric", "mono": true}, {"label": "Weight", "numeric": true}, {"label": "Samples", "numeric": true}], rows, density="dense", row_count=rows | length) }}{% endif %}

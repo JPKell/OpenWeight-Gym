@@ -134,6 +134,10 @@ UPLOAD_ROUTES = frozenset(
         # WP2: an evidence bundle, parsed as JSON and handed to LoadCoach, which validates it
         # (tests/integration/test_loadcoach_queue_evidence.py refuses a file that is not JSON).
         "/apps/loadcoach/evidence/import",
+        # WP4: a goal bundle, parsed as JSON and handed to FreeWeight's import, which checks its
+        # size, members and hash before writing (tests/integration/test_freeweight_goals.py refuses
+        # a file that is not JSON before anything is sent).
+        "/apps/freeweight/goals/import",
     }
 )
 
@@ -284,6 +288,10 @@ SPEC_14_ROWS: dict[str, tuple[str, ...]] = {
     ),
     "integration/test_freeweight_results_evidence.py": (
         "test_labels_on_a_comparison_render_inert",
+    ),
+    # a goal's intent, criteria and tasks, and a draft's, render inert on the Goals pages (row WP4)
+    "integration/test_freeweight_goals.py": (
+        "test_the_injection_corpus_renders_inert_in_a_goal_and_a_draft",
     ),
     "integration/test_loadcoach_providers_adapters.py": (
         "test_a_security_key_without_a_fresh_reauth_is_refused_and_nothing_is_sent",

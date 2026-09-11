@@ -1,0 +1,62 @@
+{
+  "items": [
+    {
+      "key": "creative_voice",
+      "name": "Creative non-fiction voice",
+      "intent": "Essays that sound like a person rather than a content system: dry, concrete, unhurried. Not LinkedIn, not a manual. This is the hardest of the four, and it is here to show that even 'voice' partly mechanises.",
+      "contributes_to": "creative_writing",
+      "criteria_count": 5,
+      "task_count": 3,
+      "deterministic_weight": 0.4,
+      "judged_weight": 0.6,
+      "carries": "The hardest case: style and tone in creative non-fiction. About 40 % rule weight, judged remainder. It demonstrates that even 'voice' partly mechanises.",
+      "reading_position": 1,
+      "has_calibration": true
+    },
+    {
+      "key": "technical_explanation",
+      "name": "Technical explanation",
+      "intent": "Correct, well-pitched technical prose for a named audience. Mixed on purpose: reading level and shape are rules, correctness and audience fit are judged, and the split is visible in the score method mix.",
+      "contributes_to": "reasoning",
+      "criteria_count": 5,
+      "task_count": 2,
+      "deterministic_weight": 0.55,
+      "judged_weight": 0.45,
+      "carries": "Mixed: reading level, shape and self-repetition as rules; correctness and audience fit judged. The pack where the split is most visible in the score method mix.",
+      "reading_position": 2,
+      "has_calibration": true
+    },
+    {
+      "key": "brand_voice",
+      "name": "House style compliance",
+      "intent": "Copy that obeys a defined house style: our words, our register, our shape, our reading level. The point of this pack is that a style guide is mostly a list, and a list is a rule.",
+      "contributes_to": "instruction_following",
+      "criteria_count": 6,
+      "task_count": 2,
+      "deterministic_weight": 0.7,
+      "judged_weight": 0.3,
+      "carries": "Highest rule weight of the prose packs, about 70 %: banned terms, required disclosures, register, reading level and shape. The judged remainder is small.",
+      "reading_position": 3,
+      "has_calibration": true
+    },
+    {
+      "key": "summary_faithfulness",
+      "name": "Summary faithfulness",
+      "intent": "Did the summary cover the source, and did it make anything up. This pack exists to show that 'did it hallucinate' is usually a deterministic question against an annotated source, not a matter of judgement.",
+      "contributes_to": "summarization",
+      "criteria_count": 5,
+      "task_count": 2,
+      "deterministic_weight": 0.9,
+      "judged_weight": 0.1,
+      "carries": "Mostly rung 3: claim coverage and unsupported-claim detection against annotated sources. It shows that 'did it make things up' is usually deterministic.",
+      "reading_position": 4,
+      "has_calibration": true
+    }
+  ],
+  "reading_order": [
+    "creative_voice",
+    "technical_explanation",
+    "brand_voice",
+    "summary_faithfulness"
+  ]
+}

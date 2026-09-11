@@ -1,0 +1,138 @@
+{
+  "slug": "wp4_voice",
+  "proposals": {
+    "no_llm_tells": [
+      "forbidden_phrases",
+      "vocabulary_profile"
+    ],
+    "sentence_rhythm": [
+      "word_count",
+      "sentence_length_distribution"
+    ],
+    "restrained_punctuation": [
+      "forbidden_phrases",
+      "vocabulary_profile",
+      "punctuation_profile"
+    ]
+  },
+  "items": [
+    {
+      "criterion": "no_llm_tells",
+      "rule_type": "forbidden_phrases",
+      "parameters": {
+        "case_sensitive": false,
+        "phrases": [
+          "delve",
+          "leverage",
+          "in today's landscape",
+          "it's worth noting",
+          "navigate the complexities",
+          "tapestry",
+          "unlock",
+          "seamless",
+          "robust",
+          "game changer",
+          "at the end of the day",
+          "circle back",
+          "synergy",
+          "best-in-class"
+        ],
+        "max_hits": 4
+      },
+      "explanation": "Your description of 'No LLM tells' reads like something a forbidden phrases rule can check. Rules are free, exact, and never disagree with you."
+    },
+    {
+      "criterion": "no_llm_tells",
+      "rule_type": "vocabulary_profile",
+      "parameters": {
+        "banned_register": [
+          "amazing",
+          "incredible",
+          "effortlessly",
+          "simply",
+          "obviously"
+        ],
+        "type_token_ratio": {
+          "min": 0.3
+        }
+      },
+      "explanation": "Your description of 'No LLM tells' reads like something a vocabulary profile rule can check. Rules are free, exact, and never disagree with you."
+    },
+    {
+      "criterion": "sentence_rhythm",
+      "rule_type": "word_count",
+      "parameters": {
+        "min": 100,
+        "max": 800,
+        "tolerance": 200
+      },
+      "explanation": "Your description of 'Varied sentence rhythm' reads like something a word count rule can check. Rules are free, exact, and never disagree with you."
+    },
+    {
+      "criterion": "sentence_rhythm",
+      "rule_type": "sentence_length_distribution",
+      "parameters": {
+        "mean_words": {
+          "min": 10,
+          "max": 24
+        },
+        "cv": {
+          "min": 0.4
+        }
+      },
+      "explanation": "Your description of 'Varied sentence rhythm' reads like something a sentence length distribution rule can check. Rules are free, exact, and never disagree with you."
+    },
+    {
+      "criterion": "restrained_punctuation",
+      "rule_type": "forbidden_phrases",
+      "parameters": {
+        "case_sensitive": false,
+        "phrases": [
+          "delve",
+          "leverage",
+          "in today's landscape",
+          "it's worth noting",
+          "navigate the complexities",
+          "tapestry",
+          "unlock",
+          "seamless",
+          "robust",
+          "game changer",
+          "at the end of the day",
+          "circle back",
+          "synergy",
+          "best-in-class"
+        ],
+        "max_hits": 4
+      },
+      "explanation": "Your description of 'Restrained punctuation' reads like something a forbidden phrases rule can check. Rules are free, exact, and never disagree with you."
+    },
+    {
+      "criterion": "restrained_punctuation",
+      "rule_type": "vocabulary_profile",
+      "parameters": {
+        "banned_register": [
+          "amazing",
+          "incredible",
+          "effortlessly",
+          "simply",
+          "obviously"
+        ],
+        "type_token_ratio": {
+          "min": 0.3
+        }
+      },
+      "explanation": "Your description of 'Restrained punctuation' reads like something a vocabulary profile rule can check. Rules are free, exact, and never disagree with you."
+    },
+    {
+      "criterion": "restrained_punctuation",
+      "rule_type": "punctuation_profile",
+      "parameters": {
+        "exclamation_per_1000_words": {
+          "max": 1.0
+        }
+      },
+      "explanation": "Your description of 'Restrained punctuation' reads like something a punctuation profile rule can check. Rules are free, exact, and never disagree with you."
+    }
+  ]
+}

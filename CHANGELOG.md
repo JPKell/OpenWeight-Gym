@@ -7,6 +7,34 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **FreeWeight's Goals page** (row WP4 Gate A), at parity with FreeWeight's own `goals` pages
+  and its authoring wizard, every one over its API (FreeWeight `4090275` added the routes the
+  wizard and the goal pages lacked). **Goals**: each goal with its `goal_hash`, score method mix,
+  calibration state with κw and its n, calibration age and the *unforked* badge; the drafts in
+  progress; the four starters in reading order, each forked unedited or customised as a draft;
+  a goal created from a pack (`goal.json` and task records) with its lint shown and never
+  blocking; a bundle imported by file or paste, a colliding slug rendered as FreeWeight's refusal
+  naming the installed hash. **One goal**: criteria by rung, tasks with the starter badge, lint,
+  FreeWeight's validate and its rule proposals (with their parameters, never applied), the goal's
+  results, and both exports — the bundle, which round-trips, and `benchmark.goal_pack`, which does
+  not. **Edit** is `goal.json` and the task records as on disk, always dry-run first: an edit that
+  keeps `goal_hash` saves at once, one that moves it shows the old hash, the new hash and the runs
+  it separates and commits only when the operator confirms those same hashes. **Delete** shows
+  FreeWeight's preview (runs orphaned, grades destroyed) and needs the slug typed. **Drafts** are
+  FreeWeight's rows, walked on one page: criteria with the two questions, scale descriptors and
+  splits; each proposed rule accepted one at a time with its parameters as edited; tasks; save;
+  abandon. Nine audit actions; no row carries an intent, a prompt or a descriptor. A stopped
+  FreeWeight's goal list, one goal's criteria and tasks, and its stored report read its database.
+- **FreeWeight's Evidence page shows each record's staleness and its six confidence factors**
+  (row WP4), from the `explanations` FreeWeight now serves beside the envelopes, in place of the
+  note that they were not on its API.
+
+### Fixed
+- The page kit (row WP4, from WP3's screenshots): a refusal rendered in the success-green
+  `.notice` box and now renders as an error; a page whose API refused it said *The API did not
+  answer this page* and now says the API answered with a refusal; the stopped notice named the
+  application in lower case (*freeweight is not answering*); an export form that is itself the
+  card (Results, Evidence) stacked every field full width instead of laying them out as a grid.
 - **IdeaPress's plan, research, stage runs, units, workspace and export** (row WP5 Gate C), at
   parity with IdeaPress's own `plan`, `units`, `workspace` and `export` pages, every one over
   its API. **Plan**: every requirement with the material it rests on, the unit plan, the five

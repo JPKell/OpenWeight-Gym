@@ -122,9 +122,7 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
 }
 """Spec §7.3's menu, per application; :data:`_PAGE_HREF` says which of them this build serves."""
 
-_PAGE_PHASE: dict[tuple[str, str], str] = {
-    ("freeweight", "Goals"): "WP4",
-}
+_PAGE_PHASE: dict[tuple[str, str], str] = {}
 """The row in ``roadmap/weightroom-work.md`` that builds each still-unbuilt page, keyed by
 application as well as label: FreeWeight's Models and LoadCoach's are two rows. W3 left every
 page *not yet scheduled* (its handoff §2.4); the WP rows schedule them all."""
@@ -165,6 +163,8 @@ _PAGE_HREF: dict[str | tuple[str, str], str] = {
     ("freeweight", "Results"): "/apps/freeweight/results",
     ("freeweight", "Evidence"): "/apps/freeweight/evidence",
     ("freeweight", "Adapters"): "/apps/freeweight/adapters",
+    # FreeWeight's goals, drafts, calibration and grading (row WP4); Judges open from Goals.
+    ("freeweight", "Goals"): "/apps/freeweight/goals",
     # FreeWeight's one [provider] block; LoadCoach's plural registrations are `Providers` (WP2).
     "Provider": "/apps/{app}/provider",
 }

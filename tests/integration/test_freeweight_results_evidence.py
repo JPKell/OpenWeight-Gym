@@ -232,6 +232,21 @@ def test_evidence_shows_each_record_and_a_user_records_goal_jury_and_calibration
             "score_method_mix": {"rule": 0.25, "judge": 0.75},
         }
     )
+    # FreeWeight's own reading of the record now, beside the envelopes (api.md §6, row WP4).
+    evidence["explanations"] = [
+        {
+            "capability_id": "user.house_voice",
+            "staleness": {
+                "stale": True, "freshness_factor": 0.3, "age_days": 400.0, "drift": [],
+                "reasons": ["measured 400 days ago; freshness 0.30 is below 0.50."],
+            },
+            "confidence_factors": {
+                "sample_factor": 0.9, "consistency_factor": 0.8, "freshness_factor": 0.3,
+                "environment_factor": 1.0, "identity_factor": 1.0, "judge_validity_factor": 0.83,
+                "confidence": 0.1793,
+            },
+        }
+    ]  # fmt: skip
     with respx.mock(assert_all_called=False) as router:
         routes = gate_b_api(router, bodies={"evidence": evidence})
         text = page(console, f"{BASE}/evidence?capability=user.house_voice&min_confidence=0.2")
@@ -243,7 +258,10 @@ def test_evidence_shows_each_record_and_a_user_records_goal_jury_and_calibration
     assert "rule 0.25" in text
     params = routes["evidence"].calls.last.request.url.params
     assert (params["capability"], params["min_confidence"]) == ("user.house_voice", "0.2")
-    assert "are not on its API" in text  # staleness and the six factors, said rather than guessed
+    assert "are not on its API" not in text
+    assert ">stale<" in text
+    assert "measured 400 days ago; freshness 0.30 is below 0.50." in text
+    assert "consistency_factor" in text and "0.800" in text and "0.179" in text
 
 
 def test_the_evidence_bundle_downloads_with_the_pages_filters(tmp_path: Path) -> None:

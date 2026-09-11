@@ -1,0 +1,12 @@
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "A goal named 'wp4_voice' already exists with goal_hash sha256:2bda90e86468600b479f62e987bc7f83f5b219a57fe90538e409cb77a41e0a6c. An import never overwrites a goal in place; import it under a different slug.",
+    "details": {
+      "slug": "wp4_voice",
+      "existing_goal_hash": "sha256:2bda90e86468600b479f62e987bc7f83f5b219a57fe90538e409cb77a41e0a6c"
+    },
+    "request_id": "01M27T29XYDCEMJ8X5NPT1NSTC",
+    "timestamp": "2026-09-11T08:41:38.497Z"
+  }
+}

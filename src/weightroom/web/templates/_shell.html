@@ -49,7 +49,9 @@
   .kit-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   .kit-actions form { margin: 0; }
   .kit-form { margin: 0 0 var(--mw-space-4, 16px); }
-  .kit-form form { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 16px; }
+  /* The grid is the form's whether the card wraps a form or is the form itself (Results' and
+     Evidence's exports are `<form class="card kit-form">`, which the first selector missed, row WP4). */
+  .kit-form form, form.kit-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 16px; }
   .kit-form .kit-wide { grid-column: 1 / -1; }
   .kit-check { display: inline-flex; align-items: center; gap: 4px; margin: 0 12px 4px 0; }
   .kit-check input { width: auto; height: auto; margin: 0; }

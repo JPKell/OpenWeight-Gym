@@ -1,0 +1,121 @@
+{
+  "slug": "wp4_voice",
+  "name": "Creative non-fiction voice",
+  "intent": "Essays that sound like a person rather than a content system: dry, concrete, unhurried. Not LinkedIn, not a manual. This is the hardest of the four, and it is here to show that even 'voice' partly mechanises.",
+  "goal_hash": "sha256:2bda90e86468600b479f62e987bc7f83f5b219a57fe90538e409cb77a41e0a6c",
+  "goal_pack_version": "1.0.0",
+  "capability_id": "user.wp4_voice",
+  "contributes_to": "creative_writing",
+  "score_method_mix": {
+    "rule": 0.4,
+    "reference": 0.0,
+    "human": 0.0,
+    "judge": 0.6
+  },
+  "unforked": true,
+  "calibration_state": "insufficient",
+  "kappa_w": null,
+  "n_holdout": null,
+  "calibrated_at": null,
+  "calibration_stale": false,
+  "criteria": [
+    {
+      "key": "no_llm_tells",
+      "name": "No LLM tells",
+      "rung": "rule",
+      "weight": 0.15,
+      "gate": false,
+      "rule_type": "forbidden_phrases",
+      "scale_points": null,
+      "has_scale_descriptors": false
+    },
+    {
+      "key": "sentence_rhythm",
+      "name": "Varied sentence rhythm",
+      "rung": "rule",
+      "weight": 0.15,
+      "gate": false,
+      "rule_type": "sentence_length_distribution",
+      "scale_points": null,
+      "has_scale_descriptors": false
+    },
+    {
+      "key": "restrained_punctuation",
+      "name": "Restrained punctuation",
+      "rung": "rule",
+      "weight": 0.1,
+      "gate": false,
+      "rule_type": "punctuation_profile",
+      "scale_points": null,
+      "has_scale_descriptors": false
+    },
+    {
+      "key": "dry_wit",
+      "name": "Dry wit, never winking",
+      "rung": "judge",
+      "weight": 0.35,
+      "gate": false,
+      "rule_type": null,
+      "scale_points": 5,
+      "has_scale_descriptors": true
+    },
+    {
+      "key": "concrete_over_abstract",
+      "name": "Concrete over abstract",
+      "rung": "judge",
+      "weight": 0.25,
+      "gate": false,
+      "rule_type": null,
+      "scale_points": 5,
+      "has_scale_descriptors": true
+    }
+  ],
+  "tasks": [
+    {
+      "key": "inventory_night",
+      "name": "The night the inventory did not add up",
+      "prompt_id": "goals.creative_voice.inventory",
+      "prompt_version": "1.0.0",
+      "prompt_sha256": "sha256:f78733719a833b66e4adce9a040a6470df7b00b1d30c4341ae3a5b7463d804a8",
+      "rendered_prompt_hash": "sha256:4a89038823e3af1ec103cc52b4a936436d66d3464171ce509563794d75692cb1",
+      "is_starter": true,
+      "has_source": false
+    },
+    {
+      "key": "long_commute",
+      "name": "The commute that took an hour longer",
+      "prompt_id": "goals.creative_voice.commute",
+      "prompt_version": "1.0.0",
+      "prompt_sha256": "sha256:39002837edb9c903c7333debef459da0d0ca0f9ff95a668d0790f805c43b4bb3",
+      "rendered_prompt_hash": "sha256:81217cd8b149824f8a154e231e0a3073190a84faf4227119a0aa815aa2b53f21",
+      "is_starter": true,
+      "has_source": false
+    },
+    {
+      "key": "abandoned_tool",
+      "name": "The tool you stopped using",
+      "prompt_id": "goals.creative_voice.tool",
+      "prompt_version": "1.0.0",
+      "prompt_sha256": "sha256:83fc99e191faa648f6af5625edd015721571d19dbeeb81b3d6e251e885c83b65",
+      "rendered_prompt_hash": "sha256:a135644b010281bfd67efd6252a3e4890374ea479ffd029b6a18ae55689e2346",
+      "is_starter": true,
+      "has_source": false
+    }
+  ],
+  "findings": [
+    {
+      "code": "DETERMINISTIC_WEIGHT_SHARE",
+      "severity": "info",
+      "message": "40% of this goal's weight is scored deterministically. The better you understand what you want, the less of it needs a judge.",
+      "criterion": null,
+      "suggested_rule": null
+    },
+    {
+      "code": "UNFORKED_STARTER",
+      "severity": "warning",
+      "message": "Goal 'wp4_voice' is running unedited starter content. A voice measured on someone else's prompts is not your voice; the result is badged 'unforked' until the criteria or tasks are edited.",
+      "criterion": null,
+      "suggested_rule": null
+    }
+  ]
+}

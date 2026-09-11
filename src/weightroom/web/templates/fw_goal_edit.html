@@ -1,0 +1,55 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw_goals.html" import csrf with context %}
+{% block title %}Edit goal — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set here = "/apps/freeweight/goals/" ~ (slug | urlencode) %}
+<div class="page-head">
+  <h2>Edit {{ slug }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ here }}">The goal</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{% if preview %}
+{% set change = preview.get("hash_change") or {} %}
+<div class="warning-state" role="alert" id="confirm">
+  <h3>This edit separates measurements</h3>
+  {% if moved %}<p><strong>The goal changed after the preview you confirmed.</strong> These are its hashes now, and nothing was saved.</p>{% endif %}
+  <p>goal_hash now: <span class="mono">{{ change.get("previous_goal_hash") }}</span><br>
+  goal_hash after this edit: <span class="mono">{{ change.get("goal_hash") }}</span></p>
+  <p><strong>{{ change.get("separated_runs") }}</strong> run(s) measured under the current hash stay with it, and FreeWeight never averages them
+  with results under the new one. What moved: {{ (change.get("changed_fields") or []) | join(", ") or "—" }}.</p>
+  {% if preview.get("findings") %}
+  {% set rows = [] %}
+  {% for one in preview.get("findings") %}{% set _ = rows.append([one.get("severity") or "—", one.get("code") or "—", one.get("message") or "—"]) %}{% endfor %}
+  {{ table([{"label": "Severity"}, {"label": "Code", "mono": true}, {"label": "Finding"}], rows, caption="The edited pack's lint", density="dense", row_count=rows | length) }}
+  {% endif %}
+  <form method="post" action="{{ here }}/edit" class="kit-actions">
+    {{ csrf() }}
+    <input type="hidden" name="goal" value="{{ goal_text }}">
+    <input type="hidden" name="tasks" value="{{ tasks_text }}">
+    <input type="hidden" name="previous_goal_hash" value="{{ change.get('previous_goal_hash') or '' }}">
+    <input type="hidden" name="goal_hash" value="{{ change.get('goal_hash') or '' }}">
+    <input type="hidden" name="confirm" value="yes">
+    <button type="submit" data-variant="danger">Save, separating {{ change.get("separated_runs") }} run(s)</button>
+    <a href="{{ here }}">Discard the edit</a>
+  </form>
+</div>
+{% endif %}
+{{ refusal(sourced.error) }}
+{% if sourced.live %}
+<p class="muted"><code>goal.json</code> and the task records as FreeWeight holds them on disk. Saving asks FreeWeight for a dry run first: an edit
+that leaves <code>goal_hash</code> where it is saves at once, and one that moves it shows what it separates and waits for you. Every other file
+of the pack — a judge rubric, calibration files — is kept.</p>
+<form method="post" action="{{ here }}/edit" class="card kit-form">
+  {{ csrf() }}
+  <div class="field kit-wide"><label for="fw-edit-goal">goal.json</label>
+    <textarea id="fw-edit-goal" name="goal" rows="24" class="mono" spellcheck="false">{{ goal_text }}</textarea></div>
+  <div class="field kit-wide"><label for="fw-edit-tasks">Tasks</label>
+    <textarea id="fw-edit-tasks" name="tasks" rows="12" class="mono" spellcheck="false">{{ tasks_text }}</textarea></div>
+  <div class="kit-wide"><button type="submit" data-variant="primary">Preview and save</button></div>
+</form>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

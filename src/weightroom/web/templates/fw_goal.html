@@ -1,0 +1,135 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import link, run_link, short, value, yes_no %}
+{% from "_fw_goals.html" import calibration, mix, percent, csrf with context %}
+{% block title %}Goal — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data or {} %}
+{% set goal = data.get("goal") %}
+{% set here = "/apps/freeweight/goals/" ~ (slug | urlencode) %}
+<div class="page-head">
+  <h2>{{ goal.get("name") if goal else slug }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions">
+    <a href="/apps/freeweight/goals">Every goal</a>
+    {% if sourced.live %} · <a href="{{ here }}/edit">Edit</a>{% endif %}
+  </div>
+</div>
+{% include "_app_state.html" %}
+{% if done_message %}<p class="notice" role="status">{{ done_message }}</p>{% endif %}
+{{ refusal(action_error) }}
+{% if preview %}
+<div class="warning-state" role="alert" id="delete">
+  <p><strong>Delete {{ slug }}?</strong> FreeWeight removes the pack at <span class="mono">{{ preview.get("pack_path") or "—" }}</span> and the goal's
+  rows. {{ preview.get("orphaned_runs") }} run(s) measured under it keep their results and lose their goal, and
+  <strong>{{ preview.get("destroyed_grades") }}</strong> of your grades are destroyed.</p>
+  {% if mismatched %}<p>The slug you typed does not match; nothing was deleted.</p>{% endif %}
+  <form method="post" action="{{ here }}/delete" class="kit-actions">
+    {{ csrf() }}
+    <div class="field"><label for="fw-goal-delete">Type the slug to confirm</label><input id="fw-goal-delete" name="confirm" required autocomplete="off" autocapitalize="off"></div>
+    <button type="submit" data-variant="danger">Delete</button> <a href="{{ here }}">Keep it</a>
+  </form>
+</div>
+{% endif %}
+{{ refusal(sourced.error) }}
+{% if goal %}
+{% set pack_goal = (goal.get("pack") or {}).get("goal") or {} %}
+{% if goal.get("intent") %}<p class="kit-live">{{ goal.get("intent") }}</p>{% endif %}
+{{ kv_list([
+  {"label": "goal_hash", "value": goal.get("goal_hash") or "—"},
+  {"label": "Slug · capability", "value": (goal.get("slug") or slug) ~ " · " ~ (goal.get("capability_id") or "—")},
+  {"label": "Pack version", "value": goal.get("goal_pack_version") or "—"},
+  {"label": "Contributes to", "value": goal.get("contributes_to") or "— (emitted only as its own user.* capability)"},
+  {"label": "Score method mix", "value": mix(goal.get("score_method_mix"))},
+  {"label": "Calibration", "value": calibration(goal)},
+  {"label": "Calibrated at", "value": goal.get("calibrated_at") or "—"},
+  {"label": "From starter", "value": pack_goal.get("forked_from") or goal.get("forked_from") or "—"},
+  {"label": "Badge", "value": badge("unforked", tone="warning", title="unedited starter content") if goal.get("unforked") else "—"},
+]) }}
+
+<h3>Criteria</h3>
+{% if goal.get("criteria") %}
+{% set rows = [] %}
+{% for one in goal.get("criteria") %}
+{% set _ = rows.append([one.get("name") or "—", one.get("key") or "—", one.get("rung") or "—", percent(one.get("weight")), yes_no(one.get("gate")), one.get("rule_type") or "—", one.get("scale_points") or "—", yes_no(one.get("has_scale_descriptors")) if one.get("rung") in ("judge", "human") else "—"]) %}
+{% endfor %}
+{{ table([{"label": "Criterion"}, {"label": "Key", "mono": true}, {"label": "Rung"}, {"label": "Weight", "numeric": true}, {"label": "Gate"}, {"label": "Rule", "mono": true}, {"label": "Scale", "numeric": true}, {"label": "Described"}], rows, caption="What the goal measures, and at which rung", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No criteria recorded.") }}
+{% endif %}
+
+<h3>Tasks</h3>
+{% if goal.get("tasks") %}
+{% set rows = [] %}
+{% for one in goal.get("tasks") %}
+{% set _ = rows.append([one.get("name") or "—", one.get("key") or "—", (one.get("prompt_id") or "—") ~ " " ~ (one.get("prompt_version") or ""), short(one.get("rendered_prompt_hash")), badge("starter", tone="warning") if one.get("is_starter") else "yours", yes_no(one.get("has_source"))]) %}
+{% endfor %}
+{{ table([{"label": "Task"}, {"label": "Key", "mono": true}, {"label": "Prompt", "mono": true}, {"label": "Rendered hash"}, {"label": "Whose"}, {"label": "Annotated source"}], rows, caption="What a model answers", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No tasks recorded.") }}
+{% endif %}
+
+<h3>Lint</h3>
+{% if goal.get("findings") %}
+{% set rows = [] %}
+{% for one in goal.get("findings") %}
+{% set _ = rows.append([badge(one.get("severity") or "—", tone=({"error": "danger", "warning": "warning"}).get(one.get("severity"), "neutral")), one.get("code") or "—", one.get("message") or "—", one.get("criterion") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Severity"}, {"label": "Code", "mono": true}, {"label": "Finding"}, {"label": "Criterion", "mono": true}], rows, caption="FreeWeight's lint; a finding never blocks the goal", density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">No finding.</p>
+{% endif %}
+
+<h3 id="checks">Validate and suggest rules</h3>
+{% if sourced.live %}
+<p><a href="{{ here }}?check=validate#checks">Validate</a> · <a href="{{ here }}?check=suggest#checks">Suggest rules</a></p>
+{% else %}
+<p class="muted">Both are FreeWeight's own reading of the pack, from its running API.</p>
+{% endif %}
+{% if check == "validate" %}
+<p>{{ badge("valid", tone="success") if checked.get("valid") else badge("has errors", tone="danger") }} {{ (checked.get("findings") or []) | length }} finding(s)
+for <span class="mono">{{ checked.get("goal_hash") }}</span>.</p>
+{% elif check == "suggest" %}
+<p class="muted">Proposals only — FreeWeight applies none. Accept one by editing <code>goal.json</code>: give the criterion this <code>rule</code>
+block and its rule's rung, and the edit is previewed like any other. In a draft, each proposal has its own Accept.</p>
+{% for item in checked.get("items") or [] %}
+<details class="kit-details"><summary><span class="mono">{{ item.get("criterion") }}</span> → <code>{{ item.get("rule_type") }}</code></summary>
+<p class="muted">{{ item.get("explanation") }}</p>
+{{ json_viewer(item.get("parameters") or {}, label="Pre-filled parameters") }}
+</details>
+{% else %}
+<p class="muted">No rule matches how these criteria are described.</p>
+{% endfor %}
+{% endif %}
+
+<h3>Results</h3>
+{% if data.get("results") is none %}
+<p class="muted">A goal's results are FreeWeight's metric query, read from its running API.</p>
+{% elif data.get("results") %}
+{% set rows = [] %}
+{% for one in data.get("results") %}
+{% set _ = rows.append([run_link(one.get("run_id")), one.get("model") or "—", one.get("metric_key") or "—", value(one.get("value"), one.get("unavailable_reason")), one.get("created_at") or "—", one.get("label") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Run"}, {"label": "Model", "mono": true}, {"label": "Metric", "mono": true}, {"label": "Value", "numeric": true}, {"label": "Run created", "mono": true}, {"label": "Label"}], rows, caption="The newest results of goal." ~ (goal.get("slug") or slug), density="dense", row_count=rows | length) }}
+<p><a href="/apps/freeweight/results?suite=goal.{{ (goal.get('slug') or slug) | urlencode }}">Every result</a></p>
+{% else %}
+{{ empty_state("No run of this goal has completed.", "Start a run", "/apps/freeweight/runs") }}
+{% endif %}
+
+<h3 id="export">Export</h3>
+<ul>
+  <li><a href="{{ here }}/bundle">The bundle</a> — every file of the pack, hash-pinned. <strong>Round-trips:</strong> it is what Import reads,
+  here or on another FreeWeight.</li>
+  <li><a href="{{ here }}/export"><code>benchmark.goal_pack</code></a> — the SetSpec description of what the goal measures, with each prompt by id
+  and hash. <strong>Does not round-trip:</strong> a pack cannot be rebuilt from it.</li>
+</ul>
+
+<h3>Delete</h3>
+<form method="post" action="{{ here }}/delete" class="kit-actions">
+  {{ csrf() }}
+  <button type="submit"{% if not sourced.live %} disabled title="FreeWeight is not answering"{% endif %}>Delete this goal…</button>
+</form>
+<p class="muted">FreeWeight previews first: how many runs the deletion orphans and how many of your grades it destroys.</p>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

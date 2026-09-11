@@ -119,6 +119,18 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "freeweight.run_cancel",
         "freeweight.run_repeat",
         "freeweight.provider_save",
+        # WP4 Gate A. From FreeWeight's Goals page: a goal created from a pack, forked from a
+        # starter, edited (a separating edit's preview is a `pending` row), deleted (its preview a
+        # `pending` row) or imported; a wizard draft begun, stepped, saved as a pack or abandoned.
+        "freeweight.goal_create",
+        "freeweight.goal_fork",
+        "freeweight.goal_edit",
+        "freeweight.goal_delete",
+        "freeweight.goal_import",
+        "freeweight.draft_start",
+        "freeweight.draft_edit",
+        "freeweight.draft_save",
+        "freeweight.draft_delete",
     }
 )
 """The closed action vocabulary."""

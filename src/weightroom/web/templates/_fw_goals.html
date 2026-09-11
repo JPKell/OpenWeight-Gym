@@ -1,0 +1,37 @@
+{#- FreeWeight's goal vocabulary as WeightRoom renders it (row WP4). Every value reaches the page as
+    escaped text; `—` stands for a value nobody reported, never for zero (ADR-0016). Fields are read
+    with `.get`: the environment is StrictUndefined. Import `with context` for `csrf`. -#}
+{% from "mirrorwall/components.html" import badge %}
+
+{% macro csrf() -%}
+<input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+{%- endmacro %}
+
+{% macro calibration(goal) -%}
+{#- The calibration state in api.md's words, with the agreement and its n beside it — a κw without
+    its n is a number pretending to be a fact. -#}
+{%- set state = goal.get("calibration_state") -%}
+{%- set tones = {"calibrated": "success", "uncalibrated": "danger", "insufficient": "warning"} -%}
+{%- if state -%}
+{{ badge(state, tone=tones.get(state, "neutral")) }}
+{%- if goal.get("kappa_w") is number %} κ<sub>w</sub> {{ "%.2f" | format(goal.get("kappa_w")) }} over {{ goal.get("n_holdout") }} held out{% endif -%}
+{%- if goal.get("calibration_stale") %} {{ badge("measured on an earlier rubric", tone="warning", title="the stored report's goal_hash is not the goal's") }}{% endif -%}
+{%- else -%}<span class="muted" title="FreeWeight states a goal with no stored report from its running API">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro mix(score_method_mix) -%}
+{#- The declared share of weight at each rung: beside the score, always (ADR-0031). -#}
+{%- if score_method_mix -%}
+{%- for rung in ["rule", "reference", "human", "judge"] -%}{%- if (score_method_mix.get(rung) or 0) > 0 %}<span class="kit-id">{{ rung }} {{ "%.0f" | format(score_method_mix.get(rung) * 100) }}%</span> {% endif -%}{%- endfor -%}
+{%- else -%}<span class="muted" title="the declared mix is FreeWeight's arithmetic, read from its running API">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro percent(fraction) -%}
+{%- if fraction is number -%}{{ "%.0f" | format(fraction * 100) }}%{%- else -%}<span class="muted">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro figure(number, reason, fmt="%.3f") -%}
+{#- One agreement figure, or `—` with FreeWeight's reason for having none. -#}
+{%- if number is number and number is not sameas true and number is not sameas false -%}{{ fmt | format(number) }}
+{%- else -%}<span class="muted" title="{{ reason }}">—</span>{%- endif -%}
+{%- endmacro %}

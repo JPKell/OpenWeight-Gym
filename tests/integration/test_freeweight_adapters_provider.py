@@ -124,8 +124,9 @@ def _provider(router: Any) -> Any:  # noqa: ANN401 — a respx router, its route
     )
 
 
-def test_no_freeweight_page_is_a_stub_but_goals() -> None:
-    assert app_side_nav_stubs("freeweight") == ({"label": "Goals", "title": "coming in row WP4"},)
+def test_no_freeweight_page_is_a_stub() -> None:
+    # Goals was the last, built by row WP4.
+    assert app_side_nav_stubs("freeweight") == ()
 
 
 # --- Adapters -------------------------------------------------------------------------------------
