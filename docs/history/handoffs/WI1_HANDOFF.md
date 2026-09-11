@@ -16,6 +16,8 @@
 | IdeaPress | `74462c8` | C | `draft_body` runs M7's `reset_orphaned_units` on **every** run, not only `--resume`, so a unit a failed run left in `drafting` is reset to `paused` (with `unit.reset`) and re-entered |
 | IdeaPress | `74f064d` | D | `docs/apps/ideapress/api.md` mirrored byte-identical from `WeightRoom/docs` |
 | IdeaPress | `f104b51` | D (found by the demonstration, §4.1) | `_track_sources` descends into nested sections (`models.stages.draft`, `inference.ollama.base_url`); `config schema --json` and `config show` overlay `database` — or `env …; database row … shadowed` — from the `settings` table, never creating a database that does not exist; `config show` prints the stored value it marks (configuration standards §7) |
+| IdeaPress | `cce46be` | after the interview (§7) | `tests/conftest.py` gains a session-scoped autouse isolation fixture, so module-scoped fixtures no longer build applications over the operator's real data; `tests/unit/test_suite_isolation.py` |
+| IdeaPress | `49905c3` | after the interview (§7) | An unknown key or refused value is `400 VALIDATION_ERROR`; `ideapress doctor` applies stored runtime settings before its binding check; api.md §6 mirrored |
 | WeightRoom | `013c3b3` | D | `tests/fixtures/schemas/ideapress.json` and the IdeaPress form golden: the two keys move from runtime to config-only. No console test mocked IdeaPress's old `GET`/`PUT` shape — the console's settings tests mock LoadCoach only |
 | WeightRoom | this commit | D | `apps/ideapress/api.md` §6 rewritten (canonical), this handoff, the row marked done |
 
@@ -25,7 +27,9 @@
 (baseline before the row: 1260 passed) — the final run with `XDG_DATA_HOME`, `XDG_CONFIG_HOME`,
 `XDG_STATE_HOME` and `IDEAPRESS_DATA_DIR` pointed at scratch for the **whole process**, because a
 plain run on this machine writes test projects into the operator's real IdeaPress database and now
-errors on it (§5 item 4g). **WeightRoom**, Python **3.14.4** (`.venv/bin/…`, the venv
+errors on it (§5 item 4g). After the operator's decisions (§7), `49905c3` passes a **plain** run:
+**1292 passed, 6 skipped, 30 deselected**, ruff and mypy (212 files) clean, `lint-imports` 4 kept,
+and the real project directory did not grow across it. **WeightRoom**, Python **3.14.4** (`.venv/bin/…`, the venv
 *not* activated — see §5 item 4d): ruff clean, mypy clean (187 files), `lint-imports` 5 kept,
 `pytest` **1462 passed, 3 skipped** on `013c3b3`. `docs/scripts/sync_component_docs.py --check`
 exits 0.
@@ -66,10 +70,10 @@ exits 0.
    liveness refusal now applies to plain runs too — a run with no recorded owner still marked
    `running` blocks a plain draft on that project, as it already blocked `--resume`.
 5. **Refusal codes.** Configuration-only is `403 FORBIDDEN` (a code added to the status map
-   alongside `CSRF_FAILED`, outside spec §13's fifteen). An unknown key or a refused value stays
-   IdeaPress's `422 VALIDATION_FAILED`; LoadCoach and PromptCadence answer those `400
-   VALIDATION_ERROR`. Kept, as "the refusals unchanged"; the console shows the envelope's message
-   whatever the code.
+   alongside `CSRF_FAILED`, outside spec §13's fifteen). An unknown key or a refused value was first
+   kept at IdeaPress's `422 VALIDATION_FAILED`, as "the refusals unchanged"; the operator chose to
+   align it (§7), so it is `400 VALIDATION_ERROR`, as in LoadCoach and PromptCadence (`49905c3`).
+   IdeaPress keeps `VALIDATION_FAILED` for failed deterministic checks.
 6. **`applies`** is an additive, IdeaPress-only field in each definition. The console does not read
    it yet (§5 item 4a).
 7. **`sources` were wrong on the console** (§4.1): not in the kickoff, but criterion 1 ("live values
@@ -152,7 +156,8 @@ environ-verified pid.
 
 ## 5. For the operator
 
-1. **Nothing pushed or tagged.** IdeaPress `1b5c51a`, `2871648`, `74462c8`, `74f064d`, `f104b51`;
+1. **Nothing pushed or tagged.** IdeaPress `1b5c51a`, `2871648`, `74462c8`, `74f064d`, `f104b51`,
+   `cce46be`, `49905c3`;
    WeightRoom `013c3b3` and this docs commit.
 2. **No version bump.** IdeaPress stays `1.5.0`; everything is under `[Unreleased]` (Changed:
    the document and body, rows applied, the two keys out; Fixed: 403, the stranded unit, sources).
@@ -176,12 +181,13 @@ environ-verified pid.
       WeightRoom's `.venv/bin` is on `PATH` (an activated venv): `wr-gym` is then found, so
       `units sync` also writes `weightroom.service`. It passes with the tools invoked by path. A
       test-isolation defect, present before this row.
-   e. `ideapress doctor`'s stage-binding check reads configuration (`diagnostics.py`), not stored
-      rows, so a binding changed through `PUT /settings` is not what `doctor` checks.
+   e. **Fixed in `49905c3` (§7).** `ideapress doctor`'s stage-binding check read configuration
+      only, so a binding changed through `PUT /settings` was not what `doctor` checked; it now
+      applies stored runtime settings first.
    f. The shared-settings edge in §2 item 1 (a stage on another project may see a change before its
       own next start). Honest in api.md; a per-run snapshot would remove it.
-   g. **IdeaPress's default test run writes into the operator's real IdeaPress data — since
-      2026-08-31.** Two module-scoped fixtures, `tests/security/test_sanitization_sweep.py:161` and
+   g. **Fixed (`cce46be`) and cleaned after the interview — see §7.** As found: **IdeaPress's
+      default test run wrote into the operator's real IdeaPress data — since 2026-08-31.** Two module-scoped fixtures, `tests/security/test_sanitization_sweep.py:161` and
       `tests/accessibility/test_ui_checklist.py:92` (and, nightly only,
       `tests/performance/test_budgets.py:168`), call `load_settings()` before the function-scoped
       `isolated_environment` fixture has redirected `XDG_*`/`IDEAPRESS_DATA_DIR`, so they build an
@@ -199,7 +205,60 @@ environ-verified pid.
 
 * **W10** takes §5 items 4a–4c with its Settings and audit passes if the operator agrees; 4d belongs
   with W10's hardening.
-* **§5 item 4g wants a row of its own before anyone next runs IdeaPress's suite on this machine
-  unisolated** — the isolation fix in IdeaPress, then the cleanup of the real database.
+* §5 item 4g did not wait for a row: the operator had it fixed and cleaned in this session (§7).
+* **`ideapress db backup` cannot write a backup** (§7) — a small IdeaPress row, or W10's hardening.
 * **If `inference.mode` or `logging.level` should be changeable from a form without a file edit**,
   that is an ADR first (§2 item 2), not a registry line.
+
+## 7. The operator's decisions (interviewed 2026-09-10) and what followed
+
+| Question | Decision |
+|---|---|
+| The test leak into the real IdeaPress database (§5 item 4g) | Fix and clean now, backups first, the delete list shown before anything is removed |
+| `inference.mode` and `logging.level` out of the runtime set (§2 item 2) | Keep |
+| The console findings (§5 items 4a–4c) | W10 — added to its row, with the `PATH`-sensitive test (4d) |
+| Demo project `01M26M2QJQD5VK73X476GVB1CJ` (U-01 paused) | Delete |
+| The same leak in FreeWeight, LoadCoach, PromptCadence | Check, and fix what is found |
+| `doctor` reading configuration only (4e) | Fix now |
+| `422` vs `400` for refused keys; a per-run settings snapshot (4f) | Align to `400`; no snapshot |
+| The other test-made projects ("A hundred sections" ×2 from `tests/performance/test_budgets.py`, "x" ×2) | Delete |
+| Ledger and egress rows of deleted projects | Purge |
+
+**Done after the interview:**
+
+* **IdeaPress `cce46be`** — `tests/unit/test_suite_isolation.py` failed first (a module-scoped
+  fixture saw `/home/jpk/.local/share/ideapress`), then passed once `tests/conftest.py` gained a
+  session-scoped autouse fixture applying the same redirection as `isolated_environment`.
+* **IdeaPress `49905c3`** — `400 VALIDATION_ERROR` for an unknown key or refused value (tests
+  changed first; api.md §6 edited here and mirrored); `diagnose()` calls
+  `Runtime.refresh_settings()` and checks `runtime.settings`
+  (`tests/integration/test_doctor_stored_bindings.py` failed first). OpenAPI snapshot regenerated.
+* **FreeWeight, LoadCoach, PromptCadence: nothing to fix.** Their module-scoped fixtures touch no
+  real path — FreeWeight's build a `tmp_path_factory` database and read repository manifests,
+  LoadCoach's accessibility fixture isolates itself, PromptCadence's reads a vendored snapshot —
+  and their real databases carry no test markers (`<script>`, "Local inference", `fake-model`,
+  `pytest-of-`) in any text column.
+* **The reference machine's IdeaPress, cleaned** — `ideapress.service` stopped for it and started
+  after:
+  * **Backups first**, in `~/.local/share/ideapress/backups/wi1-cleanup/`:
+    `ideapress-pre-wi1-cleanup-20260911T002125Z.sqlite3` (WeightsDB `backup`; revision `0011`,
+    1186 projects, 3236 ledger entries, `integrity_check` ok) and
+    `projects-pre-wi1-cleanup-20260911T002125Z.tar.gz` (1186 project directories).
+  * **1186 projects deleted** one at a time through `ProjectService.delete(confirm=True)` — the
+    cascade checked on the first before the rest ran. Afterwards every project-owned table
+    (`units`, `unit_versions`, `stage_runs`, `attempts`, `stage_events`, `requirements`,
+    `validations`, `critiques`, `audit_findings`, `coverage`, `sources`, `exports`,
+    `tool_call_records`) held 0 rows, and `projects/` was empty.
+  * **Then, in one transaction, the mounted tables emptied:** `ledger_runs` 1233,
+    `ledger_entries` 3236, `ledger_balances` 1711, `egress_decisions` 3236 (`ledger_balance_money`
+    was already 0). Every row had been checked beforehand to belong to a project being deleted.
+    **This is a raw write the operator chose:** data-model.md says those tables are written only
+    through LoadLedger and Commissioner, and Commissioner has no delete path by design.
+  * **After:** `integrity_check` ok; the service `active`; `/health` `ok` (database, backend,
+    prompts); `GET /projects` empty; `models.stages.draft` `ollama/qwen3.5:9b-q8_0` from
+    configuration; `settings` and `api_tokens` untouched (both already empty).
+* **Found while backing up: `ideapress db backup` cannot write a backup.** `cli/commands/db.py`
+  hands `weightsdb.backup` the destination *directory*, which it treats as the backup file:
+  `IsADirectoryError: … backups/wi1-cleanup`, with or without `--output`. It fails before writing
+  or deleting anything. The backups above were taken by calling `weightsdb.backup` with a file
+  path. Not fixed.
