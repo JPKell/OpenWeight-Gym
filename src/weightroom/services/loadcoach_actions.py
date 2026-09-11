@@ -8,10 +8,11 @@ and refusing a field that cannot parse before anything is sent.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, ClassVar, Final
 
-from baseaicore import SuiteError
+from baseaicore import DataClassification, SuiteError
 
 from weightroom.services.app_api import call
 from weightroom.services.loadcoach_pages import APP, segment
@@ -22,12 +23,23 @@ if TYPE_CHECKING:
     from weightroom.config import Settings
 
 __all__ = [
+    "CLASSIFICATIONS",
+    "QUEUE_VERBS",
     "RUNTIME_PROFILE_FIELDS",
     "LoadCoachFormInvalid",
+    "cancel_job",
     "discover",
+    "evidence_bundle",
     "explain",
+    "feedback_body",
+    "freeweight_pull",
+    "import_evidence",
+    "job_body",
+    "queue_control",
     "route_body",
+    "send_feedback",
     "set_enabled",
+    "submit_job",
     "warm",
 ]
 
@@ -200,3 +212,249 @@ def set_enabled(
     from weightroom.services.catalog import set_enabled as catalog_set_enabled
 
     return catalog_set_enabled(settings, APP, segment(model_ref), enabled=enabled, client=client)
+
+
+# --- Queue and jobs -------------------------------------------------------------------------------
+
+CLASSIFICATIONS: Final[tuple[str, ...]] = tuple(level.value for level in DataClassification)
+
+QUEUE_VERBS: Final[dict[str, str]] = {
+    "pause": (
+        "Pausing stops LoadCoach dispatching queued jobs — anything submitted to POST /jobs, a "
+        "warm, a job from this page — until it is resumed. Nothing is dropped, and work already "
+        "executing finishes. Synchronous generation is not held: PromptCadence (POST /generate), "
+        "IdeaPress and this console's chat (POST /generate/stream) are served as before."
+    ),
+    "resume": (
+        "Resuming lets LoadCoach dispatch again and clears a drain: waiting jobs start on the "
+        "scheduler's next tick."
+    ),
+    "drain": (
+        "Draining finishes the jobs already executing and dispatches nothing new, for a clean "
+        "shutdown; queued jobs wait until the queue is resumed. Synchronous generation — "
+        "PromptCadence, IdeaPress, this console's chat — is not held."
+    ),
+}
+"""What each queue control stops, said before it is sent (read from LoadCoach's code: the flags
+gate the worker's dispatch, and ``/generate`` never consults them)."""
+
+_NOTES_CHARS: Final = 4000
+_IDEMPOTENCY_KEY_CHARS: Final = 128
+_IMPORT_TIMEOUT_SECONDS: Final = 120.0
+
+
+def queue_control(client: httpx.Client, settings: Settings, verb: str) -> dict[str, Any]:
+    """``POST /queue/pause|resume|drain``: the durable flag the scheduler reads every second.
+
+    Raises:
+        ValueError: ``verb`` is not one of :data:`QUEUE_VERBS`.
+        AppRefused: LoadCoach refused (the console's token below ``admin``).
+        AppUnreachable: It did not answer.
+    """
+    if verb not in QUEUE_VERBS:
+        message = f"{verb!r} is not a queue control"
+        raise ValueError(message)
+    document = call(client, settings, APP, "POST", f"queue/{verb}")
+    return dict(document) if isinstance(document, Mapping) else {}
+
+
+def _decimal(label: str, raw: str, *, lowest: float, highest: float) -> float | None:
+    text = raw.strip()
+    if not text:
+        return None
+    try:
+        value = float(text)
+    except ValueError as exc:
+        message = f"{label} must be a number; got {text!r}."
+        raise LoadCoachFormInvalid(message, details={"field": label}) from exc
+    if not lowest <= value <= highest:
+        message = f"{label} must be between {lowest} and {highest}; got {value}."
+        raise LoadCoachFormInvalid(message, details={"field": label})
+    return value
+
+
+def job_body(  # noqa: PLR0913 — one keyword per field of POST /jobs' body
+    *,
+    task: str,
+    prompt: str,
+    system: str,
+    job_class: str,
+    priority: str,
+    max_wait_seconds: str,
+    idempotent: bool,
+    stream: bool,
+    data_classification: str,
+    model: str,
+    adapter: str,
+    temperature: str,
+    max_output_tokens: str,
+    think: str,
+    idempotency_key: str,
+) -> dict[str, Any]:
+    """The ``POST /jobs`` body the Submit form describes (api.md §4–§5).
+
+    ``idempotency_key`` is minted when the page renders, so a form sent twice — a double click, a
+    resubmitted page — returns the first job rather than queueing a second. Blank fields are left
+    out, so LoadCoach's own defaults and the task profile's execution block apply.
+
+    Raises:
+        LoadCoachFormInvalid: The task or the prompt is blank, or a number does not parse.
+    """
+    if not task.strip():
+        message = "Choose a task profile; LoadCoach routes the job against one."
+        raise LoadCoachFormInvalid(message, details={"field": "task"})
+    if not prompt.strip():
+        message = "The prompt is empty; a job needs something to send."
+        raise LoadCoachFormInvalid(message, details={"field": "prompt"})
+    body: dict[str, Any] = {
+        "task": task.strip(),
+        "prompt": prompt,
+        "class": job_class.strip() or "normal",
+        "idempotent": idempotent,
+        "stream": stream,
+    }
+    if system.strip():
+        body["system"] = system
+    level = _number("Priority", priority, minimum=0)
+    if level is not None:
+        body["priority"] = level
+    wait = _number("Max wait seconds", max_wait_seconds, minimum=1)
+    if wait is not None:
+        body["max_wait_seconds"] = wait
+    if data_classification.strip():
+        body["data_classification"] = data_classification.strip()
+    sampling: dict[str, Any] = {}
+    heat = _decimal("Temperature", temperature, lowest=0.0, highest=2.0)
+    if heat is not None:
+        sampling["temperature"] = heat
+    tokens = _number("Max output tokens", max_output_tokens, minimum=1)
+    if tokens is not None:
+        sampling["max_output_tokens"] = tokens
+    if think in {"true", "false"}:
+        sampling["think"] = think == "true"
+    if sampling:
+        body["sampling"] = sampling
+    overrides = {
+        key: value.strip()
+        for key, value in (("model", model), ("adapter", adapter))
+        if value.strip()
+    }
+    if overrides:
+        body["overrides"] = overrides
+    if idempotency_key.strip():
+        body["idempotency_key"] = idempotency_key.strip()[:_IDEMPOTENCY_KEY_CHARS]
+    return body
+
+
+def submit_job(client: httpx.Client, settings: Settings, body: Mapping[str, Any]) -> dict[str, Any]:
+    """``POST /jobs``: the queued job's document (``202``), or the original one for a repeated key.
+
+    Raises:
+        AppRefused: ``TASK_PROFILE_NOT_FOUND``, ``VALIDATION_ERROR`` (a priority outside its class's
+            band), ``QUEUE_FULL``, in LoadCoach's words.
+        AppUnreachable: It did not answer.
+    """
+    document = call(
+        client, settings, APP, "POST", "jobs", body=dict(body),
+        timeout_seconds=_ACTION_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(document) if isinstance(document, Mapping) else {}
+
+
+def cancel_job(client: httpx.Client, settings: Settings, job_id: str) -> dict[str, Any]:
+    """``POST /jobs/{id}/cancel``: at once while waiting, at the next chunk while executing.
+
+    Raises:
+        AppRefused: ``JOB_NOT_CANCELLABLE`` for a finished job, ``JOB_NOT_FOUND``.
+        AppUnreachable: It did not answer.
+    """
+    document = call(
+        client, settings, APP, "POST", f"jobs/{segment(job_id)}/cancel",
+        timeout_seconds=_ACTION_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(document) if isinstance(document, Mapping) else {}
+
+
+def feedback_body(
+    *, accepted: str, quality_score: str, edited: bool, validation_passed: str, notes: str
+) -> dict[str, Any]:
+    """The ``POST /jobs/{id}/feedback`` body (api.md §6); ``source`` is LoadCoach's to set.
+
+    Raises:
+        LoadCoachFormInvalid: ``accepted`` is not stated, or the quality is not in ``[0, 1]``.
+    """
+    if accepted not in {"true", "false"}:
+        message = "Say whether the output was accepted."
+        raise LoadCoachFormInvalid(message, details={"field": "accepted"})
+    body: dict[str, Any] = {"accepted": accepted == "true", "edited": edited}
+    quality = _decimal("Quality", quality_score, lowest=0.0, highest=1.0)
+    if quality is not None:
+        body["quality_score"] = quality
+    if validation_passed in {"true", "false"}:
+        body["validation"] = {"passed": validation_passed == "true"}
+    if notes.strip():
+        body["notes"] = notes.strip()[:_NOTES_CHARS]
+    return body
+
+
+def send_feedback(
+    client: httpx.Client, settings: Settings, job_id: str, body: Mapping[str, Any]
+) -> dict[str, Any]:
+    """``POST /jobs/{id}/feedback``; idempotent per ``(job, source)``.
+
+    Raises:
+        AppRefused: ``JOB_NOT_FOUND``, ``VALIDATION_ERROR``.
+        AppUnreachable: It did not answer.
+    """
+    document = call(
+        client, settings, APP, "POST", f"jobs/{segment(job_id)}/feedback", body=dict(body),
+        timeout_seconds=_ACTION_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(document) if isinstance(document, Mapping) else {}
+
+
+# --- Evidence -------------------------------------------------------------------------------------
+
+
+def evidence_bundle(raw: bytes) -> dict[str, Any]:
+    """An uploaded file as the JSON object ``POST /evidence/import`` takes; LoadCoach validates it.
+
+    Raises:
+        LoadCoachFormInvalid: The file is empty, not UTF-8 JSON, or not an object.
+    """
+    try:
+        document = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        message = (
+            "The file is not a JSON document; export a benchmark.evidence_bundle from FreeWeight."
+        )
+        raise LoadCoachFormInvalid(message, details={"field": "file"}) from exc
+    if not isinstance(document, dict):
+        message = "The file is JSON but not an object; a bundle is one envelope."
+        raise LoadCoachFormInvalid(message, details={"field": "file"})
+    return document
+
+
+def freeweight_pull(settings: Settings) -> dict[str, Any]:
+    """The pull form's body: FreeWeight's URL from this console's own ``[apps.freeweight]``.
+
+    LoadCoach's fetch allowlist decides whether it may be read (ADR-0026 §3); nothing here does.
+    """
+    return {"url": str(settings.apps.freeweight.base_url).rstrip("/")}
+
+
+def import_evidence(
+    client: httpx.Client, settings: Settings, body: Mapping[str, Any]
+) -> dict[str, Any]:
+    """``POST /evidence/import``: counts imported, updated, unmatched and rejected, with reasons.
+
+    Raises:
+        AppRefused: ``EVIDENCE_SOURCE_REFUSED``, ``SCHEMA_VERSION_UNSUPPORTED``,
+            ``API_VERSION_UNSUPPORTED``, ``VALIDATION_ERROR``, in LoadCoach's words.
+        AppUnreachable: It did not answer.
+    """
+    document = call(
+        client, settings, APP, "POST", "evidence/import", body=dict(body),
+        timeout_seconds=_IMPORT_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(document) if isinstance(document, Mapping) else {}

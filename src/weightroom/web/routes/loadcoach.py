@@ -12,15 +12,17 @@ Every action is a form post writing exactly one audit row whether LoadCoach acce
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import TYPE_CHECKING, Annotated, Any
+from collections.abc import Iterable, Iterator, Mapping
+from typing import TYPE_CHECKING, Annotated, Any, Final, Literal
+from urllib.parse import urlencode
 
-from baseaicore import SuiteError
-from fastapi import APIRouter, Form, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from baseaicore import SuiteError, new_id
+from fastapi import APIRouter, File, Form, Query, Request, UploadFile, status
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
 
 from weightroom.services import loadcoach_actions as actions
 from weightroom.services import loadcoach_pages as lc
+from weightroom.services.app_api import stream as app_stream
 from weightroom.services.audit import record
 from weightroom.web.routes.apps import app_view, back_to, read_app_page, render_app_page
 from weightroom.web.session import CurrentOperator, now_of
@@ -419,3 +421,443 @@ def reliability_page(
         task=wanted_task or "",
         model=wanted_model or "",
     )
+
+
+# --- Queue and jobs -------------------------------------------------------------------------------
+
+_SSE_HEADERS: Final = {"Cache-Control": "no-cache, no-store", "X-Accel-Buffering": "no"}
+_BUNDLE_BYTES: Final = 32 * 1024 * 1024
+"""The largest evidence bundle the page uploads; the console's body cap is larger (64 MiB)."""
+
+
+def _href(path: str, **query: Any) -> str:
+    """``path`` with the query parameters that carry a value, so a pager keeps the filters."""
+    kept = {key: value for key, value in query.items() if value not in (None, "")}
+    return f"{path}?{urlencode(kept)}" if kept else path
+
+
+def _queue(  # noqa: PLR0913 — the filters, and what a failed action leaves on the page
+    request: Request,
+    principal: Principal,
+    *,
+    filters: Mapping[str, str | None] | None = None,
+    cursor: str | None = None,
+    page: int = 1,
+    confirm: str | None = None,
+    action_error: SuiteError | None = None,
+    submit_error: SuiteError | None = None,
+    form: Mapping[str, Any] | None = None,
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    wanted = {key: (filters or {}).get(key) or None for key in ("state", "class", "task", "source")}
+    report = read_app_page(request, view, api=lambda: lc.queue_api(client, settings), database=None)
+    jobs = read_app_page(
+        request,
+        view,
+        api=lambda: lc.jobs_api(
+            client, settings, state=wanted["state"], job_class=wanted["class"],
+            task=wanted["task"], source=wanted["source"], cursor=cursor,
+        ),
+        database=lambda handle: lc.jobs_db(
+            handle, state=wanted["state"], job_class=wanted["class"], task=wanted["task"],
+            source=wanted["source"], page=page,
+        ),
+    )  # fmt: skip
+    data = jobs.data or {}
+    next_href = None
+    if data.get("next_cursor"):
+        next_href = _href(f"{BASE}/queue", **wanted, cursor=data["next_cursor"]) + "#jobs"
+    elif data.get("next_page"):
+        next_href = _href(f"{BASE}/queue", **wanted, page=data["next_page"]) + "#jobs"
+    profiles = (
+        read_app_page(
+            request, view, api=lambda: lc.task_profiles_api(client, settings), database=None
+        ).data
+        if report.live
+        else None
+    )
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "lc_queue.html",
+        selected="Queue",
+        view=view,
+        report=report,
+        jobs=jobs,
+        filters={key: value or "" for key, value in wanted.items()},
+        states=lc.JOB_STATES,
+        classes=lc.JOB_CLASSES,
+        next_href=next_href,
+        confirm=confirm,
+        sentences=actions.QUEUE_VERBS,
+        action_error=action_error,
+        submit_error=submit_error,
+        form=dict(form or {}),
+        profiles=profiles or [],
+        classifications=actions.CLASSIFICATIONS,
+        idempotency_key=new_id(),
+    )
+
+
+@ui_router.get(f"{BASE}/queue", summary="Queue", response_class=HTMLResponse)
+def queue_page(  # noqa: PLR0913 — one parameter per filter LoadCoach's Jobs page takes
+    request: Request,
+    principal: CurrentOperator,
+    state: str | None = None,
+    job_class: Annotated[str | None, Query(alias="class")] = None,
+    task: str | None = None,
+    source: str | None = None,
+    cursor: str | None = None,
+    page: int = 1,
+) -> HTMLResponse:
+    """The queue's report, live; its controls; and every job, filtered, with the Submit form."""
+    return _queue(
+        request,
+        principal,
+        filters={"state": state, "class": job_class, "task": task, "source": source},
+        cursor=cursor or None,
+        page=page,
+    )
+
+
+@ui_router.post(f"{BASE}/queue/control", summary="Pause, resume or drain from the page")
+def queue_control_from_page(
+    request: Request,
+    principal: CurrentOperator,
+    verb: Annotated[Literal["pause", "resume", "drain"], Form()],
+    confirmed: Annotated[str, Form()] = "",
+) -> Response:
+    """Asks first, saying what stops; sends the verb only once confirmed.
+
+    The unconfirmed post changes nothing and writes a ``pending`` row — the trail shows what was
+    about to happen, as a catalog delete's preview does (W8).
+    """
+    action = f"loadcoach.queue_{verb}"
+    if confirmed != "yes":
+        _audit(
+            request, principal, action, target="queue", outcome="pending",
+            params={"confirmed": False},
+        )  # fmt: skip
+        return _queue(request, principal, confirm=verb)
+    client, settings = _clients(request)
+    try:
+        flags = actions.queue_control(client, settings, verb)
+    except SuiteError as exc:
+        _audit(
+            request, principal, action, target="queue", outcome="refused",
+            params={"confirmed": True}, message=exc.message,
+        )  # fmt: skip
+        return _queue(request, principal, action_error=exc)
+    _audit(
+        request, principal, action, target="queue", outcome="ok",
+        params={
+            "confirmed": True, "paused": flags.get("paused"), "draining": flags.get("draining"),
+            "in_flight": flags.get("in_flight"),
+        },
+    )  # fmt: skip
+    return RedirectResponse(f"{BASE}/queue", status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _queue_regions(chunks: Iterable[str]) -> Iterator[str]:
+    """LoadCoach's queue stream as htmx SSE frames, each the live region rendered here.
+
+    htmx's SSE extension swaps a frame's data in as markup, so the data is this console's own
+    rendering of the report — escaped by the template — never LoadCoach's ``html``.
+    """
+    from weightroom.web.rendering import render
+
+    for kind, report in lc.queue_events(chunks):
+        if kind == "heartbeat":
+            yield ": heartbeat\n\n"
+        elif kind == "status":
+            html = render("_lc_queue_live.html", report=report)
+            yield (
+                "event: queue.status\n"
+                + "".join(f"data: {line}\n" for line in html.splitlines() or [""])
+                + "\n"
+            )
+        else:
+            yield "event: stream.closed\ndata: closed\n\n"
+            return
+
+
+@ui_router.get(f"{BASE}/queue/stream", summary="The queue, live")
+def queue_stream(request: Request, principal: CurrentOperator) -> StreamingResponse:
+    """LoadCoach's ``/queue/stream``, one rendered region per change (ADR-0128)."""
+    chunks = app_stream(
+        request.app.state.http,
+        request.app.state.settings,
+        APP,
+        "queue/stream",
+        last_event_id=request.headers.get("last-event-id"),
+    )
+    return StreamingResponse(
+        _queue_regions(chunks), media_type="text/event-stream", headers=_SSE_HEADERS
+    )
+
+
+@ui_router.post(f"{BASE}/queue/jobs", summary="Submit a job from the page")
+def submit_job_from_page(  # noqa: PLR0913 — one parameter per form field, as FastAPI reads them
+    request: Request,
+    principal: CurrentOperator,
+    task: Annotated[str, Form()] = "",
+    prompt: Annotated[str, Form()] = "",
+    system: Annotated[str, Form()] = "",
+    job_class: Annotated[str, Form(alias="class")] = "normal",
+    priority: Annotated[str, Form()] = "",
+    max_wait_seconds: Annotated[str, Form()] = "",
+    idempotent: Annotated[str, Form()] = "",
+    stream: Annotated[str, Form()] = "",
+    data_classification: Annotated[str, Form()] = "",
+    model: Annotated[str, Form()] = "",
+    adapter: Annotated[str, Form()] = "",
+    temperature: Annotated[str, Form()] = "",
+    max_output_tokens: Annotated[str, Form()] = "",
+    think: Annotated[str, Form()] = "",
+    idempotency_key: Annotated[str, Form()] = "",
+) -> Response:
+    """``POST /jobs``; the new job's page. The audit row never carries the prompt or the system."""
+    form = {
+        "task": task, "prompt": prompt, "system": system, "class": job_class,
+        "priority": priority, "max_wait_seconds": max_wait_seconds,
+        "idempotent": idempotent, "stream": stream, "data_classification": data_classification,
+        "model": model, "adapter": adapter, "temperature": temperature,
+        "max_output_tokens": max_output_tokens, "think": think,
+        "idempotency_key": idempotency_key,
+    }  # fmt: skip
+    params = {
+        "task": task or None, "class": job_class or None, "priority": priority or None,
+        "stream": stream == "true", "model": model or None, "adapter": adapter or None,
+        "classification": data_classification or None,
+    }  # fmt: skip
+    client, settings = _clients(request)
+    try:
+        body = actions.job_body(
+            task=task,
+            prompt=prompt,
+            system=system,
+            job_class=job_class,
+            priority=priority,
+            max_wait_seconds=max_wait_seconds,
+            idempotent=idempotent == "true",
+            stream=stream == "true",
+            data_classification=data_classification,
+            model=model,
+            adapter=adapter,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            think=think,
+            idempotency_key=idempotency_key,
+        )
+        document = actions.submit_job(client, settings, body)
+    except SuiteError as exc:
+        _audit(
+            request,
+            principal,
+            "loadcoach.job_submit",
+            target=None,
+            outcome="refused",
+            params=params,
+            message=exc.message,
+        )
+        return _queue(request, principal, submit_error=exc, form=form)
+    job_id = str(document.get("job_id") or "")
+    _audit(
+        request, principal, "loadcoach.job_submit", target=job_id or None, outcome="ok",
+        params={**params, "state": document.get("state")},
+    )  # fmt: skip
+    location = f"{BASE}/queue/jobs/{lc.segment(job_id)}" if job_id else f"{BASE}/queue"
+    return RedirectResponse(location, status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _job(
+    request: Request, principal: Principal, job_id: str, *, action_error: SuiteError | None = None
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request,
+        view,
+        api=lambda: lc.job_api(client, settings, job_id),
+        database=lambda handle: lc.job_db(handle, job_id),
+    )
+    base = f"{BASE}/queue/jobs/{lc.segment(job_id)}"
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "lc_job.html",
+        selected="Queue",
+        view=view,
+        sourced=sourced,
+        job_id=job_id,
+        events_url=f"{base}/events",
+        reply_url=f"{base}/reply",
+        terminal=lc.TERMINAL_JOB_STATES,
+        action_error=action_error,
+    )
+
+
+@ui_router.get(f"{BASE}/queue/jobs/{{job_id}}", summary="One job", response_class=HTMLResponse)
+def job_page(request: Request, principal: CurrentOperator, job_id: str) -> HTMLResponse:
+    """One job: state, attempts, routing, usage, timings, validation, output, events, feedback."""
+    return _job(request, principal, job_id)
+
+
+@ui_router.get(f"{BASE}/queue/jobs/{{job_id}}/events", summary="A job's events, live")
+def job_events(request: Request, principal: CurrentOperator, job_id: str) -> StreamingResponse:
+    """The job's stream as log-pane frames, closed on its terminal event."""
+    chunks = app_stream(
+        request.app.state.http,
+        request.app.state.settings,
+        APP,
+        f"jobs/{lc.segment(job_id)}/stream",
+        last_event_id=request.headers.get("last-event-id"),
+    )
+    return StreamingResponse(
+        lc.job_log_frames(chunks), media_type="text/event-stream", headers=_SSE_HEADERS
+    )
+
+
+@ui_router.get(f"{BASE}/queue/jobs/{{job_id}}/reply", summary="A job's reply, live")
+def job_reply(request: Request, principal: CurrentOperator, job_id: str) -> StreamingResponse:
+    """The job's stream unchanged — ``thinking`` (ADR-0132) and ``token`` deltas for the page's
+    reply region, which writes each into the DOM as text."""
+    chunks = app_stream(
+        request.app.state.http,
+        request.app.state.settings,
+        APP,
+        f"jobs/{lc.segment(job_id)}/stream",
+        last_event_id=request.headers.get("last-event-id"),
+    )
+    return StreamingResponse(chunks, media_type="text/event-stream", headers=_SSE_HEADERS)
+
+
+@ui_router.post(f"{BASE}/queue/jobs/{{job_id}}/cancel", summary="Cancel a job from the page")
+def cancel_job_from_page(request: Request, principal: CurrentOperator, job_id: str) -> Response:
+    """``POST /jobs/{id}/cancel``; the job's page again, with a refusal on it if one came."""
+    client, settings = _clients(request)
+    try:
+        outcome = actions.cancel_job(client, settings, job_id)
+    except SuiteError as exc:
+        _audit(
+            request, principal, "loadcoach.job_cancel", target=job_id, outcome="refused",
+            params={}, message=exc.message,
+        )  # fmt: skip
+        return _job(request, principal, job_id, action_error=exc)
+    _audit(
+        request, principal, "loadcoach.job_cancel", target=job_id, outcome="ok",
+        params={"state": outcome.get("state"), "already": outcome.get("already")},
+    )  # fmt: skip
+    return RedirectResponse(
+        f"{BASE}/queue/jobs/{lc.segment(job_id)}", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+@ui_router.post(f"{BASE}/queue/jobs/{{job_id}}/feedback", summary="Feedback from the page")
+def feedback_from_page(  # noqa: PLR0913 — one parameter per form field
+    request: Request,
+    principal: CurrentOperator,
+    job_id: str,
+    accepted: Annotated[str, Form()] = "",
+    quality_score: Annotated[str, Form()] = "",
+    edited: Annotated[str, Form()] = "",
+    validation_passed: Annotated[str, Form()] = "",
+    notes: Annotated[str, Form()] = "",
+) -> Response:
+    """``POST /jobs/{id}/feedback``; LoadCoach attributes it to this console's token. The audit
+    row carries the verdict, never the notes."""
+    params = {"accepted": accepted or None, "quality_score": quality_score or None}
+    client, settings = _clients(request)
+    try:
+        body = actions.feedback_body(
+            accepted=accepted, quality_score=quality_score, edited=edited == "true",
+            validation_passed=validation_passed, notes=notes,
+        )  # fmt: skip
+        actions.send_feedback(client, settings, job_id, body)
+    except SuiteError as exc:
+        _audit(
+            request, principal, "loadcoach.job_feedback", target=job_id, outcome="refused",
+            params=params, message=exc.message,
+        )  # fmt: skip
+        return _job(request, principal, job_id, action_error=exc)
+    _audit(request, principal, "loadcoach.job_feedback", target=job_id, outcome="ok", params=params)
+    return RedirectResponse(
+        f"{BASE}/queue/jobs/{lc.segment(job_id)}", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+# --- Evidence -------------------------------------------------------------------------------------
+
+
+def _evidence(
+    request: Request,
+    principal: Principal,
+    *,
+    action_error: SuiteError | None = None,
+    imported: Mapping[str, Any] | None = None,
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request, view, api=lambda: lc.evidence_api(client, settings), database=lc.evidence_db
+    )
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "lc_evidence.html",
+        selected="Evidence",
+        view=view,
+        sourced=sourced,
+        action_error=action_error,
+        imported=imported,
+        freeweight_url=actions.freeweight_pull(settings)["url"],
+    )
+
+
+@ui_router.get(f"{BASE}/evidence", summary="Evidence", response_class=HTMLResponse)
+def evidence_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+    """Imported evidence by match state, the store's summary, the sources, and Import."""
+    return _evidence(request, principal)
+
+
+@ui_router.post(f"{BASE}/evidence/import", summary="Import evidence from the page")
+def import_from_page(
+    request: Request,
+    principal: CurrentOperator,
+    origin: Annotated[str, Form()] = "file",
+    file: Annotated[UploadFile | None, File()] = None,
+) -> HTMLResponse:
+    """An uploaded ``benchmark.evidence_bundle``, or LoadCoach's pull from FreeWeight at this
+    console's ``[apps.freeweight] base_url``; the page again with the counts, or the refusal."""
+    client, settings = _clients(request)
+    params: dict[str, Any] = {"origin": "freeweight" if origin == "freeweight" else "file"}
+    try:
+        if params["origin"] == "freeweight":
+            body = actions.freeweight_pull(settings)
+        else:
+            raw = file.file.read(_BUNDLE_BYTES + 1) if file is not None else b""
+            params["bytes"] = len(raw)
+            if len(raw) > _BUNDLE_BYTES:
+                message = f"The bundle is over {_BUNDLE_BYTES} bytes; import it with the CLI."
+                raise actions.LoadCoachFormInvalid(message, details={"field": "file"})
+            body = actions.evidence_bundle(raw)
+        outcome = actions.import_evidence(client, settings, body)
+    except SuiteError as exc:
+        _audit(
+            request, principal, "loadcoach.evidence_import", target=None, outcome="refused",
+            params=params, message=exc.message,
+        )  # fmt: skip
+        return _evidence(request, principal, action_error=exc)
+    counts = {
+        key: outcome.get(key)
+        for key in ("imported", "updated", "unmatched", "ambiguous_name_only", "bound")
+    }
+    _audit(
+        request, principal, "loadcoach.evidence_import", target=outcome.get("source_id"),
+        outcome="ok", params={**params, **counts, "rejected": len(outcome.get("rejected") or [])},
+    )  # fmt: skip
+    return _evidence(request, principal, imported=outcome)

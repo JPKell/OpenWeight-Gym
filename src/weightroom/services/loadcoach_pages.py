@@ -12,14 +12,18 @@ stopped (ADR-0016), never a number recomputed here.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any, ClassVar, Final
 from urllib.parse import quote
 
 from baseaicore import SuiteError
+from mirrorwall import Event, format_frame
+from setspec import GeneratorInfo
 
-from weightroom.services.app_api import call
+from weightroom.__about__ import __version__
+from weightroom.services.app_api import AppRefused, call, lines
 from weightroom.services.app_pages import rows_where
+from weightroom.services.chat_loadcoach import iter_frames
 
 if TYPE_CHECKING:
     import httpx
@@ -29,15 +33,28 @@ if TYPE_CHECKING:
 
 __all__ = [
     "APP",
+    "JOB_CLASSES",
+    "JOB_STATES",
+    "MATCH_STATES",
+    "TERMINAL_JOB_STATES",
     "NotRecorded",
     "decision_api",
     "decision_db",
     "decisions_api",
     "decisions_db",
+    "evidence_api",
+    "evidence_db",
+    "job_api",
+    "job_db",
+    "job_log_frames",
+    "jobs_api",
+    "jobs_db",
     "model_api",
     "model_db",
     "models_api",
     "models_db",
+    "queue_api",
+    "queue_events",
     "reliability_api",
     "reliability_db",
     "segment",
@@ -398,3 +415,484 @@ def reliability_db(handle: AppDatabase, *, task: str | None, model: str | None) 
     if model:
         stats = [one for one in stats if one["canonical_id"] == model]
     return {"stats": stats}
+
+
+# --- Queue and jobs -------------------------------------------------------------------------------
+
+JOB_STATES: Final[tuple[str, ...]] = (
+    "queued",
+    "leased",
+    "admitted",
+    "waiting_resources",
+    "executing",
+    "validating",
+    "retrying",
+    "cancelling",
+    "completed",
+    "failed",
+    "cancelled",
+)
+"""LoadCoach's ``JobState`` members, in its declaration order (queue §2)."""
+JOB_CLASSES: Final[tuple[str, ...]] = ("interactive", "normal", "background", "batch")
+TERMINAL_JOB_STATES: Final[frozenset[str]] = frozenset({"completed", "failed", "cancelled"})
+TERMINAL_FRAMES: Final[frozenset[str]] = frozenset(
+    {"job.completed", "job.failed", "job.cancelled", "result", "error"}
+)
+"""A queued job's stream ends on its terminal ``job.*`` event, a synchronous one's on ``result`` or
+``error`` (LoadCoach's ``_STREAM_TERMINAL``)."""
+_REPLY_FRAMES: Final[frozenset[str]] = frozenset({"token", "thinking", "tool_call"})
+_WARNING_EVENTS: Final[frozenset[str]] = frozenset(
+    {"job.cancelled", "job.retrying", "job.fallback", "job.degraded", "job.waiting_resources"}
+)
+_GENERATOR = GeneratorInfo(name="weightroom", version=__version__)
+
+
+def queue_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /queue``: depth by state and class, the oldest age, dispatch latency, executions,
+    residency, starvation, the breakers and the dispatch flags (queue §11).
+
+    Raises:
+        AppRefused: LoadCoach refused.
+        AppUnreachable: It did not answer.
+    """
+    return _document(call(client, settings, APP, "GET", "queue"))
+
+
+def queue_events(chunks: Iterable[str]) -> Iterator[tuple[str, dict[str, Any] | None]]:
+    """LoadCoach's ``/queue/stream`` as ``(kind, report)``: ``status`` with the whole report,
+    ``heartbeat`` for each keep-alive comment, and one ``closed`` when the stream ends or fails.
+
+    The page renders each report itself: the frame's ``html`` is LoadCoach's own markup and never
+    reaches this console's DOM (arc index §2 item 4). A heartbeat is surfaced so the proxy writes
+    to the browser often enough to notice it has gone.
+    """
+    event: str | None = None
+    data: list[str] = []
+    for line in lines(chunks):
+        if line.startswith(":"):
+            yield "heartbeat", None
+            continue
+        if line:
+            name, _, value = line.partition(":")
+            value = value.removeprefix(" ")
+            if name == "event":
+                event = value
+            elif name == "data":
+                data.append(value)
+            continue
+        if event in {"error", "stream.closed"}:
+            break
+        if event == "queue.status" and data:
+            try:
+                envelope = json.loads("\n".join(data))
+            except ValueError:
+                envelope = None
+            report = _document(_document(envelope).get("payload")).get("data")
+            if isinstance(report, Mapping):
+                yield "status", dict(report)
+        event, data = None, []
+    yield "closed", None
+
+
+def jobs_api(  # noqa: PLR0913 — one keyword per filter GET /jobs takes
+    client: httpx.Client,
+    settings: Settings,
+    *,
+    state: str | None,
+    job_class: str | None,
+    task: str | None,
+    source: str | None,
+    cursor: str | None,
+) -> dict[str, Any]:
+    """``GET /jobs``: one page, newest first, filtered as LoadCoach's own Jobs page filters.
+
+    Raises:
+        AppRefused: LoadCoach refused.
+        AppUnreachable: It did not answer.
+    """
+    body = call(
+        client, settings, APP, "GET", "jobs",
+        params={"state": state, "class": job_class, "task": task, "source": source,
+                "cursor": cursor, "limit": PAGE_ROWS},
+    )  # fmt: skip
+    page = _document(_document(body).get("page"))
+    return {
+        "items": _listed(body, "items"),
+        "next_cursor": page.get("next_cursor"),
+        "next_page": None,
+    }
+
+
+def _canonical_by_model(handle: AppDatabase) -> dict[Any, Any]:
+    return {
+        row.get("id"): row.get("canonical_id")
+        for row in rows_where(handle, "models", limit=MODEL_CAP)
+    }
+
+
+def _job_row(row: Mapping[str, Any], canonical: Mapping[Any, Any]) -> dict[str, Any]:
+    """A ``jobs`` row under the job document's names (api.md §5)."""
+    return {
+        "job_id": row.get("id"),
+        "state": row.get("state"),
+        "state_reason": row.get("state_reason"),
+        "class": row.get("class"),
+        "priority": {"base": row.get("base_priority"), "effective": row.get("effective_priority")},
+        "source": row.get("source"),
+        "task": {"id": row.get("task_profile_id"), "version": row.get("task_profile_version")},
+        "idempotent": bool(row.get("idempotent")),
+        "cancel_requested": bool(row.get("cancel_requested")),
+        "max_wait_seconds": row.get("max_wait_seconds"),
+        "timestamps": {
+            "created_at": row.get("created_at"),
+            "queued_at": row.get("queued_at"),
+            "started_at": row.get("started_at"),
+            "completed_at": row.get("completed_at"),
+        },
+        "model": {
+            "canonical_id": canonical.get(row.get("selected_model_id")),
+            "subject_canonical_id": row.get("selected_subject_canonical_id"),
+            "runtime_profile_hash": row.get("runtime_profile_hash"),
+            "served_context": row.get("served_context"),
+            "served_context_source": row.get("served_context_source"),
+            "target_gpu_index": row.get("target_gpu_index"),
+        },
+        "attempt": row.get("attempt"),
+        "max_attempts": row.get("max_attempts"),
+        "error": (
+            {"code": row.get("error_code"), "message": row.get("error_text")}
+            if row.get("error_code")
+            else None
+        ),
+    }
+
+
+def jobs_db(  # noqa: PLR0913 — one keyword per filter
+    handle: AppDatabase,
+    *,
+    state: str | None,
+    job_class: str | None,
+    task: str | None,
+    source: str | None,
+    page: int,
+) -> dict[str, Any]:
+    """The ``jobs`` table, newest first, one page by number.
+
+    Raises:
+        TableUnknown: The database has no ``jobs`` table.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    page = max(1, page)
+    canonical = _canonical_by_model(handle)
+    rows = rows_where(
+        handle, "jobs",
+        equals={"state": state, "class": job_class, "task_profile_id": task, "source": source},
+        order_by="created_at", limit=PAGE_ROWS + 1, offset=(page - 1) * PAGE_ROWS,
+    )  # fmt: skip
+    return {
+        "items": [_job_row(row, canonical) for row in rows[:PAGE_ROWS]],
+        "next_cursor": None,
+        "next_page": page + 1 if len(rows) > PAGE_ROWS else None,
+    }
+
+
+def job_api(client: httpx.Client, settings: Settings, job_id: str) -> dict[str, Any]:
+    """``GET /jobs/{id}`` and its routing explanation, which a job not yet routed has none of.
+
+    Raises:
+        AppRefused: ``JOB_NOT_FOUND``, or another refusal of the job itself.
+        AppUnreachable: It did not answer.
+    """
+    job = _document(call(client, settings, APP, "GET", f"jobs/{segment(job_id)}"))
+    explanation: dict[str, Any] | None
+    try:
+        explanation = _document(
+            call(client, settings, APP, "GET", f"jobs/{segment(job_id)}/explanation")
+        )
+    except AppRefused:
+        explanation = None
+    return {"job": job, "explanation": explanation, "events": None}
+
+
+def job_db(handle: AppDatabase, job_id: str) -> dict[str, Any]:
+    """One job's rows: the job, its attempts, feedback, persisted events and routing decision.
+
+    Raises:
+        NotRecorded: No such job.
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    found = rows_where(handle, "jobs", equals={"id": job_id}, limit=1)
+    if not found:
+        raise NotRecorded(
+            f"LoadCoach's database holds no job {job_id!r}.", details={"job_id": job_id}
+        )
+    row = found[0]
+    canonical = _canonical_by_model(handle)
+    mine = {"job_id": job_id}
+    attempts = rows_where(
+        handle, "job_attempts", equals=mine, order_by="attempt", descending=False, limit=LIST_CAP
+    )
+    validation = row.get("validation_passed")
+    job = _job_row(row, canonical)
+    job.update(
+        {
+            "output": {
+                "text": row.get("response_text"),
+                "finish_reason": attempts[-1].get("finish_reason") if attempts else None,
+                "structured": _loads(row.get("structured_output_json")),
+            },
+            "reasoning": {
+                "available": bool(row.get("reasoning_available")),
+                "summary": row.get("reasoning_summary"),
+                "source": row.get("reasoning_source"),
+            },
+            "usage": {
+                key: row.get(key)
+                for key in (
+                    "input_tokens", "output_tokens", "cache_read_tokens", "cache_write_tokens",
+                    "thinking_tokens",
+                )
+            },
+            "timing": {
+                key: row.get(key)
+                for key in (
+                    "total_ms", "provider_ms", "loadcoach_overhead_ms", "ttft_ms", "queue_wait_ms",
+                )
+            },
+            "validation": {
+                "performed": validation is not None,
+                "passed": None if validation is None else bool(validation),
+                "checks": [],
+            },
+            "degradations": _loads(row.get("degradations_json")) or [],
+            "attempts": [
+                {
+                    "attempt": one.get("attempt"),
+                    "model": one.get("subject_canonical_id") or canonical.get(one.get("model_id")),
+                    "rank": one.get("rank"),
+                    "outcome": one.get("outcome"),
+                    "provider_ms": one.get("provider_ms"),
+                    "error_code": one.get("error_code"),
+                    "prompt_id": one.get("prompt_id"),
+                    "prompt_version": one.get("prompt_version"),
+                }
+                for one in attempts
+            ],
+            "feedback": [
+                {
+                    "source": one.get("source"),
+                    "accepted": bool(one.get("accepted")),
+                    "quality_score": one.get("quality_score"),
+                    "edited": bool(one.get("edited")),
+                    "validation": {"passed": one.get("validation_passed")},
+                    "notes": one.get("notes"),
+                    "updated_at": one.get("updated_at"),
+                }
+                for one in rows_where(handle, "feedback", equals=mine, limit=LIST_CAP)
+            ],
+            "retention": {"content_scrubbed_at": None},
+        }
+    )  # fmt: skip
+    decisions = rows_where(
+        handle, "routing_decisions", equals=mine, order_by="requested_at", limit=1
+    )
+    events = rows_where(
+        handle, "job_events", equals=mine, order_by="sequence", descending=False,
+        limit=LIST_CAP * 5,
+    )  # fmt: skip
+    return {
+        "job": job,
+        "explanation": _document(_loads(decisions[0].get("explanation_json")))
+        if decisions
+        else None,
+        "events": [
+            {
+                "sequence": one.get("sequence"),
+                "timestamp": one.get("timestamp"),
+                "type": one.get("event_type"),
+                "message": one.get("message"),
+            }
+            for one in events
+        ],
+    }
+
+
+def _line_for(event: str, payload: Mapping[str, Any]) -> tuple[str, str]:
+    """``(level, message)`` for one of a job's frames, in the log pane's words."""
+    if event == "error":
+        error = _document(payload.get("error")) or payload
+        return "err", f"{error.get('code')}: {error.get('message')}"
+    if event == "routing":
+        selected = _document(payload.get("selected"))
+        chosen = selected.get("subject_canonical_id") or selected.get("canonical_id")
+        return "info", f"routed to {chosen}" if chosen else "no candidate was eligible"
+    if event == "result":
+        output = _document(payload.get("output"))
+        return "info", f"{payload.get('status') or 'result'} · finish {output.get('finish_reason')}"
+    message = payload.get("message")
+    if not message:
+        data = _document(payload.get("data"))
+        message = " ".join(
+            f"{key}={value}" for key, value in data.items() if isinstance(value, (str, int, float))
+        )
+    level = "err" if event == "job.failed" else "warning" if event in _WARNING_EVENTS else "info"
+    return level, str(message or "")
+
+
+def job_log_frames(chunks: Iterable[str]) -> Iterator[str]:
+    """A job's ``/jobs/{id}/stream`` as the console's log-pane frames.
+
+    Each state event, the routing decision and the result become one ``log`` line; the reply's own
+    deltas (``token``, ``thinking``, ``tool_call``) are the reply, not the log, and are left to the
+    page's reply region. The pane closes with ``log.closed`` on the terminal frame, on the console's
+    own ``error`` frame, or when LoadCoach closes the stream.
+
+    Args:
+        chunks: :func:`~weightroom.services.app_api.stream`'s text.
+
+    Yields:
+        SSE frames, ``log`` then one ``log.closed``.
+    """
+    sequence = 0
+
+    def frame(kind: str, payload: dict[str, Any]) -> str:
+        nonlocal sequence
+        sequence += 1
+        return format_frame(
+            Event(sequence=sequence, type=kind, payload=payload), generator=_GENERATOR
+        )
+
+    for one in iter_frames(lines(chunks)):
+        if one.event in _REPLY_FRAMES:
+            continue
+        if one.event == "stream.closed":
+            break
+        envelope = _document(one.data)
+        payload = _document(envelope.get("payload"))
+        level, message = _line_for(one.event, payload)
+        yield frame(
+            "log",
+            {
+                "at": payload.get("timestamp") or envelope.get("generated_at"),
+                "app": one.event,
+                "level": level,
+                "message": message,
+            },
+        )
+        if one.event in TERMINAL_FRAMES:
+            break
+    yield frame("log.closed", {"reason": "the job's stream ended"})
+
+
+# --- Evidence -------------------------------------------------------------------------------------
+
+MATCH_STATES: Final[tuple[str, ...]] = ("bound", "unmatched", "ambiguous_name_only")
+EVIDENCE_PAGE: Final = 200
+
+
+def _evidence_record(record: Mapping[str, Any]) -> dict[str, Any]:
+    """One ``capability.evidence`` payload's columns the page shows."""
+    model = _document(record.get("model"))
+    adapter = _document(record.get("adapter"))
+    named = "/".join(
+        str(part) for part in (model.get("provider_kind"), model.get("provider_model_name")) if part
+    )
+    return {
+        "canonical_id": model.get("canonical_id") or named or None,
+        "capability_id": record.get("capability_id"),
+        "score": record.get("score"),
+        "confidence": record.get("confidence"),
+        "sample_count": record.get("sample_count"),
+        "excluded_count": record.get("excluded_count"),
+        "measured_at": record.get("measured_at"),
+        "runtime_profile_hash": record.get("runtime_profile_hash"),
+        "machine_fingerprint": record.get("machine_fingerprint"),
+        "adapter": adapter.get("name") or None,
+        "stale": None,
+        "stale_reason": None,
+        "source_id": None,
+    }
+
+
+def evidence_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /evidence`` once per ``match_state``, and ``GET /evidence/sources``.
+
+    The records are the producer's own ``capability.evidence`` payloads, which carry no binding:
+    ``match_state`` is LoadCoach's, so each state is read by its own filter and the record labelled
+    with it. The ``summary`` is the store overview the API attaches to every page.
+
+    Raises:
+        AppRefused: LoadCoach refused.
+        AppUnreachable: It did not answer.
+    """
+    records: list[dict[str, Any]] = []
+    summary: dict[str, Any] | None = None
+    for state in MATCH_STATES:
+        body = call(
+            client, settings, APP, "GET", "evidence",
+            params={"match_state": state, "limit": EVIDENCE_PAGE},
+        )  # fmt: skip
+        summary = _document(_document(body).get("summary")) or summary
+        records.extend(
+            {**_evidence_record(_document(item.get("payload"))), "match_state": state}
+            for item in _listed(body, "items")
+        )
+    sources = _document(call(client, settings, APP, "GET", "evidence/sources"))
+    return {
+        "summary": summary,
+        "records": records,
+        "sources": _listed(sources, "sources"),
+        "configured_url": sources.get("configured_url"),
+    }
+
+
+def evidence_db(handle: AppDatabase) -> dict[str, Any]:
+    """The ``capability_evidence`` rows, newest measurement first, and ``evidence_sources``.
+
+    Raises:
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    sources = rows_where(
+        handle, "evidence_sources", order_by="source_key", descending=False, limit=LIST_CAP
+    )
+    keys = {row.get("id"): row.get("source_key") for row in sources}
+    records = [
+        {
+            "canonical_id": row.get("canonical_id"),
+            "capability_id": row.get("capability_id"),
+            "score": row.get("score"),
+            "confidence": row.get("confidence"),
+            "sample_count": row.get("sample_count"),
+            "excluded_count": row.get("excluded_count"),
+            "measured_at": row.get("measured_at"),
+            "runtime_profile_hash": row.get("runtime_profile_hash"),
+            "machine_fingerprint": row.get("machine_fingerprint"),
+            "adapter": row.get("adapter_artifact_digest") or None,
+            "match_state": row.get("match_state"),
+            "stale": bool(row.get("stale")),
+            "stale_reason": row.get("stale_reason"),
+            "source_id": keys.get(row.get("source_id")),
+        }
+        for row in rows_where(handle, "capability_evidence", order_by="measured_at", limit=LIST_CAP)
+    ]
+    return {
+        "summary": None,
+        "records": records,
+        "sources": [
+            {
+                "source_id": row.get("source_key"),
+                "kind": row.get("kind"),
+                "url": row.get("url"),
+                "last_import_at": row.get("last_import_at"),
+                "last_status": row.get("last_status"),
+                "schema_version": row.get("schema_version"),
+                "record_count": row.get("record_count"),
+                "error_text": row.get("error_text"),
+                "generated_at": row.get("generated_at"),
+            }
+            for row in sources
+        ],
+        "configured_url": None,
+    }

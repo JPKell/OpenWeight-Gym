@@ -25,7 +25,7 @@ from mirrorwall import Event, format_frame
 from setspec import GeneratorInfo
 
 from weightroom.__about__ import __version__
-from weightroom.services.app_api import call
+from weightroom.services.app_api import call, lines
 from weightroom.services.app_pages import rows_where
 from weightroom.services.chat_loadcoach import iter_frames
 from weightroom.services.chat_promptcadence import HALT_EVENTS
@@ -248,18 +248,6 @@ def _summary(data: Mapping[str, Any]) -> str:
     return text if len(text) <= _SUMMARY_CHARS else text[: _SUMMARY_CHARS - 1] + "…"
 
 
-def _lines(chunks: Iterable[str]) -> Iterator[str]:
-    """Stream text chunks as whole lines; a chunk boundary can fall anywhere in a frame."""
-    buffer = ""
-    for chunk in chunks:
-        buffer += chunk
-        *complete, buffer = buffer.split("\n")
-        for line in complete:
-            yield line.removesuffix("\r")
-    if buffer:
-        yield buffer.removesuffix("\r")
-
-
 def event_log_frames(chunks: Iterable[str]) -> Iterator[str]:
     """PromptCadence's trajectory stream as the frames the console's log pane reads.
 
@@ -286,7 +274,7 @@ def event_log_frames(chunks: Iterable[str]) -> Iterator[str]:
             Event(sequence=sequence, type=kind, payload=payload), generator=_GENERATOR
         )
 
-    for one in iter_frames(_lines(chunks)):
+    for one in iter_frames(lines(chunks)):
         envelope = one.data if isinstance(one.data, Mapping) else {}
         body = envelope.get("payload")
         body = body if isinstance(body, Mapping) else {}

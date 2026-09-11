@@ -131,6 +131,9 @@ UPLOAD_ROUTES = frozenset(
         "/chat/{conversation_id}/attachments",
         "/api/v1/catalog/dropin",
         "/catalog/dropin-form",
+        # WP2: an evidence bundle, parsed as JSON and handed to LoadCoach, which validates it
+        # (tests/integration/test_loadcoach_queue_evidence.py refuses a file that is not JSON).
+        "/apps/loadcoach/evidence/import",
     }
 )
 

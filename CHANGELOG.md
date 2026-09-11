@@ -21,6 +21,20 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   job it enqueued) act from the page, each one audit row (`loadcoach.discover`, `catalog.enabled`,
   `loadcoach.warm`, `loadcoach.route`). A stopped LoadCoach's pages read its database; its
   factor, verdict and live breaker say they wait for its API.
+- **LoadCoach's Queue and Evidence pages** (row WP2): the queue's report — depth by state and
+  class, oldest age, dispatch latency, executions, residency, starvation, breakers — updated live
+  over LoadCoach's `/queue/stream` as regions this console renders; **pause, resume and drain**,
+  each asking first with a sentence saying what stops (queued dispatch; synchronous generation is
+  not held); **jobs** filtered as LoadCoach's own page filters, **submitted** (class, priority,
+  wait bound, idempotency, sampling, model and adapter pins, streaming), **one job** (attempts,
+  validation checks, usage, timings, output, the routing explanation, the event pane, and while
+  it runs its reply with ADR-0132's thinking block), **cancel** and **feedback**; **Evidence**
+  (every record by match state, the store's summary, the sources) with **import** of an uploaded
+  `benchmark.evidence_bundle` or LoadCoach's pull from the console's own FreeWeight URL, a
+  refusal such as `EVIDENCE_SOURCE_REFUSED` rendered as itself. Each action is one audit row
+  (`loadcoach.queue_pause|resume|drain` — an unconfirmed ask is `pending` —
+  `loadcoach.job_submit|cancel|feedback`, `loadcoach.evidence_import`); no row carries a prompt
+  or a note.
 - **PromptCadence's pages under its tab** (row WP1), at parity with PromptCadence's own console,
   which a browser on the LAN cannot reach: **Trajectories** (filtered by state, paged by
   PromptCadence's cursor), **one trajectory's whole record** (the explanation document PromptCadence

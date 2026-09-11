@@ -843,6 +843,30 @@ EXERCISES.update(
         ("POST", "/apps/loadcoach/routing"): _lc_form(
             "/apps/loadcoach/routing", {"task": "general.chat"}, reply=("POST", "route", 200, {})
         ),
+        # Unconfirmed: the pending row, and nothing sent to LoadCoach.
+        ("POST", "/apps/loadcoach/queue/control"): _lc_form(
+            "/apps/loadcoach/queue/control", {"verb": "pause"}
+        ),
+        ("POST", "/apps/loadcoach/queue/jobs"): _lc_form(
+            "/apps/loadcoach/queue/jobs",
+            {"task": "general.chat", "prompt": "An audit exercise's prompt."},
+            reply=("POST", "jobs", 202, {"job_id": "01AUDITJOB"}),
+        ),
+        ("POST", "/apps/loadcoach/queue/jobs/{job_id}/cancel"): _lc_form(
+            "/apps/loadcoach/queue/jobs/01AUDITJOB/cancel",
+            {},
+            reply=("POST", "jobs/01AUDITJOB/cancel", 202, {"state": "cancelled"}),
+        ),
+        ("POST", "/apps/loadcoach/queue/jobs/{job_id}/feedback"): _lc_form(
+            "/apps/loadcoach/queue/jobs/01AUDITJOB/feedback",
+            {"accepted": "true"},
+            reply=("POST", "jobs/01AUDITJOB/feedback", 201, {}),
+        ),
+        ("POST", "/apps/loadcoach/evidence/import"): _lc_form(
+            "/apps/loadcoach/evidence/import",
+            {"origin": "freeweight"},
+            reply=("POST", "evidence/import", 200, {"imported": 0}),
+        ),
     }
 )
 

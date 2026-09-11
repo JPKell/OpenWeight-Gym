@@ -83,6 +83,15 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "loadcoach.discover",
         "loadcoach.warm",
         "loadcoach.route",
+        # WP2 Gate B. Pause, resume and drain (an unconfirmed post is a `pending` row), a job
+        # submitted, cancelled or given feedback, and an evidence import.
+        "loadcoach.queue_pause",
+        "loadcoach.queue_resume",
+        "loadcoach.queue_drain",
+        "loadcoach.job_submit",
+        "loadcoach.job_cancel",
+        "loadcoach.job_feedback",
+        "loadcoach.evidence_import",
     }
 )
 """The closed action vocabulary."""

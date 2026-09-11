@@ -137,7 +137,7 @@ def test_an_applications_side_nav_names_its_built_pages_and_the_unbuilt_ones(
     assert 'href="/apps/loadcoach/database"' in page
     assert 'href="/apps/loadcoach/logs"' in page
     assert 'title="coming in phase W7"' not in page
-    assert '<li title="coming in row WP2">Queue</li>' in page
+    assert '<li title="coming in row WP2">Adapters</li>' in page
     assert 'href="/apps/loadcoach/routing"' in page
     assert "not yet scheduled" not in page
     assert "ADR-0117" in page

@@ -10,7 +10,7 @@ have landed, and whether to send it again is the operator's decision, not a loop
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any, ClassVar, Final
 
 import httpx
@@ -207,6 +207,18 @@ def stream(
             yield from response.iter_text()
     except httpx.HTTPError as exc:
         yield _error_frame(AppUnreachable.code, f"{app} did not answer: {exc}")
+
+
+def lines(chunks: Iterable[str]) -> Iterator[str]:
+    """Stream text chunks as whole lines; a chunk boundary can fall anywhere in a frame."""
+    buffer = ""
+    for chunk in chunks:
+        buffer += chunk
+        *complete, buffer = buffer.split("\n")
+        for line in complete:
+            yield line.removesuffix("\r")
+    if buffer:
+        yield buffer.removesuffix("\r")
 
 
 def as_text(document: Any) -> str:  # noqa: ANN401 — any JSON-safe document

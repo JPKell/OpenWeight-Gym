@@ -1,0 +1,189 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_lc.html" import measure, explanation %}
+{% block title %}Job — LoadCoach — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data %}
+{% set job = data.get("job") if data else none %}
+{% set routing = (job.get("routing") or {}) if job else {} %}
+<div class="page-head">
+  <h2>Job {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions">
+    <a href="/apps/loadcoach/queue#jobs">Every job</a>
+    {% if routing.get("decision_id") %} · <a href="/apps/loadcoach/routing/decisions/{{ routing.get('decision_id') | urlencode }}">Its routing decision</a>{% endif %}
+    {% if sourced.live and job and job.get("state") not in terminal %}
+    <form method="post" action="/apps/loadcoach/queue/jobs/{{ job_id | urlencode }}/cancel" class="kit-inline">
+      <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+      <button type="submit">Cancel job</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+<p class="mono muted">{{ job_id }}</p>
+{{ refusal(sourced.error) }}
+{% if job %}
+{% set task = job.get("task") or {} %}
+{% set priority = job.get("priority") or {} %}
+{% set model = job.get("model") or {} %}
+{% set times = job.get("timestamps") or {} %}
+{% set timing = job.get("timing") or {} %}
+{% set usage = job.get("usage") or {} %}
+{% set error = job.get("error") %}
+{% set adapter = model.get("adapter") %}
+{{ kv_list([
+  {"label": "State", "value": (job.get("state") or "—") ~ ((" (" ~ job.get("state_reason") ~ ")") if job.get("state_reason") else "")},
+  {"label": "Class · priority", "value": (job.get("class") or "—") ~ " · " ~ (priority.get("base") if priority.get("base") is not none else "—") ~ " → " ~ (priority.get("effective") if priority.get("effective") is not none else "—")},
+  {"label": "Task profile", "value": (task.get("id") or "—") ~ " " ~ (task.get("version") or "")},
+  {"label": "Source", "value": job.get("source") or "—"},
+  {"label": "Idempotent", "value": "yes" if job.get("idempotent") else "no"},
+  {"label": "Model", "value": model.get("subject_canonical_id") or model.get("canonical_id") or "not yet routed"},
+  {"label": "Adapter", "value": (adapter.get("name") if adapter is mapping else adapter) or "none"},
+  {"label": "Served context", "value": (model.get("served_context") ~ " tokens (" ~ (model.get("served_context_source") or "—") ~ ")") if model.get("served_context") else "—"},
+  {"label": "Target GPU", "value": model.get("target_gpu_index") if model.get("target_gpu_index") is not none else "—"},
+  {"label": "Attempts", "value": (job.get("attempt") if job.get("attempt") is not none else "—") ~ " of at most " ~ (job.get("max_attempts") if job.get("max_attempts") is not none else "—")},
+  {"label": "Created · started · completed", "value": (times.get("created_at") or "—") ~ " · " ~ (times.get("started_at") or "—") ~ " · " ~ (times.get("completed_at") or "—")},
+  {"label": "Queue wait · provider · overhead · total", "value": (timing.get("queue_wait_ms") if timing.get("queue_wait_ms") is not none else "—") ~ " · " ~ (timing.get("provider_ms") if timing.get("provider_ms") is not none else "—") ~ " · " ~ (timing.get("loadcoach_overhead_ms") if timing.get("loadcoach_overhead_ms") is not none else "—") ~ " · " ~ (timing.get("total_ms") if timing.get("total_ms") is not none else "—") ~ " ms"},
+  {"label": "Tokens in · out · cache read · cache write · thinking", "value": (usage.get("input_tokens") if usage.get("input_tokens") is not none else "—") ~ " · " ~ (usage.get("output_tokens") if usage.get("output_tokens") is not none else "—") ~ " · " ~ (usage.get("cache_read_tokens") if usage.get("cache_read_tokens") is not none else "—") ~ " · " ~ (usage.get("cache_write_tokens") if usage.get("cache_write_tokens") is not none else "—") ~ " · " ~ (usage.get("thinking_tokens") if usage.get("thinking_tokens") is not none else "—")},
+  {"label": "Error", "value": ((error.get("code") or "") ~ ": " ~ (error.get("message") or "")) if error else "none"},
+]) }}
+
+<h3>Output</h3>
+{% set output = job.get("output") or {} %}
+{% set reasoning = job.get("reasoning") or {} %}
+{% if (job.get("retention") or {}).get("content_scrubbed_at") %}
+<p class="muted">Content removed by retention at {{ (job.get("retention") or {}).get("content_scrubbed_at") }}; the
+hashes, token counts, timings and routing decision remain.</p>
+{% elif output.get("text") %}
+<pre class="kit-output">{{ output.get("text") }}</pre>
+{% else %}
+<p class="muted">No text{% if job.get("state") not in terminal %} yet{% endif %}.</p>
+{% endif %}
+<p class="muted">Finish reason: <code>{{ output.get("finish_reason") or "—" }}</code></p>
+{% if reasoning.get("summary") %}
+<details class="chat-thinking"><summary>Thinking</summary><div class="kit-live">{{ reasoning.get("summary") }}</div></details>
+{% endif %}
+{% if output.get("structured") is not none %}{{ json_viewer(output.get("structured"), label="Structured output") }}{% endif %}
+{% if output.get("tool_calls_assembled") %}{{ json_viewer(output.get("tool_calls_assembled"), label="Tool calls the model asked for") }}{% endif %}
+
+{% if sourced.live and job.get("state") not in terminal %}
+<h3>Reply, live</h3>
+<section class="kit-reply" data-reply-stream="{{ reply_url }}">
+  <details class="chat-thinking" hidden><summary>Thinking…</summary><div class="kit-live" data-thinking></div></details>
+  <pre class="kit-output kit-live" data-reply></pre>
+  <p class="muted" data-reply-status>connecting…</p>
+</section>
+<script>
+// The reply as it streams: ADR-0132's thinking deltas into the chat's thinking block, then the
+// tokens, each written as text. Only a job still running has this region; its end reloads the page
+// once, which then renders the finished job without it.
+(() => {
+  const section = document.currentScript.previousElementSibling;
+  const thinking = section.querySelector("details");
+  const thought = section.querySelector("[data-thinking]");
+  const reply = section.querySelector("[data-reply]");
+  const status = section.querySelector("[data-reply-status]");
+  const source = new EventSource(section.dataset.replyStream);
+  const parse = (event) => { try { return JSON.parse(event.data) || {}; } catch (error) { return {}; } };
+  const finish = () => { source.close(); status.textContent = "ended"; window.location.reload(); };
+  source.addEventListener("open", () => { status.textContent = "live"; });
+  source.addEventListener("thinking", (event) => {
+    thinking.hidden = false;
+    thinking.open = true;
+    thought.textContent += (parse(event).payload || {}).delta || "";
+  });
+  source.addEventListener("token", (event) => {
+    if (thinking.open) { thinking.open = false; thinking.querySelector("summary").textContent = "Thinking"; }
+    reply.textContent += parse(event).delta || "";
+  });
+  for (const name of ["job.completed", "job.failed", "job.cancelled", "result", "stream.closed"]) {
+    source.addEventListener(name, finish);
+  }
+  source.addEventListener("error", (event) => { if (event.data) { finish(); } else { status.textContent = "reconnecting…"; } });
+  window.addEventListener("beforeunload", () => source.close());
+})();
+</script>
+{% endif %}
+
+<h3>Validation</h3>
+{% set validation = job.get("validation") or {} %}
+{% if validation.get("performed") %}
+<p>{{ badge("passed", tone="success") if validation.get("passed") else badge("failed", tone="danger") }} after {{ validation.get("attempts") if validation.get("attempts") is not none else "—" }} attempt(s)</p>
+{% if validation.get("checks") %}
+{% set rows = [] %}
+{% for one in validation.get("checks") %}{% set _ = rows.append([one.get("kind") or "—", badge("passed", tone="success") if one.get("passed") else badge("failed", tone="danger"), json_viewer(one.get("detail"), label="Detail") if one.get("detail") else "—"]) %}{% endfor %}
+{{ table([{"label": "Check", "mono": true}, {"label": "Result"}, {"label": "Detail"}], rows, density="dense", row_count=rows | length) }}
+{% endif %}
+{% else %}
+<p class="muted">The task profile asked for no validation.</p>
+{% endif %}
+
+<h3>Attempts</h3>
+{% if job.get("attempts") %}
+{% set rows = [] %}
+{% for one in job.get("attempts") %}
+{% set _ = rows.append([one.get("attempt"), one.get("model") or "—", one.get("rank") if one.get("rank") is not none else "—", one.get("outcome") or "—", measure(one.get("provider_ms"), "ms"), one.get("error_code") or "—", ((one.get("prompt_id") or "") ~ " " ~ (one.get("prompt_version") or "")) if one.get("prompt_id") else "—"]) %}
+{% endfor %}
+{{ table([{"label": "#", "numeric": true}, {"label": "Model", "mono": true}, {"label": "Rank", "numeric": true}, {"label": "Outcome"}, {"label": "Provider", "numeric": true}, {"label": "Error", "mono": true}, {"label": "Prompt record", "mono": true}], rows, caption="One row per attempt; a corrective retry is a new row", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No attempt has been made yet.") }}
+{% endif %}
+{% if job.get("degradations") %}
+<p class="notice">Degraded: {{ job.get("degradations") | join(", ") }}</p>
+{% endif %}
+
+<h3>Feedback</h3>
+{% if job.get("feedback") %}
+{% set rows = [] %}
+{% for one in job.get("feedback") %}
+{% set _ = rows.append([one.get("source") or "—", "yes" if one.get("accepted") else "no", ("%.2f" | format(one.get("quality_score"))) if one.get("quality_score") is number else "—", "yes" if one.get("edited") else "no", one.get("notes") or "—", one.get("updated_at") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Source"}, {"label": "Accepted"}, {"label": "Quality", "numeric": true}, {"label": "Edited"}, {"label": "Notes"}, {"label": "Updated", "mono": true}], rows, caption="One record per source; a later verdict replaces the earlier one", density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">No caller has given feedback on this job.</p>
+{% endif %}
+{% if sourced.live %}
+<details class="card kit-form">
+  <summary><strong>Give feedback</strong> <span class="muted">— it folds into reliability, attributed to this console's token</span></summary>
+  <form method="post" action="/apps/loadcoach/queue/jobs/{{ job_id | urlencode }}/feedback">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <div class="field"><label for="lc-accepted">Accepted</label>
+      <select id="lc-accepted" name="accepted" required><option value="true">yes</option><option value="false">no</option></select></div>
+    <div class="field"><label for="lc-quality">Quality, 0 to 1</label>
+      <input id="lc-quality" name="quality_score" inputmode="decimal"></div>
+    <div class="field"><label for="lc-validation">Your own validation</label>
+      <select id="lc-validation" name="validation_passed"><option value="">not stated</option><option value="true">passed</option><option value="false">failed</option></select></div>
+    <label class="kit-check"><input type="checkbox" name="edited" value="true"> edited before use</label>
+    <div class="field kit-wide"><label for="lc-notes">Notes</label>
+      <textarea id="lc-notes" name="notes" rows="2" maxlength="4000"></textarea></div>
+    <div class="kit-wide"><button type="submit" data-variant="primary">Send feedback</button></div>
+  </form>
+</details>
+{% endif %}
+
+<h3>Routing</h3>
+{% if data.get("explanation") %}
+<details class="kit-details"><summary>Why this model — the whole explanation</summary>
+{{ explanation(data.get("explanation")) }}
+</details>
+{% else %}
+<p class="muted">No routing decision is recorded for this job yet.</p>
+{% endif %}
+
+<h3>Events</h3>
+{% if sourced.live %}
+{% set stream_url = events_url %}
+{% include "_log_pane.html" %}
+{% elif data.get("events") %}
+{% set rows = [] %}
+{% for one in data.get("events") %}{% set _ = rows.append([one.get("sequence"), one.get("timestamp") or "—", one.get("type") or "—", one.get("message") or "—"]) %}{% endfor %}
+{{ table([{"label": "#", "numeric": true}, {"label": "When", "mono": true}, {"label": "Event", "mono": true}, {"label": "Message"}], rows, caption="The persisted events a reconnecting client replays", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No event is recorded for this job.") }}
+{% endif %}
+{{ json_viewer(job, label="The job document") }}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}
