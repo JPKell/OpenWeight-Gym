@@ -42,9 +42,14 @@ __all__ = [
     "RUN_STATUSES",
     "TERMINAL_RUN_STATUSES",
     "NotRecorded",
+    "adapter_api",
+    "adapter_db",
+    "adapters_api",
+    "adapters_db",
     "benchmarks_api",
     "charts",
     "compare_api",
+    "database_stats_api",
     "evidence_api",
     "evidence_record",
     "export_params",
@@ -56,6 +61,7 @@ __all__ = [
     "model_db",
     "models_api",
     "models_db",
+    "provider_api",
     "results_api",
     "run_api",
     "run_db",
@@ -1064,3 +1070,130 @@ def machine_db(handle: AppDatabase, machine_id: str) -> dict[str, Any]:
         ReadFailed: The database refused or ran past the timeout.
     """
     return _machine_row(_one(handle, "machines", machine_id, "machine"))
+
+
+# --- Adapters, provider, database -----------------------------------------------------------------
+
+
+def adapters_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /adapters``: the directory's reading beside the ``adapters`` table (api.md §2a).
+
+    Raises:
+        AppRefused: FreeWeight refused, or is older than the route (``HTTP_404``).
+        AppUnreachable: It did not answer.
+    """
+    return _document(call(client, settings, APP, "GET", "adapters", timeout_seconds=30.0))
+
+
+def adapters_db(handle: AppDatabase) -> dict[str, Any]:
+    """FreeWeight's ``adapters`` table, each row with the runs created under it.
+
+    The directory is read only by the running FreeWeight, so availability, the manifests it could
+    not read and the drafts are ``None`` here, and so is each adapter's per-base scores, which are
+    FreeWeight's join over its evidence.
+
+    Raises:
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    # ponytail: the newest LIST_CAP runs are read for the counts; a longer history undercounts
+    # when stopped. A per-adapter count in the query would lift it.
+    runs = rows_where(handle, "runs", order_by="created_at", limit=LIST_CAP)
+    adapters = []
+    for row in rows_where(handle, "adapters", order_by="name", descending=False, limit=LIST_CAP):
+        mine = [one for one in runs if one.get("adapter_id") == row.get("id")]
+        declared = _loads(row.get("declared_capabilities_json"))
+        keys = (
+            "name", "artifact_sha256", "artifact_path", "source_sha256", "base_model_name",
+            "base_artifact_digest", "base_confidence", "data_classification", "notes",
+        )  # fmt: skip
+        adapters.append(
+            {
+                **{key: row.get(key) for key in keys},
+                "declared_capabilities": declared if isinstance(declared, list) else [],
+                "manifest_path": None,
+                "available": None,
+                "unavailable_reason": None,
+                "in_directory": None,
+                "measured": True,
+                "run_count": len(mine),
+                "last_run_at": mine[0].get("created_at") if mine else None,
+                "subjects": None,
+            }
+        )
+    return {
+        "enabled": None,
+        "directory": None,
+        "note": None,
+        "adapters": adapters,
+        "invalid": [],
+        "drafts": [],
+        "unmanifested": [],
+    }
+
+
+def _named(catalog: Mapping[str, Any], adapter: str) -> list[dict[str, Any]]:
+    """The adapters ``adapter`` names — by name or by artifact digest.
+
+    Raises:
+        NotRecorded: None does.
+    """
+    found = [
+        one
+        for one in _listed(catalog, "adapters")
+        if adapter in (one.get("name"), one.get("artifact_sha256"))
+    ]
+    if not found:
+        raise NotRecorded(f"FreeWeight knows no adapter {adapter!r}.", details={"adapter": adapter})
+    return found
+
+
+def adapter_api(client: httpx.Client, settings: Settings, adapter: str) -> dict[str, Any]:
+    """One adapter from ``GET /adapters``, with ``GET /runs`` and ``GET /results`` under it.
+
+    Raises:
+        NotRecorded: FreeWeight knows no adapter by that name or digest.
+        AppRefused: FreeWeight refused.
+        AppUnreachable: It did not answer.
+    """
+    found = _named(adapters_api(client, settings), adapter)
+    runs = runs_api(client, settings, {"adapter": adapter}, None)
+    results = results_api(client, settings, {"adapter": adapter, "status": "any"}, None)
+    return {"adapters": found, "runs": runs["items"], "results": results["items"]}
+
+
+def adapter_db(handle: AppDatabase, adapter: str) -> dict[str, Any]:
+    """One adapter's row and the runs created under it; its results are FreeWeight's query.
+
+    Raises:
+        NotRecorded: The table holds no adapter by that name or digest.
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    found = _named(adapters_db(handle), adapter)
+    names = {str(one.get("name")) for one in found}
+    runs = [run for run in runs_db(handle, {}, 1)["items"] if run.get("adapter") in names]
+    return {"adapters": found, "runs": runs, "results": None}
+
+
+def provider_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /provider``: the ``[provider]`` block, its file, the file's digest, what shadows it.
+
+    The block lives in FreeWeight's configuration file, not its database, so a stopped FreeWeight's
+    page says it reads only from the running API.
+
+    Raises:
+        AppRefused: FreeWeight refused.
+        AppUnreachable: It did not answer.
+    """
+    return _document(call(client, settings, APP, "GET", "provider"))
+
+
+def database_stats_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /database/stats``: what ``db status`` also says, and its backups and artifacts.
+
+    Raises:
+        AppRefused: FreeWeight refused.
+        AppUnreachable: It did not answer.
+    """
+    return _document(call(client, settings, APP, "GET", "database/stats", timeout_seconds=30.0))

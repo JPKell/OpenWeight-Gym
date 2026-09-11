@@ -1,7 +1,7 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, table, empty_state %}
 {% from "_app_page.html" import page_source, refusal %}
-{% from "_fw.html" import value, yes_no %}
+{% from "_fw.html" import value, yes_no, link %}
 {% block title %}Machines — FreeWeight — WeightRoom{% endblock %}
 {% block page_content %}
 <div class="page-head">
@@ -17,7 +17,7 @@ legitimately empty before anything has been measured, and reading it never makes
 {% set rows = [] %}
 {% for machine in sourced.data if not fingerprint or machine.get("machine_fingerprint") == fingerprint %}
 {% set _ = rows.append([
-  ('<a class="mono kit-id" href="/apps/freeweight/machines/' ~ ((machine.get("id") or "") | urlencode) ~ '" title="' ~ (machine.get("machine_fingerprint") or "") ~ '">' ~ ((machine.get("machine_fingerprint") or "")[:16]) ~ '…</a>') | safe,
+  link("/apps/freeweight/machines/" ~ ((machine.get("id") or "") | urlencode), ((machine.get("machine_fingerprint") or "—")[:16]) ~ "…", class_="mono kit-id", title=machine.get("machine_fingerprint") or ""),
   machine.get("hostname") or "—",
   ((machine.get("os_name") or "—") ~ " " ~ (machine.get("os_version") or ""))[:60],
   machine.get("cpu_model") or "—",

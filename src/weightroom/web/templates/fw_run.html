@@ -1,7 +1,7 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
 {% from "_app_page.html" import page_source, refusal %}
-{% from "_fw.html" import short, status_badge, value, chart, styles %}
+{% from "_fw.html" import short, status_badge, value, chart, styles, link %}
 {% block title %}Run — FreeWeight — WeightRoom{% endblock %}
 {% block page_content %}
 {{ styles() }}
@@ -79,7 +79,7 @@
 {% set rows = [] %}
 {% for test in run.get("tests") %}
 {% set _ = rows.append([
-  ('<a href="/apps/freeweight/runs/' ~ ((run.get("id") or run_id) | urlencode) ~ '/tests/' ~ ((test.get("id") or "") | urlencode) ~ '">') | safe ~ (test.get("name") or "—") ~ ('</a>' | safe) ~ " " ~ (test.get("key") or ""),
+  link("/apps/freeweight/runs/" ~ ((run.get("id") or run_id) | urlencode) ~ "/tests/" ~ ((test.get("id") or "") | urlencode), test.get("name") or "—") ~ " " ~ (test.get("key") or ""),
   status_badge(test.get("status")),
   (test.get("completed_cases") | string) ~ " / " ~ (test.get("total_cases") | string),
   value(test.get("repetitions"), fmt="%d"),
@@ -106,7 +106,7 @@
   value(metric.get("stddev")),
   value(metric.get("sample_count"), fmt="%d"),
   value(metric.get("excluded_count"), fmt="%d"),
-  ('<a href="/apps/freeweight/runs/' ~ ((run.get("id") or run_id) | urlencode) ~ '/tests/' ~ (metric.get("run_test_id") | urlencode) ~ '">samples</a>') | safe if metric.get("run_test_id") else ('<a href="#tests">every test</a>' | safe)
+  link("/apps/freeweight/runs/" ~ ((run.get("id") or run_id) | urlencode) ~ "/tests/" ~ (metric.get("run_test_id") | urlencode), "samples") if metric.get("run_test_id") else link("#tests", "every test")
 ]) %}
 {% endfor %}
 {{ table([{"label": "Metric", "mono": true}, {"label": "Scope"}, {"label": "GPU", "numeric": true}, {"label": "Value", "numeric": true}, {"label": "Unit"}, {"label": "Aggregation"}, {"label": "Spread (stddev)", "numeric": true}, {"label": "Samples", "numeric": true}, {"label": "Excluded", "numeric": true}, {"label": "Raw source"}], rows, caption="An unsupported measurement shows —, never 0", density="dense", row_count=rows | length) }}

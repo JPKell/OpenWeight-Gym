@@ -1,7 +1,7 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, table, empty_state %}
 {% from "_app_page.html" import page_source, refusal %}
-{% from "_fw.html" import run_link, short, status_badge, value, machine_link %}
+{% from "_fw.html" import run_link, short, status_badge, value, machine_link, link %}
 {% block title %}Results — FreeWeight — WeightRoom{% endblock %}
 {% block page_content %}
 <div class="page-head">
@@ -50,7 +50,7 @@ that stopped halfway measured a different set of cases than the row beside it.</
   short(row.get("runtime_profile_hash")),
   status_badge(row.get("run_status")),
   row.get("created_at") or "—",
-  ('<a href="/apps/freeweight/runs/' ~ ((row.get("run_id") or "") | urlencode) ~ ('/tests/' ~ (row.get("run_test_id") | urlencode) if row.get("run_test_id") else '') ~ '">' ~ ((row.get("run_id") or "")[:8]) ~ '</a>') | safe
+  link("/apps/freeweight/runs/" ~ ((row.get("run_id") or "") | urlencode) ~ ("/tests/" ~ (row.get("run_test_id") | urlencode) if row.get("run_test_id") else ""), (row.get("run_id") or "—")[:8])
 ]) %}
 {% endfor %}
 {{ table([{"label": "Metric", "mono": true}, {"label": "Value", "numeric": true}, {"label": "Unit"}, {"label": "n", "numeric": true}, {"label": "Excluded", "numeric": true}, {"label": "Stddev", "numeric": true}, {"label": "CV", "numeric": true}, {"label": "Model", "mono": true}, {"label": "Suite"}, {"label": "Test"}, {"label": "Machine"}, {"label": "Runtime profile"}, {"label": "Run status"}, {"label": "Created", "mono": true}, {"label": "Raw source"}], rows, caption="Stored metrics; an unsupported measurement shows —, never 0", density="dense", complete=next_href is none, row_count=rows | length) }}

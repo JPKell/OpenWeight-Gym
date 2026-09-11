@@ -4,6 +4,12 @@
     page error. `—` stands for a value nobody reported, never for zero (ADR-0016). -#}
 {% from "mirrorwall/components.html" import badge %}
 
+{% macro link(href, text, class_="", title="") -%}
+{#- One link, its href and its text both escaped: the one way these pages put an application's
+    value inside an anchor, so no value is ever concatenated into markup marked safe. -#}
+<a{% if class_ %} class="{{ class_ }}"{% endif %} href="{{ href }}"{% if title %} title="{{ title }}"{% endif %}>{{ text }}</a>
+{%- endmacro %}
+
 {% macro model_link(model_id, canonical_id) -%}
 {%- if model_id -%}
 <a class="mono" href="/apps/freeweight/models/{{ model_id | urlencode }}" title="{{ model_id }}">{{ canonical_id or model_id }}</a>
@@ -37,6 +43,13 @@
 {% macro value(number, reason=none, fmt="%.4g") -%}
 {%- if number is number and number is not sameas true and number is not sameas false -%}{{ fmt | format(number) }}
 {%- else -%}<span class="muted" title="{{ reason or 'not reported; not the same as zero' }}">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro availability(adapter) -%}
+{#- Whether an adapter may be registered: the running FreeWeight's reading of its directory. -#}
+{%- if adapter.get("available") is none -%}<span class="muted" title="read only by the running FreeWeight, from its adapter directory">—</span>
+{%- elif adapter.get("available") -%}{{ badge("available", tone="success") }}
+{%- else -%}{{ badge("unavailable", tone="danger", title=adapter.get("unavailable_reason")) }} {{ adapter.get("unavailable_reason") or "" }}{%- endif -%}
 {%- endmacro %}
 
 {% macro yes_no(flag) -%}

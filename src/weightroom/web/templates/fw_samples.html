@@ -1,7 +1,7 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, table, empty_state %}
 {% from "_app_page.html" import page_source, refusal %}
-{% from "_fw.html" import run_link, status_badge, value %}
+{% from "_fw.html" import run_link, status_badge, value, link %}
 {% block title %}Samples — FreeWeight — WeightRoom{% endblock %}
 {% block page_content %}
 {% set data = sourced.data or {} %}
@@ -31,7 +31,7 @@
   value(sample.get("client_wall_ms"), fmt="%.1f"),
   sample.get("finish_reason") or "—",
   (sample.get("error") or {}).get("code") or "—",
-  ('<a href="/apps/freeweight/samples/' ~ ((sample.get("id") or "") | urlencode) ~ '">inspect</a>') | safe
+  link("/apps/freeweight/samples/" ~ ((sample.get("id") or "") | urlencode), "inspect")
 ]) %}
 {% endfor %}
 {{ table([{"label": "Case", "mono": true}, {"label": "Rep", "numeric": true}, {"label": "Status"}, {"label": "Prompt", "mono": true}, {"label": "Score", "numeric": true}, {"label": "Method"}, {"label": "Output tokens", "numeric": true}, {"label": "Output chars", "numeric": true}, {"label": "TTFT ms", "numeric": true}, {"label": "Wall ms", "numeric": true}, {"label": "Finish"}, {"label": "Error", "mono": true}, {"label": "Inspect"}], rows, caption="A sample that could not be scored shows — and keeps its row: excluded from the aggregate, not from the count", density="dense", complete=next_href is none, row_count=rows | length) }}

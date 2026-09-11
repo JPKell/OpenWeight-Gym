@@ -25,10 +25,11 @@ from weightroom.services import freeweight_actions as actions
 from weightroom.services import freeweight_pages as fw
 from weightroom.services.app_api import stream as app_stream
 from weightroom.services.audit import record
+from weightroom.services.auth import require_fresh_reauth
 from weightroom.services.catalog import set_enabled
 from weightroom.web.routes.apps import app_view, back_to, read_app_page, render_app_page
 from weightroom.web.routes.jobs import enqueue_job
-from weightroom.web.session import CurrentOperator, now_of
+from weightroom.web.session import CurrentOperator, now_of, reauthenticated
 
 if TYPE_CHECKING:
     from weightroom.services.auth import Principal
@@ -888,4 +889,133 @@ def machine_page(request: Request, principal: CurrentOperator, machine_id: str) 
         sourced=sourced,
         runs=runs,
         machine_id=machine_id,
+    )
+
+
+# --- Adapters, provider ---------------------------------------------------------------------------
+
+
+@ui_router.get(f"{BASE}/adapters", summary="Adapters", response_class=HTMLResponse)
+def adapters_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+    """Every adapter the directory holds or FreeWeight measured under, with its base and runs."""
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request, view, api=lambda: fw.adapters_api(client, settings), database=fw.adapters_db
+    )
+    return render_app_page(
+        request, principal, APP, "fw_adapters.html", selected="Adapters", view=view, sourced=sourced
+    )
+
+
+@ui_router.get(f"{BASE}/adapters/{{adapter}}", summary="One adapter", response_class=HTMLResponse)
+def adapter_page(request: Request, principal: CurrentOperator, adapter: str) -> HTMLResponse:
+    """One adapter: its base, the runs and results measured under it, and on each base the scores
+    measured with it beside the bare base's."""
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request,
+        view,
+        api=lambda: fw.adapter_api(client, settings, adapter),
+        database=lambda handle: fw.adapter_db(handle, adapter),
+    )
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "fw_adapter.html",
+        selected="Adapters",
+        view=view,
+        sourced=sourced,
+        adapter_name=adapter,
+    )
+
+
+def _provider(
+    request: Request,
+    principal: Principal,
+    *,
+    action_error: SuiteError | None = None,
+    form: Mapping[str, str] | None = None,
+    saved: bool = False,
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request, view, api=lambda: fw.provider_api(client, settings), database=None
+    )
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "fw_provider.html",
+        selected="Provider",
+        view=view,
+        sourced=sourced,
+        security_fields=actions.SECURITY_FIELDS,
+        action_error=action_error,
+        form=dict(form or {}),
+        saved=saved,
+    )
+
+
+@ui_router.get(f"{BASE}/provider", summary="Provider", response_class=HTMLResponse)
+def provider_page(
+    request: Request, principal: CurrentOperator, saved: str | None = None
+) -> HTMLResponse:
+    """FreeWeight's ``[provider]`` block as a form (ADR-0117), its file and what shadows it."""
+    return _provider(request, principal, saved=bool(saved))
+
+
+@ui_router.post(f"{BASE}/provider", summary="Save the provider block from the page")
+def provider_from_page(  # noqa: PLR0913 — one parameter per form field, as FastAPI reads them
+    request: Request,
+    principal: CurrentOperator,
+    base_digest: Annotated[str, Form()] = "",
+    kind: Annotated[str, Form()] = "",
+    base_url: Annotated[str, Form()] = "",
+    timeout_seconds: Annotated[str, Form()] = "",
+    model_directory: Annotated[str, Form()] = "",
+    state_dir: Annotated[str, Form()] = "",
+    server_path: Annotated[str, Form()] = "",
+    password: Annotated[str, Form()] = "",
+) -> Response:
+    """``PUT /provider`` through FreeWeight, which validates and writes its own file.
+
+    A changed security key (:data:`~weightroom.services.freeweight_actions.SECURITY_FIELDS`) needs
+    the password within the re-authentication window, and its audit row is a ``security`` row. No
+    row carries a key's value, and the password reaches none.
+    """
+    acting = (reauthenticated(request, principal, password) or principal) if password else principal
+    client, settings = _clients(request)
+    form = {
+        "kind": kind, "base_url": base_url, "timeout_seconds": timeout_seconds,
+        "model_directory": model_directory, "state_dir": state_dir, "server_path": server_path,
+    }  # fmt: skip
+    changed: list[str] = []
+    security: list[str] = []
+    try:
+        current = fw.provider_api(client, settings).get("provider")
+        values = actions.provider_values(
+            kind=kind, base_url=base_url, timeout_seconds=timeout_seconds,
+            model_directory=model_directory, state_dir=state_dir, server_path=server_path,
+        )  # fmt: skip
+        changed, security = actions.touched(current if isinstance(current, Mapping) else {}, values)
+        if security:
+            require_fresh_reauth(acting, now=now_of(request), auth=settings.auth)
+        actions.save_provider(client, settings, values, base_digest=base_digest)
+    except SuiteError as exc:
+        _audit(
+            request, principal, "freeweight.provider_save", target="provider", outcome="refused",
+            params={"fields": changed, "touched_security": security}, message=exc.message,
+            security=bool(security),
+        )  # fmt: skip
+        return _provider(request, acting, action_error=exc, form=form)
+    _audit(
+        request, principal, "freeweight.provider_save", target="provider", outcome="ok",
+        params={"fields": changed, "touched_security": security}, security=bool(security),
+    )  # fmt: skip
+    return RedirectResponse(
+        f"{BASE}/provider?saved=1#provider", status_code=status.HTTP_303_SEE_OTHER
     )

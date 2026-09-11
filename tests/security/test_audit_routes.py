@@ -940,6 +940,13 @@ EXERCISES.update(
             {"label": "an audit exercise"},
             reply=("POST", f"runs/{_FW_RUN}/repeat", 201, {"id": "01AUDITREPEAT"}),
         ),
+        # Changing kind and base_url re-authenticates: the password rides along, and the redaction
+        # sweep proves it reaches no row and no log line.
+        ("POST", "/apps/freeweight/provider"): _fw_form(
+            "/apps/freeweight/provider",
+            {"kind": "ollama", "base_url": "http://127.0.0.1:11434", "password": PASSWORD},
+            reply=("PUT", "provider", 200, {}),
+        ),
     }
 )
 

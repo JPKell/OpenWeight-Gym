@@ -36,6 +36,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   validity factor, and the `benchmark.evidence_bundle` download; **Machines** and one machine with
   the runs measured on it, linked from every run, result and comparison that names a fingerprint.
   A stopped FreeWeight is never called for a download.
+- **FreeWeight's Adapters and Provider pages** (row WP3): **Adapters** over FreeWeight's new
+  `GET /adapters` — the directory's reading beside FreeWeight's own `adapters` table, each adapter
+  with its base and how the base is proven, availability, whether it is still in the directory,
+  its runs, and the manifests FreeWeight could not read, the drafts and the unmanifested
+  artifacts; **one adapter** with its runs and results (`adapter` filters on FreeWeight's runs and
+  results) and, per base, the scores measured with the adapter beside the bare base's — the two
+  columns FreeWeight's damaged-adapter canary compares, whose verdict FreeWeight does not store;
+  **Provider**, the `[provider]` block edited through FreeWeight's `PUT /provider` with its digest,
+  a changed `kind` or `base_url` asking for the password (`freeweight.provider_save`, a `security`
+  row then). The Database page adds FreeWeight's own backup count, last backup and artifact size
+  while it answers. No FreeWeight page is a stub but Goals (row WP4); `_PAGE_ELSEWHERE` is gone.
 - **PromptCadence's System page** (row WPC1, spec §7.3 as amended 2026-09-10): its health
   components with their status, the active trajectories, every pending approval with its age,
   today's position, the last recovery pass (resumed, finished, halted, failed, deferred) and the
