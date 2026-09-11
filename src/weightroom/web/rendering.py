@@ -123,7 +123,7 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
 """Spec §7.3's menu, per application; :data:`_PAGE_HREF` says which of them this build serves."""
 
 _PAGE_PHASE: dict[tuple[str, str], str] = {
-    **{("freeweight", label): "WP3" for label in ("Results", "Evidence", "Adapters", "Provider")},
+    **{("freeweight", label): "WP3" for label in ("Adapters", "Provider")},
     ("freeweight", "Goals"): "WP4",
     **{("ideapress", label): "WP5" for label in ("Projects", "Units", "Workflows", "Backends")},
 }
@@ -159,6 +159,8 @@ _PAGE_HREF: dict[str | tuple[str, str], str] = {
     # Results, which link every machine they name.
     ("freeweight", "Models"): "/apps/freeweight/models",
     ("freeweight", "Runs"): "/apps/freeweight/runs",
+    ("freeweight", "Results"): "/apps/freeweight/results",
+    ("freeweight", "Evidence"): "/apps/freeweight/evidence",
 }
 """Where a built page lives — by label for a page every application shares, by ``(app, label)`` for
 one only that application has; anything absent is still a stub."""

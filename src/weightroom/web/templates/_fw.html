@@ -16,6 +16,13 @@
 {%- else -%}—{%- endif -%}
 {%- endmacro %}
 
+{% macro machine_link(fingerprint, name=none) -%}
+{#- A run, a result or a comparison names its machine by fingerprint; the Machines page finds it. -#}
+{%- if fingerprint -%}
+<a class="mono kit-id" href="/apps/freeweight/machines?fingerprint={{ fingerprint | urlencode }}" title="{{ fingerprint }}">{{ name or (fingerprint[:12] ~ "…") }}</a>
+{%- else -%}<span class="muted">—</span>{%- endif -%}
+{%- endmacro %}
+
 {% macro short(value) -%}
 {%- if value and value | length > 16 -%}<span class="mono kit-id" title="{{ value }}">{{ value[:12] }}…</span>
 {%- elif value -%}<span class="mono kit-id">{{ value }}</span>

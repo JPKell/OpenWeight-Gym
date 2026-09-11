@@ -34,17 +34,29 @@ if TYPE_CHECKING:
 
 __all__ = [
     "APP",
+    "EVIDENCE_FILTERS",
+    "EXPORT_FORMATS",
+    "EXPORT_SCOPES",
+    "RESULT_FILTERS",
     "RUN_FILTERS",
     "RUN_STATUSES",
     "TERMINAL_RUN_STATUSES",
     "NotRecorded",
     "benchmarks_api",
     "charts",
+    "compare_api",
+    "evidence_api",
     "evidence_record",
+    "export_params",
+    "machine_api",
+    "machine_db",
+    "machines_api",
+    "machines_db",
     "model_api",
     "model_db",
     "models_api",
     "models_db",
+    "results_api",
     "run_api",
     "run_db",
     "run_log_frames",
@@ -897,3 +909,158 @@ def sample_db(handle: AppDatabase, sample_id: str) -> dict[str, Any]:
         "criterion_scores": scores,
         "telemetry": None,
     }  # fmt: skip
+
+
+# --- Results, compare, export ---------------------------------------------------------------------
+
+RESULT_FILTERS: Final[tuple[str, ...]] = (
+    "model",
+    "suite",
+    "metric_key",
+    "machine",
+    "runtime_profile",
+    "adapter",
+    "since",
+    "until",
+    "status",
+)
+"""``GET /results``' filters under FreeWeight's own names (api.md §5)."""
+EXPORT_SCOPES: Final[tuple[str, ...]] = ("all", "run", "model", "suite", "comparison")
+EXPORT_FORMATS: Final[tuple[str, ...]] = ("json", "jsonl", "csv")
+EVIDENCE_FILTERS: Final[tuple[str, ...]] = (
+    "capability",
+    "model",
+    "machine",
+    "runtime_profile",
+    "min_confidence",
+)
+"""``GET /evidence``' filters (api.md §6); the bundle takes these and ``since``."""
+
+
+def results_api(
+    client: httpx.Client, settings: Settings, filters: Mapping[str, str | None], cursor: str | None
+) -> dict[str, Any]:
+    """``GET /results``: one page of stored metrics, newest run first.
+
+    Raises:
+        AppRefused: A refused filter — ``MODEL_NOT_FOUND``, a malformed instant, a forged cursor.
+        AppUnreachable: It did not answer.
+    """
+    params = {key: filters.get(key) or None for key in RESULT_FILTERS}
+    body = call(
+        client, settings, APP, "GET", "results",
+        params={**params, "cursor": cursor, "limit": PAGE_ROWS}, timeout_seconds=30.0,
+    )  # fmt: skip
+    page = _document(_document(body).get("page"))
+    return {"items": _listed(body, "items"), "next_cursor": page.get("next_cursor")}
+
+
+def compare_api(
+    client: httpx.Client, settings: Settings, subjects: str, suite: str | None
+) -> dict[str, Any]:
+    """``GET /results/compare``: aligned metrics with every comparability verdict and separation.
+
+    Raises:
+        AppRefused: ``COMPARISON_REFUSED`` (a subject outside the suite, a run named twice, fewer
+            than two), ``COMPARISON_SUBJECT_NOT_FOUND`` or ``VALIDATION_ERROR``, each with its
+            reason in FreeWeight's words.
+        AppUnreachable: It did not answer.
+    """
+    return _document(
+        call(
+            client, settings, APP, "GET", "results/compare",
+            params={"subjects": subjects, "suite": suite}, timeout_seconds=60.0,
+        )
+    )  # fmt: skip
+
+
+def export_params(form: Mapping[str, str]) -> dict[str, str]:
+    """``GET /results/export``'s query from the page's form; FreeWeight validates every value.
+
+    A ticked box is ``true`` and an unticked one is left out, so FreeWeight's own default applies;
+    a blank field is left out for the same reason.
+    """
+    params = {key: form.get(key) or "" for key in ("format", "scope", "selector", "since", "until")}
+    for flag in ("include_samples", "include_prompts", "include_prompt_text"):
+        params[flag] = "true" if form.get(flag) == "true" else ""
+    return {key: value for key, value in params.items() if value}
+
+
+# --- Evidence -------------------------------------------------------------------------------------
+
+
+def evidence_api(
+    client: httpx.Client, settings: Settings, filters: Mapping[str, str | None], cursor: str | None
+) -> dict[str, Any]:
+    """``GET /evidence``: one page of current records, each lifted by :func:`evidence_record`.
+
+    Raises:
+        AppRefused: A refused filter (``MODEL_NOT_FOUND``, a minimum confidence out of range).
+        AppUnreachable: It did not answer.
+    """
+    params = {key: filters.get(key) or None for key in EVIDENCE_FILTERS}
+    body = call(
+        client, settings, APP, "GET", "evidence",
+        params={**params, "cursor": cursor, "limit": PAGE_ROWS}, timeout_seconds=30.0,
+    )  # fmt: skip
+    page = _document(_document(body).get("page"))
+    return {
+        "items": [evidence_record(item) for item in _listed(body, "items")],
+        "next_cursor": page.get("next_cursor"),
+    }
+
+
+# --- Machines -------------------------------------------------------------------------------------
+
+
+def _machine_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    """A ``machines`` row under ``GET /machines``' names; which one is this host is FreeWeight's."""
+    keys = (
+        "id", "machine_fingerprint", "hostname", "os_name", "os_version", "cpu_model",
+        "logical_cores", "ram_bytes", "first_seen_at", "last_seen_at",
+    )  # fmt: skip
+    return {**{key: row.get(key) for key in keys}, "is_current": None}
+
+
+def machines_api(client: httpx.Client, settings: Settings) -> list[dict[str, Any]]:
+    """``GET /machines``: every machine measured on, the current one flagged.
+
+    Raises:
+        AppRefused: FreeWeight refused.
+        AppUnreachable: It did not answer.
+    """
+    return _listed(call(client, settings, APP, "GET", "machines", timeout_seconds=30.0), "items")
+
+
+def machines_db(handle: AppDatabase) -> list[dict[str, Any]]:
+    """The ``machines`` table, oldest sighting first, as FreeWeight lists it.
+
+    Raises:
+        TableUnknown: The database has no ``machines`` table.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    rows = rows_where(
+        handle, "machines", order_by="first_seen_at", descending=False, limit=LIST_CAP
+    )
+    return [_machine_row(row) for row in rows]
+
+
+def machine_api(client: httpx.Client, settings: Settings, machine_id: str) -> dict[str, Any]:
+    """``GET /machines/{id}``.
+
+    Raises:
+        AppRefused: ``NOT_FOUND``, or an ambiguous prefix.
+        AppUnreachable: It did not answer.
+    """
+    return _document(call(client, settings, APP, "GET", f"machines/{segment(machine_id)}"))
+
+
+def machine_db(handle: AppDatabase, machine_id: str) -> dict[str, Any]:
+    """One machine by ULID or prefix.
+
+    Raises:
+        NotRecorded: Nothing matches, or more than one machine does.
+        TableUnknown: The database has no ``machines`` table.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    return _machine_row(_one(handle, "machines", machine_id, "machine"))

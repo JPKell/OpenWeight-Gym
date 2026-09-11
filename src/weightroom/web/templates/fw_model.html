@@ -1,7 +1,7 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
 {% from "_app_page.html" import page_source, refusal %}
-{% from "_fw.html" import run_link, short, value, model_switch with context %}
+{% from "_fw.html" import run_link, short, value, machine_link, model_switch with context %}
 {% block title %}Model — FreeWeight — WeightRoom{% endblock %}
 {% block page_content %}
 {% set data = sourced.data or {} %}
@@ -70,7 +70,7 @@
 {% elif evidence %}
 {% set rows = [] %}
 {% for one in evidence %}
-{% set _ = rows.append([one.get("capability_id") or "—", one.get("adapter") or "bare base", value(one.get("score"), fmt="%.3f"), value(one.get("confidence"), fmt="%.2f"), value(one.get("sample_count"), fmt="%d"), one.get("measured_at") or "—", short(one.get("runtime_profile_hash")), short(one.get("machine_fingerprint"))]) %}
+{% set _ = rows.append([one.get("capability_id") or "—", one.get("adapter") or "bare base", value(one.get("score"), fmt="%.3f"), value(one.get("confidence"), fmt="%.2f"), value(one.get("sample_count"), fmt="%d"), one.get("measured_at") or "—", short(one.get("runtime_profile_hash")), machine_link(one.get("machine_fingerprint"))]) %}
 {% endfor %}
 {{ table([{"label": "Capability", "mono": true}, {"label": "Subject"}, {"label": "Score", "numeric": true}, {"label": "Confidence", "numeric": true}, {"label": "Samples", "numeric": true}, {"label": "Measured", "mono": true}, {"label": "Runtime profile"}, {"label": "Machine"}], rows, caption="A capability nobody measured is absent, never scored zero", density="dense", row_count=rows | length) }}
 <p class="muted"><a href="/apps/freeweight/evidence?model={{ (model.get('id') or '') | urlencode }}">Every factor behind these scores</a></p>
@@ -91,7 +91,7 @@
 {% if results %}
 {% set rows = [] %}
 {% for one in results %}
-{% set _ = rows.append([one.get("metric_key") or "—", value(one.get("value"), one.get("unavailable_reason")), one.get("unit") or "—", value(one.get("sample_count"), fmt="%d"), value(one.get("excluded_count"), fmt="%d"), (one.get("suite") or "—") ~ " " ~ (one.get("suite_version") or ""), one.get("run_test_key") or "run", short(one.get("runtime_profile_hash")), short(one.get("machine_fingerprint")), run_link(one.get("run_id")), one.get("created_at") or "—"]) %}
+{% set _ = rows.append([one.get("metric_key") or "—", value(one.get("value"), one.get("unavailable_reason")), one.get("unit") or "—", value(one.get("sample_count"), fmt="%d"), value(one.get("excluded_count"), fmt="%d"), (one.get("suite") or "—") ~ " " ~ (one.get("suite_version") or ""), one.get("run_test_key") or "run", short(one.get("runtime_profile_hash")), machine_link(one.get("machine_fingerprint")), run_link(one.get("run_id")), one.get("created_at") or "—"]) %}
 {% endfor %}
 {{ table([{"label": "Metric", "mono": true}, {"label": "Value", "numeric": true}, {"label": "Unit"}, {"label": "n", "numeric": true}, {"label": "Excluded", "numeric": true}, {"label": "Suite"}, {"label": "Test"}, {"label": "Runtime profile"}, {"label": "Machine"}, {"label": "Run"}, {"label": "Created", "mono": true}], rows, caption="Completed runs' metrics for this model, newest first", density="dense", complete=next_href is none, row_count=rows | length) }}
 {% if next_href %}<p><a href="{{ next_href }}">Next page</a></p>{% endif %}

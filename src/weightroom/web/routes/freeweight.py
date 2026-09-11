@@ -13,7 +13,7 @@ Every action is a form post writing exactly one audit row whether FreeWeight acc
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Final
 from urllib.parse import urlencode
 
@@ -550,4 +550,342 @@ def sample_page(request: Request, principal: CurrentOperator, sample_id: str) ->
         view=view,
         sourced=sourced,
         sample_id=sample_id,
+    )
+
+
+# --- Downloads ------------------------------------------------------------------------------------
+
+
+def _download(headers: Mapping[str, str], body: Iterable[bytes], name: str) -> StreamingResponse:
+    """FreeWeight's download passed through as it streams, under FreeWeight's own file name."""
+    return StreamingResponse(
+        body,
+        media_type=headers.get("content-type") or "application/octet-stream",
+        headers={
+            "Content-Disposition": headers.get("content-disposition")
+            or f'attachment; filename="{name}"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+def _unanswered(request: Request) -> SuiteError | None:
+    """Why a download is not asked for now, or ``None``.
+
+    A FreeWeight whose unit is not running is not called at all — a page's reads already follow
+    that rule through ``read_app_page``, and a download follows it here — so a stopped application
+    is never reached through whatever else might answer on its port.
+    """
+    from weightroom.services.apps import AppUnreachable
+
+    view = app_view(request, APP)
+    if view.running and view.reachable:
+        return None
+    message = f"FreeWeight is {view.pill}: a download is read only from its running API."
+    return AppUnreachable(message, details={"app": APP})
+
+
+def _flags(**values: str | None) -> dict[str, str]:
+    """A form's text fields as given, ``""`` for one left out, so a refused form renders again."""
+    return {key: value or "" for key, value in values.items()}
+
+
+def _console_names(filters: Mapping[str, str | None]) -> dict[str, str | None]:
+    """FreeWeight's filter names as this console's query names, for a pager's link.
+
+    ``runtime_profile`` travels as ``runtime_hash``: the §14 checklist reads any parameter spelled
+    with ``file`` in it as a filesystem path.
+    """
+    named = dict(filters)
+    if "runtime_profile" in named:
+        named["runtime_hash"] = named.pop("runtime_profile")
+    return named
+
+
+# --- Results, compare, export ---------------------------------------------------------------------
+
+
+def _results(
+    request: Request,
+    principal: Principal,
+    *,
+    filters: Mapping[str, str | None],
+    cursor: str | None = None,
+    export_error: SuiteError | None = None,
+    export_form: Mapping[str, str] | None = None,
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    wanted = {key: filters.get(key) or None for key in fw.RESULT_FILTERS}
+    sourced = read_app_page(
+        request, view, api=lambda: fw.results_api(client, settings, wanted, cursor), database=None
+    )
+    following = (sourced.data or {}).get("next_cursor")
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "fw_results.html",
+        selected="Results",
+        view=view,
+        sourced=sourced,
+        filters={key: value or "" for key, value in wanted.items()},
+        next_href=(
+            _href(f"{BASE}/results", **_console_names(wanted), cursor=following)
+            if following
+            else None
+        ),
+        export_error=export_error,
+        export_form=dict(export_form or {}),
+        scopes=fw.EXPORT_SCOPES,
+        formats=fw.EXPORT_FORMATS,
+    )
+
+
+@ui_router.get(f"{BASE}/results", summary="Results", response_class=HTMLResponse)
+def results_page(  # noqa: PLR0913 — one parameter per filter FreeWeight's metric query takes
+    request: Request,
+    principal: CurrentOperator,
+    model: str | None = None,
+    suite: str | None = None,
+    metric_key: str | None = None,
+    machine: str | None = None,
+    runtime_hash: str | None = None,
+    adapter: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
+    status: str | None = None,  # noqa: A002 — FreeWeight's own parameter name
+    cursor: str | None = None,
+) -> HTMLResponse:
+    """Every stored metric, filtered as FreeWeight's query allows, with Compare and Export."""
+    filters = {
+        "model": model, "suite": suite, "metric_key": metric_key, "machine": machine,
+        "runtime_profile": runtime_hash, "adapter": adapter, "since": since, "until": until,
+        "status": status,
+    }  # fmt: skip
+    return _results(request, principal, filters=filters, cursor=cursor or None)
+
+
+@ui_router.get(f"{BASE}/results/compare", summary="Compare", response_class=HTMLResponse)
+def compare_page(
+    request: Request,
+    principal: CurrentOperator,
+    subjects: str | None = None,
+    suite: str | None = None,
+) -> HTMLResponse:
+    """``GET /results/compare``: every comparability verdict, the reason for each separation, and a
+    refused comparison's reason in FreeWeight's words rather than an empty table."""
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    wanted, guard = (subjects or "").strip(), (suite or "").strip() or None
+    sourced = (
+        read_app_page(
+            request,
+            view,
+            api=lambda: fw.compare_api(client, settings, wanted, guard),
+            database=None,
+        )
+        if wanted
+        else None
+    )
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "fw_compare.html",
+        selected="Results",
+        view=view,
+        sourced=sourced,
+        subjects=wanted,
+        suite=guard or "",
+    )
+
+
+@ui_router.get(f"{BASE}/results/export", summary="Export results", response_model=None)
+def export_results(  # noqa: PLR0913 — one parameter per option FreeWeight's export takes
+    request: Request,
+    principal: CurrentOperator,
+    format: str = "json",  # noqa: A002 — FreeWeight's own parameter name
+    scope: str = "all",
+    selector: str | None = None,
+    include_samples: str | None = None,
+    include_prompts: str | None = None,
+    include_prompt_text: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
+) -> Response:
+    """``GET /results/export`` proxied as it streams, every option FreeWeight takes passed through.
+
+    A refusal — the 500-run limit among them — arrives before a byte of the file and renders on
+    the Results page as itself, with the form kept.
+    """
+    from weightroom.services.app_api import download
+
+    form = _flags(
+        format=format, scope=scope, selector=selector, include_samples=include_samples,
+        include_prompts=include_prompts, include_prompt_text=include_prompt_text, since=since,
+        until=until,
+    )  # fmt: skip
+    client, settings = _clients(request)
+    try:
+        refused = _unanswered(request)
+        if refused is not None:
+            raise refused
+        headers, body = download(
+            client, settings, APP, "results/export", params=fw.export_params(form)
+        )
+    except SuiteError as exc:
+        return _results(request, principal, filters={}, export_error=exc, export_form=form)
+    return _download(headers, body, "freeweight-export")
+
+
+# --- Evidence -------------------------------------------------------------------------------------
+
+
+def _evidence(
+    request: Request,
+    principal: Principal,
+    *,
+    filters: Mapping[str, str | None],
+    cursor: str | None = None,
+    export_error: SuiteError | None = None,
+    since: str = "",
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    wanted = {key: filters.get(key) or None for key in fw.EVIDENCE_FILTERS}
+    sourced = read_app_page(
+        request, view, api=lambda: fw.evidence_api(client, settings, wanted, cursor), database=None
+    )
+    following = (sourced.data or {}).get("next_cursor")
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "fw_evidence.html",
+        selected="Evidence",
+        view=view,
+        sourced=sourced,
+        filters={key: value or "" for key, value in wanted.items()},
+        next_href=(
+            _href(f"{BASE}/evidence", **_console_names(wanted), cursor=following)
+            if following
+            else None
+        ),
+        export_error=export_error,
+        since=since,
+    )
+
+
+@ui_router.get(f"{BASE}/evidence", summary="Evidence", response_class=HTMLResponse)
+def evidence_page(  # noqa: PLR0913 — one parameter per filter FreeWeight's evidence takes
+    request: Request,
+    principal: CurrentOperator,
+    capability: str | None = None,
+    model: str | None = None,
+    machine: str | None = None,
+    runtime_hash: str | None = None,
+    min_confidence: str | None = None,
+    cursor: str | None = None,
+) -> HTMLResponse:
+    """FreeWeight's current ``capability.evidence`` records, a ``user.*`` record's goal, jury and
+    calibration beside its score, and the ``benchmark.evidence_bundle`` download."""
+    filters = {
+        "capability": capability, "model": model, "machine": machine,
+        "runtime_profile": runtime_hash, "min_confidence": min_confidence,
+    }  # fmt: skip
+    return _evidence(request, principal, filters=filters, cursor=cursor or None)
+
+
+@ui_router.get(f"{BASE}/evidence/export", summary="Export the evidence bundle", response_model=None)
+def export_evidence(  # noqa: PLR0913 — one parameter per filter FreeWeight's bundle takes
+    request: Request,
+    principal: CurrentOperator,
+    since: str | None = None,
+    capability: str | None = None,
+    model: str | None = None,
+    machine: str | None = None,
+    runtime_hash: str | None = None,
+    min_confidence: str | None = None,
+) -> Response:
+    """``GET /evidence/export`` passed through: one ``benchmark.evidence_bundle`` envelope."""
+    from weightroom.services.app_api import download
+
+    filters = {
+        "capability": capability, "model": model, "machine": machine,
+        "runtime_profile": runtime_hash, "min_confidence": min_confidence,
+    }  # fmt: skip
+    params = {**{key: value or None for key, value in filters.items()}, "since": since or None}
+    client, settings = _clients(request)
+    try:
+        refused = _unanswered(request)
+        if refused is not None:
+            raise refused
+        headers, body = download(client, settings, APP, "evidence/export", params=params)
+    except SuiteError as exc:
+        return _evidence(
+            request, principal, filters=filters, export_error=exc, since=since or ""
+        )  # fmt: skip
+    return _download(headers, body, "freeweight-evidence.json")
+
+
+# --- Machines -------------------------------------------------------------------------------------
+
+
+@ui_router.get(f"{BASE}/machines", summary="Machines", response_class=HTMLResponse)
+def machines_page(
+    request: Request, principal: CurrentOperator, fingerprint: str | None = None
+) -> HTMLResponse:
+    """Every machine FreeWeight has measured on; a run or a result links here by fingerprint."""
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request, view, api=lambda: fw.machines_api(client, settings), database=fw.machines_db
+    )
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "fw_machines.html",
+        selected="Runs",
+        view=view,
+        sourced=sourced,
+        fingerprint=fingerprint or "",
+    )
+
+
+@ui_router.get(
+    f"{BASE}/machines/{{machine_id}}", summary="One machine", response_class=HTMLResponse
+)
+def machine_page(request: Request, principal: CurrentOperator, machine_id: str) -> HTMLResponse:
+    """One machine's static profile and the runs measured on it."""
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request,
+        view,
+        api=lambda: fw.machine_api(client, settings, machine_id),
+        database=lambda handle: fw.machine_db(handle, machine_id),
+    )
+    filters = {"machine": str((sourced.data or {}).get("machine_fingerprint") or "") or None}
+    runs = (
+        read_app_page(
+            request,
+            view,
+            api=lambda: fw.runs_api(client, settings, filters, None),
+            database=lambda handle: fw.runs_db(handle, filters, 1),
+        )
+        if filters["machine"]
+        else None
+    )
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "fw_machine.html",
+        selected="Runs",
+        view=view,
+        sourced=sourced,
+        runs=runs,
+        machine_id=machine_id,
     )

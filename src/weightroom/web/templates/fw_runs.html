@@ -1,7 +1,7 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, table, empty_state %}
 {% from "_app_page.html" import page_source, refusal %}
-{% from "_fw.html" import run_link, short, status_badge %}
+{% from "_fw.html" import run_link, status_badge, machine_link %}
 {% block title %}Runs — FreeWeight — WeightRoom{% endblock %}
 {% block page_content %}
 <div class="page-head">
@@ -78,7 +78,7 @@
   run.get("model") or "—",
   run.get("adapter") or "—",
   run.get("label") or "—",
-  short(run.get("machine_fingerprint")),
+  machine_link(run.get("machine_fingerprint")),
   run.get("created_at") or "—",
   run.get("completed_at") or "—"
 ]) %}

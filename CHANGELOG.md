@@ -24,6 +24,18 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   revision `0010`. Each action is one audit row (`freeweight.discover`, `catalog.enabled`,
   `job.enqueue`, `freeweight.run_cancel`, `freeweight.run_repeat`).
 - `freeweight_suite_run` takes an optional `label`, passed as `run start --label`.
+- **FreeWeight's Results, Evidence and Machines pages** (row WP3): **Results** over FreeWeight's
+  metric query with every filter it takes (model, suite, metric key, machine, runtime profile,
+  adapter, date window, run status) and its cursor; **Compare** (`?subjects=…&suite=…`) with the
+  study, each subject's profile, every comparability verdict with its reason and the fingerprint
+  fields that separate the runs, the metrics aligned with their groups, and a refused comparison's
+  reason and offending runs rather than a blank; **Export** proxied as it streams, with every
+  option FreeWeight takes and its own file name — the 500-run refusal arrives before the first
+  byte and renders on the Results page as itself; **Evidence** with FreeWeight's filters, each
+  record's contributing metrics, a `user.*` record's goal hash, jury, calibration and judge
+  validity factor, and the `benchmark.evidence_bundle` download; **Machines** and one machine with
+  the runs measured on it, linked from every run, result and comparison that names a fingerprint.
+  A stopped FreeWeight is never called for a download.
 - **PromptCadence's System page** (row WPC1, spec §7.3 as amended 2026-09-10): its health
   components with their status, the active trajectories, every pending approval with its age,
   today's position, the last recovery pass (resumed, finished, halted, failed, deferred) and the

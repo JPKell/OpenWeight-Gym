@@ -1,0 +1,114 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link, value, machine_link %}
+{% block title %}Compare — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Compare {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/results">Results</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Runs set side by side, aligned by metric. FreeWeight never averages across a boundary it marks separate: where
+two columns cannot be read against each other, the row says so, each cell names its group, and the fingerprint fields that
+separate them are listed with the reason.</p>
+<form method="get" action="/apps/freeweight/results/compare" class="filter-bar" aria-label="Compare">
+  <div class="field kit-wide"><label for="fw-cmp-subjects">Subjects</label><input id="fw-cmp-subjects" name="subjects" value="{{ subjects }}" placeholder="run ULIDs or prefixes, or model references, comma separated" required>
+    <span class="field-hint">Two or more. A model reference means that model's latest completed run of the suite.</span></div>
+  <div class="field"><label for="fw-cmp-suite">Suite</label><input id="fw-cmp-suite" name="suite" value="{{ suite }}">
+    <span class="field-hint">Refuses any run of another suite rather than comparing across suites.</span></div>
+  <button type="submit">Compare</button>
+</form>
+
+{% if sourced is none %}
+{{ empty_state("Name two or more runs, or models and a suite, to compare them.") }}
+{% else %}
+{{ refusal(sourced.error) }}
+{% set refused = (sourced.error.details.get("app_details") or {}) if sourced.error else {} %}
+{% if refused.get("offenders") %}
+{% set rows = [] %}
+{% for one in refused.get("offenders") %}{% set _ = rows.append([run_link(one.get("run_id")), one.get("suite") or "—"]) %}{% endfor %}
+{{ table([{"label": "Run"}, {"label": "Its suite", "mono": true}], rows, caption="The subjects FreeWeight refused, and why", density="dense", row_count=rows | length) }}
+{% endif %}
+{% set comparison = sourced.data %}
+{% if comparison %}
+{% set subjects_list = comparison.get("subjects") or [] %}
+<p>A <strong>{{ (comparison.get("study") or "—") | replace("_", " ") }}</strong> across {{ subjects_list | length }} run(s).</p>
+<h3>Subjects</h3>
+{% set rows = [] %}
+{% for one in subjects_list %}
+{% set _ = rows.append([
+  run_link(one.get("run_id")),
+  one.get("label") or "—",
+  one.get("model") or "—",
+  badge("name only", tone="warning", title="identified by name alone; the weights may have changed under it") if one.get("identity_confidence") == "name_only" else "digest",
+  (one.get("suite") or "—") ~ " " ~ (one.get("suite_version") or ""),
+  one.get("quantization") or "—",
+  one.get("kv_cache_precision") or "—",
+  value(one.get("context_size"), fmt="%d"),
+  machine_link(one.get("machine_fingerprint"), one.get("machine_hostname")),
+  value(one.get("gpu_index"), fmt="%d"),
+  one.get("started_at") or "—"
+]) %}
+{% endfor %}
+{{ table([{"label": "Run"}, {"label": "Label"}, {"label": "Model", "mono": true}, {"label": "Identity"}, {"label": "Suite"}, {"label": "Quantization"}, {"label": "KV precision"}, {"label": "Context", "numeric": true}, {"label": "Machine"}, {"label": "GPU", "numeric": true}, {"label": "Started", "mono": true}], rows, caption="What each column was measured against", density="dense", row_count=rows | length) }}
+
+{% if comparison.get("context_sweep") %}
+{% set sweep = comparison.get("context_sweep") %}
+<h3>Context sweep — what one token of context costs</h3>
+<p class="muted">One model at several served contexts on one machine, its memory differenced into a cost function. A study across
+runs, not a benchmark result.</p>
+{{ kv_list([
+  {"label": "Weights and fixed allocations", "value": (sweep.get("weights_bytes") | bytes_human) if sweep.get("weights_bytes") is number else "—"},
+  {"label": "Per token of context", "value": (sweep.get("bytes_per_token") | bytes_human) if sweep.get("bytes_per_token") is number else "—"},
+  {"label": "Fit r²", "value": ("%.4f" | format(sweep.get("r_squared"))) if sweep.get("r_squared") is number else "—"},
+]) }}
+{{ json_viewer(sweep, label="The sweep as FreeWeight computed it") }}
+{% endif %}
+
+<h3>What separates these runs</h3>
+{% if comparison.get("separations") %}
+{% for verdict in comparison.get("separations") %}
+<section class="card">
+  <p>{{ run_link(verdict.get("left")) }} vs {{ run_link(verdict.get("right")) }} —
+  {{ badge(verdict.get("comparability") or "—", tone="success" if verdict.get("comparability") == "comparable" else "warning") }}
+  <span class="muted">{{ (verdict.get("study") or "") | replace("_", " ") }}</span></p>
+  <p>{{ verdict.get("reason") or "No reason was given." }}</p>
+  {% if verdict.get("fingerprint_diff") %}
+  {% set rows = [] %}
+  {% for entry in verdict.get("fingerprint_diff") %}{% set _ = rows.append([entry.get("path") or "—", entry.get("left") | string, entry.get("right") | string]) %}{% endfor %}
+  <details class="kit-details"><summary>Provenance differs on {{ rows | length }} field(s)</summary>
+  {{ table([{"label": "Field", "mono": true}, {"label": "Left"}, {"label": "Right"}], rows, density="dense", row_count=rows | length) }}
+  </details>
+  {% else %}
+  <p class="muted">No stored fingerprint document to diff: the reason above is the whole of what is known.</p>
+  {% endif %}
+</section>
+{% endfor %}
+{% else %}
+<p class="muted">Nothing separates them: every metric row may be read across.</p>
+{% endif %}
+
+<h3>Metrics</h3>
+{% set metrics = comparison.get("metrics") or [] %}
+{% if metrics %}
+{% set head = [{"label": "Metric", "mono": true}, {"label": "Kind"}] %}
+{% for one in subjects_list %}{% set _ = head.append({"label": (one.get("label") or (one.get("run_id") or "")[:8]), "numeric": true}) %}{% endfor %}
+{% set _ = head.append({"label": "Comparable"}) %}
+{% set rows = [] %}
+{% for row in metrics %}
+{% set cells = [row.get("metric_key") ~ " (" ~ (row.get("unit") or "—") ~ ", " ~ ("higher is better" if row.get("higher_is_better") else "lower is better") ~ ")", row.get("metric_kind") or "—"] %}
+{% for cell in row.get("cells") or [] %}
+{% set _ = cells.append(value(cell.get("value"), cell.get("unavailable_reason")) ~ (" best" if row.get("mergeable") and row.get("best_run_id") == cell.get("run_id") else "") ~ " · n=" ~ (cell.get("sample_count") if cell.get("sample_count") is not none else "—") ~ (" · group " ~ (cell.get("group_index") + 1) if not row.get("mergeable") and cell.get("group_index") is number else "")) %}
+{% endfor %}
+{% set _ = cells.append("yes" if row.get("mergeable") else ("no — " ~ ((row.get("groups") or []) | length) ~ " groups: " ~ ((row.get("groups") or []) | map(attribute="reason") | join(" "))) ) %}
+{% set _ = rows.append(cells) %}
+{% endfor %}
+{{ table(head, rows, caption="One cell per run; cells in different groups are never to be read against each other", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No aggregate metrics on these runs: most often none of them completed.") }}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endif %}
+{% endblock %}
