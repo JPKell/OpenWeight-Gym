@@ -7,6 +7,44 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **IdeaPress's plan, research, stage runs, units, workspace and export** (row WP5 Gate C), at
+  parity with IdeaPress's own `plan`, `units`, `workspace` and `export` pages, every one over
+  its API. **Plan**: every requirement with the material it rests on, the unit plan, the five
+  plan edits (a refusal names what IdeaPress's gate protected: the orphaned requirement or the
+  finished unit), running the plan, and **research** — where a fetch may go, the notes, and every
+  tool call with the egress decision it ran under. **Stage runs**: a run form that sends
+  IdeaPress's body with only the overrides given, beside the stage bindings and workflow limits
+  the stage will use (`GET /settings`); the run's page with its state, counts and attempts,
+  IdeaPress's task stream proxied into the log pane with `Last-Event-ID` carried through
+  (`unit.paused` and `stage.failed` shown as states, a bare `token` frame as a line of text),
+  and **cancel**, which the page says lands at the next model-call boundary. **Units** (a
+  project's units with coverage and last validation) and **one unit**: its content as sanitised
+  markdown, coverage, validation, findings, critiques, provenance with each attempt's egress, and
+  every version with the run that produced it; **revise** with instructions, and **resume** for a
+  paused unit or one a gone run stranded — offered only where IdeaPress allows. **Workspace**:
+  IdeaPress's own view, with its pause guidance, coverage summary and a diff between versions.
+  **Export**: the formats in IdeaPress's words, what would be included, writing into the project
+  directory (naming the file, size and hash), and a download served as an attachment, never
+  inline. Eight audit actions; no row carries instructions, a brief or unit text. A stopped
+  IdeaPress's plan, research, runs (with their recorded events) and units read its database; the
+  workspace and export say they read only its API. `app_api.text` fetches a non-JSON body.
+- **IdeaPress's Projects, Workflows and Backends pages under its tab** (row WP5 Gate B), at parity
+  with IdeaPress's own UI: **Projects** (newest activity first, by status and content type, with
+  IdeaPress's cursor; the create form with title, content type, a workflow from
+  `GET /workflows`, brief and author material as a JSON object), **one project** (its fields,
+  brief and author material, the plan summary as figures, every unit with its state, version,
+  coverage and last validation, and the stage history newest first), an **edit** form that says a
+  save never recompiles requirements, and a **delete** that shows IdeaPress's own preview first,
+  offers to archive the project before anything is removed, and deletes only once the title
+  IdeaPress answers is typed. **Workflows** (stage order, which stages use a model and the model
+  bound to each, gates, and the workflow limits a run uses from `GET /settings`) and **Backends**
+  (mode, selected/fallback/pinned, reachability, capabilities, whether content leaves the machine,
+  and the round-trip **Test** with its latency, model list and version). Each action is one audit
+  row (`ideapress.project_create`, `ideapress.project_update`, `ideapress.project_delete` —
+  its preview `pending` — and `ideapress.backend_test`), never carrying a title, brief or author
+  material. A stopped IdeaPress's projects read its database; Workflows and Backends say they
+  read only its running API. The fixtures are IdeaPress's own application answering over its
+  scripted backend, with the database it left (`ideapress-0011-journey`).
 - **FreeWeight's Models and Runs pages under its tab** (row WP3), at parity with FreeWeight's own
   UI: **Models** (latest descriptor, whether each has results, sort, **Refresh from provider**
   with the added/updated/unchanged counts, and ADR-0118's switch through the catalog's own call),

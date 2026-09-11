@@ -1,0 +1,57 @@
+{
+  "units": [
+    {
+      "content_hash": "sha256:eeaa0bce9958229471e7cc1e0924c05790a97ee00cadc3325d380d0dc2089777",
+      "coverage": {
+        "satisfied": 1,
+        "total": 2
+      },
+      "goal": "Say plainly where inference runs.",
+      "last_validation": {
+        "at": "2026-09-11T06:40:37.378279+00:00",
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking_failures": 0,
+        "failures": 0,
+        "passed": true,
+        "stage": "revise"
+      },
+      "ordinal": 1,
+      "paused_reason": null,
+      "requirement_keys": [
+        "R-001",
+        "R-002"
+      ],
+      "state": "committed",
+      "title": "Where the work happens",
+      "unit_key": "U-01",
+      "version": 2,
+      "word_count": 47
+    },
+    {
+      "content_hash": "sha256:3f0b6f969aa84e7d09e863eeae85e1933a746d97f3f5dc57538bc5816c4a94ec",
+      "coverage": {
+        "satisfied": 1,
+        "total": 1
+      },
+      "goal": "Be honest about the trade.",
+      "last_validation": {
+        "at": "2026-09-11T06:40:37.304928+00:00",
+        "attempt_id": "01M27K4PXR695BSXG79V5SK7XG",
+        "blocking_failures": 0,
+        "failures": 0,
+        "passed": true,
+        "stage": "draft"
+      },
+      "ordinal": 2,
+      "paused_reason": null,
+      "requirement_keys": [
+        "R-001"
+      ],
+      "state": "committed",
+      "title": "What it costs",
+      "unit_key": "U-02",
+      "version": 1,
+      "word_count": 33
+    }
+  ]
+}

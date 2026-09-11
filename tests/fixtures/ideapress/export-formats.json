@@ -1,0 +1,19 @@
+{
+  "formats": [
+    {
+      "description": "One self-contained file with the styling inline. It opens with no network at all: no stylesheet link, no script, no font, no image from anywhere.",
+      "extension": "html",
+      "format": "html"
+    },
+    {
+      "description": "Everything: the units, their requirement coverage, the validation results and the provenance of every committed version. The format to keep, and the one to diff.",
+      "extension": "json",
+      "format": "json"
+    },
+    {
+      "description": "The units in reading order, as plain Markdown. No provenance, no coverage — the document as a reader would receive it.",
+      "extension": "md",
+      "format": "markdown"
+    }
+  ]
+}

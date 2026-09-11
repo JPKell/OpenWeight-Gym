@@ -96,6 +96,22 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         # preview is a `pending` row, and a changed security key or a removal is a `security` row.
         "loadcoach.provider_save",
         "loadcoach.provider_delete",
+        # WP5 Gate B. From IdeaPress's tab: a project created, edited or deleted (the delete's
+        # preview is a `pending` row), and a backend's round-trip test.
+        "ideapress.project_create",
+        "ideapress.project_update",
+        "ideapress.project_delete",
+        "ideapress.backend_test",
+        # WP5 Gate C. The plan run and edited, research run, a stage run and cancelled, a unit
+        # revised or resumed, and an export written into the project's directory.
+        "ideapress.plan_run",
+        "ideapress.plan_edit",
+        "ideapress.research_run",
+        "ideapress.stage_run",
+        "ideapress.stage_cancel",
+        "ideapress.unit_revise",
+        "ideapress.unit_resume",
+        "ideapress.export_write",
         # WP3. From FreeWeight's tab (enabling a model reuses `catalog.enabled`; starting a run is
         # the `job.enqueue` of W9's `freeweight_suite_run`): a discovery pass, a run cancelled or
         # repeated, and the `[provider]` block saved — a `security` row when kind or base_url moved.

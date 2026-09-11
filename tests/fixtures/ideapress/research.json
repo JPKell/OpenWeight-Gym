@@ -1,0 +1,80 @@
+{
+  "allowed_hosts": [
+    "docs.example"
+  ],
+  "allowed_tools": [
+    "http_fetch",
+    "read_file"
+  ],
+  "notes": [
+    {
+      "characters": 20,
+      "citation": "https://docs.example/local-inference",
+      "kind": "url",
+      "sha256": "sha256:634d72ecaf1768623b12db2c7924e796b1eb2d339d15fd91cc1911db6568e93f",
+      "title": "https://docs.example/local-inference"
+    }
+  ],
+  "tool_calls": [
+    {
+      "detail": null,
+      "duration_ms": 0,
+      "egress": "network",
+      "egress_decision": {
+        "decided_at": "2026-09-11T06:40:37.073Z",
+        "decision_id": "01M27K4PPHK7WM4PYH5TY86Q8B",
+        "policy_name": "OrderedClassificationPolicy",
+        "policy_version": "1.0",
+        "reason": "within_ceiling",
+        "request": {
+          "data_classification": "public",
+          "requested_at": null,
+          "run_id": "project:01M27K4PP8AY6CN0BGB04B99JR",
+          "source_ref": "01M27K4PPHNP27AMHYN4MYHYYP",
+          "target": {
+            "max_data_classification": "public",
+            "name": "research:docs.example",
+            "provider_kind": "http_fetch",
+            "remote": true
+          }
+        },
+        "verdict": "approved"
+      },
+      "invocation_id": "01M27K4PPHNP27AMHYN4MYHYYP",
+      "reason": null,
+      "started_at": "2026-09-11T06:40:37.074605+00:00",
+      "status": "ok",
+      "tool": "http_fetch"
+    },
+    {
+      "detail": "'blocked.example' is not a host this tool may fetch from",
+      "duration_ms": 0,
+      "egress": "network",
+      "egress_decision": {
+        "decided_at": "2026-09-11T06:40:37.078Z",
+        "decision_id": "01M27K4PPPFV9SA7D45RZ10JHY",
+        "policy_name": "OrderedClassificationPolicy",
+        "policy_version": "1.0",
+        "reason": "within_ceiling",
+        "request": {
+          "data_classification": "public",
+          "requested_at": null,
+          "run_id": "project:01M27K4PP8AY6CN0BGB04B99JR",
+          "source_ref": "01M27K4PPPDVDXKV2N8WWFF85X",
+          "target": {
+            "max_data_classification": "public",
+            "name": "research:blocked.example",
+            "provider_kind": "http_fetch",
+            "remote": true
+          }
+        },
+        "verdict": "approved"
+      },
+      "invocation_id": "01M27K4PPPDVDXKV2N8WWFF85X",
+      "reason": "host_not_allowed",
+      "started_at": "2026-09-11T06:40:37.078919+00:00",
+      "status": "refused",
+      "tool": "http_fetch"
+    }
+  ]
+}

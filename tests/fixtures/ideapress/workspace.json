@@ -1,0 +1,883 @@
+{
+  "backend": {
+    "detail": "",
+    "egress": false,
+    "has_run": true,
+    "mode": "fake",
+    "reason": "target_not_remote",
+    "routes_internally": false,
+    "structured_output": true,
+    "verdict": "approved"
+  },
+  "coverage_summary": {
+    "model_guaranteed": 1,
+    "model_guaranteed_keys": [
+      "R-002"
+    ],
+    "satisfied": 1,
+    "total": 2,
+    "unsatisfied": [
+      "R-002"
+    ]
+  },
+  "diff": {
+    "diff_added": 1,
+    "diff_lines": [
+      {
+        "kind": "removed",
+        "marker": "-",
+        "new_number": null,
+        "old_number": 1,
+        "text": "Everything happens on your own machine. The model reads what you wrote and answers there, with nothing uploaded and no account needed. The hardware is yours to provide, which is the trade you are making for keeping the work where you made it."
+      },
+      {
+        "kind": "added",
+        "marker": "+",
+        "new_number": 1,
+        "old_number": null,
+        "text": "Everything happens on your own machine. The model reads what you wrote and answers there, with nothing uploaded and no account needed, and no network involved at any point. The hardware is yours to provide: that is the trade for keeping the work where you made it."
+      }
+    ],
+    "diff_new_version": 2,
+    "diff_old_version": 1,
+    "diff_removed": 1,
+    "diff_truncated": false,
+    "diff_unchanged": false,
+    "unavailable": ""
+  },
+  "pause": {
+    "hint": "",
+    "kind": "",
+    "paused": false,
+    "reason": ""
+  },
+  "project": {
+    "id": "01M27K4PP8AY6CN0BGB04B99JR",
+    "status": "planning",
+    "title": "Local inference for writers"
+  },
+  "project_cost": {
+    "exceeded": false,
+    "has_ceiling": false,
+    "money_is_floor": true,
+    "money_spent_display": "—",
+    "tokens_spent_display": "6228",
+    "unmetered_debit_count": 0,
+    "unpriced_debit_count": 15,
+    "untotalled_debit_count": 0
+  },
+  "research": {
+    "allowed_hosts": [
+      "docs.example"
+    ]
+  },
+  "running_task_id": null,
+  "selected_unit_key": "U-01",
+  "unit": {
+    "attempts": [
+      {
+        "attempt": 1,
+        "attempt_id": "01M27K4PTVWKHGPMV0BYK23H9V",
+        "backend": "fake",
+        "degradations": [],
+        "egress": {
+          "decided_at": "2026-09-11T06:40:37.214Z",
+          "decision_id": "01M27K4PTYCY91ESARWX27G2X0",
+          "policy_name": "OrderedClassificationPolicy",
+          "policy_version": "1.0",
+          "reason": "target_not_remote",
+          "request": {
+            "data_classification": "public",
+            "requested_at": null,
+            "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+            "source_ref": "01M27K4PTVWKHGPMV0BYK23H9V",
+            "target": {
+              "max_data_classification": null,
+              "name": "fake",
+              "provider_kind": null,
+              "remote": false
+            }
+          },
+          "verdict": "approved"
+        },
+        "idempotency_key": null,
+        "input_tokens": 273,
+        "model_canonical_id": "fake/gemma4:12b@sha256:1212121212121212121212121212121212121212121212121212121212121212",
+        "outcome": "completed",
+        "output_tokens": 18,
+        "prompt_id": "stages.draft.write",
+        "prompt_sha256": "sha256:a9d0040b8b39516126407d6d4b9ed69e76abec93e77167ed166652aff6580c89",
+        "prompt_source": "pack",
+        "prompt_version": "1.0.0",
+        "provider_ms": 0.0,
+        "rejection_reason": null,
+        "response_hash": "sha256:58e638c7ed3c3013a5d61398597ef2555bf20caf2a94b95e2fa800794b12b6a4",
+        "round": 0,
+        "routing": null,
+        "stage": "draft"
+      },
+      {
+        "attempt": 2,
+        "attempt_id": "01M27K4PV4175T4G79JGKZMAFW",
+        "backend": "fake",
+        "degradations": [
+          "model_switch: unloaded ollama/gemma4:12b to load ollama/qwen3.5:9b-q8_0 (0 ms)"
+        ],
+        "egress": {
+          "decided_at": "2026-09-11T06:40:37.222Z",
+          "decision_id": "01M27K4PV66X3QBH4KMHY502NY",
+          "policy_name": "OrderedClassificationPolicy",
+          "policy_version": "1.0",
+          "reason": "target_not_remote",
+          "request": {
+            "data_classification": "public",
+            "requested_at": null,
+            "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+            "source_ref": "01M27K4PV4175T4G79JGKZMAFW",
+            "target": {
+              "max_data_classification": null,
+              "name": "fake",
+              "provider_kind": null,
+              "remote": false
+            }
+          },
+          "verdict": "approved"
+        },
+        "idempotency_key": null,
+        "input_tokens": 354,
+        "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+        "outcome": "completed",
+        "output_tokens": 18,
+        "prompt_id": "stages.repair.fix",
+        "prompt_sha256": "sha256:0e6ca304295c8259ae96a8217e11e8a68c28b7af7bb6ed9a5e6584ba0ab63536",
+        "prompt_source": "pack",
+        "prompt_version": "1.0.0",
+        "provider_ms": 0.0,
+        "rejection_reason": null,
+        "response_hash": "sha256:58e638c7ed3c3013a5d61398597ef2555bf20caf2a94b95e2fa800794b12b6a4",
+        "round": 0,
+        "routing": null,
+        "stage": "repair"
+      },
+      {
+        "attempt": 3,
+        "attempt_id": "01M27K4PVC0AQZMJWEHG51YCTE",
+        "backend": "fake",
+        "degradations": [
+          "model_switch: unloaded ollama/gemma4:12b to load ollama/qwen3.5:9b-q8_0 (0 ms)"
+        ],
+        "egress": {
+          "decided_at": "2026-09-11T06:40:37.231Z",
+          "decision_id": "01M27K4PVF1Z93089FVRDGDCM5",
+          "policy_name": "OrderedClassificationPolicy",
+          "policy_version": "1.0",
+          "reason": "target_not_remote",
+          "request": {
+            "data_classification": "public",
+            "requested_at": null,
+            "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+            "source_ref": "01M27K4PVC0AQZMJWEHG51YCTE",
+            "target": {
+              "max_data_classification": null,
+              "name": "fake",
+              "provider_kind": null,
+              "remote": false
+            }
+          },
+          "verdict": "approved"
+        },
+        "idempotency_key": null,
+        "input_tokens": 354,
+        "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+        "outcome": "completed",
+        "output_tokens": 18,
+        "prompt_id": "stages.repair.fix",
+        "prompt_sha256": "sha256:0e6ca304295c8259ae96a8217e11e8a68c28b7af7bb6ed9a5e6584ba0ab63536",
+        "prompt_source": "pack",
+        "prompt_version": "1.0.0",
+        "provider_ms": 0.0,
+        "rejection_reason": null,
+        "response_hash": "sha256:58e638c7ed3c3013a5d61398597ef2555bf20caf2a94b95e2fa800794b12b6a4",
+        "round": 0,
+        "routing": null,
+        "stage": "repair"
+      },
+      {
+        "attempt": 1,
+        "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+        "backend": "fake",
+        "degradations": [],
+        "egress": {
+          "decided_at": "2026-09-11T06:40:37.269Z",
+          "decision_id": "01M27K4PWNG2DNKJM5TMYPJMTB",
+          "policy_name": "OrderedClassificationPolicy",
+          "policy_version": "1.0",
+          "reason": "target_not_remote",
+          "request": {
+            "data_classification": "public",
+            "requested_at": null,
+            "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+            "source_ref": "01M27K4PWJR21MSDNDX3HZHF1H",
+            "target": {
+              "max_data_classification": null,
+              "name": "fake",
+              "provider_kind": null,
+              "remote": false
+            }
+          },
+          "verdict": "approved"
+        },
+        "idempotency_key": null,
+        "input_tokens": 273,
+        "model_canonical_id": "fake/gemma4:12b@sha256:1212121212121212121212121212121212121212121212121212121212121212",
+        "outcome": "completed",
+        "output_tokens": 61,
+        "prompt_id": "stages.draft.write",
+        "prompt_sha256": "sha256:a9d0040b8b39516126407d6d4b9ed69e76abec93e77167ed166652aff6580c89",
+        "prompt_source": "pack",
+        "prompt_version": "1.0.0",
+        "provider_ms": 0.0,
+        "rejection_reason": null,
+        "response_hash": "sha256:01955df0bf2058912e1103399567e333c124917abe6048fa89711806a490bdfa",
+        "round": 0,
+        "routing": null,
+        "stage": "draft"
+      },
+      {
+        "attempt": 1,
+        "attempt_id": "01M27K4PWTDWMGN2PTAASKJBTG",
+        "backend": "fake",
+        "degradations": [
+          "model_switch: unloaded ollama/gemma4:12b to load ollama/qwen3.5:9b-q8_0 (0 ms)"
+        ],
+        "egress": {
+          "decided_at": "2026-09-11T06:40:37.276Z",
+          "decision_id": "01M27K4PWWRY5BWQK89QXGH411",
+          "policy_name": "OrderedClassificationPolicy",
+          "policy_version": "1.0",
+          "reason": "target_not_remote",
+          "request": {
+            "data_classification": "public",
+            "requested_at": null,
+            "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+            "source_ref": "01M27K4PWTDWMGN2PTAASKJBTG",
+            "target": {
+              "max_data_classification": null,
+              "name": "fake",
+              "provider_kind": null,
+              "remote": false
+            }
+          },
+          "verdict": "approved"
+        },
+        "idempotency_key": null,
+        "input_tokens": 589,
+        "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+        "outcome": "completed",
+        "output_tokens": 4,
+        "prompt_id": "stages.audit_fast.review",
+        "prompt_sha256": "sha256:cee7e0ae803680fca104fc15645e6a4b928543193cd0405c8f7cdc87619be526",
+        "prompt_source": "pack",
+        "prompt_version": "1.1.0",
+        "provider_ms": 0.0,
+        "rejection_reason": null,
+        "response_hash": "sha256:74b1df91fba10e5fac08d6ae710185611f24137af49463f6151eaa92a08c7b97",
+        "round": 0,
+        "routing": null,
+        "stage": "audit_fast"
+      },
+      {
+        "attempt": 1,
+        "attempt_id": "01M27K4PX7VGYSEANVDJ5RX591",
+        "backend": "fake",
+        "degradations": [
+          "model_switch: unloaded ollama/gemma4:12b to load ollama/qwen3.5:9b-q8_0 (0 ms)"
+        ],
+        "egress": {
+          "decided_at": "2026-09-11T06:40:37.291Z",
+          "decision_id": "01M27K4PXB5N9YVG4YE6Z77M2K",
+          "policy_name": "OrderedClassificationPolicy",
+          "policy_version": "1.0",
+          "reason": "target_not_remote",
+          "request": {
+            "data_classification": "public",
+            "requested_at": null,
+            "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+            "source_ref": "01M27K4PX7VGYSEANVDJ5RX591",
+            "target": {
+              "max_data_classification": null,
+              "name": "fake",
+              "provider_kind": null,
+              "remote": false
+            }
+          },
+          "verdict": "approved"
+        },
+        "idempotency_key": null,
+        "input_tokens": 299,
+        "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+        "outcome": "completed",
+        "output_tokens": 15,
+        "prompt_id": "stages.critique.judge",
+        "prompt_sha256": "sha256:f05ec70537f843957ac027174cb1aacb6d987cee8cb9cae696fab9192478ff19",
+        "prompt_source": "pack",
+        "prompt_version": "1.0.0",
+        "provider_ms": 0.0,
+        "rejection_reason": null,
+        "response_hash": "sha256:b72d71110b8d8971e65322670da47b1b3e21808306879bd3e7fb34e8492ac794",
+        "round": 0,
+        "routing": null,
+        "stage": "critique"
+      },
+      {
+        "attempt": 1,
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "backend": "fake",
+        "degradations": [],
+        "egress": {
+          "decided_at": "2026-09-11T06:40:37.381Z",
+          "decision_id": "01M27K4Q0569SXF6N3P64Q8EQY",
+          "policy_name": "OrderedClassificationPolicy",
+          "policy_version": "1.0",
+          "reason": "target_not_remote",
+          "request": {
+            "data_classification": "public",
+            "requested_at": null,
+            "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+            "source_ref": "01M27K4Q028JBMNH7TPV1G01N5",
+            "target": {
+              "max_data_classification": null,
+              "name": "fake",
+              "provider_kind": null,
+              "remote": false
+            }
+          },
+          "verdict": "approved"
+        },
+        "idempotency_key": null,
+        "input_tokens": 310,
+        "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+        "outcome": "completed",
+        "output_tokens": 66,
+        "prompt_id": "stages.revise.improve",
+        "prompt_sha256": "sha256:3a3fcd74a9da646be2a2c2c46095911887119a7c9ff655555940877cc7ba5330",
+        "prompt_source": "pack",
+        "prompt_version": "1.0.0",
+        "provider_ms": 0.0,
+        "rejection_reason": null,
+        "response_hash": "sha256:eeaa0bce9958229471e7cc1e0924c05790a97ee00cadc3325d380d0dc2089777",
+        "round": 1,
+        "routing": null,
+        "stage": "revise"
+      },
+      {
+        "attempt": 1,
+        "attempt_id": "01M27K4Q09MMFSF7N6R345YPC3",
+        "backend": "fake",
+        "degradations": [],
+        "egress": {
+          "decided_at": "2026-09-11T06:40:37.388Z",
+          "decision_id": "01M27K4Q0CCPDF0N39QXT2WAJY",
+          "policy_name": "OrderedClassificationPolicy",
+          "policy_version": "1.0",
+          "reason": "target_not_remote",
+          "request": {
+            "data_classification": "public",
+            "requested_at": null,
+            "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+            "source_ref": "01M27K4Q09MMFSF7N6R345YPC3",
+            "target": {
+              "max_data_classification": null,
+              "name": "fake",
+              "provider_kind": null,
+              "remote": false
+            }
+          },
+          "verdict": "approved"
+        },
+        "idempotency_key": null,
+        "input_tokens": 594,
+        "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+        "outcome": "completed",
+        "output_tokens": 4,
+        "prompt_id": "stages.audit_fast.review",
+        "prompt_sha256": "sha256:cee7e0ae803680fca104fc15645e6a4b928543193cd0405c8f7cdc87619be526",
+        "prompt_source": "pack",
+        "prompt_version": "1.1.0",
+        "provider_ms": 0.0,
+        "rejection_reason": null,
+        "response_hash": "sha256:74b1df91fba10e5fac08d6ae710185611f24137af49463f6151eaa92a08c7b97",
+        "round": 1,
+        "routing": null,
+        "stage": "audit_fast"
+      },
+      {
+        "attempt": 1,
+        "attempt_id": "01M27K4Q0HNR1NC8QJX7Q2V47Z",
+        "backend": "fake",
+        "degradations": [],
+        "egress": {
+          "decided_at": "2026-09-11T06:40:37.397Z",
+          "decision_id": "01M27K4Q0NXFKJTMQ2A706PWNY",
+          "policy_name": "OrderedClassificationPolicy",
+          "policy_version": "1.0",
+          "reason": "target_not_remote",
+          "request": {
+            "data_classification": "public",
+            "requested_at": null,
+            "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+            "source_ref": "01M27K4Q0HNR1NC8QJX7Q2V47Z",
+            "target": {
+              "max_data_classification": null,
+              "name": "fake",
+              "provider_kind": null,
+              "remote": false
+            }
+          },
+          "verdict": "approved"
+        },
+        "idempotency_key": null,
+        "input_tokens": 304,
+        "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+        "outcome": "completed",
+        "output_tokens": 15,
+        "prompt_id": "stages.critique.judge",
+        "prompt_sha256": "sha256:f05ec70537f843957ac027174cb1aacb6d987cee8cb9cae696fab9192478ff19",
+        "prompt_source": "pack",
+        "prompt_version": "1.0.0",
+        "provider_ms": 0.0,
+        "rejection_reason": null,
+        "response_hash": "sha256:b72d71110b8d8971e65322670da47b1b3e21808306879bd3e7fb34e8492ac794",
+        "round": 1,
+        "routing": null,
+        "stage": "critique"
+      }
+    ],
+    "committed_at": "2026-09-11T06:40:37.399668+00:00",
+    "content": "Everything happens on your own machine. The model reads what you wrote and answers there, with nothing uploaded and no account needed, and no network involved at any point. The hardware is yours to provide: that is the trade for keeping the work where you made it.",
+    "content_hash": "sha256:eeaa0bce9958229471e7cc1e0924c05790a97ee00cadc3325d380d0dc2089777",
+    "cost": {
+      "exceeded": false,
+      "has_ceiling": false,
+      "money_is_floor": true,
+      "money_spent_display": "—",
+      "tokens_spent_display": "3569",
+      "unmetered_debit_count": 0,
+      "unpriced_debit_count": 9,
+      "untotalled_debit_count": 0
+    },
+    "coverage": [
+      {
+        "detail": "found: own machine",
+        "requirement_key": "R-001",
+        "satisfied": true,
+        "satisfied_by": "deterministic_check"
+      },
+      {
+        "detail": "no deterministic check, and no audit has attested it met",
+        "requirement_key": "R-002",
+        "satisfied": false,
+        "satisfied_by": "unsatisfied"
+      }
+    ],
+    "critiques": [
+      {
+        "improvement_delta": null,
+        "rationale": "it meets the bar",
+        "round": 0,
+        "stop_reason": "critique_satisfied",
+        "verdict": "acceptable"
+      },
+      {
+        "improvement_delta": null,
+        "rationale": "it meets the bar",
+        "round": 1,
+        "stop_reason": "critique_satisfied",
+        "verdict": "acceptable"
+      }
+    ],
+    "findings": [],
+    "goal": "Say plainly where inference runs.",
+    "history": [
+      {
+        "committed": true,
+        "committed_at": "2026-09-11T06:40:37.399668+00:00",
+        "content_hash": "sha256:eeaa0bce9958229471e7cc1e0924c05790a97ee00cadc3325d380d0dc2089777",
+        "coverage": [
+          {
+            "detail": "found: own machine",
+            "requirement_key": "R-001",
+            "satisfied": true,
+            "satisfied_by": "deterministic_check"
+          },
+          {
+            "detail": "no deterministic check, and no audit has attested it met",
+            "requirement_key": "R-002",
+            "satisfied": false,
+            "satisfied_by": "unsatisfied"
+          }
+        ],
+        "created_at": "2026-09-11T06:40:37.400151+00:00",
+        "version": 2,
+        "word_count": 47
+      },
+      {
+        "committed": true,
+        "committed_at": "2026-09-11T06:40:37.294579+00:00",
+        "content_hash": "sha256:01955df0bf2058912e1103399567e333c124917abe6048fa89711806a490bdfa",
+        "coverage": [
+          {
+            "detail": "found: own machine",
+            "requirement_key": "R-001",
+            "satisfied": true,
+            "satisfied_by": "deterministic_check"
+          },
+          {
+            "detail": "no deterministic check, and no audit has attested it met",
+            "requirement_key": "R-002",
+            "satisfied": false,
+            "satisfied_by": "unsatisfied"
+          }
+        ],
+        "created_at": "2026-09-11T06:40:37.295929+00:00",
+        "version": 1,
+        "word_count": 43
+      }
+    ],
+    "paused_reason": null,
+    "project_id": "01M27K4PP8AY6CN0BGB04B99JR",
+    "requirements": [
+      {
+        "blocking": true,
+        "checks": "contains any of: 'own machine'",
+        "key": "R-001",
+        "text": "The unit must be explicit about where inference happens."
+      },
+      {
+        "blocking": false,
+        "checks": "no deterministic check — evaluated by audit only",
+        "key": "R-002",
+        "text": "The unit should keep a plain register."
+      }
+    ],
+    "research": {
+      "notes": [
+        {
+          "characters": 20,
+          "citation": "https://docs.example/local-inference",
+          "kind": "url",
+          "sha256": "sha256:634d72ecaf1768623b12db2c7924e796b1eb2d339d15fd91cc1911db6568e93f",
+          "title": "https://docs.example/local-inference"
+        }
+      ],
+      "tool_calls": [
+        {
+          "detail": null,
+          "duration_ms": 0,
+          "egress": "network",
+          "egress_decision": {
+            "decided_at": "2026-09-11T06:40:37.073Z",
+            "decision_id": "01M27K4PPHK7WM4PYH5TY86Q8B",
+            "policy_name": "OrderedClassificationPolicy",
+            "policy_version": "1.0",
+            "reason": "within_ceiling",
+            "request": {
+              "data_classification": "public",
+              "requested_at": null,
+              "run_id": "project:01M27K4PP8AY6CN0BGB04B99JR",
+              "source_ref": "01M27K4PPHNP27AMHYN4MYHYYP",
+              "target": {
+                "max_data_classification": "public",
+                "name": "research:docs.example",
+                "provider_kind": "http_fetch",
+                "remote": true
+              }
+            },
+            "verdict": "approved"
+          },
+          "invocation_id": "01M27K4PPHNP27AMHYN4MYHYYP",
+          "reason": null,
+          "started_at": "2026-09-11T06:40:37.074605+00:00",
+          "status": "ok",
+          "tool": "http_fetch"
+        },
+        {
+          "detail": "'blocked.example' is not a host this tool may fetch from",
+          "duration_ms": 0,
+          "egress": "network",
+          "egress_decision": {
+            "decided_at": "2026-09-11T06:40:37.078Z",
+            "decision_id": "01M27K4PPPFV9SA7D45RZ10JHY",
+            "policy_name": "OrderedClassificationPolicy",
+            "policy_version": "1.0",
+            "reason": "within_ceiling",
+            "request": {
+              "data_classification": "public",
+              "requested_at": null,
+              "run_id": "project:01M27K4PP8AY6CN0BGB04B99JR",
+              "source_ref": "01M27K4PPPDVDXKV2N8WWFF85X",
+              "target": {
+                "max_data_classification": "public",
+                "name": "research:blocked.example",
+                "provider_kind": "http_fetch",
+                "remote": true
+              }
+            },
+            "verdict": "approved"
+          },
+          "invocation_id": "01M27K4PPPDVDXKV2N8WWFF85X",
+          "reason": "host_not_allowed",
+          "started_at": "2026-09-11T06:40:37.078919+00:00",
+          "status": "refused",
+          "tool": "http_fetch"
+        }
+      ]
+    },
+    "state": "committed",
+    "title": "Where the work happens",
+    "unit_key": "U-01",
+    "validation": [
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "264 characters",
+        "key": "non_empty",
+        "kind": "structural",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "deepest heading is level 4 or less",
+        "key": "heading_depth",
+        "kind": "structural",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "0 fence marker(s)",
+        "key": "closed_code_fences",
+        "kind": "structural",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "0 '**' marker(s)",
+        "key": "closed_emphasis",
+        "kind": "structural",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "no empty list items",
+        "key": "lists_well_formed",
+        "kind": "structural",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "ends completely",
+        "key": "complete_ending",
+        "kind": "structural",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "47 words; at least 25 expected",
+        "key": "minimum_words",
+        "kind": "length",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": false,
+        "detail": "47 words; around 90 expected at most",
+        "key": "maximum_words",
+        "kind": "length",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "no front matter, which is fine",
+        "key": "front_matter",
+        "kind": "format",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "not a structured unit; JSON validity does not apply",
+        "key": "json_body",
+        "kind": "format",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "no meta-commentary",
+        "key": "no_meta_commentary",
+        "kind": "content",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "no forbidden phrase appears",
+        "key": "no_forbidden_phrases",
+        "kind": "content",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "R-001: found: own machine",
+        "key": "requirement:R-001:must_contain_any",
+        "kind": "content",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "every internal link resolves",
+        "key": "internal_anchors",
+        "kind": "reference",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "every unit reference resolves",
+        "key": "unit_references",
+        "kind": "reference",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": false,
+        "detail": "no sources attached; nothing to cite",
+        "key": "citations",
+        "kind": "reference",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": false,
+        "detail": "no glossary; nothing to check",
+        "key": "glossary_terms",
+        "kind": "consistency",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": false,
+        "detail": "contains no a <script> tag",
+        "key": "no_script_tags",
+        "kind": "safety",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": false,
+        "detail": "contains no an HTML event handler",
+        "key": "no_event_handlers",
+        "kind": "safety",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": false,
+        "detail": "contains no a javascript: URL",
+        "key": "no_javascript_urls",
+        "kind": "safety",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": false,
+        "detail": "contains no a text/html data: URI",
+        "key": "no_html_data_uri",
+        "kind": "safety",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": false,
+        "detail": "contains no template syntax",
+        "key": "no_template_syntax",
+        "kind": "safety",
+        "passed": true
+      },
+      {
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking": true,
+        "detail": "contains no a path traversal",
+        "key": "no_path_traversal",
+        "kind": "safety",
+        "passed": true
+      }
+    ],
+    "version": 2,
+    "word_count": 47
+  },
+  "units": [
+    {
+      "content_hash": "sha256:eeaa0bce9958229471e7cc1e0924c05790a97ee00cadc3325d380d0dc2089777",
+      "coverage": {
+        "satisfied": 1,
+        "total": 2
+      },
+      "goal": "Say plainly where inference runs.",
+      "last_validation": {
+        "at": "2026-09-11T06:40:37.378279+00:00",
+        "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+        "blocking_failures": 0,
+        "failures": 0,
+        "passed": true,
+        "stage": "revise"
+      },
+      "ordinal": 1,
+      "paused_reason": null,
+      "requirement_keys": [
+        "R-001",
+        "R-002"
+      ],
+      "state": "committed",
+      "title": "Where the work happens",
+      "unit_key": "U-01",
+      "version": 2,
+      "word_count": 47
+    },
+    {
+      "content_hash": "sha256:3f0b6f969aa84e7d09e863eeae85e1933a746d97f3f5dc57538bc5816c4a94ec",
+      "coverage": {
+        "satisfied": 1,
+        "total": 1
+      },
+      "goal": "Be honest about the trade.",
+      "last_validation": {
+        "at": "2026-09-11T06:40:37.304928+00:00",
+        "attempt_id": "01M27K4PXR695BSXG79V5SK7XG",
+        "blocking_failures": 0,
+        "failures": 0,
+        "passed": true,
+        "stage": "draft"
+      },
+      "ordinal": 2,
+      "paused_reason": null,
+      "requirement_keys": [
+        "R-001"
+      ],
+      "state": "committed",
+      "title": "What it costs",
+      "unit_key": "U-02",
+      "version": 1,
+      "word_count": 33
+    }
+  ]
+}

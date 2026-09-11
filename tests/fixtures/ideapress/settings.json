@@ -1,0 +1,218 @@
+{
+  "config_only": [
+    "providers.allow_remote",
+    "server.allow_lan_exposure",
+    "server.allowed_hosts",
+    "server.host",
+    "server.port",
+    "storage.database_url"
+  ],
+  "definitions": {
+    "models.stages.audit_deep": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the audit_deep stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.audit_fast": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the audit_fast stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.critique": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the critique stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.draft": {
+      "applies": "next_stage",
+      "configured": "ollama/gemma4:12b",
+      "description": "Model bound to the draft stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.fact_check": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the fact_check stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.outline": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the outline stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.project_review": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the project_review stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.repair": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the repair stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.requirements": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the requirements stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.research_synthesis": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the research_synthesis stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "models.stages.revise": {
+      "applies": "next_stage",
+      "configured": "ollama/qwen3.5:9b-q8_0",
+      "description": "Model bound to the revise stage.",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "string"
+    },
+    "workflow.audit_escalation_threshold": {
+      "applies": "next_stage",
+      "configured": 0.6,
+      "description": "",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "number"
+    },
+    "workflow.context_budget_tokens": {
+      "applies": "next_stage",
+      "configured": 8000,
+      "description": "Token budget for assembled context (workflows §7). Requirements and the unit specification are never dropped to fit it; overflow fails with both numbers.",
+      "maximum": null,
+      "minimum": 256,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "integer"
+    },
+    "workflow.diminishing_returns_threshold": {
+      "applies": "next_stage",
+      "configured": 0.05,
+      "description": "",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "number"
+    },
+    "workflow.max_attempts_per_stage": {
+      "applies": "next_stage",
+      "configured": 3,
+      "description": "",
+      "maximum": 100,
+      "minimum": 1,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "integer"
+    },
+    "workflow.max_revision_rounds": {
+      "applies": "next_stage",
+      "configured": 3,
+      "description": "",
+      "maximum": 100,
+      "minimum": 0,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "integer"
+    },
+    "workflow.require_clean_validation_to_commit": {
+      "applies": "next_stage",
+      "configured": true,
+      "description": "",
+      "maximum": null,
+      "minimum": null,
+      "shadowed_by": null,
+      "source": "configuration",
+      "stored": null,
+      "type": "boolean"
+    }
+  },
+  "settings": {
+    "models.stages.audit_deep": "ollama/qwen3.5:9b-q8_0",
+    "models.stages.audit_fast": "ollama/qwen3.5:9b-q8_0",
+    "models.stages.critique": "ollama/qwen3.5:9b-q8_0",
+    "models.stages.draft": "ollama/gemma4:12b",
+    "models.stages.fact_check": "ollama/qwen3.5:9b-q8_0",
+    "models.stages.outline": "ollama/qwen3.5:9b-q8_0",
+    "models.stages.project_review": "ollama/qwen3.5:9b-q8_0",
+    "models.stages.repair": "ollama/qwen3.5:9b-q8_0",
+    "models.stages.requirements": "ollama/qwen3.5:9b-q8_0",
+    "models.stages.research_synthesis": "ollama/qwen3.5:9b-q8_0",
+    "models.stages.revise": "ollama/qwen3.5:9b-q8_0",
+    "workflow.audit_escalation_threshold": 0.6,
+    "workflow.context_budget_tokens": 8000,
+    "workflow.diminishing_returns_threshold": 0.05,
+    "workflow.max_attempts_per_stage": 3,
+    "workflow.max_revision_rounds": 3,
+    "workflow.require_clean_validation_to_commit": true
+  }
+}

@@ -1,0 +1,80 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_ip.html" import short, state_badge, measure %}
+{% block title %}Stage run {{ task_id }} — IdeaPress — WeightRoom{% endblock %}
+{% block page_content %}
+{% set proj = "/apps/ideapress/projects/" ~ (project_id | urlencode) %}
+{% set t = (sourced.data or {}).get("task") or {} %}
+<div class="page-head">
+  <h2>Stage run {{ short(task_id) }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ proj }}">The project</a> · <a href="{{ proj }}/plan">Plan</a> · <a href="{{ proj }}/workspace">Workspace</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{% if cancelling %}<p class="notice" role="status">Cancellation requested. IdeaPress honours it at the next model-call boundary:
+a call already with the model finishes first, then the run ends <code>cancelled</code>, keeping every unit it had committed.</p>{% endif %}
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+<p>{{ state_badge(t.get("state")) }} · stage <code>{{ t.get("stage") or "—" }}</code> · backend {{ t.get("backend") or "—" }}</p>
+{% if t.get("state") == "cancelled" %}
+<p class="notice">The run was cancelled at a model-call boundary. Committed units are untouched; a paused or stranded unit resumes from its page.</p>
+{% elif t.get("state") == "failed" %}
+<p class="notice">The stage ended failed{% if t.get("error_code") %} (<code>{{ t.get("error_code") }}</code>){% endif %}: {{ t.get("error_text") or "IdeaPress gave no reason" }}. Committed units are untouched, and the stage runs again.</p>
+{% endif %}
+{% if (t.get("units_paused") or 0) > 0 %}<p class="notice">{{ t.get("units_paused") }} unit(s) paused: a paused unit is an outcome, not a failure; read why on its page.</p>{% endif %}
+{{ kv_list([
+  {"label": "Units", "value": (t.get("units_completed") | string) ~ " committed of " ~ (t.get("units_total") | string)},
+  {"label": "Paused", "value": t.get("units_paused") if t.get("units_paused") is not none else "—"},
+  {"label": "Started", "value": t.get("started_at") or "—"},
+  {"label": "Ended", "value": t.get("completed_at") or "—"},
+  {"label": "Ran with", "value": (t.get("options") | tojson) if t.get("options") else "no overrides"},
+]) }}
+
+{% if sourced.live %}
+{% if t.get("state") == "running" and not cancelling %}
+<form method="post" action="{{ proj }}/tasks/{{ task_id | urlencode }}/cancel" class="kit-actions">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit" data-variant="danger">Cancel run</button>
+  <span class="muted">Honoured at the next model-call boundary, not mid-call.</span>
+</form>
+{% endif %}
+<h3>Stage events</h3>
+<p class="muted">IdeaPress's own stream, replayed from the run's first event: a paused unit and the stage's end are states it
+reached, shown as warnings.</p>
+{% set stream_url = events_url %}
+{% include "_log_pane.html" %}
+{% endif %}
+
+<h3>Attempts</h3>
+{% set rows = [] %}
+{% for a in t.get("attempts") or [] %}
+{% set _ = rows.append([
+  a.get("stage") or "—",
+  a.get("unit_key") or "—",
+  (a.get("attempt") | string) ~ " · round " ~ (a.get("round") | string),
+  state_badge(a.get("outcome")),
+  a.get("model_canonical_id") or "—",
+  (a.get("prompt_id") or "—") ~ " " ~ (a.get("prompt_version") or "") ~ ((" · " ~ a.get("prompt_source")) if a.get("prompt_source") else ""),
+  measure(a.get("input_tokens")) ~ " / " ~ measure(a.get("output_tokens")),
+  measure(a.get("provider_ms"), "ms"),
+  ((a.get("degradations") or []) | join("; ")) or "—",
+  a.get("error_code") or "—"
+]) %}
+{% endfor %}
+{% if rows %}
+{{ table([{"label": "Stage"}, {"label": "Unit", "mono": true}, {"label": "Attempt"}, {"label": "Outcome"}, {"label": "Model", "mono": true}, {"label": "Prompt"}, {"label": "Tokens in / out"}, {"label": "Provider"}, {"label": "Degradations"}, {"label": "Error", "mono": true}], rows, caption="Every attempt this run recorded", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No attempt recorded yet.") }}{% endif %}
+
+{% if sourced.data.get("events") is not none %}
+<h3>Recorded events</h3>
+{% set rows = [] %}
+{% for e in sourced.data.get("events") %}
+{% set _ = rows.append([e.get("sequence"), e.get("at") or "—", e.get("event") or "—", (e.get("message") or "—") | cell_text(limit=400)]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "#", "mono": true}, {"label": "At", "mono": true}, {"label": "Event", "mono": true}, {"label": "Message"}], rows, caption="The run's persisted events, in sequence", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No event recorded.") }}{% endif %}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

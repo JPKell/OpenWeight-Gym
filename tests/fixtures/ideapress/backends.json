@@ -1,0 +1,27 @@
+{
+  "backends": [
+    {
+      "available": true,
+      "base_url": "http://127.0.0.1:11434",
+      "capabilities": {
+        "discloses_model": true,
+        "json_mode": true,
+        "model_selection": true,
+        "residency_control": true,
+        "streaming": true,
+        "structured_output": true,
+        "token_counts": true
+      },
+      "detail": "ollama 0.32.13, 11 models",
+      "egress": false,
+      "fallback": false,
+      "is_remote": false,
+      "latency_ms": 2.112927,
+      "mode": "ollama",
+      "model_count": 11,
+      "pinned": false,
+      "selected": true,
+      "status": "ok"
+    }
+  ]
+}

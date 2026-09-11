@@ -1,0 +1,15 @@
+{
+  "attempts": [],
+  "backend": "fake",
+  "completed_at": null,
+  "error_code": null,
+  "error_text": null,
+  "stage": "outline",
+  "started_at": "2026-09-11T06:40:37.100895+00:00",
+  "state": "running",
+  "stream_url": "/api/v1/projects/01M27K4PP8AY6CN0BGB04B99JR/tasks/01M27K4PQCESAD1301VRGRS7SD/stream",
+  "task_id": "01M27K4PQCESAD1301VRGRS7SD",
+  "units_completed": 0,
+  "units_paused": 0,
+  "units_total": 0
+}

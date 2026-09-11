@@ -496,3 +496,78 @@ def promptcadence_token_cli(tmp_path: Path, *, scopes: list[str]) -> Path:
     )
     executable.chmod(0o755)
     return executable
+
+
+IDEAPRESS_URL = "http://127.0.0.1:8767"
+IDEAPRESS_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "ideapress"
+RECORDED_PROJECT = "01M27K4PP8AY6CN0BGB04B99JR"
+"""The project the IdeaPress recordings follow: researched, planned, a draft run paused then
+cancelled, resumed, and U-01 revised (row WP5's handoff says how they were made)."""
+
+
+def ideapress_fixture(name: str) -> Any:  # noqa: ANN401 — a recorded JSON document
+    """One of IdeaPress's recorded answers under ``tests/fixtures/ideapress``."""
+    return json.loads((IDEAPRESS_FIXTURES / f"{name}.json").read_text(encoding="utf-8"))
+
+
+def mock_ideapress(
+    router: Any,  # noqa: ANN401 — a respx router
+    *,
+    version: str = "1.5.0",
+    bodies: dict[str, Any] | None = None,
+    base_url: str = IDEAPRESS_URL,
+) -> dict[str, Any]:  # noqa: ANN401 — the respx routes by path
+    """IdeaPress as the console sees it: its version, and every recorded read by path.
+
+    ``bodies`` replaces or adds a path's answer, by path under ``/api/v1``; ``base_url`` is where
+    the console under test was told IdeaPress listens.
+    """
+    import httpx
+
+    router.get(f"{base_url}/api/v1/version").mock(
+        return_value=httpx.Response(200, json={**ideapress_fixture("version"), "version": version})
+    )
+    project = f"projects/{RECORDED_PROJECT}"
+    recorded: dict[str, Any] = {
+        "projects": ideapress_fixture("projects"),
+        project: ideapress_fixture("project"),
+        f"{project}/plan": ideapress_fixture("plan"),
+        f"{project}/research": ideapress_fixture("research"),
+        f"{project}/workspace": ideapress_fixture("workspace"),
+        f"{project}/units": ideapress_fixture("units"),
+        f"{project}/units/U-01": ideapress_fixture("unit"),
+        f"{project}/units/U-01/history": ideapress_fixture("history"),
+        "workflows": ideapress_fixture("workflows"),
+        "workflows/standard": ideapress_fixture("workflow"),
+        "backends": ideapress_fixture("backends"),
+        "export/formats": ideapress_fixture("export-formats"),
+        "settings": ideapress_fixture("settings"),
+        "system/status": ideapress_fixture("system-status"),
+    }
+    recorded.update(bodies or {})
+    return {
+        path: router.get(f"{base_url}/api/v1/{path}").mock(
+            return_value=httpx.Response(200, json=body)
+        )
+        for path, body in recorded.items()
+    }
+
+
+def ideapress_console(
+    tmp_path: Path,
+    *,
+    state: Any,  # noqa: ANN401 — a unit state the fake systemd reports
+    database: str = "ideapress-0011-journey",
+) -> tuple[Console, Path]:
+    """A console with IdeaPress installed in ``state``, its database a copy of ``database``."""
+    copied = fixture_database(tmp_path, database)
+    executable, _config, _document = fake_application(
+        tmp_path, "ideapress", database_url=f"sqlite:///{copied}"
+    )
+    console = build_console(
+        tmp_path / "console",
+        extra_toml=f'[apps.ideapress]\nexecutable = "{executable}"\nbase_url = "{IDEAPRESS_URL}"\n',
+        systemd=FakeSystemdController(states={"ideapress.service": state}),
+    )
+    console.login()
+    return console, copied

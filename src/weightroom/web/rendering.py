@@ -124,7 +124,6 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
 
 _PAGE_PHASE: dict[tuple[str, str], str] = {
     ("freeweight", "Goals"): "WP4",
-    **{("ideapress", label): "WP5" for label in ("Projects", "Units", "Workflows", "Backends")},
 }
 """The row in ``roadmap/weightroom-work.md`` that builds each still-unbuilt page, keyed by
 application as well as label: FreeWeight's Models and LoadCoach's are two rows. W3 left every
@@ -154,6 +153,11 @@ _PAGE_HREF: dict[str | tuple[str, str], str] = {
     ("loadcoach", "Evidence"): "/apps/loadcoach/evidence",
     ("loadcoach", "Adapters"): "/apps/loadcoach/adapters",
     "Providers": "/apps/{app}/providers",
+    # IdeaPress's own pages (row WP5); no other application's menu names these labels.
+    "Projects": "/apps/{app}/projects",
+    "Units": "/apps/{app}/units",
+    "Workflows": "/apps/{app}/workflows",
+    "Backends": "/apps/{app}/backends",
     # FreeWeight's own pages (row WP3). Machines has no menu entry: its pages open from Runs and
     # Results, which link every machine they name.
     ("freeweight", "Models"): "/apps/freeweight/models",

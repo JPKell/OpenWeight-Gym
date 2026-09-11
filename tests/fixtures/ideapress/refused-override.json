@@ -1,0 +1,19 @@
+{
+  "body": {
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "details": {
+        "fields": [
+          {
+            "path": "overrides.seed",
+            "problem": "the draft stage reads no 'seed' override (it reads: max_revision_rounds, model_hint)"
+          }
+        ]
+      },
+      "message": "overrides.seed: the draft stage reads no 'seed' override (it reads: max_revision_rounds, model_hint)",
+      "request_id": "01M27K4Q4JFZ57GG5YD75AQHTD",
+      "timestamp": "2026-09-11T06:40:37.523Z"
+    }
+  },
+  "status": 400
+}

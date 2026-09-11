@@ -293,6 +293,12 @@ SPEC_14_ROWS: dict[str, tuple[str, ...]] = {
     "security/test_redaction_sweep.py": (
         "test_no_audit_row_and_no_log_line_carries_a_secret_after_every_exercise",
     ),
+    # an author's brief and a model's unit text on IdeaPress's pages render inert (row WP5)
+    "integration/test_ideapress_work.py": (
+        "test_the_injection_corpus_renders_inert_in_a_brief",
+        "test_the_injection_corpus_renders_inert_in_unit_content_and_the_workspace",
+        "test_an_export_downloads_as_an_attachment_and_is_never_shown_inline",
+    ),
     # the docs viewer serves only under [docs] root; a symlink out is refused
     "unit/test_docs.py": ("test_a_symlinked_file_pointing_out_of_the_root_is_refused",),
     # the console serves with no network at all

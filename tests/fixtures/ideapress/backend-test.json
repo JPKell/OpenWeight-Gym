@@ -1,0 +1,23 @@
+{
+  "base_url": "http://127.0.0.1:11434",
+  "detail": "ollama 0.32.13, 11 models",
+  "is_remote": false,
+  "latency_ms": 26.53,
+  "mode": "ollama",
+  "model_count": 11,
+  "models": [
+    "smollm2:135m",
+    "hk:latest",
+    "HammerAI/gemma-4-e4b-heretic:e4b-q8_0",
+    "sorc/qwen3.5-heretic:9b",
+    "fredrezones55/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive:IQ2_M",
+    "gemma4:12b-it-q8_0",
+    "deepseek-coder-v2:latest",
+    "SetneufPT/Qwen3.5-9B-Coder_Q4_256k_ABL_16GB-GPU:latest",
+    "ornith:9b",
+    "gpt-oss:20b",
+    "qwen3.5:9b-q8_0"
+  ],
+  "status": "ok",
+  "version": "0.32.13"
+}

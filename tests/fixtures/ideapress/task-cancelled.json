@@ -1,0 +1,90 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "backend": "fake",
+      "degradations": [],
+      "error_code": null,
+      "input_tokens": 273,
+      "model_canonical_id": "fake/gemma4:12b@sha256:1212121212121212121212121212121212121212121212121212121212121212",
+      "outcome": "completed",
+      "output_tokens": 18,
+      "prompt_id": "stages.draft.write",
+      "prompt_source": "pack",
+      "prompt_version": "1.0.0",
+      "provider_ms": 0.0,
+      "round": 0,
+      "stage": "draft",
+      "unit_key": "U-01"
+    },
+    {
+      "attempt": 2,
+      "backend": "fake",
+      "degradations": [
+        "model_switch: unloaded ollama/gemma4:12b to load ollama/qwen3.5:9b-q8_0 (0 ms)"
+      ],
+      "error_code": null,
+      "input_tokens": 354,
+      "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+      "outcome": "completed",
+      "output_tokens": 18,
+      "prompt_id": "stages.repair.fix",
+      "prompt_source": "pack",
+      "prompt_version": "1.0.0",
+      "provider_ms": 0.0,
+      "round": 0,
+      "stage": "repair",
+      "unit_key": "U-01"
+    },
+    {
+      "attempt": 3,
+      "backend": "fake",
+      "degradations": [
+        "model_switch: unloaded ollama/gemma4:12b to load ollama/qwen3.5:9b-q8_0 (0 ms)"
+      ],
+      "error_code": null,
+      "input_tokens": 354,
+      "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+      "outcome": "completed",
+      "output_tokens": 18,
+      "prompt_id": "stages.repair.fix",
+      "prompt_source": "pack",
+      "prompt_version": "1.0.0",
+      "provider_ms": 0.0,
+      "round": 0,
+      "stage": "repair",
+      "unit_key": "U-01"
+    },
+    {
+      "attempt": 1,
+      "backend": "fake",
+      "degradations": [
+        "model_switch: unloaded ollama/qwen3.5:9b-q8_0 to load ollama/gemma4:12b (0 ms)"
+      ],
+      "error_code": null,
+      "input_tokens": 238,
+      "model_canonical_id": "fake/gemma4:12b@sha256:1212121212121212121212121212121212121212121212121212121212121212",
+      "outcome": "completed",
+      "output_tokens": 18,
+      "prompt_id": "stages.draft.write",
+      "prompt_source": "pack",
+      "prompt_version": "1.0.0",
+      "provider_ms": 0.0,
+      "round": 0,
+      "stage": "draft",
+      "unit_key": "U-02"
+    }
+  ],
+  "backend": "fake",
+  "completed_at": "2026-09-11T06:40:37.242815+00:00",
+  "error_code": null,
+  "error_text": null,
+  "stage": "draft",
+  "started_at": "2026-09-11T06:40:37.202519+00:00",
+  "state": "cancelled",
+  "stream_url": "/api/v1/projects/01M27K4PP8AY6CN0BGB04B99JR/tasks/01M27K4PTJSX5B841MR09PX0W8/stream",
+  "task_id": "01M27K4PTJSX5B841MR09PX0W8",
+  "units_completed": 0,
+  "units_paused": 1,
+  "units_total": 2
+}

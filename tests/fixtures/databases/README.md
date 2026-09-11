@@ -16,6 +16,7 @@ database-page tests written at W7 read it.
 | `loadcoach-0015.sqlite3` | LoadCoach | `0015` (known head) | none |
 | `ideapress-0011.sqlite3` | IdeaPress | `0011` (known head, row W9: `attempts.prompt_source`) | none |
 | `ideapress-0010.sqlite3` | IdeaPress | `0010` (still known) | none |
+| `ideapress-0011-journey.sqlite3` | IdeaPress | `0011` (known head) | the database IdeaPress's own app left after recording `tests/fixtures/ideapress` (row WP5): two projects, one researched, planned, drafted, paused, cancelled, resumed and revised |
 | `promptcadence-0011.sqlite3` | PromptCadence | `0011` (known head) | none |
 | `loadcoach-unknown-9999.sqlite3` | LoadCoach | `9999` (not a real revision) | none |
 

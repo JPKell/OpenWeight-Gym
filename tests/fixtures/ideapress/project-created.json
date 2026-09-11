@@ -1,0 +1,18 @@
+{
+  "archived_at": null,
+  "author_material": {
+    "audience": "writers new to local models"
+  },
+  "brief": "An article for writers on running models locally. It must state that inference runs entirely on the reader's own machine and that no document content is uploaded anywhere. Background: https://docs.example/local-inference and https://blocked.example/tracking",
+  "completed_at": null,
+  "content_type": "article",
+  "content_type_version": "1.0",
+  "created_at": "2026-09-11T06:40:37.064260+00:00",
+  "id": "01M27K4PP8AY6CN0BGB04B99JR",
+  "slug": "local-inference-for-writers",
+  "status": "draft",
+  "title": "Local inference for writers",
+  "updated_at": "2026-09-11T06:40:37.064262+00:00",
+  "workflow_id": "standard",
+  "workflow_version": "1.0"
+}

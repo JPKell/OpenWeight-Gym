@@ -1,0 +1,157 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_ip.html" import state_badge, measure %}
+{% block title %}Workspace — IdeaPress — WeightRoom{% endblock %}
+{% block page_content %}
+{% set w = sourced.data or {} %}
+{% set u = w.get("unit") or {} %}
+{% set proj = "/apps/ideapress/projects/" ~ (project_id | urlencode) %}
+<style>
+  .ip-workspace { display: grid; grid-template-columns: minmax(12rem, 16rem) 1fr; gap: 16px; }
+  @media (max-width: 720px) { .ip-workspace { grid-template-columns: 1fr; } }
+  .ip-nav ol { list-style: none; margin: 0; padding: 0; }
+  .ip-nav li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; }
+  .ip-nav li[aria-current] { font-weight: 600; }
+  .ip-content { max-width: 72ch; overflow-wrap: anywhere; }
+  .ip-content pre { white-space: pre-wrap; }
+  .ip-diff td { white-space: pre-wrap; }
+</style>
+<div class="page-head">
+  <h2>Workspace{% if (w.get("project") or {}).get("title") %} — {{ w.get("project").get("title") }}{% endif %} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ proj }}">The project</a> · <a href="{{ proj }}/plan">Plan</a> · <a href="{{ proj }}/export">Export</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">IdeaPress's own workspace: read a unit, judge what is wrong with it and what it still misses, and direct it — one page.</p>
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% set b = w.get("backend") or {} %}
+<p>Backend <strong>{{ b.get("mode") or "—" }}</strong>
+{% if not b.get("has_run") %}{{ badge("no egress decision recorded yet") }}
+{% elif b.get("egress") %}{{ badge("leaves this machine", tone="warning") }}{% if b.get("verdict") == "denied" %} {{ badge("egress denied: " ~ (b.get("reason") or ""), tone="danger") }}{% endif %}
+{% else %}{{ badge("stays on this machine", tone="success") }}{% endif %}
+{% if b.get("routes_internally") %}{{ badge("routes by task profile") }}{% endif %}
+{% if b.get("mode") not in (none, "none") and not b.get("structured_output") %}{{ badge("no schema enforcement — validated here") }}{% endif %}</p>
+{% set cost = w.get("project_cost") %}
+{% if cost %}<p>Project cost so far: <strong>{{ cost.get("money_spent_display") or "—" }}</strong> ({{ cost.get("tokens_spent_display") or "—" }} tokens){% if cost.get("has_ceiling") and cost.get("exceeded") %} {{ badge("ceiling exceeded", tone="danger") }}{% endif %}</p>{% endif %}
+{% if w.get("running_task_id") %}
+<p class="notice" role="status">A stage is running: <a href="{{ proj }}/tasks/{{ w.get('running_task_id') | urlencode }}">follow it live</a>.</p>
+{% else %}
+<form method="post" action="{{ proj }}/research" class="kit-actions">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit">Run research</button>
+  <span class="muted">{% if (w.get("research") or {}).get("allowed_hosts") %}A fetch may reach only <code>{{ w.get("research").get("allowed_hosts") | join(", ") }}</code>.{% else %}No host is allowed on this installation, so no fetch leaves this machine.{% endif %}</span>
+</form>
+{% endif %}
+
+{% set units = w.get("units") or [] %}
+{% if not units %}
+{{ empty_state("Nothing has been planned yet.", "Run the plan", proj ~ "/plan") }}
+{% else %}
+<div class="ip-workspace">
+<nav class="ip-nav card" aria-label="Units">
+  <h3>Units</h3>
+  <ol>
+  {% for one in units %}
+    <li{% if one.get("unit_key") == w.get("selected_unit_key") %} aria-current="true"{% endif %}>
+      <a href="{{ proj }}/workspace?unit={{ one.get('unit_key') | urlencode }}"><span class="mono">{{ one.get("unit_key") }}</span> {{ one.get("title") }}</a>
+      {{ state_badge(one.get("state")) }}
+    </li>
+  {% endfor %}
+  </ol>
+</nav>
+<div>
+{% if not u %}
+{{ empty_state("Select a unit.") }}
+{% else %}
+<h3>{{ u.get("unit_key") }} — {{ u.get("title") }}</h3>
+{{ kv_list([
+  {"label": "State", "value": u.get("state") or "—"},
+  {"label": "Goal", "value": u.get("goal") or "—"},
+  {"label": "Version", "value": u.get("version") if u.get("version") is not none else "not committed"},
+  {"label": "Words", "value": u.get("word_count") if u.get("word_count") is not none else "—"},
+  {"label": "Cost", "value": (u.get("cost") or {}).get("money_spent_display") or "—"},
+  {"label": "Tokens spent", "value": (u.get("cost") or {}).get("tokens_spent_display") or "—"},
+]) }}
+
+{% set pause = w.get("pause") or {} %}
+{% if pause.get("paused") %}
+<section class="card">
+  <h4>This unit is paused</h4>
+  <p>{{ pause.get("reason") }}</p>
+  {% if pause.get("hint") %}<p class="muted">{{ pause.get("hint") }}</p>{% endif %}
+  {% if not w.get("running_task_id") %}
+  <form method="post" action="{{ proj }}/units/{{ u.get('unit_key') | urlencode }}/resume" class="kit-actions">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <button type="submit">Resume this unit</button>
+  </form>
+  {% endif %}
+  <p class="muted">Other units are unaffected: a paused unit never stops the rest of the stage.</p>
+</section>
+{% endif %}
+
+<h4>Requirement coverage</h4>
+{% set summary = w.get("coverage_summary") or {} %}
+<p>{{ summary.get("satisfied") if summary.get("satisfied") is not none else "—" }} of {{ summary.get("total") if summary.get("total") is not none else "—" }} satisfied.
+{% if summary.get("model_guaranteed") %}{{ badge((summary.get("model_guaranteed") | string) ~ " guaranteed by model review, not a deterministic check", tone="warning") }}{% endif %}</p>
+{% set rows = [] %}
+{% for c in u.get("coverage") or [] %}
+{% set _ = rows.append([c.get("requirement_key") or "—", state_badge("passed" if c.get("satisfied") else "failed"), c.get("satisfied_by") or "—", (c.get("detail") or "—") | cell_text]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Requirement", "mono": true}, {"label": "Satisfied"}, {"label": "Decided by"}, {"label": "Detail"}], rows, caption="What settled each requirement", density="dense", complete=true, row_count=rows | length) }}{% endif %}
+
+<h4>Content</h4>
+{% if content_html %}<div class="ip-content">{{ content_html }}</div>{% else %}{{ empty_state("No committed content yet.") }}{% endif %}
+
+<h4>Findings</h4>
+{% set rows = [] %}
+{% for f in u.get("findings") or [] %}
+{% set _ = rows.append([f.get("round"), badge(f.get("severity") or "—", tone="danger" if f.get("severity") in ("critical", "major") else "neutral"), (f.get("problem") or "—") | cell_text(limit=400), (f.get("fix") or "—") | cell_text(limit=400)]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Round"}, {"label": "Severity"}, {"label": "Problem"}, {"label": "Would resolve it"}], rows, caption="What the reviews found", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No findings.") }}{% endif %}
+
+<h4>Versions</h4>
+{% set history = u.get("history") or [] %}
+{% if history | length > 1 %}
+<form method="get" action="{{ proj }}/workspace" class="filter-bar">
+  <input type="hidden" name="unit" value="{{ u.get('unit_key') }}">
+  <div class="field"><label for="ip-compare">Compare the current version against</label>
+    <select id="ip-compare" name="compare">{% for one in history %}<option value="{{ one.get('version') }}">Version {{ one.get("version") }}</option>{% endfor %}</select></div>
+  <button type="submit">Show the difference</button>
+</form>
+{% endif %}
+{% if history %}<ul>{% for one in history %}<li>Version {{ one.get("version") }} — {{ one.get("word_count") }} words{% if one.get("committed") %} (committed {{ one.get("committed_at") }}){% endif %}</li>{% endfor %}</ul>
+{% else %}{{ empty_state("No versions yet.") }}{% endif %}
+
+{% set diff = w.get("diff") %}
+{% if diff %}
+<h4>Difference</h4>
+{% if diff.get("unavailable") %}<p class="notice">{{ diff.get("unavailable") }}</p>
+{% elif diff.get("diff_unchanged") %}<p class="notice">Versions {{ diff.get("diff_old_version") }} and {{ diff.get("diff_new_version") }} are identical: the revision changed nothing.</p>
+{% else %}
+<p>Version {{ diff.get("diff_old_version") }} → {{ diff.get("diff_new_version") }}: {{ diff.get("diff_added") }} line(s) added, {{ diff.get("diff_removed") }} removed.{% if diff.get("diff_truncated") %} Unchanged passages are elided.{% endif %}</p>
+{% set rows = [] %}
+{% for line in diff.get("diff_lines") or [] %}
+{% set _ = rows.append([line.get("old_number") if line.get("old_number") is not none else "", line.get("new_number") if line.get("new_number") is not none else "", line.get("marker") or "", line.get("text") or ""]) %}
+{% endfor %}
+<div class="ip-diff">{{ table([{"label": "Old", "mono": true}, {"label": "New", "mono": true}, {"label": "±", "mono": true}, {"label": "Line"}], rows, caption="Line-by-line difference: + is new text, - is removed", density="dense", complete=true, row_count=rows | length) }}</div>
+{% endif %}
+{% endif %}
+
+<h4>How this was produced</h4>
+{% set rows = [] %}
+{% for a in u.get("attempts") or [] %}
+{% set routing = a.get("routing") or {} %}
+{% set _ = rows.append([a.get("stage") or "—", a.get("attempt"), a.get("backend") or "—", a.get("model_canonical_id") or "—", (a.get("prompt_id") or "—") ~ " " ~ (a.get("prompt_version") or ""), ("decision " ~ (routing.get("decision_id") or "—")) if routing else "—", ((a.get("degradations") or []) | join("; ")) or "—"]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Stage"}, {"label": "Attempt"}, {"label": "Backend"}, {"label": "Model", "mono": true}, {"label": "Prompt"}, {"label": "Routing"}, {"label": "Degradations"}], rows, caption="Every attempt, with its model, prompt and routing decision", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No attempts recorded.") }}{% endif %}
+<p><a href="{{ proj }}/units/{{ u.get('unit_key') | urlencode }}">The full unit record</a></p>
+{% endif %}
+</div>
+</div>
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

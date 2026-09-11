@@ -1,0 +1,188 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list, table, empty_state, card, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_ip.html" import short, state_badge, measure %}
+{% block title %}{{ (((sourced.data or {}).get("project") or {}).get("title")) or project_id }} — IdeaPress — WeightRoom{% endblock %}
+{% block page_content %}
+{% set p = (sourced.data or {}).get("project") or {} %}
+{% set here = "/apps/ideapress/projects/" ~ (project_id | urlencode) %}
+<div class="page-head">
+  <h2>{{ p.get("title") or project_id }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ here }}/plan">Plan</a> · <a href="{{ here }}/workspace">Workspace</a> · <a href="/apps/ideapress/units?project={{ project_id | urlencode }}">Units</a> · <a href="{{ here }}/export">Export</a> · <a href="/apps/ideapress/projects">All projects</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{% if saved %}<p class="notice" role="status">Saved. IdeaPress never recompiles requirements on a save: plan the project again to compile them from the brief as it now stands.</p>{% endif %}
+
+{% if preview %}
+{% set gone = preview.get("project") or {} %}
+<div class="notice" role="alert">
+  <p><strong>Delete {{ gone.get("title") or project_id }}?</strong> IdeaPress removes the project, its plan, its units and
+  every version, {{ preview.get("source_count") if preview.get("source_count") is not none else "—" }} source(s){% if preview.get("directory") %}, and
+  <code>{{ preview.get("directory") }}</code> ({{ preview.get("directory_bytes") }} bytes){% endif %}. It cannot be undone.</p>
+  {% if mismatched %}<p>The title you typed does not match; nothing was deleted.</p>{% endif %}
+  <form method="post" action="{{ here }}/delete" class="kit-actions">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <label class="kit-check"><input type="checkbox" name="archive" value="true" checked> Archive it first, to <code>{{ preview.get("archive_directory") or "—" }}</code></label>
+    <div class="field"><label for="ip-delete-confirm">Type the project's title to confirm</label>
+      <input id="ip-delete-confirm" name="confirm" required autocomplete="off"></div>
+    <button type="submit" data-variant="danger">Delete</button>
+    <a href="{{ here }}">Keep it</a>
+  </form>
+</div>
+{% endif %}
+
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{{ kv_list([
+  {"label": "Status", "value": p.get("status") or "—"},
+  {"label": "Content type", "value": (p.get("content_type") or "—") ~ " " ~ (p.get("content_type_version") or "")},
+  {"label": "Workflow", "value": (p.get("workflow_id") or "—") ~ " " ~ (p.get("workflow_version") or "")},
+  {"label": "Slug", "value": p.get("slug") or "—"},
+  {"label": "Id", "value": p.get("id") or project_id},
+  {"label": "Created", "value": p.get("created_at") or "—"},
+  {"label": "Updated", "value": p.get("updated_at") or "—"},
+  {"label": "Completed", "value": p.get("completed_at") or "—"},
+  {"label": "Archived", "value": p.get("archived_at") or "—"},
+]) }}
+
+<h3>Plan</h3>
+{% set plan = p.get("plan") %}
+{% if plan %}
+<ul class="card-grid">
+  {{ card("Units", plan.get("units"), note="in the plan", kind="figure") }}
+  {{ card("Requirements", plan.get("requirements"), note="compiled from the brief", kind="figure") }}
+  {{ card("Blocking", plan.get("blocking"), note="no unit commits without them", kind="figure") }}
+</ul>
+{% else %}
+{{ empty_state("No plan yet. Planning compiles requirements from the brief and outlines the units.") }}
+{% endif %}
+{% if sourced.live %}
+<form method="post" action="{{ here }}/plan" class="kit-actions">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit"{% if not plan %} data-variant="primary"{% endif %}>Run the plan</button>
+  <a href="{{ here }}/plan">Read and edit the plan</a>
+</form>
+
+<details class="card kit-form"{% if run_form %} open{% endif %}>
+  <summary><strong>Run a stage</strong> <span class="muted">— the task streams on its own page, and cancelling is honoured at the next model-call boundary</span></summary>
+  <form method="post" action="{{ here }}/stages">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <div class="field"><label for="ip-run-stage">Stage</label>
+      <select id="ip-run-stage" name="stage">{% for one in run_stages %}<option value="{{ one }}"{{ ' selected' if run_form.get('stage', 'draft') == one else '' }}>{{ one }}</option>{% endfor %}</select>
+      <span class="field-hint">A revision starts from its unit's page.</span></div>
+    <div class="field"><label for="ip-run-units">Units</label>
+      <input id="ip-run-units" name="units" value="{{ run_form.get('units', '') }}" placeholder="every planned unit">
+      <span class="field-hint">Comma-separated keys, or blank for all.</span></div>
+    <label class="kit-check"><input type="checkbox" name="resume" value="true"{{ ' checked' if run_form.get('resume') == 'true' else '' }}> resume — skip units already committed</label>
+    <div class="field"><label for="ip-run-model">Model for this run</label>
+      <input id="ip-run-model" name="model_hint" value="{{ run_form.get('model_hint', '') }}" placeholder="each stage's binding">
+      <span class="field-hint">Every call of the run uses it, over the bindings below; a hint to a routing backend.</span></div>
+    <div class="field"><label for="ip-run-rounds">Revision rounds for this run</label>
+      <input id="ip-run-rounds" name="max_revision_rounds" inputmode="numeric" value="{{ run_form.get('max_revision_rounds', '') }}" placeholder="{{ ((defaults or {}).get('settings') or {}).get('workflow.max_revision_rounds', '') }}"></div>
+    <div class="kit-wide"><button type="submit" data-variant="primary">Run</button></div>
+  </form>
+  {% if defaults %}
+  {% set definitions = defaults.get("definitions") or {} %}
+  {% set rows = [] %}
+  {% for key, value in (defaults.get("settings") or {}) | dictsort %}
+  {% if key.startswith("models.stages.") or key.startswith("workflow.") %}
+  {% set _ = rows.append([key, value if value is not none else "—", (definitions.get(key) or {}).get("source") or "—", (definitions.get(key) or {}).get("applies") or "—"]) %}
+  {% endif %}
+  {% endfor %}
+  {{ table([{"label": "Setting", "mono": true}, {"label": "The value this run uses", "mono": true}, {"label": "From"}, {"label": "Applies"}], rows, caption="What IdeaPress will use as the stage starts, before this run's overrides", density="dense", complete=true, row_count=rows | length) }}
+  {% else %}
+  <p class="muted">IdeaPress's runtime settings could not be read, so the values a run would use are not shown.</p>
+  {% endif %}
+</details>
+{% endif %}
+
+<h3>Units</h3>
+{% set units = p.get("units") or [] %}
+{% if units %}
+{% set rows = [] %}
+{% for u in units %}
+{% set coverage = u.get("coverage") %}
+{% set last = u.get("last_validation") %}
+{% set link %}<a class="mono kit-id" href="{{ here }}/units/{{ u.get('unit_key') | urlencode }}">{{ u.get("unit_key") }}</a>{% endset %}
+{% set _ = rows.append([
+  link,
+  u.get("title") or "—",
+  state_badge(u.get("state")),
+  measure(u.get("version")),
+  measure(u.get("word_count")),
+  (coverage.get("satisfied") ~ " of " ~ coverage.get("total")) if coverage else measure(none),
+  state_badge("passed" if last.get("passed") else "failed") if last else measure(none),
+  (u.get("paused_reason") or "—") | cell_text
+]) %}
+{% endfor %}
+{{ table([
+  {"label": "Unit", "mono": true}, {"label": "Title"}, {"label": "State"}, {"label": "Version"},
+  {"label": "Words"}, {"label": "Coverage"}, {"label": "Last validation"}, {"label": "Paused because"}
+], rows, caption="Units, in reading order", density="dense", complete=true, row_count=rows | length) }}
+{% else %}
+{{ empty_state("No units yet: the plan outlines them.") }}
+{% endif %}
+
+<h3>Stage history</h3>
+{% if p.get("running_task_id") %}<p class="notice" role="status">A stage is running: <code>{{ p.get("running_task_id") }}</code>.</p>{% endif %}
+{% set stages = p.get("stages") or [] %}
+{% if stages %}
+{% set rows = [] %}
+{% for s in stages %}
+{% set task_link %}<a class="mono kit-id" href="{{ here }}/tasks/{{ s.get('task_id') | urlencode }}" title="{{ s.get('task_id') }}">{{ (s.get("task_id") or "")[:6] }}…{{ (s.get("task_id") or "")[-4:] }}</a>{% endset %}
+{% set _ = rows.append([
+  s.get("stage") or "—",
+  state_badge(s.get("state")),
+  (s.get("units_completed") | string) ~ " of " ~ (s.get("units_total") | string) ~ ((", " ~ (s.get("units_paused") | string) ~ " paused") if s.get("units_paused") else ""),
+  s.get("started_at") or "—",
+  s.get("completed_at") or "—",
+  (s.get("error_code") or s.get("error_text") or "—") | cell_text,
+  task_link
+]) %}
+{% endfor %}
+{{ table([
+  {"label": "Stage"}, {"label": "State"}, {"label": "Units"}, {"label": "Started", "mono": true},
+  {"label": "Ended", "mono": true}, {"label": "Why it stopped"}, {"label": "Task", "mono": true}
+], rows, caption="Stage runs, newest first", density="dense", complete=false, row_count=rows | length) }}
+{% else %}
+{{ empty_state("No stage has run.") }}
+{% endif %}
+
+<h3>Brief</h3>
+{% if p.get("brief") %}<div class="kit-output">{{ p.get("brief") }}</div>
+{% else %}{{ empty_state("No brief: planning needs one to compile requirements from.") }}{% endif %}
+
+<h3>Author material</h3>
+{% if p.get("author_material") %}{{ json_viewer(p.get("author_material"), label="Author material") }}
+{% else %}<p class="muted">None.</p>{% endif %}
+
+{% if sourced.live %}
+<details class="card kit-form"{% if form %} open{% endif %}>
+  <summary><strong>Edit</strong> <span class="muted">— saving never recompiles requirements; planning again does, from the brief as saved</span></summary>
+  <form method="post" action="{{ here }}/edit">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <div class="field"><label for="ip-edit-title">Title</label>
+      <input id="ip-edit-title" name="title" value="{{ form.get('title', p.get('title') or '') }}" required maxlength="200"></div>
+    <div class="field"><label for="ip-edit-status">Status</label>
+      <input id="ip-edit-status" name="status" value="{{ form.get('status', p.get('status') or '') }}">
+      <span class="field-hint">IdeaPress refuses a status its data model does not name.</span></div>
+    <div class="field kit-wide"><label for="ip-edit-brief">Brief</label>
+      <textarea id="ip-edit-brief" name="brief" rows="8">{{ form.get("brief", p.get("brief") or "") }}</textarea></div>
+    <div class="field kit-wide"><label for="ip-edit-material">Author material</label>
+      <textarea id="ip-edit-material" name="author_material" rows="3">{{ form.get("author_material", (p.get("author_material") | tojson) if p.get("author_material") else "") }}</textarea>
+      <span class="field-hint">A JSON object; blank clears it.</span></div>
+    <div class="kit-wide"><button type="submit" data-variant="primary">Save</button></div>
+  </form>
+</details>
+{% if not preview %}
+<form method="post" action="{{ here }}/delete" class="kit-actions">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit">Delete this project…</button>
+  <span class="muted">IdeaPress shows what would go first, and offers to archive it.</span>
+</form>
+{% endif %}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

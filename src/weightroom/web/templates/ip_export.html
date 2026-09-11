@@ -1,0 +1,53 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% block title %}Export — IdeaPress — WeightRoom{% endblock %}
+{% block page_content %}
+{% set proj = "/apps/ideapress/projects/" ~ (project_id | urlencode) %}
+<div class="page-head">
+  <h2>Export {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ proj }}">The project</a> · <a href="{{ proj }}/workspace">Workspace</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{% if written %}
+<p class="notice" role="status">IdeaPress wrote <code>{{ written.get("path") }}</code>: {{ written.get("size_bytes") }} bytes,
+<code>{{ written.get("sha256") }}</code>, {{ written.get("units") }} unit(s), export format {{ written.get("export_format_version") or "—" }}.</p>
+{% endif %}
+<p class="muted">Choosing a format decides what leaves IdeaPress and in what shape. IdeaPress renders it; this page only asks.</p>
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% set units = sourced.data["units"] %}
+{% set committed = units | selectattr("state", "equalto", "committed") | list %}
+{% set uncommitted = units | rejectattr("state", "equalto", "committed") | map(attribute="unit_key") | list %}
+<h3>What will be included</h3>
+<p>{{ committed | length }} of {{ units | length }} unit(s) are committed. <strong>Only committed units are exported.</strong></p>
+{% if uncommitted %}<p>{{ badge("not included", tone="warning") }} {{ uncommitted | join(", ") }} — not yet committed. IdeaPress refuses to
+write an export of a plan that is not fully committed.</p>{% endif %}
+
+<h3>Write it into the project's directory</h3>
+<form method="post" action="{{ proj }}/export">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <fieldset>
+    <legend>Choose a format</legend>
+    {% for f in sourced.data["formats"] %}
+    <p><label class="kit-check"><input type="radio" name="format" value="{{ f.get('format') }}"{{ ' checked' if loop.first else '' }}>
+      <strong>{{ f.get("format") }}</strong> <code>.{{ f.get("extension") }}</code></label><br>
+      <span class="muted">{{ f.get("description") or "" }}</span></p>
+    {% else %}
+    {{ empty_state("IdeaPress offers no export format.") }}
+    {% endfor %}
+  </fieldset>
+  <p class="muted">Deterministic: the same committed project exports byte-identically, so two exports compare with <code>sha256sum</code>.</p>
+  <button type="submit" data-variant="primary"{{ ' disabled' if not committed else '' }}>Write the export</button>
+</form>
+
+<h3>Or download it, writing nothing</h3>
+<ul>
+  {% for f in sourced.data["formats"] %}
+  <li><a href="{{ proj }}/export/download?format={{ f.get('format') | urlencode }}">{{ f.get("format") }}</a> <span class="muted">— as an attachment, never shown in the console</span></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

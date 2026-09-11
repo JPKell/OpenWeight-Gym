@@ -1,0 +1,147 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_ip.html" import short, state_badge, measure %}
+{% from "_pc.html" import verdict_badge %}
+{% block title %}Plan — IdeaPress — WeightRoom{% endblock %}
+{% block page_content %}
+{% set here = "/apps/ideapress/projects/" ~ (project_id | urlencode) %}
+<div class="page-head">
+  <h2>Plan {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ here }}">The project</a> · <a href="{{ here }}/workspace">Workspace</a> · <a href="{{ here }}/export">Export</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{% set why = (action_error.details.get("app_details") if action_error else none) or {} %}
+{% if why.get("unassigned_requirement_keys") %}<p class="notice">IdeaPress's plan gate refused the edit: no unit would carry
+<strong>{{ why.get("unassigned_requirement_keys") | join(", ") }}</strong>. The plan is unchanged.</p>{% endif %}
+{% if why.get("protected_unit_keys") %}<p class="notice">IdeaPress's plan gate refused the edit:
+<strong>{{ why.get("protected_unit_keys") | join(", ") }}</strong> hold finished work, which a structural edit never renumbers.
+The plan is unchanged.</p>{% endif %}
+{% if edited %}<p class="notice" role="status">Applied the <code>{{ edited }}</code> edit; IdeaPress re-checked the whole plan.</p>{% endif %}
+
+{% if sourced.live %}
+<form method="post" action="{{ here }}/plan" class="kit-actions">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit" data-variant="primary">Run the plan</button>
+  <span class="muted">A model compiles requirements from the brief as saved and outlines the units; the gate that every
+  blocking requirement has a unit is Python's, and a plan that fails it is not stored.</span>
+</form>
+{% endif %}
+
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% set data = sourced.data %}
+<h3>Requirements</h3>
+<p class="muted">Each with the material it rests on, so the claim and its evidence read side by side.</p>
+{% set rows = [] %}
+{% for r in data.get("requirements") or [] %}
+{% set checked = r.get("checks") if r.get("checks") is not none else "—" %}
+{% set _ = rows.append([
+  r.get("key") or "—",
+  r.get("text") or "—",
+  badge("blocking", tone="warning") if r.get("blocking") else badge("advisory"),
+  (checked ~ " ") ~ (badge("model review only", tone="warning") if r.get("mechanical") is false and r.get("blocking") else (badge("model-assisted") if r.get("mechanical") is false else "")),
+  (r.get("source") or "—") ~ " — “" ~ (r.get("quote") or "") ~ "”",
+  (r.get("units") or []) | join(", ") or "—"
+]) %}
+{% endfor %}
+{% if rows %}
+{{ table([{"label": "Key", "mono": true}, {"label": "Requirement"}, {"label": "Class"}, {"label": "Checked by"}, {"label": "Source"}, {"label": "Units", "mono": true}], rows, caption="Compiled requirements", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No requirements compiled yet.") }}{% endif %}
+
+<h3>Units</h3>
+{% set units = data.get("units") or [] %}
+{% set rows = [] %}
+{% for u in units %}
+{% set _ = rows.append([u.get("key") or "—", u.get("title") or "—", u.get("goal") or "—", u.get("requirements") or "—", state_badge(u.get("state")), measure(u.get("target_words"))]) %}
+{% endfor %}
+{% if rows %}
+{{ table([{"label": "Key", "mono": true}, {"label": "Title"}, {"label": "Goal"}, {"label": "Requirements", "mono": true}, {"label": "State"}, {"label": "Target words"}], rows, caption="The unit plan, in reading order", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No plan yet: run the plan to outline the units.") }}{% endif %}
+
+{% if sourced.live and units %}
+<h3>Edit the plan</h3>
+<p class="muted">Every edit re-checks the whole plan. One that would leave a blocking requirement with no unit is refused and
+names it; a move, split or merge is refused once a unit holds committed text{% if data.get("editable_states") %} — it touches only
+units that are {{ data.get("editable_states") | join(", ") }}{% endif %}.</p>
+<div class="ip-editor">
+<form method="post" action="{{ here }}/plan/edits" class="card kit-form">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}"><input type="hidden" name="operation" value="reorder">
+  <h4 class="kit-wide">Move a unit</h4>
+  <div class="field"><label for="ip-reorder-unit">Unit</label><select id="ip-reorder-unit" name="unit_keys">{% for u in units %}<option value="{{ u.get('key') }}">{{ u.get("key") }} — {{ u.get("title") }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="ip-reorder-position">To position</label><input id="ip-reorder-position" name="position" inputmode="numeric" value="1" required></div>
+  <div class="kit-wide"><button type="submit">Move</button></div>
+</form>
+<form method="post" action="{{ here }}/plan/edits" class="card kit-form">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}"><input type="hidden" name="operation" value="split">
+  <h4 class="kit-wide">Split a unit</h4>
+  <div class="field"><label for="ip-split-unit">Unit</label><select id="ip-split-unit" name="unit_keys">{% for u in units %}<option value="{{ u.get('key') }}">{{ u.get("key") }} — {{ u.get("title") }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="ip-split-title">Title of the new unit</label><input id="ip-split-title" name="text" required></div>
+  <div class="field kit-wide"><label for="ip-split-reqs">Requirements that move to it</label><input id="ip-split-reqs" name="requirement_keys" placeholder="R-002, R-003"></div>
+  <div class="kit-wide"><button type="submit">Split</button></div>
+</form>
+<form method="post" action="{{ here }}/plan/edits" class="card kit-form">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}"><input type="hidden" name="operation" value="merge">
+  <h4 class="kit-wide">Merge units</h4>
+  <div class="field"><label for="ip-merge-units">Units, the first one kept</label><input id="ip-merge-units" name="unit_keys" placeholder="U-02, U-03" required></div>
+  <div class="field"><label for="ip-merge-title">New title</label><input id="ip-merge-title" name="text"></div>
+  <div class="kit-wide"><button type="submit">Merge</button></div>
+</form>
+<form method="post" action="{{ here }}/plan/edits" class="card kit-form">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}"><input type="hidden" name="operation" value="reassign">
+  <h4 class="kit-wide">Reassign requirements</h4>
+  <div class="field"><label for="ip-reassign-unit">Unit</label><select id="ip-reassign-unit" name="unit_keys">{% for u in units %}<option value="{{ u.get('key') }}">{{ u.get("key") }} — {{ u.get("title") }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="ip-reassign-reqs">Exactly the requirements it carries</label><input id="ip-reassign-reqs" name="requirement_keys" placeholder="R-001, R-004"></div>
+  <div class="kit-wide"><button type="submit">Reassign</button></div>
+</form>
+<form method="post" action="{{ here }}/plan/edits" class="card kit-form">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}"><input type="hidden" name="operation" value="goal">
+  <h4 class="kit-wide">Rewrite a goal</h4>
+  <div class="field"><label for="ip-goal-unit">Unit</label><select id="ip-goal-unit" name="unit_keys">{% for u in units %}<option value="{{ u.get('key') }}">{{ u.get("key") }} — {{ u.get("title") }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="ip-goal-text">Goal</label><input id="ip-goal-text" name="text" value="{{ form.get('text', '') if form.get('operation') == 'goal' else '' }}" required></div>
+  <div class="kit-wide"><button type="submit">Set the goal</button></div>
+</form>
+</div>
+<style>.ip-editor { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }</style>
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+
+<h3>Research</h3>
+{% set r = research.data %}
+{% if sourced.live %}
+<form method="post" action="{{ here }}/research" class="kit-actions">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit">Run research</button>
+  <span class="muted">Reads the brief's URLs and the project's <code>sources/</code> files into cited notes; no model runs.
+  {% if r and r.get("allowed_hosts") %}A fetch may reach only <code>{{ r.get("allowed_hosts") | join(", ") }}</code>.
+  {% elif r and r.get("allowed_hosts") is not none %}No host is allowed on this installation, so no fetch leaves this machine and a URL in the brief is recorded as refused.{% endif %}</span>
+</form>
+{% endif %}
+{{ refusal(research.error) }}
+{% if r is not none %}
+{% set rows = [] %}
+{% for n in r.get("notes") or [] %}
+{% set _ = rows.append([badge(n.get("kind") or "—"), n.get("citation") or "—", measure(n.get("characters")), short(n.get("sha256"))]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Kind"}, {"label": "Cites"}, {"label": "Characters"}, {"label": "Digest", "mono": true}], rows, caption="Notes the units are drafted against", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No note: research has not run, or every call was refused.") }}{% endif %}
+{% set rows = [] %}
+{% for c in r.get("tool_calls") or [] %}
+{% set d = c.get("egress_decision") %}
+{% set target = ((d or {}).get("request") or {}).get("target") or {} %}
+{% set _ = rows.append([
+  c.get("tool") or "—",
+  state_badge(c.get("status")),
+  c.get("reason") or "—",
+  (c.get("detail") or "—") | cell_text,
+  (verdict_badge(d.get("verdict")) ~ " " ~ (target.get("name") or "") ~ (" (remote)" if target.get("remote") else "") ~ ((" — " ~ d.get("reason")) if d.get("reason") else "")) if d else "—",
+  measure(c.get("duration_ms"), "ms"),
+  short(c.get("invocation_id"))
+]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Tool", "mono": true}, {"label": "Result"}, {"label": "Reason", "mono": true}, {"label": "Detail"}, {"label": "Egress decision"}, {"label": "Took"}, {"label": "Invocation", "mono": true}], rows, caption="Every research call, refused ones included, with the egress decision it ran under", density="dense", complete=true, row_count=rows | length) }}{% endif %}
+{% endif %}
+{{ page_source(research) }}
+{% endblock %}

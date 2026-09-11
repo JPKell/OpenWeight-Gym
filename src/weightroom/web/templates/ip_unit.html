@@ -1,0 +1,159 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_ip.html" import short, state_badge, measure %}
+{% from "_pc.html" import verdict_badge %}
+{% block title %}{{ unit_key }} — IdeaPress — WeightRoom{% endblock %}
+{% block page_content %}
+{% set u = (sourced.data or {}).get("unit") or {} %}
+{% set versions = (sourced.data or {}).get("versions") or [] %}
+{% set proj = "/apps/ideapress/projects/" ~ (project_id | urlencode) %}
+{% set here = proj ~ "/units/" ~ (unit_key | urlencode) %}
+{% set api_only = "IdeaPress assembles this from several tables; the page reads it only from its running API." %}
+<style>
+  .ip-content { max-width: 72ch; overflow-wrap: anywhere; }
+  .ip-content pre { white-space: pre-wrap; }
+</style>
+<div class="page-head">
+  <h2>{{ unit_key }}{% if u.get("title") %} — {{ u.get("title") }}{% endif %} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ proj }}">The project</a> · <a href="{{ proj }}/workspace?unit={{ unit_key | urlencode }}">Workspace</a> · <a href="/apps/ideapress/units?project={{ project_id | urlencode }}">All units</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% set state = u.get("state") %}
+{{ kv_list([
+  {"label": "State", "value": state or "—"},
+  {"label": "Goal", "value": u.get("goal") or "—"},
+  {"label": "Version", "value": u.get("version") if u.get("version") is not none else "not committed"},
+  {"label": "Words", "value": u.get("word_count") if u.get("word_count") is not none else "—"},
+  {"label": "Content hash", "value": u.get("content_hash") or "—"},
+  {"label": "Committed", "value": u.get("committed_at") or "—"},
+  {"label": "Tokens spent", "value": (u.get("cost") or {}).get("tokens_spent_display") or "—"},
+  {"label": "Money spent", "value": (u.get("cost") or {}).get("money_spent_display") or "—"},
+]) }}
+{% if u.get("paused_reason") %}<p class="notice"><strong>Paused:</strong> {{ u.get("paused_reason") }}</p>{% endif %}
+
+<h3>What IdeaPress allows next</h3>
+{% set has_version = u.get("version") is not none %}
+{% if not sourced.live %}
+<p class="muted">Revising and resuming need IdeaPress's API.</p>
+{% elif running_task_id %}
+<p class="notice">A stage is running on this project (<a href="{{ proj }}/tasks/{{ running_task_id | urlencode }}">follow it</a>). IdeaPress runs one at a
+time per project, so revising and resuming wait for it.</p>
+{% else %}
+{% if state in ("committed", "paused") and has_version %}
+<form method="post" action="{{ here }}/revise" class="card kit-form">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <div class="field kit-wide"><label for="ip-revise-instructions">Instructions for the revision</label>
+    <textarea id="ip-revise-instructions" name="instructions" rows="3" maxlength="4000">{{ form.get("instructions", "") }}</textarea>
+    <span class="field-hint">Your words reach the reviser as one finding, against version {{ u.get("version") }}, in a round that counts
+    against the round limit. The result commits as a new version; a revision that makes validation worse pauses the unit and
+    keeps version {{ u.get("version") }}. Blank reviews the text as it stands.</span></div>
+  <div class="kit-wide"><button type="submit" data-variant="primary">Revise</button></div>
+</form>
+{% endif %}
+{% if state == "paused" or state in ("drafting", "validating", "auditing", "revising") %}
+<form method="post" action="{{ here }}/resume" class="kit-actions">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit">Resume this unit</button>
+  <span class="muted">{% if state == "paused" %}A draft run picks it up again; the rest of the project is untouched.
+  {% else %}No run owns this unit, which a run that ended left <code>{{ state }}</code>: IdeaPress returns it to paused, then drafts it.{% endif %}</span>
+</form>
+{% endif %}
+{% if state == "planned" %}<p class="muted">Not drafted yet: run the draft stage from <a href="{{ proj }}">the project</a>.</p>{% endif %}
+{% endif %}
+
+<h3>Content</h3>
+{% if content_html %}<div class="ip-content">{{ content_html }}</div>
+{% else %}{{ empty_state("No committed content yet.") }}{% endif %}
+
+<h3>Coverage</h3>
+{% if u.get("coverage") is none %}<p class="muted">{{ api_only }}</p>
+{% else %}
+{% set rows = [] %}
+{% for c in u.get("coverage") %}
+{% set _ = rows.append([c.get("requirement_key") or "—", state_badge("passed" if c.get("satisfied") else "failed"), (c.get("satisfied_by") or "—") ~ (" " ~ badge("model review, not a deterministic check", tone="warning") if c.get("satisfied_by") == "audit" else ""), (c.get("detail") or "—") | cell_text]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Requirement", "mono": true}, {"label": "Satisfied"}, {"label": "Decided by"}, {"label": "Detail"}], rows, caption="What settled each requirement, and how", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No coverage recorded.") }}{% endif %}
+{% endif %}
+
+<h3>Validation</h3>
+{% if u.get("validation") is none %}<p class="muted">{{ api_only }}</p>
+{% else %}
+{% set failed = u.get("validation") | rejectattr("passed") | list %}
+<p>{{ (u.get("validation") | length) - (failed | length) }} of {{ u.get("validation") | length }} checks passed.</p>
+{% set rows = [] %}
+{% for v in failed %}
+{% set _ = rows.append([v.get("kind") or "—", v.get("key") or "—", badge("blocking", tone="danger") if v.get("blocking") else badge("advisory", tone="warning"), (v.get("detail") or "—") | cell_text]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Family"}, {"label": "Check", "mono": true}, {"label": "Class"}, {"label": "Detail"}], rows, caption="The checks that did not pass", density="dense", complete=true, row_count=rows | length) }}{% endif %}
+{% endif %}
+
+<h3>Findings</h3>
+{% if u.get("findings") is none %}<p class="muted">{{ api_only }}</p>
+{% else %}
+{% set rows = [] %}
+{% for f in u.get("findings") %}
+{% set _ = rows.append([f.get("round"), (f.get("stage") or "—") ~ (" " ~ badge("escalated", tone="warning") if f.get("escalated") else ""), badge(f.get("severity") or "—", tone="danger" if f.get("severity") in ("critical", "major") else "neutral"), f.get("category") or "—", (f.get("problem") or "—") | cell_text(limit=400), (f.get("evidence") or "—") | cell_text(limit=400), (f.get("fix") or "—") | cell_text(limit=400)]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Round"}, {"label": "Stage"}, {"label": "Severity"}, {"label": "Category"}, {"label": "Problem"}, {"label": "Evidence"}, {"label": "Would resolve it"}], rows, caption="What the reviews found", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No findings.") }}{% endif %}
+{% endif %}
+
+<h3>Critique and revision</h3>
+{% if u.get("critiques") is none %}<p class="muted">{{ api_only }}</p>
+{% else %}
+{% set rows = [] %}
+{% for c in u.get("critiques") %}
+{% set _ = rows.append([c.get("round"), badge(c.get("verdict") or "—", tone="warning" if c.get("verdict") == "materially_deficient" else "success"), ("%.0f%%" | format(c.get("improvement_delta") * 100)) if c.get("improvement_delta") is not none else measure(none), c.get("stop_reason") or "—", (c.get("rationale") or "—") | cell_text(limit=400)]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Round"}, {"label": "Verdict"}, {"label": "Improvement"}, {"label": "Stopped by"}, {"label": "Rationale"}], rows, caption="Each round's verdict, and which rule stopped the loop", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No critique recorded.") }}{% endif %}
+{% endif %}
+
+<h3>Provenance</h3>
+{% set rows = [] %}
+{% for a in u.get("attempts") or [] %}
+{% set eg = a.get("egress") %}
+{% set target = ((eg or {}).get("request") or {}).get("target") or {} %}
+{% set _ = rows.append([
+  a.get("stage") or "—",
+  (a.get("attempt") | string) ~ " · round " ~ (a.get("round") | string),
+  state_badge(a.get("outcome")),
+  a.get("backend") or "—",
+  a.get("model_canonical_id") or "—",
+  (a.get("prompt_id") or "—") ~ " " ~ (a.get("prompt_version") or "") ~ ((" · " ~ a.get("prompt_source")) if a.get("prompt_source") else ""),
+  measure(a.get("input_tokens")) ~ " / " ~ measure(a.get("output_tokens")),
+  (verdict_badge(eg.get("verdict")) ~ " " ~ (target.get("name") or "") ~ (" (remote)" if target.get("remote") else "")) if eg else "—",
+  ((a.get("degradations") or []) | join("; ")) or "—"
+]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Stage"}, {"label": "Attempt"}, {"label": "Outcome"}, {"label": "Backend"}, {"label": "Model", "mono": true}, {"label": "Prompt"}, {"label": "Tokens in / out"}, {"label": "Egress"}, {"label": "Degradations"}], rows, caption="Every attempt that worked on this unit", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No attempts recorded.") }}{% endif %}
+
+<h3>History</h3>
+{% set rows = [] %}
+{% for v in versions %}
+{% set covered = v.get("coverage") %}
+{% set _ = rows.append([
+  v.get("version"),
+  state_badge("committed") if v.get("committed") else badge("draft"),
+  v.get("committed_at") or "—",
+  measure(v.get("word_count")),
+  short(v.get("content_hash")),
+  ((covered | selectattr("satisfied") | list | length | string) ~ " of " ~ (covered | length | string)) if covered is not none else measure(none),
+  ((v.get("attempts") | map(attribute="stage") | join(", ")) or "—") if v.get("attempts") is not none else measure(none),
+  ((v.get("validations") | rejectattr("passed") | list | length | string) ~ " failed") if v.get("validations") is not none else measure(none),
+  ((v.get("critiques") | map(attribute="verdict") | join(", ")) or "—") if v.get("critiques") is not none else measure(none),
+  ((v.get("findings") | length | string) ~ " finding(s)") if v.get("findings") is not none else measure(none)
+]) %}
+{% endfor %}
+{% if rows %}{{ table([{"label": "Version"}, {"label": "Kind"}, {"label": "Committed", "mono": true}, {"label": "Words"}, {"label": "Hash", "mono": true}, {"label": "Coverage"}, {"label": "Produced by"}, {"label": "Checks"}, {"label": "Critique"}, {"label": "Audits"}], rows, caption="Every version, newest first, with the run that produced it", density="dense", complete=true, row_count=rows | length) }}
+{% else %}{{ empty_state("No versions yet.") }}{% endif %}
+<p class="muted">Research for the whole project, with every call and its egress decision, is on <a href="{{ proj }}/plan">the plan</a>.</p>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

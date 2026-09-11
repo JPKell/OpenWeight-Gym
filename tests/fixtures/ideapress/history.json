@@ -1,0 +1,582 @@
+{
+  "versions": [
+    {
+      "attempts": [
+        {
+          "attempt": 1,
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "backend": "fake",
+          "degradations": [],
+          "egress": null,
+          "idempotency_key": null,
+          "input_tokens": 310,
+          "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+          "outcome": "completed",
+          "output_tokens": 66,
+          "prompt_id": "stages.revise.improve",
+          "prompt_sha256": "sha256:3a3fcd74a9da646be2a2c2c46095911887119a7c9ff655555940877cc7ba5330",
+          "prompt_source": "pack",
+          "prompt_version": "1.0.0",
+          "provider_ms": 0.0,
+          "rejection_reason": null,
+          "response_hash": "sha256:eeaa0bce9958229471e7cc1e0924c05790a97ee00cadc3325d380d0dc2089777",
+          "round": 1,
+          "routing": null,
+          "stage": "revise"
+        },
+        {
+          "attempt": 1,
+          "attempt_id": "01M27K4Q09MMFSF7N6R345YPC3",
+          "backend": "fake",
+          "degradations": [],
+          "egress": null,
+          "idempotency_key": null,
+          "input_tokens": 594,
+          "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+          "outcome": "completed",
+          "output_tokens": 4,
+          "prompt_id": "stages.audit_fast.review",
+          "prompt_sha256": "sha256:cee7e0ae803680fca104fc15645e6a4b928543193cd0405c8f7cdc87619be526",
+          "prompt_source": "pack",
+          "prompt_version": "1.1.0",
+          "provider_ms": 0.0,
+          "rejection_reason": null,
+          "response_hash": "sha256:74b1df91fba10e5fac08d6ae710185611f24137af49463f6151eaa92a08c7b97",
+          "round": 1,
+          "routing": null,
+          "stage": "audit_fast"
+        },
+        {
+          "attempt": 1,
+          "attempt_id": "01M27K4Q0HNR1NC8QJX7Q2V47Z",
+          "backend": "fake",
+          "degradations": [],
+          "egress": null,
+          "idempotency_key": null,
+          "input_tokens": 304,
+          "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+          "outcome": "completed",
+          "output_tokens": 15,
+          "prompt_id": "stages.critique.judge",
+          "prompt_sha256": "sha256:f05ec70537f843957ac027174cb1aacb6d987cee8cb9cae696fab9192478ff19",
+          "prompt_source": "pack",
+          "prompt_version": "1.0.0",
+          "provider_ms": 0.0,
+          "rejection_reason": null,
+          "response_hash": "sha256:b72d71110b8d8971e65322670da47b1b3e21808306879bd3e7fb34e8492ac794",
+          "round": 1,
+          "routing": null,
+          "stage": "critique"
+        }
+      ],
+      "committed": true,
+      "committed_at": "2026-09-11T06:40:37.399668+00:00",
+      "content_hash": "sha256:eeaa0bce9958229471e7cc1e0924c05790a97ee00cadc3325d380d0dc2089777",
+      "coverage": [
+        {
+          "detail": "found: own machine",
+          "requirement_key": "R-001",
+          "satisfied": true,
+          "satisfied_by": "deterministic_check"
+        },
+        {
+          "detail": "no deterministic check, and no audit has attested it met",
+          "requirement_key": "R-002",
+          "satisfied": false,
+          "satisfied_by": "unsatisfied"
+        }
+      ],
+      "created_at": "2026-09-11T06:40:37.400151+00:00",
+      "critiques": [
+        {
+          "improvement_delta": null,
+          "rationale": "it meets the bar",
+          "round": 1,
+          "stop_reason": "critique_satisfied",
+          "verdict": "acceptable"
+        }
+      ],
+      "findings": [],
+      "stage_run_id": "01M27K4PZVYBPJJPDYV8BTHRYG",
+      "validations": [
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "264 characters",
+          "key": "non_empty",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "deepest heading is level 4 or less",
+          "key": "heading_depth",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "0 fence marker(s)",
+          "key": "closed_code_fences",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "0 '**' marker(s)",
+          "key": "closed_emphasis",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "no empty list items",
+          "key": "lists_well_formed",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "ends completely",
+          "key": "complete_ending",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "47 words; at least 25 expected",
+          "key": "minimum_words",
+          "kind": "length",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": false,
+          "detail": "47 words; around 90 expected at most",
+          "key": "maximum_words",
+          "kind": "length",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "no front matter, which is fine",
+          "key": "front_matter",
+          "kind": "format",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "not a structured unit; JSON validity does not apply",
+          "key": "json_body",
+          "kind": "format",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "no meta-commentary",
+          "key": "no_meta_commentary",
+          "kind": "content",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "no forbidden phrase appears",
+          "key": "no_forbidden_phrases",
+          "kind": "content",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "R-001: found: own machine",
+          "key": "requirement:R-001:must_contain_any",
+          "kind": "content",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "every internal link resolves",
+          "key": "internal_anchors",
+          "kind": "reference",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "every unit reference resolves",
+          "key": "unit_references",
+          "kind": "reference",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": false,
+          "detail": "no sources attached; nothing to cite",
+          "key": "citations",
+          "kind": "reference",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": false,
+          "detail": "no glossary; nothing to check",
+          "key": "glossary_terms",
+          "kind": "consistency",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": false,
+          "detail": "contains no a <script> tag",
+          "key": "no_script_tags",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": false,
+          "detail": "contains no an HTML event handler",
+          "key": "no_event_handlers",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": false,
+          "detail": "contains no a javascript: URL",
+          "key": "no_javascript_urls",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": false,
+          "detail": "contains no a text/html data: URI",
+          "key": "no_html_data_uri",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": false,
+          "detail": "contains no template syntax",
+          "key": "no_template_syntax",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4Q028JBMNH7TPV1G01N5",
+          "blocking": true,
+          "detail": "contains no a path traversal",
+          "key": "no_path_traversal",
+          "kind": "safety",
+          "passed": true
+        }
+      ],
+      "version": 2,
+      "word_count": 47
+    },
+    {
+      "attempts": [
+        {
+          "attempt": 1,
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "backend": "fake",
+          "degradations": [],
+          "egress": null,
+          "idempotency_key": null,
+          "input_tokens": 273,
+          "model_canonical_id": "fake/gemma4:12b@sha256:1212121212121212121212121212121212121212121212121212121212121212",
+          "outcome": "completed",
+          "output_tokens": 61,
+          "prompt_id": "stages.draft.write",
+          "prompt_sha256": "sha256:a9d0040b8b39516126407d6d4b9ed69e76abec93e77167ed166652aff6580c89",
+          "prompt_source": "pack",
+          "prompt_version": "1.0.0",
+          "provider_ms": 0.0,
+          "rejection_reason": null,
+          "response_hash": "sha256:01955df0bf2058912e1103399567e333c124917abe6048fa89711806a490bdfa",
+          "round": 0,
+          "routing": null,
+          "stage": "draft"
+        },
+        {
+          "attempt": 1,
+          "attempt_id": "01M27K4PWTDWMGN2PTAASKJBTG",
+          "backend": "fake",
+          "degradations": [
+            "model_switch: unloaded ollama/gemma4:12b to load ollama/qwen3.5:9b-q8_0 (0 ms)"
+          ],
+          "egress": null,
+          "idempotency_key": null,
+          "input_tokens": 589,
+          "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+          "outcome": "completed",
+          "output_tokens": 4,
+          "prompt_id": "stages.audit_fast.review",
+          "prompt_sha256": "sha256:cee7e0ae803680fca104fc15645e6a4b928543193cd0405c8f7cdc87619be526",
+          "prompt_source": "pack",
+          "prompt_version": "1.1.0",
+          "provider_ms": 0.0,
+          "rejection_reason": null,
+          "response_hash": "sha256:74b1df91fba10e5fac08d6ae710185611f24137af49463f6151eaa92a08c7b97",
+          "round": 0,
+          "routing": null,
+          "stage": "audit_fast"
+        },
+        {
+          "attempt": 1,
+          "attempt_id": "01M27K4PX7VGYSEANVDJ5RX591",
+          "backend": "fake",
+          "degradations": [
+            "model_switch: unloaded ollama/gemma4:12b to load ollama/qwen3.5:9b-q8_0 (0 ms)"
+          ],
+          "egress": null,
+          "idempotency_key": null,
+          "input_tokens": 299,
+          "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+          "outcome": "completed",
+          "output_tokens": 15,
+          "prompt_id": "stages.critique.judge",
+          "prompt_sha256": "sha256:f05ec70537f843957ac027174cb1aacb6d987cee8cb9cae696fab9192478ff19",
+          "prompt_source": "pack",
+          "prompt_version": "1.0.0",
+          "provider_ms": 0.0,
+          "rejection_reason": null,
+          "response_hash": "sha256:b72d71110b8d8971e65322670da47b1b3e21808306879bd3e7fb34e8492ac794",
+          "round": 0,
+          "routing": null,
+          "stage": "critique"
+        }
+      ],
+      "committed": true,
+      "committed_at": "2026-09-11T06:40:37.294579+00:00",
+      "content_hash": "sha256:01955df0bf2058912e1103399567e333c124917abe6048fa89711806a490bdfa",
+      "coverage": [
+        {
+          "detail": "found: own machine",
+          "requirement_key": "R-001",
+          "satisfied": true,
+          "satisfied_by": "deterministic_check"
+        },
+        {
+          "detail": "no deterministic check, and no audit has attested it met",
+          "requirement_key": "R-002",
+          "satisfied": false,
+          "satisfied_by": "unsatisfied"
+        }
+      ],
+      "created_at": "2026-09-11T06:40:37.295929+00:00",
+      "critiques": [
+        {
+          "improvement_delta": null,
+          "rationale": "it meets the bar",
+          "round": 0,
+          "stop_reason": "critique_satisfied",
+          "verdict": "acceptable"
+        }
+      ],
+      "findings": [],
+      "stage_run_id": "01M27K4PWA86G0DCFJMTWVDA07",
+      "validations": [
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "242 characters",
+          "key": "non_empty",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "deepest heading is level 4 or less",
+          "key": "heading_depth",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "0 fence marker(s)",
+          "key": "closed_code_fences",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "0 '**' marker(s)",
+          "key": "closed_emphasis",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "no empty list items",
+          "key": "lists_well_formed",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "ends completely",
+          "key": "complete_ending",
+          "kind": "structural",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "43 words; at least 25 expected",
+          "key": "minimum_words",
+          "kind": "length",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": false,
+          "detail": "43 words; around 90 expected at most",
+          "key": "maximum_words",
+          "kind": "length",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "no front matter, which is fine",
+          "key": "front_matter",
+          "kind": "format",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "not a structured unit; JSON validity does not apply",
+          "key": "json_body",
+          "kind": "format",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "no meta-commentary",
+          "key": "no_meta_commentary",
+          "kind": "content",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "no forbidden phrase appears",
+          "key": "no_forbidden_phrases",
+          "kind": "content",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "R-001: found: own machine",
+          "key": "requirement:R-001:must_contain_any",
+          "kind": "content",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "every internal link resolves",
+          "key": "internal_anchors",
+          "kind": "reference",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "every unit reference resolves",
+          "key": "unit_references",
+          "kind": "reference",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": false,
+          "detail": "no sources attached; nothing to cite",
+          "key": "citations",
+          "kind": "reference",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": false,
+          "detail": "no glossary; nothing to check",
+          "key": "glossary_terms",
+          "kind": "consistency",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": false,
+          "detail": "contains no a <script> tag",
+          "key": "no_script_tags",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": false,
+          "detail": "contains no an HTML event handler",
+          "key": "no_event_handlers",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": false,
+          "detail": "contains no a javascript: URL",
+          "key": "no_javascript_urls",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": false,
+          "detail": "contains no a text/html data: URI",
+          "key": "no_html_data_uri",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": false,
+          "detail": "contains no template syntax",
+          "key": "no_template_syntax",
+          "kind": "safety",
+          "passed": true
+        },
+        {
+          "attempt_id": "01M27K4PWJR21MSDNDX3HZHF1H",
+          "blocking": true,
+          "detail": "contains no a path traversal",
+          "key": "no_path_traversal",
+          "kind": "safety",
+          "passed": true
+        }
+      ],
+      "version": 1,
+      "word_count": 43
+    }
+  ]
+}
