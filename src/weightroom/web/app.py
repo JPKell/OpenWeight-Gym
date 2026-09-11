@@ -149,6 +149,9 @@ STATUS_BY_CODE: dict[str, int] = {
     # 409, as the guard's host-and-data refusals: the file (magic, size, name) or the host (no
     # llama.cpp model_directory, or two that disagree) is what refuses; the console did its part.
     "CATALOG_DROPIN_REFUSED": status.HTTP_409_CONFLICT,
+    # 502, as the unreachable application: the console did its part; the application refused,
+    # and its own code is carried in `details.app_code` (row WP1's API client).
+    "APP_REFUSED": status.HTTP_502_BAD_GATEWAY,
 }
 """Spec §13's codes to HTTP statuses, for the ones Phases 1 through 5 raise."""
 

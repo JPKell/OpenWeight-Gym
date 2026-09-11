@@ -750,6 +750,52 @@ EXERCISES: dict[tuple[str, str], Exercise] = {
 """One representative, successful call per state-changing route. Add a line per new route."""
 
 
+def _pc_form(path: str, data: dict[str, str], *, cancel: bool = False) -> Exercise:
+    """One of PromptCadence's tab actions (row WP1), against the recorded PromptCadence.
+
+    A grant or a denial is refused here — the audit console holds no ``promptcadence`` token CLI, so
+    the approve scope cannot be read — and a refusal is exactly one row too. A refusal renders its
+    page, whose application tabs probe LoadCoach's version, so LoadCoach is mocked beside it.
+    """
+
+    def exercise(console: Console) -> Any:  # noqa: ANN401
+        import httpx
+        import respx
+
+        from tests.support import PROMPTCADENCE_URL, mock_loadcoach, mock_promptcadence
+
+        with respx.mock(assert_all_called=False) as router:
+            mock_promptcadence(router)
+            mock_loadcoach(router)
+            if cancel:
+                router.post(
+                    url__regex=rf"{PROMPTCADENCE_URL}/api/v1/trajectories/[^/]+/cancel"
+                ).mock(return_value=httpx.Response(202, json={"state": "cancelled"}))
+            return console.post_form(path, data)
+
+    return exercise
+
+
+_PC_TRAJECTORY = "01M253YZNV3QQY0CZPWH0E4AYC"
+
+EXERCISES.update(
+    {
+        ("POST", "/apps/promptcadence/trajectories"): _pc_form(
+            "/apps/promptcadence/trajectories", {"task": "An audit exercise's task."}
+        ),
+        ("POST", "/apps/promptcadence/trajectories/{trajectory_id}/cancel"): _pc_form(
+            f"/apps/promptcadence/trajectories/{_PC_TRAJECTORY}/cancel", {}, cancel=True
+        ),
+        ("POST", "/apps/promptcadence/approvals/{trajectory_id}/grant"): _pc_form(
+            f"/apps/promptcadence/approvals/{_PC_TRAJECTORY}/grant", {}
+        ),
+        ("POST", "/apps/promptcadence/approvals/{trajectory_id}/deny"): _pc_form(
+            f"/apps/promptcadence/approvals/{_PC_TRAJECTORY}/deny", {"reason": "An audit exercise."}
+        ),
+    }
+)
+
+
 def _state_changing_routes(console: Console) -> set[tuple[str, str]]:
     found: set[tuple[str, str]] = set()
     for path, route in api_routes(console.client.app):

@@ -72,6 +72,12 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "job.cancel",
         "job.schedule",
         "alert.ack",
+        # WP1. From PromptCadence's tab: submitting and cancelling a trajectory, and granting or
+        # denying its pending request — the last two `security` rows, as `chat.approve` is.
+        "trajectory.submit",
+        "trajectory.cancel",
+        "trajectory.approve",
+        "trajectory.deny",
     }
 )
 """The closed action vocabulary."""

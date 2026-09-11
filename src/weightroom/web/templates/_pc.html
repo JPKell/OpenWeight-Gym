@@ -61,3 +61,37 @@
 <div class="pc-content">{{ content }}</div>
 {%- else -%}—{%- endif -%}
 {%- endmacro %}
+
+{% macro approval_forms(trajectory_id, kind, can_approve, next_path) -%}
+{#- Grant and deny for a trajectory's pending request — import this macro `with context`, for the
+    CSRF token. The buttons exist only when the console's token holds `approve` (ADR-0049); a
+    ceiling raise carries the new ceilings PromptCadence requires for that kind and refuses for any
+    other. `next` returns the operator to the page they decided on. -#}
+{% if can_approve %}
+<div class="pc-actions">
+  <form method="post" action="/apps/promptcadence/approvals/{{ trajectory_id | urlencode }}/grant" class="pc-inline">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="{{ next_path }}">
+    {% if kind == "ceiling_raise" %}
+    <label class="field">New token ceiling <input name="budget_tokens" inputmode="numeric"></label>
+    <label class="field">New money ceiling <input name="budget_money" inputmode="decimal" placeholder="5.00"></label>
+    <label class="field">Currency <input name="currency" value="USD" maxlength="3" size="4"></label>
+    {% endif %}
+    <button type="submit" data-variant="primary">Grant</button>
+  </form>
+  <form method="post" action="/apps/promptcadence/approvals/{{ trajectory_id | urlencode }}/deny" class="pc-inline">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="{{ next_path }}">
+    <label class="field">Reason <input name="reason" maxlength="2000" placeholder="recorded on the request and in the halt's cause"></label>
+    <button type="submit" data-variant="danger">Deny</button>
+  </form>
+</div>
+{% elif can_approve is sameas false %}
+<p class="notice"><strong>No approve scope.</strong> The console's PromptCadence token cannot resolve
+approvals (ADR-0049). Grant it on PromptCadence's <a href="/apps/promptcadence/tokens">Tokens</a> page,
+or run <code>promptcadence approve {{ trajectory_id }}</code> on the host.</p>
+{% else %}
+<p class="notice">Whether the console's PromptCadence token can approve could not be read; run
+<code>promptcadence approve {{ trajectory_id }}</code> on the host.</p>
+{% endif %}
+{%- endmacro %}

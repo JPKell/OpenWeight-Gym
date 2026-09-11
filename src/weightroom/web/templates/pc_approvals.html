@@ -1,7 +1,7 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, table, empty_state, json_viewer %}
 {% from "_app_page.html" import page_source, refusal %}
-{% from "_pc.html" import short, trajectory_link, outcome_badge %}
+{% from "_pc.html" import short, trajectory_link, outcome_badge, approval_forms with context %}
 {% block title %}Approvals — PromptCadence — WeightRoom{% endblock %}
 {% block page_content %}
 <div class="page-head">
@@ -9,6 +9,7 @@
   <div class="page-actions"><a href="/apps/promptcadence/trajectories">Trajectories</a> · <a href="/apps/promptcadence/egress">Egress</a></div>
 </div>
 {% include "_app_state.html" %}
+{{ refusal(action_error) }}
 <p class="muted">Every request waiting for a person, oldest first. A grant mints the envelope the work
 then runs under, and a denial halts the trajectory with the reason on the record — so both answers
 are recorded, not only the one that let work continue.</p>
@@ -24,6 +25,7 @@ are recorded, not only the one that let work continue.</p>
   <p class="muted">{% if one.get("age_seconds") is not none %}Waiting {{ one.get("age_seconds") | round(0) | int }} s · {% endif %}requested {{ one.get("created_at") or "—" }} ·
     expires {{ one.get("expires_at") or "—" }} · steps {{ (one.get("step_ids") or []) | join(", ") or "—" }}</p>
   {% if one.get("detail") %}{{ json_viewer(one.get("detail"), label="What a grant would widen") }}{% endif %}
+  {% if pending.live %}{{ approval_forms(one.get("trajectory_id"), one.get("kind"), can_approve, current_path) }}{% endif %}
 </section>
 {% endfor %}
 {% else %}

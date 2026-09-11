@@ -1,12 +1,14 @@
 {% extends "_shell.html" %}
 {% from "mirrorwall/components.html" import badge, kv_list, table, empty_state, json_viewer %}
 {% from "_app_page.html" import page_source, refusal, rows_table %}
-{% from "_pc.html" import short, measure, money, state_badge, verdict_badge, outcome_badge, content_cell %}
+{% from "_pc.html" import short, measure, money, state_badge, verdict_badge, outcome_badge, content_cell, approval_forms with context %}
 {% block title %}Trajectory {{ trajectory_id }} — PromptCadence — WeightRoom{% endblock %}
 {% block page_content %}
 <style>
   .pc-content { white-space: pre-wrap; word-break: break-word; max-width: 72ch; }
   .pc-thread { margin: 0 0 var(--mw-space-4, 16px); }
+  .pc-actions { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: end; }
+  .pc-inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
 </style>
 <div class="page-head">
   <h2>Trajectory {{ short(trajectory_id) }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
@@ -17,12 +19,32 @@
   </div>
 </div>
 {% include "_app_state.html" %}
+{{ refusal(action_error) }}
 {{ refusal(sourced.error) }}
 
 {% if sourced.data is not none and sourced.live %}
 {% set doc = sourced.data["explanation"] %}
 {% set t = doc.get("trajectory") or {} %}
 {% set budget = t.get("budget") or {} %}
+{% if not t.get("completed_at") and t.get("cancel_requested") %}
+<p class="notice">Cancellation requested: PromptCadence honours it at the next turn boundary and
+cancels any LoadCoach job in flight.</p>
+{% elif not t.get("completed_at") %}
+<form method="post" action="/apps/promptcadence/trajectories/{{ trajectory_id | urlencode }}/cancel" class="pc-inline">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit" data-variant="danger">Cancel trajectory</button>
+  <span class="muted">At once when no worker holds it; at the next turn boundary when one does.</span>
+</form>
+{% endif %}
+{% for one in doc.get("approvals") or [] %}
+{% if one.get("status") == "pending" %}
+<section class="card">
+  <h3>Waiting for a person — {{ one.get("kind") }}</h3>
+  <p>{{ one.get("reason") or "—" }}</p>
+  {{ approval_forms(trajectory_id, one.get("kind"), can_approve, current_path) }}
+</section>
+{% endif %}
+{% endfor %}
 <p class="muted">{{ state_badge(t.get("state")) }} · {{ t.get("data_classification") or "—" }} ·
   {{ "bypassed" if t.get("bypass_planning") else "planned" }} · PromptCadence's
   <code>{{ doc.get("schema") }}</code> {{ doc.get("version") }}, the document its own timeline renders.</p>

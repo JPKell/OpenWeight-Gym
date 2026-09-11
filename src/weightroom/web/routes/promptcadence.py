@@ -4,19 +4,31 @@ Trajectories, Approvals, Tiers, Tools, Ledger and Egress, at parity with PromptC
 (its ``web/routes/console.py``), which a browser on the LAN cannot reach: PromptCadence binds
 loopback (ADR-0126). Every page reads by spec §7.3's rule (``services/app_pages``) through the
 readers in ``services/promptcadence_pages`` and renders through ``render_app_page``.
+
+The four actions — submit, cancel, grant, deny — are form posts, each writing exactly one audit
+row whether PromptCadence accepts or refuses (spec §11 contract 2). A refusal renders on the page
+it came from, in PromptCadence's words, with what the operator typed kept; a grant or a denial is a
+``security`` row, as it is from a chat thread, because it authorises spend or egress.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Annotated, Any
 
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from baseaicore import SuiteError
+from fastapi import APIRouter, Form, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
 
+from weightroom.services import promptcadence_actions as actions
 from weightroom.services import promptcadence_pages as pc
 from weightroom.services.app_api import stream as app_stream
+from weightroom.services.audit import record
 from weightroom.web.routes.apps import app_view, read_app_page, render_app_page
-from weightroom.web.session import CurrentOperator
+from weightroom.web.session import CurrentOperator, now_of
+
+if TYPE_CHECKING:
+    from weightroom.services.auth import Principal
 
 __all__ = ["ui_router"]
 
@@ -24,6 +36,7 @@ ui_router = APIRouter(tags=["ui"], include_in_schema=False)
 
 APP = pc.APP
 BASE = "/apps/promptcadence"
+_DECISION_ACTIONS = {"approve": "trajectory.approve", "deny": "trajectory.deny"}
 
 
 def _href(path: str, **query: Any) -> str:
@@ -34,30 +47,67 @@ def _href(path: str, **query: Any) -> str:
     return f"{path}?{urlencode(kept)}" if kept else path
 
 
-@ui_router.get(f"{BASE}/trajectories", summary="Trajectories", response_class=HTMLResponse)
-def trajectories_page(
+def _within(next_path: str | None, default: str) -> str:
+    """``next`` when it is a page of PromptCadence's tab, else ``default``: no open redirect."""
+    if next_path and next_path.startswith(BASE + "/") and "//" not in next_path:
+        if "\\" not in next_path:
+            return next_path
+    return default
+
+
+def _audit(
     request: Request,
-    principal: CurrentOperator,
-    state: str | None = None,
-    cursor: str | None = None,
-    page: int = 1,
+    principal: Principal,
+    action: str,
+    *,
+    target: str | None,
+    outcome: str,
+    params: Mapping[str, Any],
+    message: str | None = None,
+) -> None:
+    record(
+        request.app.state.database,
+        action=action,
+        actor="operator",
+        outcome=outcome,
+        now=now_of(request),
+        operator_id=principal.operator_id,
+        app=APP,
+        target=target,
+        params=dict(params),
+        message=message,
+        security=action in _DECISION_ACTIONS.values(),
+        request_id=getattr(request.state, "request_id", None),
+    )
+
+
+# --- Trajectories ---------------------------------------------------------------------------------
+
+
+def _trajectories(
+    request: Request,
+    principal: Principal,
+    *,
+    state: str | None,
+    cursor: str | None,
+    page: int,
+    submit_error: SuiteError | None = None,
+    form: Mapping[str, Any] | None = None,
 ) -> HTMLResponse:
-    """Every trajectory, newest first, filterable by state."""
     view = app_view(request, APP)
     client, settings = request.app.state.http, request.app.state.settings
-    wanted = state or None
     sourced = read_app_page(
         request,
         view,
-        api=lambda: pc.trajectories_api(client, settings, state=wanted, cursor=cursor or None),
-        database=lambda handle: pc.trajectories_db(handle, state=wanted, page=page),
+        api=lambda: pc.trajectories_api(client, settings, state=state, cursor=cursor),
+        database=lambda handle: pc.trajectories_db(handle, state=state, page=page),
     )
     data = sourced.data or {}
     next_href = None
     if data.get("next_cursor"):
-        next_href = _href(f"{BASE}/trajectories", state=wanted, cursor=data["next_cursor"])
+        next_href = _href(f"{BASE}/trajectories", state=state, cursor=data["next_cursor"])
     elif data.get("next_page"):
-        next_href = _href(f"{BASE}/trajectories", state=wanted, page=data["next_page"])
+        next_href = _href(f"{BASE}/trajectories", state=state, page=data["next_page"])
     return render_app_page(
         request,
         principal,
@@ -66,19 +116,118 @@ def trajectories_page(
         selected="Trajectories",
         view=view,
         sourced=sourced,
-        state=wanted or "",
+        state=state or "",
         states=pc.TRAJECTORY_STATES,
         next_href=next_href,
+        options=actions.submission_options(client, settings) if sourced.live else None,
+        classifications=actions.CLASSIFICATIONS,
+        submit_error=submit_error,
+        form=dict(form or {}),
     )
 
 
-@ui_router.get(
-    f"{BASE}/trajectories/{{trajectory_id}}", summary="One trajectory", response_class=HTMLResponse
-)
-def trajectory_page(
-    request: Request, principal: CurrentOperator, trajectory_id: str
+@ui_router.get(f"{BASE}/trajectories", summary="Trajectories", response_class=HTMLResponse)
+def trajectories_page(
+    request: Request,
+    principal: CurrentOperator,
+    state: str | None = None,
+    cursor: str | None = None,
+    page: int = 1,
 ) -> HTMLResponse:
-    """One trajectory's whole record: request, plan, envelopes, turns, tools, debits, egress."""
+    """Every trajectory, newest first, filterable by state; and the New-trajectory form."""
+    return _trajectories(request, principal, state=state or None, cursor=cursor or None, page=page)
+
+
+@ui_router.post(f"{BASE}/trajectories", summary="Submit a trajectory from the page")
+def submit_from_page(  # noqa: PLR0913 — one parameter per form field, as FastAPI reads them
+    request: Request,
+    principal: CurrentOperator,
+    task: Annotated[str, Form()] = "",
+    data_classification: Annotated[str, Form()] = "",
+    project: Annotated[str, Form()] = "",
+    tools: Annotated[list[str] | None, Form()] = None,
+    tier: Annotated[str, Form()] = "",
+    max_steps: Annotated[str, Form()] = "",
+    max_turns: Annotated[str, Form()] = "",
+    bypass_planning: Annotated[str, Form()] = "",
+    budget_tokens: Annotated[str, Form()] = "",
+    budget_money: Annotated[str, Form()] = "",
+    currency: Annotated[str, Form()] = "USD",
+    partial_pricing: Annotated[str, Form()] = "",
+) -> Response:
+    """``POST /trajectories`` with the form's body; the new trajectory's record on success.
+
+    The audit row names the classification, the tools, the tier and whether a budget was set —
+    never the task, which is the operator's text (as a chat message's row never carries it).
+    """
+    form = {
+        "task": task,
+        "data_classification": data_classification,
+        "project": project,
+        "tools": list(tools or []),
+        "tier": tier,
+        "max_steps": max_steps,
+        "max_turns": max_turns,
+        "bypass_planning": bypass_planning,
+        "budget_tokens": budget_tokens,
+        "budget_money": budget_money,
+        "currency": currency,
+        "partial_pricing": partial_pricing,
+    }
+    params = {
+        "classification": data_classification or "confidential",
+        "tools": sorted(form["tools"]),
+        "tier": tier or None,
+        "project": project or None,
+        "budgeted": bool(budget_tokens or budget_money),
+    }
+    client, settings = request.app.state.http, request.app.state.settings
+    try:
+        body = actions.submission_body(
+            task=task,
+            classification=data_classification,
+            project=project,
+            tools=form["tools"],
+            tier=tier,
+            max_steps=max_steps,
+            max_turns=max_turns,
+            bypass_planning=bypass_planning,
+            budget_tokens=budget_tokens,
+            budget_money=budget_money,
+            currency=currency,
+            partial_pricing=partial_pricing,
+        )
+        document = actions.submit(client, settings, body)
+    except SuiteError as exc:
+        _audit(
+            request, principal, "trajectory.submit", target=None, outcome="refused",
+            params=params, message=exc.message,
+        )  # fmt: skip
+        return _trajectories(
+            request, principal, state=None, cursor=None, page=1, submit_error=exc, form=form
+        )
+    trajectory_id = str(document.get("trajectory_id") or "")
+    _audit(
+        request, principal, "trajectory.submit", target=trajectory_id or None, outcome="ok",
+        params={**params, "state": document.get("state")},
+    )  # fmt: skip
+    location = (
+        f"{BASE}/trajectories/{pc.segment(trajectory_id)}"
+        if trajectory_id
+        else f"{BASE}/trajectories"
+    )
+    return RedirectResponse(location, status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _trajectory(
+    request: Request,
+    principal: Principal,
+    trajectory_id: str,
+    *,
+    action_error: SuiteError | None = None,
+) -> HTMLResponse:
+    from weightroom.services.chat_promptcadence import token_can_approve
+
     view = app_view(request, APP)
     client, settings = request.app.state.http, request.app.state.settings
     sourced = read_app_page(
@@ -97,6 +246,42 @@ def trajectory_page(
         sourced=sourced,
         trajectory_id=trajectory_id,
         events_url=f"{BASE}/trajectories/{pc.segment(trajectory_id)}/events",
+        can_approve=token_can_approve(settings) if sourced.live else None,
+        action_error=action_error,
+    )
+
+
+@ui_router.get(
+    f"{BASE}/trajectories/{{trajectory_id}}", summary="One trajectory", response_class=HTMLResponse
+)
+def trajectory_page(
+    request: Request, principal: CurrentOperator, trajectory_id: str
+) -> HTMLResponse:
+    """One trajectory's whole record: request, plan, envelopes, turns, tools, debits, egress."""
+    return _trajectory(request, principal, trajectory_id)
+
+
+@ui_router.post(f"{BASE}/trajectories/{{trajectory_id}}/cancel", summary="Cancel from the page")
+def cancel_from_page(request: Request, principal: CurrentOperator, trajectory_id: str) -> Response:
+    """``POST /trajectories/{id}/cancel``; the record again, with a refusal on it if one came."""
+    client, settings = request.app.state.http, request.app.state.settings
+    try:
+        document = actions.cancel(client, settings, trajectory_id)
+    except SuiteError as exc:
+        _audit(
+            request, principal, "trajectory.cancel", target=trajectory_id, outcome="refused",
+            params={}, message=exc.message,
+        )  # fmt: skip
+        return _trajectory(request, principal, trajectory_id, action_error=exc)
+    _audit(
+        request, principal, "trajectory.cancel", target=trajectory_id, outcome="ok",
+        params={
+            "state": document.get("state"),
+            "cancel_requested": document.get("cancel_requested"),
+        },
+    )  # fmt: skip
+    return RedirectResponse(
+        f"{BASE}/trajectories/{pc.segment(trajectory_id)}", status_code=status.HTTP_303_SEE_OTHER
     )
 
 
@@ -119,9 +304,12 @@ def trajectory_events(
     )
 
 
-@ui_router.get(f"{BASE}/approvals", summary="Approvals", response_class=HTMLResponse)
-def approvals_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
-    """What is waiting for a person, and every request ever raised."""
+# --- Approvals ------------------------------------------------------------------------------------
+
+
+def _approvals(
+    request: Request, principal: Principal, *, action_error: SuiteError | None = None
+) -> HTMLResponse:
     from weightroom.services.chat_promptcadence import token_can_approve
 
     view = app_view(request, APP)
@@ -140,7 +328,98 @@ def approvals_page(request: Request, principal: CurrentOperator) -> HTMLResponse
         pending=pending,
         history=history,
         can_approve=token_can_approve(settings) if pending.live else None,
+        action_error=action_error,
     )
+
+
+@ui_router.get(f"{BASE}/approvals", summary="Approvals", response_class=HTMLResponse)
+def approvals_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+    """What is waiting for a person, and every request ever raised."""
+    return _approvals(request, principal)
+
+
+def _decide(
+    request: Request,
+    principal: Principal,
+    trajectory_id: str,
+    decision: str,
+    next_path: str | None,
+    *,
+    reason: str = "",
+    budget_tokens: str = "",
+    budget_money: str = "",
+    currency: str = "USD",
+) -> Response:
+    action = _DECISION_ACTIONS[decision]
+    client, settings = request.app.state.http, request.app.state.settings
+    raised = bool(budget_tokens.strip() or budget_money.strip())
+    try:
+        actions.require_approve_scope(settings)
+        budget = (
+            actions.budget_raise(tokens=budget_tokens, amount=budget_money, currency=currency)
+            if decision == "approve"
+            else None
+        )
+        result = actions.decide(
+            client, settings, trajectory_id, decision, reason=reason.strip() or None, budget=budget
+        )
+    except SuiteError as exc:
+        _audit(
+            request, principal, action, target=trajectory_id, outcome="refused",
+            params={"raised": raised}, message=exc.message,
+        )  # fmt: skip
+        return _approvals(request, principal, action_error=exc)
+    resolved = result.get("request")
+    resolved = resolved if isinstance(resolved, Mapping) else {}
+    _audit(
+        request,
+        principal,
+        action,
+        target=trajectory_id,
+        outcome="ok",
+        params={
+            "request_id": resolved.get("request_id"),
+            "kind": resolved.get("kind"),
+            "state": result.get("state"),
+            "already_resolved": result.get("already_resolved"),
+            "raised": raised,
+        },
+    )
+    return RedirectResponse(
+        _within(next_path, f"{BASE}/approvals"), status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+@ui_router.post(f"{BASE}/approvals/{{trajectory_id}}/grant", summary="Grant from the page")
+def grant_from_page(
+    request: Request,
+    principal: CurrentOperator,
+    trajectory_id: str,
+    budget_tokens: Annotated[str, Form()] = "",
+    budget_money: Annotated[str, Form()] = "",
+    currency: Annotated[str, Form()] = "USD",
+    next_path: Annotated[str | None, Form(alias="next")] = None,
+) -> Response:
+    """Grant the trajectory's pending request with the console's ``approve`` token (ADR-0049)."""
+    return _decide(
+        request, principal, trajectory_id, "approve", next_path,
+        budget_tokens=budget_tokens, budget_money=budget_money, currency=currency,
+    )  # fmt: skip
+
+
+@ui_router.post(f"{BASE}/approvals/{{trajectory_id}}/deny", summary="Deny from the page")
+def deny_from_page(
+    request: Request,
+    principal: CurrentOperator,
+    trajectory_id: str,
+    reason: Annotated[str, Form()] = "",
+    next_path: Annotated[str | None, Form(alias="next")] = None,
+) -> Response:
+    """Deny the trajectory's pending request; the reason is recorded on it and the halt's cause."""
+    return _decide(request, principal, trajectory_id, "deny", next_path, reason=reason)
+
+
+# --- Tiers, tools, ledger, egress -----------------------------------------------------------------
 
 
 @ui_router.get(f"{BASE}/tiers", summary="Tiers", response_class=HTMLResponse)

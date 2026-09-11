@@ -18,6 +18,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   verdict and trajectory). A stopped PromptCadence's pages render from its database at a known
   revision; the approval history and egress decisions read the database even while it runs,
   because its API lists neither.
+- **PromptCadence's actions from its tab** (row WP1): **submit a trajectory** (classification,
+  tools ticked from the registry — none ticked sends an empty allowlist, never an omitted one —
+  tier, project, step and turn caps, planning, token and money budgets and the partial-pricing
+  rule), **cancel** one, and **grant or deny** a pending request from the Approvals page or the
+  trajectory's own record, a ceiling raise with its new ceilings. Each writes one audit row
+  (`trajectory.submit`, `trajectory.cancel`, `trajectory.approve`, `trajectory.deny`; the last two
+  `security`); a grant or denial is refused before any call unless the console's token holds
+  `approve` (ADR-0049); a refusal renders on the page in PromptCadence's own code and words, with
+  the form kept.
 - **A Logs page under every application's tab** (row WP1): the unit's journal history, filtered
   by time, level-and-worse and literal text and paged by cursor, above its live pane.
 - **The page kit every application page is built on** (row WP1): `services/app_api.py`, one
