@@ -1,0 +1,42 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link, status_badge %}
+{% block title %}Machine — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set machine = sourced.data %}
+<div class="page-head">
+  <h2>Machine {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/machines">Every machine</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(sourced.error) }}
+{% if machine %}
+<p class="mono">{{ machine.get("machine_fingerprint") }}</p>
+{{ kv_list([
+  {"label": "Reference", "value": machine.get("id") or machine_id},
+  {"label": "Hostname", "value": machine.get("hostname") or "—"},
+  {"label": "OS", "value": ((machine.get("os_name") or "—") ~ " " ~ (machine.get("os_version") or ""))},
+  {"label": "CPU", "value": machine.get("cpu_model") or "—"},
+  {"label": "Logical cores", "value": machine.get("logical_cores") if machine.get("logical_cores") is not none else "—"},
+  {"label": "RAM", "value": (machine.get("ram_bytes") | bytes_human) if machine.get("ram_bytes") is number else "—"},
+  {"label": "First seen", "value": machine.get("first_seen_at") or "—"},
+  {"label": "Last seen", "value": machine.get("last_seen_at") or "—"},
+]) }}
+<p class="muted"><a href="/apps/freeweight/results?machine={{ (machine.get('machine_fingerprint') or '') | urlencode }}">Its results</a></p>
+<h3>Runs on this machine</h3>
+{% if runs is not none %}
+{{ refusal(runs.error) }}
+{% set items = (runs.data or {}).get("items") or [] %}
+{% if items %}
+{% set rows = [] %}
+{% for run in items %}{% set _ = rows.append([run_link(run.get("id")), status_badge(run.get("status")), ((run.get("suite") or {}).get("key") or "—"), run.get("model") or "—", run.get("label") or "—", run.get("created_at") or "—"]) %}{% endfor %}
+{{ table([{"label": "Run"}, {"label": "Status"}, {"label": "Suite"}, {"label": "Model", "mono": true}, {"label": "Label"}, {"label": "Created", "mono": true}], rows, caption="Newest first; the first page", density="dense", row_count=rows | length) }}
+<p><a href="/apps/freeweight/runs?machine={{ (machine.get('machine_fingerprint') or '') | urlencode }}">Every run on it</a></p>
+{% else %}
+{{ empty_state("No run recorded on this machine.") }}
+{% endif %}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

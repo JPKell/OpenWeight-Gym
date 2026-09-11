@@ -425,6 +425,25 @@ def test_a_streamed_child_is_captured_and_a_cancel_stops_it() -> None:
     assert "started" in output.text()
 
 
+def test_a_line_a_child_prints_before_going_quiet_is_flushed_while_it_still_runs() -> None:
+    # `freeweight run start --json` prints the run id and is silent until the run ends; the Runs
+    # page follows that id from the row, so it cannot wait for the next line or the exit.
+    flushed: list[str] = []
+    output = OutputBuffer(10_000, flush=flushed.append, interval_seconds=1.0)
+    script = "import time; print('$ start', flush=True); print('run R', flush=True); time.sleep(60)"
+    result = run_streaming(
+        [sys.executable, "-c", script],
+        {"PATH": os.environ.get("PATH", "")},
+        output=output,
+        cancelled=lambda: any("run R" in one for one in flushed),
+        timeout_seconds=10.0,
+        poll_seconds=0.05,
+        grace_seconds=5.0,
+    )
+    assert result.cancelled
+    assert not result.timed_out
+
+
 def test_a_child_that_outlives_its_timeout_is_stopped() -> None:
     result = run_streaming(
         [sys.executable, "-c", "import time; time.sleep(60)"],

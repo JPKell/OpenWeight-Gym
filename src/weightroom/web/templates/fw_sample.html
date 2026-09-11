@@ -1,0 +1,104 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link, status_badge, value %}
+{% block title %}Sample — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data or {} %}
+{% set sample = data.get("sample") %}
+<div class="page-head">
+  <h2>Case inspector {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions">{% if data.get("run_id") %}<a href="/apps/freeweight/runs/{{ data.get('run_id') | urlencode }}/tests/{{ (data.get('run_test_id') or '') | urlencode }}">The test's samples</a>{% endif %}</div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(sourced.error) }}
+{% if sample %}
+<p class="muted">One request, exactly as FreeWeight recorded it. Nothing here is aggregated: a number that disagrees with a
+summary elsewhere is the summary's to explain. Every text a model or a juror wrote is shown as text.</p>
+<p>Run {{ run_link(data.get("run_id")) }} {{ status_badge(data.get("run_status")) }} · test <span class="mono">{{ data.get("run_test_key") or data.get("run_test_id") or "—" }}</span></p>
+
+<h3>Identity</h3>
+{{ kv_list([
+  {"label": "Sample", "value": sample.get("id") or "—"},
+  {"label": "Case", "value": sample.get("case_id") or "—"},
+  {"label": "Ordinal · repetition", "value": (sample.get("ordinal") | string) ~ " · " ~ (sample.get("repetition") | string)},
+  {"label": "Status", "value": sample.get("status") or "—"},
+  {"label": "Recorded", "value": sample.get("created_at") or "—"},
+  {"label": "Finish reason", "value": sample.get("finish_reason") or "—"},
+  {"label": "Error", "value": ((sample.get("error") or {}).get("code") ~ ": " ~ (sample.get("error") or {}).get("message")) if sample.get("error") else "none"},
+]) }}
+
+<h3>Prompt</h3>
+{{ kv_list([
+  {"label": "Prompt ID", "value": sample.get("prompt_id") or "—"},
+  {"label": "Prompt version", "value": sample.get("prompt_version") or "—"},
+  {"label": "Prompt hash", "value": sample.get("prompt_hash") or "—"},
+  {"label": "Rendered prompt hash", "value": sample.get("rendered_prompt_hash") or "—"},
+]) }}
+<p class="muted">The prompt is identified by version and hash rather than stored inline, so a database of measurements is not a second
+copy of the prompt pack; <code>freeweight prompts show {{ sample.get("prompt_id") or "&lt;id&gt;" }}</code> renders it on the machine that has the pack.</p>
+
+<h3>Response</h3>
+{% if sample.get("response_text") is not none %}
+<pre class="mono kit-output">{{ sample.get("response_text") }}</pre>
+{% else %}
+<p class="muted">This run did not store response text. Its hash is <code>{{ sample.get("response_hash") or "—" }}</code>: enough to tell two
+responses apart, not to read one.</p>
+{% endif %}
+
+<h3>Scoring</h3>
+{{ kv_list([
+  {"label": "Score", "value": value(sample.get("score"), fmt="%.6g")},
+  {"label": "Method", "value": sample.get("score_method") or "—"},
+  {"label": "Input tokens", "value": value(sample.get("input_tokens"), fmt="%d")},
+  {"label": "Output tokens", "value": value(sample.get("output_tokens"), fmt="%d")},
+  {"label": "Thinking tokens", "value": value(sample.get("thinking_tokens"), fmt="%d")},
+  {"label": "Wall time ms", "value": value(sample.get("client_wall_ms"), fmt="%.1f")},
+  {"label": "Time to first token ms", "value": value(sample.get("client_ttft_ms"), "only a streamed call has one", fmt="%.1f")},
+]) }}
+{% if sample.get("result") %}<details class="kit-details"><summary>Scorer detail</summary>{{ json_viewer(sample.get("result"), label="As the scorer stored it") }}</details>{% endif %}
+
+{% if data.get("criterion_scores") %}
+<h3>Criterion scores</h3>
+{% set rows = [] %}
+{% for score in data.get("criterion_scores") %}
+{% set _ = rows.append([score.get("criterion_key") or "—", score.get("rung") or "—", value(score.get("raw_score")), value(score.get("weight"), fmt="%.3g"), status_badge(score.get("status")), score.get("skip_reason") or "—", (score.get("verdicts") | length) ~ " verdict(s)"]) %}
+{% endfor %}
+{{ table([{"label": "Criterion", "mono": true}, {"label": "Rung"}, {"label": "Raw score", "numeric": true}, {"label": "Weight", "numeric": true}, {"label": "Status"}, {"label": "Skip reason"}, {"label": "Jurors"}], rows, density="dense", row_count=rows | length) }}
+{% for score in data.get("criterion_scores") if score.get("verdicts") %}
+<details class="kit-details"><summary><span class="mono">{{ score.get("criterion_key") }}</span> — {{ score.get("verdicts") | length }} juror verdict(s)</summary>
+{% set rows = [] %}
+{% for verdict in score.get("verdicts") %}
+{% set _ = rows.append([verdict.get("juror_canonical_id") or "—", value(verdict.get("repetition"), fmt="%d"), value(verdict.get("grade"), fmt="%d"), verdict.get("pairwise_choice") or "—", "remote" if verdict.get("remote") else "local", verdict.get("rationale") or verdict.get("refused_reason") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Juror", "mono": true}, {"label": "Rep", "numeric": true}, {"label": "Grade", "numeric": true}, {"label": "Pairwise"}, {"label": "Where"}, {"label": "Rationale"}], rows, density="dense", row_count=rows | length) }}
+</details>
+{% endfor %}
+{% endif %}
+
+<h3>Tool calls</h3>
+{% if data.get("tool_calls") %}
+{% set rows = [] %}
+{% for call in data.get("tool_calls") %}
+{% set _ = rows.append([value(call.get("turn_index"), fmt="%d"), value(call.get("call_index"), fmt="%d"), call.get("tool_name") or "—", call.get("expected_tool") or "—", "yes" if call.get("schema_valid") else "no", "—" if call.get("correct_tool") is none else ("yes" if call.get("correct_tool") else "no"), "—" if call.get("correct_arguments") is none else ("yes" if call.get("correct_arguments") else "no"), status_badge(call.get("status")), value(call.get("latency_ms"), fmt="%.1f"), json_viewer(call.get("arguments"), label="Arguments") if call.get("arguments") is not none else "—"]) %}
+{% endfor %}
+{{ table([{"label": "Turn", "numeric": true}, {"label": "Call", "numeric": true}, {"label": "Tool", "mono": true}, {"label": "Expected", "mono": true}, {"label": "Schema valid"}, {"label": "Correct tool"}, {"label": "Correct arguments"}, {"label": "Status"}, {"label": "Latency ms", "numeric": true}, {"label": "Arguments"}], rows, density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">This sample made no tool calls.</p>
+{% endif %}
+
+<h3>Telemetry during this request</h3>
+{% if data.get("telemetry") is none %}
+<p class="muted">The observations inside a request's window are FreeWeight's reconstruction, read only from its running API.</p>
+{% elif data.get("telemetry") %}
+{% set rows = [] %}
+{% for one in data.get("telemetry") %}
+{% set _ = rows.append([value(one.get("gpu_index"), fmt="%d"), value(one.get("gpu_utilization_percent"), fmt="%.0f"), (one.get("vram_used_bytes") | bytes_human) if one.get("vram_used_bytes") is number else "—", value(one.get("gpu_power_watts"), fmt="%.1f"), value(one.get("gpu_temperature_c"), fmt="%.0f")]) %}
+{% endfor %}
+{{ table([{"label": "GPU", "numeric": true}, {"label": "Utilization %", "numeric": true}, {"label": "VRAM used", "numeric": true}, {"label": "Power W", "numeric": true}, {"label": "Temperature °C", "numeric": true}], rows, caption="The window is reconstructed from the recorded wall time, not stored: an observation on its edge may be the neighbouring request's", density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">No observation fell inside this request's window: no readable GPU, sampling off, or a request shorter than the interval. No reading, not zero usage.</p>
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

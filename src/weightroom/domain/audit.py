@@ -96,6 +96,13 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         # preview is a `pending` row, and a changed security key or a removal is a `security` row.
         "loadcoach.provider_save",
         "loadcoach.provider_delete",
+        # WP3. From FreeWeight's tab (enabling a model reuses `catalog.enabled`; starting a run is
+        # the `job.enqueue` of W9's `freeweight_suite_run`): a discovery pass, a run cancelled or
+        # repeated, and the `[provider]` block saved — a `security` row when kind or base_url moved.
+        "freeweight.discover",
+        "freeweight.run_cancel",
+        "freeweight.run_repeat",
+        "freeweight.provider_save",
     }
 )
 """The closed action vocabulary."""

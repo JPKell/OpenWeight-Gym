@@ -1,0 +1,31 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list %}
+{% from "_app_page.html" import refusal %}
+{% block title %}Starting a run — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Starting a run {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/runs">Runs</a>{% if job %} · <a href="/jobs/{{ job.id | urlencode }}">The job</a>{% endif %}</div>
+</div>
+{{ refusal(error) }}
+{% if job %}
+{#- htmx polls this page and swaps this region in; once the job's output names the run, the route
+    answers with HX-Redirect to the run's page. A finished job stops the polling. -#}
+<div id="fw-starting"{% if not job.finished %} hx-get="{{ current_path }}" hx-trigger="every 2s" hx-select="#fw-starting" hx-swap="outerHTML"{% endif %} aria-live="polite">
+  {{ kv_list([
+    {"label": "Job", "value": job.id},
+    {"label": "State", "value": job.state},
+    {"label": "Model", "value": job.params.get("model") or "—"},
+    {"label": "Suite", "value": job.params.get("suite") or "—"},
+    {"label": "Label", "value": job.params.get("label") or "—"},
+    {"label": "Queued", "value": job.queued_at.isoformat() if job.queued_at else "—"},
+  ]) }}
+  {% if job.finished %}
+  <p class="notice" role="alert">The job {{ job.state }} without FreeWeight naming a run{% if job.error %}: {{ job.error }}{% endif %}.</p>
+  {% else %}
+  <p class="muted">Waiting for FreeWeight to persist the run. The page moves to it as soon as its id appears in the job's output.</p>
+  {% endif %}
+  {% if job.output %}<pre class="mono kit-output">{{ job.output }}</pre>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

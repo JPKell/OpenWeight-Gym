@@ -1,0 +1,82 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link, short, status_badge, value, machine_link %}
+{% block title %}Adapter — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data or {} %}
+<div class="page-head">
+  <h2>Adapter {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/adapters">Every adapter</a> · <a href="/apps/freeweight/runs?adapter={{ adapter_name | urlencode }}">Its runs</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(sourced.error) }}
+{% for adapter in data.get("adapters") or [] %}
+<h3 class="mono">{{ adapter.get("name") }}</h3>
+{{ kv_list([
+  {"label": "Artifact digest", "value": adapter.get("artifact_sha256") or "—"},
+  {"label": "Artifact", "value": adapter.get("artifact_path") or "—"},
+  {"label": "Manifest", "value": adapter.get("manifest_path") or "—"},
+  {"label": "Base", "value": (adapter.get("base_model_name") or "—") ~ " · " ~ (adapter.get("base_artifact_digest") or "no digest")},
+  {"label": "Base proven by", "value": "its digest" if adapter.get("base_confidence") == "digest" else "its name only — every subject it makes is NAME_ONLY"},
+  {"label": "Declares", "value": (adapter.get("declared_capabilities") or []) | join(", ") or "none"},
+  {"label": "Classification", "value": adapter.get("data_classification") or "—"},
+  {"label": "Available", "value": "—" if adapter.get("available") is none else ("yes" if adapter.get("available") else "no — " ~ (adapter.get("unavailable_reason") or "no reason given"))},
+  {"label": "Runs under it", "value": adapter.get("run_count") if adapter.get("run_count") is not none else "—"},
+  {"label": "Last run", "value": adapter.get("last_run_at") or "—"},
+]) }}
+
+<h4>Measured on each base</h4>
+{% set subjects = adapter.get("subjects") %}
+{% if subjects is none %}
+<p class="muted">Which base each run measured it on, and the scores beside the base's, are read only from FreeWeight's running API.</p>
+{% elif subjects %}
+{% for subject in subjects %}
+<p>Base <span class="mono">{{ subject.get("base") }}</span> · subject <span class="mono">{{ subject.get("subject") or "not measured yet" }}</span></p>
+{% set measured = subject.get("measured") or {} %}
+{% set bare = subject.get("base_measured") or {} %}
+{% set capabilities = ((measured.keys() | list) + (bare.keys() | list)) | unique | sort %}
+{% if capabilities %}
+{% set rows = [] %}
+{% for capability in capabilities %}
+{% set mine, theirs = measured.get(capability), bare.get(capability) %}
+{% set _ = rows.append([capability, value(mine, "not measured on this subject — never the base's number", fmt="%.3f"), value(theirs, "not measured on the bare base", fmt="%.3f"), ("%+.3f" | format(mine - theirs)) if mine is number and theirs is number else "—"]) %}
+{% endfor %}
+{{ table([{"label": "Capability", "mono": true}, {"label": "With the adapter", "numeric": true}, {"label": "Bare base", "numeric": true}, {"label": "Difference", "numeric": true}], rows, caption="Side by side, never merged (ADR-0059)", density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">Nothing measured on this base yet, with or without the adapter.</p>
+{% endif %}
+{% endfor %}
+<p class="muted">FreeWeight stores no verdict for its damaged-adapter canary: <code>test_the_panel_still_separates_a_known_damaged_adapter</code> is a live
+test in FreeWeight's own suite, run when <code>FWTEST_A2_DAMAGED_ADAPTER</code> names an adapter, and it compares exactly these two columns on
+the fixed regression rows (<code>instruction_following</code>, <code>structured_output</code>), expecting a damaged adapter to drop at least
+0.30 below its base. An adapter whose every row equals its base's is what row H6 found when adapter runs silently measured the bare base.</p>
+{% else %}
+<p class="muted">No run has measured this adapter yet.</p>
+{% endif %}
+{% else %}
+{% if sourced.data is not none %}{{ empty_state("FreeWeight knows no adapter by this name.", "Every adapter", "/apps/freeweight/adapters") }}{% endif %}
+{% endfor %}
+
+<h3>Runs under it</h3>
+{% if data.get("runs") %}
+{% set rows = [] %}
+{% for run in data.get("runs") %}{% set _ = rows.append([run_link(run.get("id")), status_badge(run.get("status")), (run.get("suite") or {}).get("key") or "—", run.get("model") or "—", run.get("label") or "—", machine_link(run.get("machine_fingerprint")), run.get("created_at") or "—"]) %}{% endfor %}
+{{ table([{"label": "Run"}, {"label": "Status"}, {"label": "Suite"}, {"label": "Base", "mono": true}, {"label": "Label"}, {"label": "Machine"}, {"label": "Created", "mono": true}], rows, caption="Newest first; the first page", density="dense", row_count=rows | length) }}
+{% elif sourced.data is not none %}
+<p class="muted">No run was created under it.</p>
+{% endif %}
+
+<h3>Results under it</h3>
+{% if data.get("results") is none %}
+{% if sourced.data is not none %}<p class="muted">Results are FreeWeight's query over its runs, read only from its running API.</p>{% endif %}
+{% elif data.get("results") %}
+{% set rows = [] %}
+{% for row in data.get("results") %}{% set _ = rows.append([row.get("metric_key") or "—", value(row.get("value"), row.get("unavailable_reason"), fmt="%.6g"), row.get("unit") or "—", value(row.get("sample_count"), fmt="%d"), (row.get("suite") or "—"), status_badge(row.get("run_status")), run_link(row.get("run_id"))]) %}{% endfor %}
+{{ table([{"label": "Metric", "mono": true}, {"label": "Value", "numeric": true}, {"label": "Unit"}, {"label": "n", "numeric": true}, {"label": "Suite"}, {"label": "Run status"}, {"label": "Run"}], rows, caption="Every run's metrics, whatever its status; the first page", density="dense", row_count=rows | length) }}
+<p><a href="/apps/freeweight/results?adapter={{ adapter_name | urlencode }}&amp;status=any">Every result under it</a></p>
+{% else %}
+<p class="muted">Nothing measured under it yet.</p>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

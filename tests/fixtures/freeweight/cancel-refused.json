@@ -1,0 +1,1 @@
+{"error":{"code":"RUN_NOT_CANCELLABLE","message":"A run in 'completed' cannot be cancelled; cancellable states are ['preparing', 'queued', 'running', 'warming'].","details":{"status":"completed"},"request_id":"01M27JJWH0RWM9M56SDGCH08XX","timestamp":"2026-09-11T06:30:53.217Z"}}

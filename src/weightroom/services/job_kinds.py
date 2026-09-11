@@ -70,6 +70,7 @@ __all__ = [
     "freeweight_suite_run",
     "model_refresh",
     "retention_trim",
+    "run_id_in",
 ]
 
 SUITE_RUN_TIMEOUT_SECONDS: Final = 12 * 3600.0
@@ -104,8 +105,11 @@ def _stream(context: JobContext, argv: Sequence[str], *, timeout_seconds: float)
     )
 
 
-def _run_id(text: str) -> str | None:
-    """The run id ``freeweight run start --json`` prints as soon as the run is persisted."""
+def run_id_in(text: str) -> str | None:
+    """The run id ``freeweight run start --json`` prints as soon as the run is persisted.
+
+    Also how the Runs page follows a run it started as a job (row WP3).
+    """
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped.startswith("{"):
@@ -140,12 +144,14 @@ def freeweight_suite_run(context: JobContext) -> Outcome:
     argv += ["-p", f"MemoryHigh={host.memory_high}", "-p", f"MemoryMax={host.memory_max}"]
     argv += ["-p", "MemorySwapMax=0", executable, "run", "start"]
     argv += ["--model", str(params["model"]), "--suite", str(params["suite"]), "--json"]
+    if params.get("label"):
+        argv += ["--label", str(params["label"])]
     if params.get("allow_prompt_override"):
         argv.append("--allow-prompt-override")
     started = time.monotonic()
     result = _stream(context, argv, timeout_seconds=SUITE_RUN_TIMEOUT_SECONDS)
     if result.returncode == _RUN_SLOT_TAKEN and not (result.cancelled or result.timed_out):
-        run_id = _run_id(context.output.text())
+        run_id = run_id_in(context.output.text())
         if run_id is None:
             return Outcome(
                 "failed",

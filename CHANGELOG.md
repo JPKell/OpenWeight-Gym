@@ -7,6 +7,46 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **FreeWeight's Models and Runs pages under its tab** (row WP3), at parity with FreeWeight's own
+  UI: **Models** (latest descriptor, whether each has results, sort, **Refresh from provider**
+  with the added/updated/unchanged counts, and ADR-0118's switch through the catalog's own call),
+  **one model** (identity, aliases, latest descriptor, descriptor history, its evidence, and its
+  results filtered by suite and runtime profile), **Runs** (status, model, suite, machine, label,
+  adapter and date filters over FreeWeight's cursor), **Start a run** over `GET /benchmarks` —
+  which enqueues W9's `freeweight_suite_run` job, so the run executes under ADR-0119's memory cap,
+  and the page follows the job until FreeWeight names the run — **one run** (provenance,
+  degradations, the fingerprint document, tests, metrics, telemetry charts, and its events live
+  with FreeWeight's own sequence as the SSE id, so a reconnect resumes where it dropped),
+  **cancel** (`409 RUN_NOT_CANCELLABLE` rendered as itself), **repeat** with force and label (a
+  refusal names every blocker; a forced repeat's divergence shows among the new run's
+  degradations), a test's **samples** over FreeWeight's cursor, and the **case inspector** with
+  every model- and juror-written text escaped. A stopped FreeWeight's pages read its database at
+  revision `0010`. Each action is one audit row (`freeweight.discover`, `catalog.enabled`,
+  `job.enqueue`, `freeweight.run_cancel`, `freeweight.run_repeat`).
+- `freeweight_suite_run` takes an optional `label`, passed as `run start --label`.
+- **FreeWeight's Results, Evidence and Machines pages** (row WP3): **Results** over FreeWeight's
+  metric query with every filter it takes (model, suite, metric key, machine, runtime profile,
+  adapter, date window, run status) and its cursor; **Compare** (`?subjects=…&suite=…`) with the
+  study, each subject's profile, every comparability verdict with its reason and the fingerprint
+  fields that separate the runs, the metrics aligned with their groups, and a refused comparison's
+  reason and offending runs rather than a blank; **Export** proxied as it streams, with every
+  option FreeWeight takes and its own file name — the 500-run refusal arrives before the first
+  byte and renders on the Results page as itself; **Evidence** with FreeWeight's filters, each
+  record's contributing metrics, a `user.*` record's goal hash, jury, calibration and judge
+  validity factor, and the `benchmark.evidence_bundle` download; **Machines** and one machine with
+  the runs measured on it, linked from every run, result and comparison that names a fingerprint.
+  A stopped FreeWeight is never called for a download.
+- **FreeWeight's Adapters and Provider pages** (row WP3): **Adapters** over FreeWeight's new
+  `GET /adapters` — the directory's reading beside FreeWeight's own `adapters` table, each adapter
+  with its base and how the base is proven, availability, whether it is still in the directory,
+  its runs, and the manifests FreeWeight could not read, the drafts and the unmanifested
+  artifacts; **one adapter** with its runs and results (`adapter` filters on FreeWeight's runs and
+  results) and, per base, the scores measured with the adapter beside the bare base's — the two
+  columns FreeWeight's damaged-adapter canary compares, whose verdict FreeWeight does not store;
+  **Provider**, the `[provider]` block edited through FreeWeight's `PUT /provider` with its digest,
+  a changed `kind` or `base_url` asking for the password (`freeweight.provider_save`, a `security`
+  row then). The Database page adds FreeWeight's own backup count, last backup and artifact size
+  while it answers. No FreeWeight page is a stub but Goals (row WP4); `_PAGE_ELSEWHERE` is gone.
 - **PromptCadence's System page** (row WPC1, spec §7.3 as amended 2026-09-10): its health
   components with their status, the active trajectories, every pending approval with its age,
   today's position, the last recovery pass (resumed, finished, halted, failed, deferred) and the
@@ -96,6 +136,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   counts its list (they rendered `—`, `—` and `[]`); IdeaPress's *Active stage runs* counts its
   list and *Pinned* reads `pinned`; FreeWeight's disk headroom is humanised. Each application's
   status body is pinned by a recorded fixture.
+- **A job's live output reaches its row while the child is quiet** (row WP3). The buffer flushed
+  only when a new line arrived, so the last line before a silence waited for the next line or the
+  exit. `freeweight run start --json` prints the run id and then nothing until the run ends, so
+  the Runs page could not follow a run it started until that run had finished. `run_streaming`
+  now flushes between polls, within `_OUTPUT_FLUSH_SECONDS`.
 
 ## [1.0.0] — 2026-09-10
 

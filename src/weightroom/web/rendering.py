@@ -123,25 +123,12 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
 """Spec §7.3's menu, per application; :data:`_PAGE_HREF` says which of them this build serves."""
 
 _PAGE_PHASE: dict[tuple[str, str], str] = {
-    **{
-        ("freeweight", label): "WP3"
-        for label in ("Models", "Runs", "Results", "Evidence", "Adapters")
-    },
     ("freeweight", "Goals"): "WP4",
     **{("ideapress", label): "WP5" for label in ("Projects", "Units", "Workflows", "Backends")},
 }
 """The row in ``roadmap/weightroom-work.md`` that builds each still-unbuilt page, keyed by
 application as well as label: FreeWeight's Models and LoadCoach's are two rows. W3 left every
 page *not yet scheduled* (its handoff §2.4); the WP rows schedule them all."""
-
-_PAGE_ELSEWHERE: dict[str, str] = {
-    "Provider": "edited on the application's own provider page (ADR-0117)",
-}
-"""Pages spec §7.3 names that W4 left to the application's own page.
-
-The arc index §2 item 2 reverses it — the application binds loopback, so its page is out of a LAN
-operator's reach — and LoadCoach's Providers is built (row WP2); FreeWeight's Provider lands at WP3,
-which deletes this map."""
 
 _PAGE_HREF: dict[str | tuple[str, str], str] = {
     "Overview": "/apps/{app}",
@@ -167,6 +154,15 @@ _PAGE_HREF: dict[str | tuple[str, str], str] = {
     ("loadcoach", "Evidence"): "/apps/loadcoach/evidence",
     ("loadcoach", "Adapters"): "/apps/loadcoach/adapters",
     "Providers": "/apps/{app}/providers",
+    # FreeWeight's own pages (row WP3). Machines has no menu entry: its pages open from Runs and
+    # Results, which link every machine they name.
+    ("freeweight", "Models"): "/apps/freeweight/models",
+    ("freeweight", "Runs"): "/apps/freeweight/runs",
+    ("freeweight", "Results"): "/apps/freeweight/results",
+    ("freeweight", "Evidence"): "/apps/freeweight/evidence",
+    ("freeweight", "Adapters"): "/apps/freeweight/adapters",
+    # FreeWeight's one [provider] block; LoadCoach's plural registrations are `Providers` (WP2).
+    "Provider": "/apps/{app}/provider",
 }
 """Where a built page lives — by label for a page every application shares, by ``(app, label)`` for
 one only that application has; anything absent is still a stub."""
@@ -239,19 +235,15 @@ def app_side_nav(app_name: str, *, selected: str = "Overview") -> tuple[dict[str
 def app_side_nav_stubs(app_name: str) -> tuple[dict[str, str], ...]:
     """Every page spec §7.3 names for ``app_name`` that this build does not serve.
 
-    Each carries the row that will build it where the roadmap already says so, "not yet
-    scheduled" where it does not — a documentation gap noted rather than invented an answer to —
-    and, for a page that is deliberately somebody else's, where it actually lives.
+    Each carries the row that will build it where the roadmap already says so, and "not yet
+    scheduled" where it does not — a documentation gap noted rather than invented an answer to.
     """
     built = _built_pages(app_name)
     stubs = []
     for label in _APP_PAGES.get(app_name, ()):
         if label in built:
             continue
-        elsewhere = _PAGE_ELSEWHERE.get(label)
-        if elsewhere is not None:
-            title = elsewhere
-        elif label == "Tokens":
+        if label == "Tokens":
             title = f"{app_label(app_name)} has no API tokens"
         else:
             row = _PAGE_PHASE.get((app_name, label))

@@ -21,6 +21,22 @@
   {"label": "Database", "value": revision.database_url},
 ]) }}
 
+{% if app_stats %}
+<h3>{{ app | app_label }}'s own statistics</h3>
+<p class="muted">What {{ app | app_label }}'s <code>GET /database/stats</code> adds to <code>db status</code>: the backups it has
+taken and the artifacts beside its database.</p>
+{{ kv_list([
+  {"label": "Size", "value": (app_stats.get("size_bytes") | bytes_human) if app_stats.get("size_bytes") is number else "—"},
+  {"label": "Integrity", "value": ("ok" if app_stats.get("integrity_ok") else "check failed") ~ " — " ~ (app_stats.get("integrity_detail") or "")},
+  {"label": "Schema", "value": "at head" if app_stats.get("is_at_head") else ("head is " ~ (app_stats.get("head_revision") or "—"))},
+  {"label": "Backups", "value": app_stats.get("backup_count") if app_stats.get("backup_count") is not none else "—"},
+  {"label": "Last backup", "value": ((app_stats.get("last_backup_at") or "none taken yet") ~ " " ~ (app_stats.get("last_backup_path") or "")) | trim},
+  {"label": "Artifacts", "value": (app_stats.get("artifact_bytes") | bytes_human) if app_stats.get("artifact_bytes") is number else "— (no artifact directory configured)"},
+]) }}
+{% elif app_stats_error %}
+<p class="notice" role="alert"><strong><code>{{ app_stats_error.details.get("app_code") or app_stats_error.code }}</code></strong> {{ app_stats_error.message }}</p>
+{% endif %}
+
 <h3>{{ app | app_label }}'s own operations</h3>
 <p class="muted">Offered before anything raw (ADR-0123 rule 5): each runs <code>{{ app }} db …</code>
 as an operator at the terminal would, so {{ app | app_label }}'s own checks apply.
