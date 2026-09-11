@@ -384,6 +384,7 @@ def test_revise_sends_the_instructions_and_audits_only_that_there_were_some(
     assert "network" not in json.dumps(row.params)
     assert isinstance(row.params, dict)
     assert row.params["has_instructions"] is True
+    assert row.params["unit"] == "U-01", "named so the redaction leaves it readable"
 
 
 def test_a_revision_ideapress_refuses_says_why_and_keeps_the_instructions(tmp_path: Path) -> None:
@@ -426,7 +427,7 @@ def test_a_stranded_unit_offers_only_resume_and_resume_is_ideapress_own_draft_ru
     assert _sent(run) == {"units": ["U-01"], "resume": True}
     assert response.headers["location"] == f"{PAGES}/tasks/{started['task_id']}"
     (row,) = _rows(console, "ideapress.unit_resume")
-    assert row.outcome == "ok"
+    assert (row.outcome, row.params) == ("ok", {"unit": "U-01", "task_id": started["task_id"]})
 
 
 def test_a_stopped_unit_reads_its_content_and_versions_and_says_what_it_cannot_assemble(

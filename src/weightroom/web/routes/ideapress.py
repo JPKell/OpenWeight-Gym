@@ -802,10 +802,11 @@ def revise_from_page(
 ) -> Response:
     """``POST …/revise`` with the author's instructions; the revision's task page.
 
-    The audit row says whether instructions were given, never what they said.
+    The audit row says whether instructions were given, never what they said. The unit is
+    ``unit``, not ``unit_key``: the redaction masks any parameter whose name holds "key".
     """
     client, settings = _clients(request)
-    params = {"unit_key": unit_key, "has_instructions": bool(instructions.strip())}
+    params = {"unit": unit_key, "has_instructions": bool(instructions.strip())}
     try:
         answer = actions.revise_unit(client, settings, project_id, unit_key, instructions)
     except SuiteError as exc:
@@ -839,12 +840,12 @@ def resume_from_page(
     except SuiteError as exc:
         _audit(
             request, principal, "ideapress.unit_resume", target=project_id, outcome="refused",
-            params={"unit_key": unit_key}, message=exc.message,
+            params={"unit": unit_key}, message=exc.message,
         )  # fmt: skip
         return _unit(request, principal, project_id, unit_key, action_error=exc)
     _audit(
         request, principal, "ideapress.unit_resume", target=project_id, outcome="ok",
-        params={"unit_key": unit_key, "task_id": answer.get("task_id")},
+        params={"unit": unit_key, "task_id": answer.get("task_id")},
     )  # fmt: skip
     return RedirectResponse(
         _task_location(project_id, answer), status_code=status.HTTP_303_SEE_OTHER
