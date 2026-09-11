@@ -137,10 +137,12 @@ def test_an_applications_side_nav_names_its_built_pages_and_the_unbuilt_ones(
     assert 'href="/apps/loadcoach/database"' in page
     assert 'href="/apps/loadcoach/logs"' in page
     assert 'title="coming in phase W7"' not in page
-    assert '<li title="coming in row WP2">Adapters</li>' in page
+    # Every LoadCoach page is built (row WP2): Providers too, which W4 left to LoadCoach's own page.
+    assert 'title="coming in row' not in page
     assert 'href="/apps/loadcoach/routing"' in page
+    assert 'href="/apps/loadcoach/providers"' in page
     assert "not yet scheduled" not in page
-    assert "ADR-0117" in page
+    assert "ADR-0117" not in page
 
 
 def test_the_console_pages_are_named_and_inert_until_their_rows_land(tmp_path: Path) -> None:

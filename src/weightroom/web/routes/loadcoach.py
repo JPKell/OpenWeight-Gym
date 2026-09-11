@@ -24,8 +24,9 @@ from weightroom.services import loadcoach_actions as actions
 from weightroom.services import loadcoach_pages as lc
 from weightroom.services.app_api import stream as app_stream
 from weightroom.services.audit import record
+from weightroom.services.auth import require_fresh_reauth
 from weightroom.web.routes.apps import app_view, back_to, read_app_page, render_app_page
-from weightroom.web.session import CurrentOperator, now_of
+from weightroom.web.session import CurrentOperator, now_of, reauthenticated
 
 if TYPE_CHECKING:
     from weightroom.services.auth import Principal
@@ -861,3 +862,177 @@ def import_from_page(
         outcome="ok", params={**params, **counts, "rejected": len(outcome.get("rejected") or [])},
     )  # fmt: skip
     return _evidence(request, principal, imported=outcome)
+
+
+# --- Providers, adapters --------------------------------------------------------------------------
+
+
+def _serving(request: Request) -> dict[str, list[str]]:
+    """Registration name → the canonical ids LoadCoach's registry says it served; ``{}`` unread."""
+    client, settings = _clients(request)
+    try:
+        models = lc.models_api(client, settings)
+    except SuiteError:
+        return {}
+    serving: dict[str, list[str]] = {}
+    for model in models:
+        serving.setdefault(str(model.get("provider_name") or ""), []).append(
+            str(model.get("canonical_id"))
+        )
+    return serving
+
+
+def _providers(  # noqa: PLR0913 — what an action leaves on the page
+    request: Request,
+    principal: Principal,
+    *,
+    action_error: SuiteError | None = None,
+    preview: Mapping[str, Any] | None = None,
+    form: Mapping[str, Any] | None = None,
+    saved: str | None = None,
+    removed: str | None = None,
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request, view, api=lambda: lc.providers_api(client, settings), database=None
+    )
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "lc_providers.html",
+        selected="Providers",
+        view=view,
+        sourced=sourced,
+        serving=_serving(request) if sourced.live else {},
+        security_fields=actions.SECURITY_FIELDS,
+        action_error=action_error,
+        preview=preview,
+        form=dict(form or {}),
+        saved=saved,
+        removed=removed,
+    )
+
+
+@ui_router.get(f"{BASE}/providers", summary="Providers", response_class=HTMLResponse)
+def providers_page(
+    request: Request,
+    principal: CurrentOperator,
+    saved: str | None = None,
+    removed: str | None = None,
+) -> HTMLResponse:
+    """Every ``[providers.<name>]`` registration as a form, and one to add another (ADR-0117)."""
+    return _providers(request, principal, saved=saved or None, removed=removed or None)
+
+
+@ui_router.post(f"{BASE}/providers", summary="Save or remove a registration from the page")
+def provider_from_page(  # noqa: PLR0913 — one parameter per form field, as FastAPI reads them
+    request: Request,
+    principal: CurrentOperator,
+    action: Annotated[Literal["save", "delete"], Form()] = "save",
+    name: Annotated[str, Form()] = "",
+    base_digest: Annotated[str, Form()] = "",
+    kind: Annotated[str, Form()] = "",
+    base_url: Annotated[str, Form()] = "",
+    timeout_seconds: Annotated[str, Form()] = "",
+    remote: Annotated[str, Form()] = "",
+    model_directory: Annotated[str, Form()] = "",
+    state_dir: Annotated[str, Form()] = "",
+    server_path: Annotated[str, Form()] = "",
+    confirm: Annotated[str, Form()] = "",
+    password: Annotated[str, Form()] = "",
+) -> Response:
+    """``PUT`` or ``DELETE /providers/{name}`` through LoadCoach, which writes its own file.
+
+    A changed security key (:data:`~weightroom.services.loadcoach_actions.SECURITY_FIELDS`), a new
+    registration and a removal each need the password within the re-authentication window, and
+    their audit row is a ``security`` row. A removal is previewed first with the models routing
+    stops choosing; it is sent only once the name is typed. No row carries a key's value.
+    """
+    acting = (reauthenticated(request, principal, password) or principal) if password else principal
+    client, settings = _clients(request)
+    wanted = name.strip()
+    audit_action = f"loadcoach.provider_{action}"
+    form = {
+        "name": wanted, "kind": kind, "base_url": base_url, "timeout_seconds": timeout_seconds,
+        "remote": remote, "model_directory": model_directory, "state_dir": state_dir,
+        "server_path": server_path,
+    }  # fmt: skip
+    if action == "delete":
+        if confirm != wanted or not wanted:
+            _audit(
+                request, principal, audit_action, target=wanted or None, outcome="pending",
+                params={"preview": True},
+            )  # fmt: skip
+            preview = {"name": wanted, "models": _serving(request).get(wanted, [])}
+            return _providers(request, acting, preview=preview)
+        try:
+            require_fresh_reauth(acting, now=now_of(request), auth=settings.auth)
+            actions.delete_registration(client, settings, wanted)
+        except SuiteError as exc:
+            _audit(
+                request, principal, audit_action, target=wanted, outcome="refused",
+                params={"preview": False}, message=exc.message, security=True,
+            )  # fmt: skip
+            return _providers(request, acting, action_error=exc)
+        _audit(
+            request, principal, audit_action, target=wanted, outcome="ok",
+            params={"preview": False}, security=True,
+        )  # fmt: skip
+        return RedirectResponse(
+            _href(f"{BASE}/providers", removed=wanted), status_code=status.HTTP_303_SEE_OTHER
+        )
+    changed: list[str] = []
+    security: list[str] = []
+    created = False
+    try:
+        if not wanted:
+            message = "A registration needs a name; routing explanations call it by that name."
+            raise actions.LoadCoachFormInvalid(message, details={"field": "name"})
+        current = next(
+            (
+                one
+                for one in lc.providers_api(client, settings).get("registrations") or []
+                if isinstance(one, Mapping) and one.get("name") == wanted
+            ),
+            None,
+        )
+        created = current is None
+        values = actions.registration_values(
+            kind=kind, base_url=base_url, timeout_seconds=timeout_seconds, remote=remote == "true",
+            model_directory=model_directory, state_dir=state_dir, server_path=server_path,
+        )  # fmt: skip
+        changed, security = actions.touched(current, values)
+        if security:
+            require_fresh_reauth(acting, now=now_of(request), auth=settings.auth)
+        actions.save_registration(client, settings, wanted, values, base_digest=base_digest)
+    except SuiteError as exc:
+        _audit(
+            request, principal, audit_action, target=wanted or None, outcome="refused",
+            params={"created": created, "fields": changed, "touched_security": security},
+            message=exc.message, security=bool(security),
+        )  # fmt: skip
+        return _providers(request, acting, action_error=exc, form=form)
+    _audit(
+        request, principal, audit_action, target=wanted, outcome="ok",
+        params={"created": created, "fields": changed, "touched_security": security},
+        security=bool(security),
+    )  # fmt: skip
+    return RedirectResponse(
+        _href(f"{BASE}/providers", saved=wanted) + f"#provider-{lc.segment(wanted)}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@ui_router.get(f"{BASE}/adapters", summary="Adapters", response_class=HTMLResponse)
+def adapters_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+    """Every adapter: base, classification, who holds it, where it is resident, how it routed."""
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request, view, api=lambda: lc.adapters_api(client, settings), database=lc.adapters_db
+    )
+    return render_app_page(
+        request, principal, APP, "lc_adapters.html", selected="Adapters", view=view, sourced=sourced
+    )

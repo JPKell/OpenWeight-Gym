@@ -56,7 +56,8 @@ def test_the_logs_page_is_history_above_the_live_pane_and_current_in_the_menu(
     assert nav.index("Overview") < nav.index("<hr>") < nav.index("Settings")
     # A running application's page carries no control form; the Overview does.
     assert 'action="/apps/loadcoach/control"' not in text
-    assert 'title="coming in row WP2"' in text  # LoadCoach's own pages are WP2's
+    assert 'title="coming in row' not in text  # every LoadCoach page is built (row WP2)
+    assert 'href="/apps/loadcoach/adapters"' in text
 
 
 def test_a_stopped_applications_page_carries_a_start_that_returns_to_it(tmp_path: Path) -> None:

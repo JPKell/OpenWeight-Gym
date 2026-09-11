@@ -38,6 +38,8 @@ __all__ = [
     "MATCH_STATES",
     "TERMINAL_JOB_STATES",
     "NotRecorded",
+    "adapters_api",
+    "adapters_db",
     "decision_api",
     "decision_db",
     "decisions_api",
@@ -53,6 +55,7 @@ __all__ = [
     "model_db",
     "models_api",
     "models_db",
+    "providers_api",
     "queue_api",
     "queue_events",
     "reliability_api",
@@ -895,4 +898,112 @@ def evidence_db(handle: AppDatabase) -> dict[str, Any]:
             for row in sources
         ],
         "configured_url": None,
+    }
+
+
+# --- Providers, adapters --------------------------------------------------------------------------
+
+
+def providers_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /providers``: every registration, its file, the file's digest and what shadows each.
+
+    The registrations live in LoadCoach's configuration file, not its database, so there is no
+    stopped reader: a stopped LoadCoach's page says it reads only from the running API.
+
+    Raises:
+        AppRefused: LoadCoach refused.
+        AppUnreachable: It did not answer.
+    """
+    return _document(call(client, settings, APP, "GET", "providers"))
+
+
+def adapters_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /adapters``: the directory's adapters, who holds each, residency and recent routes.
+
+    Raises:
+        AppRefused: LoadCoach refused, or is older than the route (``HTTP_404``).
+        AppUnreachable: It did not answer.
+    """
+    return _document(call(client, settings, APP, "GET", "adapters", timeout_seconds=30.0))
+
+
+def adapters_db(handle: AppDatabase) -> dict[str, Any]:
+    """The ``adapters`` projection with its residency and routing candidates, by name.
+
+    The directory is the truth (ADR-0061) and only the running LoadCoach reads it, so what a
+    provider holds, the manifests that failed and the drafts are absent (``None``) here, never
+    guessed; the rows are what LoadCoach last synced.
+
+    Raises:
+        TableUnknown: A table this reader expects is absent.
+        ReadFailed: The database refused or ran past the timeout.
+    """
+    canonical = _canonical_by_model(handle)
+    adapters = []
+    for row in rows_where(handle, "adapters", order_by="name", descending=False, limit=LIST_CAP):
+        adapter_id = row.get("id")
+        routes = []
+        for candidate in rows_where(
+            handle, "routing_candidates", equals={"adapter_id": adapter_id}, order_by="created_at",
+            limit=20,
+        ):  # fmt: skip
+            found = rows_where(
+                handle, "routing_decisions", equals={"id": candidate.get("decision_id")}, limit=1
+            )
+            decision = found[0] if found else {}
+            routes.append(
+                {
+                    "decision_id": candidate.get("decision_id"),
+                    "job_id": decision.get("job_id"),
+                    "task_profile_id": decision.get("task_profile_id"),
+                    "requested_at": decision.get("requested_at"),
+                    "rank": candidate.get("rank"),
+                    "rejected": bool(candidate.get("rejected")),
+                    "rejection_reason": candidate.get("rejection_reason"),
+                    "selected": decision.get("selected_adapter_id") == adapter_id
+                    and decision.get("selected_model_id") == candidate.get("model_id"),
+                }
+            )
+        adapters.append(
+            {
+                "name": row.get("name"),
+                "artifact_sha256": row.get("artifact_sha256"),
+                "artifact_path": row.get("artifact_path"),
+                "manifest_path": row.get("manifest_path"),
+                "base_model_name": row.get("base_model_name"),
+                "base_artifact_digest": row.get("base_artifact_digest"),
+                "base_confidence": row.get("base_identity_confidence"),
+                "declared_capabilities": _loads(row.get("declared_capabilities_json")) or [],
+                "data_classification": row.get("data_classification"),
+                "available": bool(row.get("available")),
+                "unavailable_reason": row.get("unavailable_reason"),
+                "registered_on": None,
+                "pending_on": None,
+                "notes": None,
+                "in_directory": None,
+                "adapter_id": adapter_id,
+                "resident": [
+                    {
+                        "gpu_index": one.get("gpu_index"),
+                        "base_canonical_id": canonical.get(one.get("model_id")),
+                        "last_used_at": one.get("last_used_at"),
+                    }
+                    for one in rows_where(
+                        handle,
+                        "residency",
+                        equals={"adapter_id": adapter_id, "resident": True},
+                        limit=LIST_CAP,
+                    )  # fmt: skip
+                ],
+                "routes": routes,
+            }
+        )
+    return {
+        "enabled": None,
+        "note": None,
+        "directory": None,
+        "adapters": adapters,
+        "invalid": [],
+        "drafts": [],
+        "unmanifested": [],
     }

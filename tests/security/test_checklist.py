@@ -272,6 +272,12 @@ SPEC_14_ROWS: dict[str, tuple[str, ...]] = {
     "security/test_audit_routes.py": (
         "test_each_state_changing_route_writes_exactly_one_audit_row",
     ),
+    # a LoadCoach registration's security keys, a new one and a removal re-authenticate (row WP2)
+    "integration/test_loadcoach_providers_adapters.py": (
+        "test_a_security_key_without_a_fresh_reauth_is_refused_and_nothing_is_sent",
+        "test_a_wrong_password_is_refused_and_nothing_is_sent",
+        "test_removal_is_previewed_then_sent_only_typed_and_reauthenticated",
+    ),
     "security/test_redaction_sweep.py": (
         "test_no_audit_row_and_no_log_line_carries_a_secret_after_every_exercise",
     ),

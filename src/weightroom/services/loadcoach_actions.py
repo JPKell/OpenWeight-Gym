@@ -26,8 +26,10 @@ __all__ = [
     "CLASSIFICATIONS",
     "QUEUE_VERBS",
     "RUNTIME_PROFILE_FIELDS",
+    "SECURITY_FIELDS",
     "LoadCoachFormInvalid",
     "cancel_job",
+    "delete_registration",
     "discover",
     "evidence_bundle",
     "explain",
@@ -36,10 +38,13 @@ __all__ = [
     "import_evidence",
     "job_body",
     "queue_control",
+    "registration_values",
     "route_body",
+    "save_registration",
     "send_feedback",
     "set_enabled",
     "submit_job",
+    "touched",
     "warm",
 ]
 
@@ -456,5 +461,97 @@ def import_evidence(
     document = call(
         client, settings, APP, "POST", "evidence/import", body=dict(body),
         timeout_seconds=_IMPORT_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(document) if isinstance(document, Mapping) else {}
+
+
+# --- Providers ------------------------------------------------------------------------------------
+
+SECURITY_FIELDS: Final[frozenset[str]] = frozenset({"kind", "base_url", "remote"})
+"""A registration's keys whose change asks for the operator's password (spec §7.4): where prompts go
+and whether that place is declared remote. They are the registration's form of the keys LoadCoach's
+own ``config schema --json`` names security-relevant — ``provider.kind``, ``provider.base_url`` and
+``providers.allow_remote`` — which do not name ``providers.<name>.*`` because a table's name is the
+operator's."""
+
+
+def registration_values(  # noqa: PLR0913 — one keyword per writable key (ADR-0117)
+    *,
+    kind: str,
+    base_url: str,
+    timeout_seconds: str,
+    remote: bool,
+    model_directory: str,
+    state_dir: str,
+    server_path: str,
+) -> dict[str, Any]:
+    """The ``PUT /providers/{name}`` values the form describes; LoadCoach validates them.
+
+    Every text key is sent, blank included: an empty optional key removes it from the table, as it
+    does on LoadCoach's own page. ``timeout_seconds`` is left out when blank, so the table keeps it.
+
+    Raises:
+        LoadCoachFormInvalid: ``kind`` is blank, or the timeout is not a positive number.
+    """
+    if not kind.strip():
+        message = "A registration needs a kind: ollama, llamacpp or fake."
+        raise LoadCoachFormInvalid(message, details={"field": "kind"})
+    values: dict[str, Any] = {
+        "kind": kind.strip(),
+        "base_url": base_url.strip(),
+        "model_directory": model_directory.strip(),
+        "state_dir": state_dir.strip(),
+        "server_path": server_path.strip(),
+        "remote": remote,
+    }
+    timeout = _decimal("Timeout seconds", timeout_seconds, lowest=0.1, highest=86400.0)
+    if timeout is not None:
+        values["timeout_seconds"] = timeout
+    return values
+
+
+def touched(
+    current: Mapping[str, Any] | None, values: Mapping[str, Any]
+) -> tuple[list[str], list[str]]:
+    """``(changed keys, changed security keys)``; every key of a new registration is a change."""
+    changed = sorted(
+        key for key, value in values.items() if current is None or current.get(key) != value
+    )
+    return changed, sorted(SECURITY_FIELDS.intersection(changed))
+
+
+def save_registration(
+    client: httpx.Client,
+    settings: Settings,
+    name: str,
+    values: Mapping[str, Any],
+    *,
+    base_digest: str,
+) -> dict[str, Any]:
+    """``PUT /providers/{name}``: LoadCoach writes its file and re-registers.
+
+    Raises:
+        AppRefused: ``VALIDATION_ERROR`` naming the key, ``CONFLICT`` when the file changed since
+            ``base_digest`` was read, in LoadCoach's words.
+        AppUnreachable: It did not answer.
+    """
+    body = {**values, **({"base_digest": base_digest} if base_digest else {})}
+    document = call(
+        client, settings, APP, "PUT", f"providers/{segment(name)}", body=body,
+        timeout_seconds=_ACTION_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(document) if isinstance(document, Mapping) else {}
+
+
+def delete_registration(client: httpx.Client, settings: Settings, name: str) -> dict[str, Any]:
+    """``DELETE /providers/{name}``.
+
+    Raises:
+        AppRefused: The last registration, or an unknown one, in LoadCoach's words.
+        AppUnreachable: It did not answer.
+    """
+    document = call(
+        client, settings, APP, "DELETE", f"providers/{segment(name)}",
+        timeout_seconds=_ACTION_TIMEOUT_SECONDS,
     )  # fmt: skip
     return dict(document) if isinstance(document, Mapping) else {}

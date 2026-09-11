@@ -122,7 +122,6 @@ _APP_PAGES: dict[str, tuple[str, ...]] = {
 """Spec §7.3's menu, per application; :data:`_PAGE_HREF` says which of them this build serves."""
 
 _PAGE_PHASE: dict[tuple[str, str], str] = {
-    ("loadcoach", "Adapters"): "WP2",
     **{
         ("freeweight", label): "WP3"
         for label in ("Models", "Runs", "Results", "Evidence", "Adapters")
@@ -136,13 +135,12 @@ page *not yet scheduled* (its handoff §2.4); the WP rows schedule them all."""
 
 _PAGE_ELSEWHERE: dict[str, str] = {
     "Provider": "edited on the application's own provider page (ADR-0117)",
-    "Providers": "edited on the application's own provider page (ADR-0117)",
 }
-"""Pages spec §7.3 names that are **not** WeightRoomGym's to build.
+"""Pages spec §7.3 names that W4 left to the application's own page.
 
-A provider registration is a keyed table with its own admin form inside the application
-(ADR-0117), reachable from the application itself; the console's settings page edits every other
-key of the same file and says so rather than growing a fifth copy of that form (W4)."""
+The arc index §2 item 2 reverses it — the application binds loopback, so its page is out of a LAN
+operator's reach — and LoadCoach's Providers is built (row WP2); FreeWeight's Provider lands at WP3,
+which deletes this map."""
 
 _PAGE_HREF: dict[str | tuple[str, str], str] = {
     "Overview": "/apps/{app}",
@@ -165,6 +163,8 @@ _PAGE_HREF: dict[str | tuple[str, str], str] = {
     ("loadcoach", "Reliability"): "/apps/loadcoach/reliability",
     ("loadcoach", "Queue"): "/apps/loadcoach/queue",
     ("loadcoach", "Evidence"): "/apps/loadcoach/evidence",
+    ("loadcoach", "Adapters"): "/apps/loadcoach/adapters",
+    "Providers": "/apps/{app}/providers",
 }
 """Where a built page lives — by label for a page every application shares, by ``(app, label)`` for
 one only that application has; anything absent is still a stub."""

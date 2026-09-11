@@ -35,6 +35,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   (`loadcoach.queue_pause|resume|drain` — an unconfirmed ask is `pending` —
   `loadcoach.job_submit|cancel|feedback`, `loadcoach.evidence_import`); no row carries a prompt
   or a note.
+- **LoadCoach's Providers and Adapters pages** (row WP2): every `[providers.<name>]` registration
+  as a form — saved and removed through LoadCoach's own `PUT`/`DELETE /providers/{name}`, which
+  validates and writes its file (ADR-0117) — with the models each serves; changing `kind`,
+  `base_url` or `remote`, adding a registration or removing one needs the password within the
+  re-authentication window, and a removal is previewed with the models routing stops choosing
+  and sent only once the name is typed (`loadcoach.provider_save|delete`, `security` rows when a
+  security key moves). **Adapters** reads LoadCoach's new `GET /adapters`: each adapter's base
+  and its identity confidence, its classification (local only), who holds it, where it is
+  resident, and the routes that selected or refused it by code; stopped, the `adapters`
+  projection with its residency and candidates. LoadCoach's tab has no stub left.
 - **PromptCadence's pages under its tab** (row WP1), at parity with PromptCadence's own console,
   which a browser on the LAN cannot reach: **Trajectories** (filtered by state, paged by
   PromptCadence's cursor), **one trajectory's whole record** (the explanation document PromptCadence

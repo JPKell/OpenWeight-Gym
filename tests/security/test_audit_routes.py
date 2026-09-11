@@ -862,6 +862,19 @@ EXERCISES.update(
             {"accepted": "true"},
             reply=("POST", "jobs/01AUDITJOB/feedback", 201, {}),
         ),
+        # A new registration sets security keys, so the password rides along: the redaction sweep
+        # then proves it reaches no row and no log line.
+        ("POST", "/apps/loadcoach/providers"): _lc_form(
+            "/apps/loadcoach/providers",
+            {
+                "action": "save",
+                "name": "second",
+                "kind": "ollama",
+                "base_url": "http://127.0.0.1:11434",
+                "password": PASSWORD,
+            },
+            reply=("PUT", "providers/second", 200, {}),
+        ),
         ("POST", "/apps/loadcoach/evidence/import"): _lc_form(
             "/apps/loadcoach/evidence/import",
             {"origin": "freeweight"},

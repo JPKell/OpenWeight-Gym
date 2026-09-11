@@ -92,6 +92,10 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "loadcoach.job_cancel",
         "loadcoach.job_feedback",
         "loadcoach.evidence_import",
+        # WP2 Gate C. A provider registration saved or removed through LoadCoach's API; a removal's
+        # preview is a `pending` row, and a changed security key or a removal is a `security` row.
+        "loadcoach.provider_save",
+        "loadcoach.provider_delete",
     }
 )
 """The closed action vocabulary."""

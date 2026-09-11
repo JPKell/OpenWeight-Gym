@@ -1,0 +1,108 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% block title %}Providers — LoadCoach — WeightRoom{% endblock %}
+
+{% macro registration_fields(prefix, one) -%}
+{#- One registration's writable keys (ADR-0117's `WRITABLE_FIELDS`), as LoadCoach's own form offers
+    them. `one` is the registration, the operator's refused form, or `{}` for a new one. -#}
+<div class="field"><label for="{{ prefix }}-kind">kind{% if "kind" in security_fields %} <span class="muted">· security</span>{% endif %}</label>
+  <input id="{{ prefix }}-kind" name="kind" value="{{ one.get('kind', 'ollama') }}" required>
+  <span class="field-hint">ollama, llamacpp or fake</span></div>
+<div class="field"><label for="{{ prefix }}-base_url">base_url{% if "base_url" in security_fields %} <span class="muted">· security</span>{% endif %}</label>
+  <input id="{{ prefix }}-base_url" name="base_url" value="{{ one.get('base_url', '') }}">
+  <span class="field-hint">where prompts are sent; ignored by llamacpp</span></div>
+<div class="field"><label for="{{ prefix }}-timeout">timeout_seconds</label>
+  <input id="{{ prefix }}-timeout" name="timeout_seconds" inputmode="decimal" value="{{ one.get('timeout_seconds', '') }}"></div>
+<div class="field"><label for="{{ prefix }}-model_directory">model_directory</label>
+  <input id="{{ prefix }}-model_directory" name="model_directory" value="{{ one.get('model_directory', '') }}">
+  <span class="field-hint">llamacpp: the GGUF weights this server serves</span></div>
+<div class="field"><label for="{{ prefix }}-state_dir">state_dir</label>
+  <input id="{{ prefix }}-state_dir" name="state_dir" value="{{ one.get('state_dir', '') }}"></div>
+<div class="field"><label for="{{ prefix }}-server_path">server_path</label>
+  <input id="{{ prefix }}-server_path" name="server_path" value="{{ one.get('server_path', '') }}"></div>
+<label class="kit-check"><input type="checkbox" name="remote" value="true"{{ ' checked' if one.get('remote') in (true, 'true') else '' }}> remote{% if "remote" in security_fields %} <span class="muted">· security</span>{% endif %}</label>
+<div class="field"><label for="{{ prefix }}-password">Your password</label>
+  <input id="{{ prefix }}-password" name="password" type="password" autocomplete="current-password">
+  <span class="field-hint">Needed when a security key changes or a registration is added.</span></div>
+{%- endmacro %}
+
+{% block page_content %}
+{% set data = sourced.data %}
+<div class="page-head">
+  <h2>Providers {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/loadcoach/models">Models</a> · <a href="/apps/loadcoach/adapters">Adapters</a> · <a href="/apps/loadcoach/settings">Every other key</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{% if saved %}<p class="notice" role="status">Saved <code>{{ saved }}</code>: LoadCoach wrote its file and re-registered its providers.</p>{% endif %}
+{% if removed %}<p class="notice" role="status">Removed <code>{{ removed }}</code>: LoadCoach wrote its file and re-registered its providers.</p>{% endif %}
+<p class="muted">Each registration is one <code>[providers.&lt;name&gt;]</code> table in LoadCoach's own configuration
+file. LoadCoach validates a change, keeps the previous file as <code>config.toml.bak</code>, writes only the
+provider tables and re-registers without a restart (ADR-0117). A registration carries no secret, so none is
+ever shown here. Changing <code>{{ security_fields | sort | join("</code>, <code>") | safe }}</code>, adding a
+registration or removing one asks for your password (spec §7.4).</p>
+
+{% if preview %}
+<div class="notice" role="alert">
+  <p><strong>Remove <code>{{ preview.name }}</code>?</strong>
+  {% if preview.models %}Routing stops choosing the {{ preview.models | length }} model{{ "" if preview.models | length == 1 else "s" }} it serves:
+  <span class="mono">{{ preview.models | join(", ") }}</span>. Work in flight on it is interrupted.
+  {% else %}LoadCoach's registry names no model this registration served.{% endif %}
+  LoadCoach refuses to remove its last registration.</p>
+  <form method="post" action="/apps/loadcoach/providers" class="kit-actions">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="name" value="{{ preview.name }}">
+    <div class="field"><label for="lc-remove-confirm">Type <code>{{ preview.name }}</code> to confirm</label>
+      <input id="lc-remove-confirm" name="confirm" required autocomplete="off"></div>
+    <div class="field"><label for="lc-remove-password">Your password</label>
+      <input id="lc-remove-password" name="password" type="password" autocomplete="current-password"></div>
+    <button type="submit" name="action" value="delete" data-variant="danger">Remove {{ preview.name }}</button>
+    <a href="/apps/loadcoach/providers">Keep it</a>
+  </form>
+</div>
+{% endif %}
+
+{{ refusal(sourced.error) }}
+{% if data is not none %}
+<p>File: <code>{{ data.get("config_path") or "—" }}</code> · remote providers
+{% if data.get("allow_remote") %}{{ badge("allowed", tone="warning") }}{% else %}{{ badge("not allowed", tone="neutral") }}{% endif %}
+<span class="muted">— <code>providers.allow_remote</code> is the egress boundary and stays config-only.</span></p>
+{% for registration in data.get("registrations") or [] %}
+{% set name = registration.get("name") %}
+{% set mine = form if form and form.get("name") == name else registration %}
+<section class="card kit-form" id="provider-{{ name }}">
+  <h3>{{ name }}</h3>
+  <p class="muted">Serves {{ (serving.get(name) or []) | length }} model{{ "" if (serving.get(name) or []) | length == 1 else "s" }} in the registry.
+  {% if registration.get("shadowed_by") %}{{ badge("shadowed", tone="warning") }} by <code>{{ registration.get("shadowed_by") }}</code>: the file is written and the environment keeps winning until it is unset.{% endif %}</p>
+  <form method="post" action="/apps/loadcoach/providers">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="name" value="{{ name }}">
+    <input type="hidden" name="base_digest" value="{{ data.get('config_digest') or '' }}">
+    {{ registration_fields("lc-" ~ name, mine) }}
+    <div class="kit-wide kit-actions">
+      <button type="submit" name="action" value="save" data-variant="primary">Save {{ name }}</button>
+      <button type="submit" name="action" value="delete">Remove {{ name }}…</button>
+    </div>
+  </form>
+</section>
+{% else %}
+{{ empty_state("No registration is configured.") }}
+{% endfor %}
+
+<section class="card kit-form" id="provider-new">
+  <h3>Add a registration</h3>
+  {% set fresh = form if form and form.get("name") not in ((data.get("registrations") or []) | map(attribute="name") | list) else {} %}
+  <form method="post" action="/apps/loadcoach/providers">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="base_digest" value="{{ data.get('config_digest') or '' }}">
+    <div class="field"><label for="lc-new-name">name</label>
+      <input id="lc-new-name" name="name" value="{{ fresh.get('name', '') }}" required>
+      <span class="field-hint">What routing explanations, the Models page and doctor call it.</span></div>
+    {{ registration_fields("lc-new", fresh) }}
+    <div class="kit-wide"><button type="submit" name="action" value="save" data-variant="primary">Add registration</button></div>
+  </form>
+</section>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

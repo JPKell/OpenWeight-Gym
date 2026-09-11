@@ -1,0 +1,87 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_lc.html" import decision_link, job_link, short, measure %}
+{% block title %}Adapters — LoadCoach — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data %}
+<div class="page-head">
+  <h2>Adapters {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/loadcoach/models">Models</a> · <a href="/apps/loadcoach/routing">Routing</a> · <a href="/apps/loadcoach/providers">Providers</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">LoRA adapters from the operator's reviewed directory (ADR-0061). Each is classified and served
+locally only (ADR-0065), selected through the capability vocabulary or pinned by name — a pin that cannot be
+honoured is refused, never answered by the bare base (ADR-0064) — on a registration whose provider hot-swaps
+them.</p>
+{{ refusal(sourced.error) }}
+{% if data is not none %}
+{% if data.get("enabled") is false %}
+<p class="notice">Adapters are off: {{ data.get("note") }}</p>
+{% else %}
+{% if data.get("directory") %}<p>Directory: <code>{{ data.get("directory") }}</code></p>{% endif %}
+{% set adapters = data.get("adapters") or [] %}
+{% if adapters %}
+{% set rows = [] %}
+{% for one in adapters %}
+{% set routes = one.get("routes") or [] %}
+{% set refused = routes | selectattr("rejected") | list %}
+{% set chosen = routes | selectattr("selected") | list %}
+{% set held = one.get("registered_on") %}
+{% set _ = rows.append([
+  one.get("name") ~ ((" " ~ badge("left the directory", tone="warning")) if one.get("in_directory") is false else ""),
+  (one.get("base_model_name") or "—") ~ " · " ~ short(one.get("base_artifact_digest")) ~ " · " ~ (one.get("base_confidence") or "—"),
+  badge(one.get("data_classification") or "—", tone="neutral") ~ " local only",
+  (one.get("declared_capabilities") or []) | join(", ") or "none declared",
+  badge("available", tone="success") if one.get("available") else badge("unavailable", tone="danger", title=one.get("unavailable_reason")),
+  measure(none) if held is none else (((held | join(", ")) or "none") ~ ((" · after a restart: " ~ (one.get("pending_on") | join(", "))) if one.get("pending_on") else "")),
+  ((one.get("resident") | map(attribute="gpu_index") | map("string") | join(", ")) and ("GPU " ~ (one.get("resident") | map(attribute="gpu_index") | map("string") | join(", ")))) or "no",
+  chosen | length ~ " selected · " ~ refused | length ~ " refused"
+]) %}
+{% endfor %}
+{{ table([{"label": "Adapter", "mono": true}, {"label": "Base · digest · confidence"}, {"label": "Classification"}, {"label": "Declared"}, {"label": "Availability"}, {"label": "Held by"}, {"label": "Resident"}, {"label": "Recent routes"}], rows, caption="Every adapter, with what holds, loads and routes it", density="dense", row_count=rows | length) }}
+
+{% for one in adapters %}
+{% set routes = one.get("routes") or [] %}
+<details class="kit-details"{% if routes %} open{% endif %}><summary><span class="mono">{{ one.get("name") }}</span> — {{ routes | length }} recent route{{ "" if routes | length == 1 else "s" }}{% if one.get("resident") %}, resident on {{ one.get("resident") | map(attribute="base_canonical_id") | join(", ") }}{% endif %}</summary>
+{% if routes %}
+{% set rows = [] %}
+{% for route in routes %}
+{% set _ = rows.append([
+  decision_link(route.get("decision_id")), route.get("task_profile_id") or "—", route.get("requested_at") or "—",
+  badge("selected", tone="success") if route.get("selected") else (badge(route.get("rejection_reason") or "rejected", tone="danger") if route.get("rejected") else ("ranked " ~ route.get("rank"))),
+  job_link(route.get("job_id"))
+]) %}
+{% endfor %}
+{{ table([{"label": "Decision"}, {"label": "Task profile", "mono": true}, {"label": "Requested", "mono": true}, {"label": "Outcome"}, {"label": "Job"}], rows, density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">No routing decision has named it.</p>
+{% endif %}
+{{ kv_list([
+  {"label": "Artifact", "value": one.get("artifact_path") or one.get("artifact_sha256") or "—"},
+  {"label": "Manifest", "value": one.get("manifest_path") or "—"},
+  {"label": "Registry row", "value": one.get("adapter_id") or "not synced yet"},
+  {"label": "Notes", "value": one.get("notes") or "—"},
+]) }}
+</details>
+{% endfor %}
+{% else %}
+{{ empty_state("The directory holds no reviewed adapter.") }}
+{% endif %}
+{% if data.get("invalid") %}
+<h3>Manifests that could not be read</h3>
+<ul>{% for one in data.get("invalid") %}<li><code>{{ one.get("path") }}</code> — {{ one.get("problem") }}</li>{% endfor %}</ul>
+{% endif %}
+{% if data.get("drafts") %}
+<h3>Drafts waiting for review</h3>
+<ul>{% for one in data.get("drafts") %}<li><code>{{ one }}</code></li>{% endfor %}</ul>
+{% endif %}
+{% if data.get("unmanifested") %}
+<h3>Artifacts with no manifest</h3>
+<ul>{% for one in data.get("unmanifested") %}<li><code>{{ one }}</code></li>{% endfor %}</ul>
+<p class="muted"><code>loadcoach adapters scan</code> drafts one for each; a person reviews it before anything trusts it.</p>
+{% endif %}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}
