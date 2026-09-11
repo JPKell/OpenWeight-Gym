@@ -128,7 +128,6 @@ _PAGE_PHASE: dict[tuple[str, str], str] = {
         for label in ("Models", "Runs", "Results", "Evidence", "Adapters")
     },
     ("freeweight", "Goals"): "WP4",
-    ("ideapress", "Units"): "WP5",
 }
 """The row in ``roadmap/weightroom-work.md`` that builds each still-unbuilt page, keyed by
 application as well as label: FreeWeight's Models and LoadCoach's are two rows. W3 left every
@@ -169,6 +168,7 @@ _PAGE_HREF: dict[str | tuple[str, str], str] = {
     "Providers": "/apps/{app}/providers",
     # IdeaPress's own pages (row WP5); no other application's menu names these labels.
     "Projects": "/apps/{app}/projects",
+    "Units": "/apps/{app}/units",
     "Workflows": "/apps/{app}/workflows",
     "Backends": "/apps/{app}/backends",
 }

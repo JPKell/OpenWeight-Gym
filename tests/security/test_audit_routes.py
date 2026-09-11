@@ -940,6 +940,57 @@ EXERCISES.update(
     }
 )
 
+_IP_PAGES = f"/apps/ideapress/projects/{_IP_PROJECT}"
+_IP_TASK = {"task_id": "01AUDITTASK000000000000000"}
+
+EXERCISES.update(
+    {
+        ("POST", "/apps/ideapress/projects/{project_id}/plan"): _ip_form(
+            f"{_IP_PAGES}/plan", {}, reply=("POST", f"projects/{_IP_PROJECT}/plan", 202, _IP_TASK)
+        ),
+        ("POST", "/apps/ideapress/projects/{project_id}/plan/edits"): _ip_form(
+            f"{_IP_PAGES}/plan/edits",
+            {"operation": "goal", "unit_keys": "U-01", "text": "An audit exercise."},
+            reply=("POST", f"projects/{_IP_PROJECT}/plan/edits", 200, {}),
+        ),
+        ("POST", "/apps/ideapress/projects/{project_id}/research"): _ip_form(
+            f"{_IP_PAGES}/research",
+            {},
+            reply=("POST", f"projects/{_IP_PROJECT}/stages/research/run", 202, _IP_TASK),
+        ),
+        ("POST", "/apps/ideapress/projects/{project_id}/stages"): _ip_form(
+            f"{_IP_PAGES}/stages",
+            {"stage": "draft"},
+            reply=("POST", f"projects/{_IP_PROJECT}/stages/draft/run", 202, _IP_TASK),
+        ),
+        ("POST", "/apps/ideapress/projects/{project_id}/tasks/{task_id}/cancel"): _ip_form(
+            f"{_IP_PAGES}/tasks/{_IP_TASK['task_id']}/cancel",
+            {},
+            reply=(
+                "POST",
+                f"projects/{_IP_PROJECT}/tasks/{_IP_TASK['task_id']}/cancel",
+                202,
+                {"cancelling": True},
+            ),
+        ),
+        ("POST", "/apps/ideapress/projects/{project_id}/units/{unit_key}/revise"): _ip_form(
+            f"{_IP_PAGES}/units/U-01/revise",
+            {"instructions": "An audit exercise."},
+            reply=("POST", f"projects/{_IP_PROJECT}/units/U-01/revise", 202, _IP_TASK),
+        ),
+        ("POST", "/apps/ideapress/projects/{project_id}/units/{unit_key}/resume"): _ip_form(
+            f"{_IP_PAGES}/units/U-01/resume",
+            {},
+            reply=("POST", f"projects/{_IP_PROJECT}/stages/draft/run", 202, _IP_TASK),
+        ),
+        ("POST", "/apps/ideapress/projects/{project_id}/export"): _ip_form(
+            f"{_IP_PAGES}/export",
+            {"format": "markdown"},
+            reply=("POST", f"projects/{_IP_PROJECT}/export", 200, {"path": "/audit/export.md"}),
+        ),
+    }
+)
+
 
 def _state_changing_routes(console: Console) -> set[tuple[str, str]]:
     found: set[tuple[str, str]] = set()

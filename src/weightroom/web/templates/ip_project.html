@@ -8,7 +8,7 @@
 {% set here = "/apps/ideapress/projects/" ~ (project_id | urlencode) %}
 <div class="page-head">
   <h2>{{ p.get("title") or project_id }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
-  <div class="page-actions"><a href="/apps/ideapress/projects">All projects</a> · <a href="/apps/ideapress/workflows">Workflows</a> · <a href="/apps/ideapress/backends">Backends</a></div>
+  <div class="page-actions"><a href="{{ here }}/plan">Plan</a> · <a href="{{ here }}/workspace">Workspace</a> · <a href="/apps/ideapress/units?project={{ project_id | urlencode }}">Units</a> · <a href="{{ here }}/export">Export</a> · <a href="/apps/ideapress/projects">All projects</a></div>
 </div>
 {% include "_app_state.html" %}
 {{ refusal(action_error) }}
@@ -57,6 +57,45 @@
 {% else %}
 {{ empty_state("No plan yet. Planning compiles requirements from the brief and outlines the units.") }}
 {% endif %}
+{% if sourced.live %}
+<form method="post" action="{{ here }}/plan" class="kit-actions">
+  <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+  <button type="submit"{% if not plan %} data-variant="primary"{% endif %}>Run the plan</button>
+  <a href="{{ here }}/plan">Read and edit the plan</a>
+</form>
+
+<details class="card kit-form"{% if run_form %} open{% endif %}>
+  <summary><strong>Run a stage</strong> <span class="muted">— the task streams on its own page, and cancelling is honoured at the next model-call boundary</span></summary>
+  <form method="post" action="{{ here }}/stages">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <div class="field"><label for="ip-run-stage">Stage</label>
+      <select id="ip-run-stage" name="stage">{% for one in run_stages %}<option value="{{ one }}"{{ ' selected' if run_form.get('stage', 'draft') == one else '' }}>{{ one }}</option>{% endfor %}</select>
+      <span class="field-hint">A revision starts from its unit's page.</span></div>
+    <div class="field"><label for="ip-run-units">Units</label>
+      <input id="ip-run-units" name="units" value="{{ run_form.get('units', '') }}" placeholder="every planned unit">
+      <span class="field-hint">Comma-separated keys, or blank for all.</span></div>
+    <label class="kit-check"><input type="checkbox" name="resume" value="true"{{ ' checked' if run_form.get('resume') == 'true' else '' }}> resume — skip units already committed</label>
+    <div class="field"><label for="ip-run-model">Model for this run</label>
+      <input id="ip-run-model" name="model_hint" value="{{ run_form.get('model_hint', '') }}" placeholder="each stage's binding">
+      <span class="field-hint">Every call of the run uses it, over the bindings below; a hint to a routing backend.</span></div>
+    <div class="field"><label for="ip-run-rounds">Revision rounds for this run</label>
+      <input id="ip-run-rounds" name="max_revision_rounds" inputmode="numeric" value="{{ run_form.get('max_revision_rounds', '') }}" placeholder="{{ ((defaults or {}).get('settings') or {}).get('workflow.max_revision_rounds', '') }}"></div>
+    <div class="kit-wide"><button type="submit" data-variant="primary">Run</button></div>
+  </form>
+  {% if defaults %}
+  {% set definitions = defaults.get("definitions") or {} %}
+  {% set rows = [] %}
+  {% for key, value in (defaults.get("settings") or {}) | dictsort %}
+  {% if key.startswith("models.stages.") or key.startswith("workflow.") %}
+  {% set _ = rows.append([key, value if value is not none else "—", (definitions.get(key) or {}).get("source") or "—", (definitions.get(key) or {}).get("applies") or "—"]) %}
+  {% endif %}
+  {% endfor %}
+  {{ table([{"label": "Setting", "mono": true}, {"label": "The value this run uses", "mono": true}, {"label": "From"}, {"label": "Applies"}], rows, caption="What IdeaPress will use as the stage starts, before this run's overrides", density="dense", complete=true, row_count=rows | length) }}
+  {% else %}
+  <p class="muted">IdeaPress's runtime settings could not be read, so the values a run would use are not shown.</p>
+  {% endif %}
+</details>
+{% endif %}
 
 <h3>Units</h3>
 {% set units = p.get("units") or [] %}
@@ -65,8 +104,9 @@
 {% for u in units %}
 {% set coverage = u.get("coverage") %}
 {% set last = u.get("last_validation") %}
+{% set link %}<a class="mono kit-id" href="{{ here }}/units/{{ u.get('unit_key') | urlencode }}">{{ u.get("unit_key") }}</a>{% endset %}
 {% set _ = rows.append([
-  u.get("unit_key") or "—",
+  link,
   u.get("title") or "—",
   state_badge(u.get("state")),
   measure(u.get("version")),
@@ -90,6 +130,7 @@
 {% if stages %}
 {% set rows = [] %}
 {% for s in stages %}
+{% set task_link %}<a class="mono kit-id" href="{{ here }}/tasks/{{ s.get('task_id') | urlencode }}" title="{{ s.get('task_id') }}">{{ (s.get("task_id") or "")[:6] }}…{{ (s.get("task_id") or "")[-4:] }}</a>{% endset %}
 {% set _ = rows.append([
   s.get("stage") or "—",
   state_badge(s.get("state")),
@@ -97,7 +138,7 @@
   s.get("started_at") or "—",
   s.get("completed_at") or "—",
   (s.get("error_code") or s.get("error_text") or "—") | cell_text,
-  short(s.get("task_id"))
+  task_link
 ]) %}
 {% endfor %}
 {{ table([

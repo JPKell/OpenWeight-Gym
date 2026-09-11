@@ -102,6 +102,16 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "ideapress.project_update",
         "ideapress.project_delete",
         "ideapress.backend_test",
+        # WP5 Gate C. The plan run and edited, research run, a stage run and cancelled, a unit
+        # revised or resumed, and an export written into the project's directory.
+        "ideapress.plan_run",
+        "ideapress.plan_edit",
+        "ideapress.research_run",
+        "ideapress.stage_run",
+        "ideapress.stage_cancel",
+        "ideapress.unit_revise",
+        "ideapress.unit_resume",
+        "ideapress.export_write",
     }
 )
 """The closed action vocabulary."""

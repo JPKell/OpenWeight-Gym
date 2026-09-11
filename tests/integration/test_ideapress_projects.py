@@ -314,7 +314,7 @@ def test_stopped_workflows_and_backends_say_they_read_only_the_api(tmp_path: Pat
         assert 'value="start"' in page
 
 
-def test_projects_workflows_and_backends_are_built_and_units_is_the_one_stub_left() -> None:
+def test_no_ideapress_page_is_left_a_stub() -> None:
     from weightroom.web.rendering import app_side_nav_stubs
 
-    assert [stub["label"] for stub in app_side_nav_stubs("ideapress")] == ["Units"]
+    assert [stub["label"] for stub in app_side_nav_stubs("ideapress")] == []

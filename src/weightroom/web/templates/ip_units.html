@@ -1,0 +1,54 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_ip.html" import state_badge, measure %}
+{% block title %}Units — IdeaPress — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Units {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/ideapress/projects">Projects</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">A project's units in reading order: each one's state, its committed version, how many of its requirements
+that version covers, and whether its last validation passed.</p>
+{{ refusal(sourced.error) }}
+{% set listed = (sourced.data or {}).get("items") or [] %}
+{% if listed %}
+<form class="filter-bar" action="/apps/ideapress/units" method="get">
+  <div class="field"><label for="ip-units-project">Project</label>
+    <select id="ip-units-project" name="project">
+      {% for p in listed %}<option value="{{ p.get('id') }}"{{ ' selected' if p.get('id') == chosen else '' }}>{{ p.get("title") }}</option>{% endfor %}
+    </select></div>
+  <button type="submit">Show</button>
+</form>
+{% endif %}
+{% if detail is none %}
+{{ empty_state("No project yet: units come from a project's plan.", "Create a project", "/apps/ideapress/projects") }}
+{% else %}
+{{ refusal(detail.error) }}
+{% set units = ((detail.data or {}).get("project") or {}).get("units") or [] %}
+{% set proj = "/apps/ideapress/projects/" ~ (chosen | urlencode) %}
+{% set rows = [] %}
+{% for u in units %}
+{% set coverage = u.get("coverage") %}
+{% set last = u.get("last_validation") %}
+{% set link %}<a class="mono kit-id" href="{{ proj }}/units/{{ u.get('unit_key') | urlencode }}">{{ u.get("unit_key") }}</a>{% endset %}
+{% set _ = rows.append([
+  link,
+  u.get("title") or "—",
+  state_badge(u.get("state")),
+  measure(u.get("version")),
+  measure(u.get("word_count")),
+  (coverage.get("satisfied") ~ " of " ~ coverage.get("total")) if coverage else measure(none),
+  (state_badge("passed" if last.get("passed") else "failed") ~ " " ~ (last.get("failures") | string) ~ " failed, " ~ (last.get("blocking_failures") | string) ~ " blocking") if last else measure(none),
+  (u.get("paused_reason") or "—") | cell_text
+]) %}
+{% endfor %}
+{% if rows %}
+{{ table([{"label": "Unit", "mono": true}, {"label": "Title"}, {"label": "State"}, {"label": "Version"}, {"label": "Words"}, {"label": "Coverage"}, {"label": "Last validation"}, {"label": "Paused because"}], rows, caption="Units, in reading order", density="dense", complete=true, row_count=rows | length) }}
+{% elif detail.data is not none %}
+{{ empty_state("This project has no units yet: run its plan.", "Its plan", proj ~ "/plan") }}
+{% endif %}
+{{ page_source(detail) }}
+{% endif %}
+{% endblock %}

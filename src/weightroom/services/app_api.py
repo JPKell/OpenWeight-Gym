@@ -150,6 +150,51 @@ def call(
         ) from exc
 
 
+def text(
+    client: httpx.Client,
+    settings: Settings,
+    app: str,
+    path: str,
+    *,
+    params: Mapping[str, Any] | None = None,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+) -> tuple[str, str]:
+    """One ``GET`` whose body is a document rather than JSON — an export — as it was served.
+
+    Args:
+        client: The pooled HTTP client.
+        settings: The validated settings (base URL and token file).
+        app: One of the four.
+        path: The path under ``/api/v1``.
+        params: Query parameters; ``None`` values are dropped.
+        timeout_seconds: The whole call's timeout.
+
+    Returns:
+        ``(media type, text)``.
+
+    Raises:
+        AppRefused: The application answered 400 or above, in its own words.
+        AppUnreachable: It did not answer.
+    """
+    query = {key: value for key, value in (params or {}).items() if value is not None}
+    try:
+        response = client.request(
+            "GET",
+            _url(settings, app, path),
+            params=query,
+            headers=_headers(settings, app),
+            timeout=timeout_seconds,
+        )
+    except httpx.HTTPError as exc:
+        raise AppUnreachable(
+            f"{app} did not answer GET /api/v1/{path.lstrip('/')}: {exc}",
+            details={"app": app, "path": path},
+        ) from exc
+    if response.status_code >= 400:  # noqa: PLR2004 — the HTTP error boundary
+        raise refusal(app, response)
+    return response.headers.get("content-type", "text/plain; charset=utf-8"), response.text
+
+
 def _error_frame(code: str, message: str) -> str:
     """The console's own terminal pair: why the stream ended, then that it did.
 

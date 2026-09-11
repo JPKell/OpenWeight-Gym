@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final
 from baseaicore import SuiteError
 
 from weightroom.services.app_api import call
+from weightroom.services.app_api import text as fetch_text
 from weightroom.services.ideapress_pages import APP, segment
 
 if TYPE_CHECKING:
@@ -24,10 +25,20 @@ if TYPE_CHECKING:
 __all__ = [
     "IdeaPressFormInvalid",
     "author_material",
+    "cancel_task",
     "create_project",
     "delete_project",
+    "edit_plan",
+    "plan_edit_body",
+    "read_export",
+    "resume_unit",
+    "revise_unit",
+    "run_body",
+    "start_plan",
+    "start_stage",
     "test_backend",
     "update_project",
+    "write_export",
 ]
 
 ACTION_TIMEOUT_SECONDS: Final = 60.0
@@ -152,3 +163,191 @@ def test_backend(client: httpx.Client, settings: Settings, mode: str) -> dict[st
         timeout_seconds=ACTION_TIMEOUT_SECONDS,
     )  # fmt: skip
     return dict(answer) if isinstance(answer, dict) else {}
+
+
+# --- Gate C: the plan, stage runs, units, export --------------------------------------------------
+
+
+def _keys(raw: str) -> list[str]:
+    """Comma-separated keys with blanks dropped, as IdeaPress's own forms read them."""
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def _whole(label: str, field: str, raw: str) -> int:
+    try:
+        return int(raw.strip())
+    except ValueError as exc:
+        message = f"{label} is a whole number."
+        raise IdeaPressFormInvalid(message, details={"field": field}) from exc
+
+
+def start_plan(client: httpx.Client, settings: Settings, project_id: str) -> dict[str, Any]:
+    """``POST /projects/{id}/plan``: compile requirements and outline the units; the task.
+
+    Raises:
+        AppRefused: ``STAGE_ALREADY_RUNNING``, a brief-less project's refusal, or another.
+        AppUnreachable: It did not answer.
+    """
+    answer = call(
+        client, settings, APP, "POST", f"projects/{segment(project_id)}/plan",
+        timeout_seconds=ACTION_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(answer) if isinstance(answer, dict) else {}
+
+
+def plan_edit_body(  # noqa: PLR0913 — one keyword per field of the plan editor's forms
+    *, operation: str, unit_keys: str, requirement_keys: str, text: str, position: str
+) -> dict[str, Any]:
+    """One plan-editor form as IdeaPress's ``POST …/plan/edits`` body.
+
+    Raises:
+        IdeaPressFormInvalid: A position that is not a whole number; nothing is sent.
+    """
+    body: dict[str, Any] = {
+        "operation": operation,
+        "unit_keys": _keys(unit_keys),
+        "requirement_keys": _keys(requirement_keys),
+        "text": text,
+    }
+    if position.strip():
+        body["position"] = _whole("A position", "position", position)
+    return body
+
+
+def edit_plan(
+    client: httpx.Client, settings: Settings, project_id: str, body: dict[str, Any]
+) -> dict[str, Any]:
+    """``POST /projects/{id}/plan/edits``: the plan as stored after the edit.
+
+    Raises:
+        AppRefused: The gate's ``VALIDATION_ERROR``, naming an orphaned requirement or a protected
+            unit in its details; the plan is unchanged.
+        AppUnreachable: It did not answer.
+    """
+    answer = call(
+        client, settings, APP, "POST", f"projects/{segment(project_id)}/plan/edits", body=body
+    )
+    return dict(answer) if isinstance(answer, dict) else {}
+
+
+def run_body(
+    *, units: str, resume: bool, model_hint: str, max_revision_rounds: str, instructions: str = ""
+) -> dict[str, Any]:
+    """A stage run's body (api.md §3): the units named, ``resume``, and only the overrides given.
+
+    Raises:
+        IdeaPressFormInvalid: A round limit that is not a whole number; nothing is sent.
+    """
+    body: dict[str, Any] = {"resume": resume}
+    keys = _keys(units)
+    if keys:
+        body["units"] = keys
+    overrides: dict[str, Any] = {}
+    if model_hint.strip():
+        overrides["model_hint"] = model_hint.strip()
+    if max_revision_rounds.strip():
+        overrides["max_revision_rounds"] = _whole(
+            "A round limit", "max_revision_rounds", max_revision_rounds
+        )
+    if instructions.strip():
+        overrides["instructions"] = instructions
+    if overrides:
+        body["overrides"] = overrides
+    return body
+
+
+def start_stage(
+    client: httpx.Client, settings: Settings, project_id: str, stage: str, body: dict[str, Any]
+) -> dict[str, Any]:
+    """``POST /projects/{id}/stages/{stage}/run``: the task that is now running.
+
+    Raises:
+        AppRefused: ``STAGE_ALREADY_RUNNING``, ``STAGE_PRECONDITION_FAILED``, an override's
+            ``VALIDATION_ERROR``, or another refusal.
+        AppUnreachable: It did not answer.
+    """
+    answer = call(
+        client, settings, APP, "POST",
+        f"projects/{segment(project_id)}/stages/{segment(stage)}/run", body=body,
+        timeout_seconds=ACTION_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(answer) if isinstance(answer, dict) else {}
+
+
+def cancel_task(
+    client: httpx.Client, settings: Settings, project_id: str, task_id: str
+) -> dict[str, Any]:
+    """``POST …/tasks/{task}/cancel``, honoured at the next model-call boundary.
+
+    Raises:
+        AppRefused: IdeaPress refused.
+        AppUnreachable: It did not answer.
+    """
+    path = f"projects/{segment(project_id)}/tasks/{segment(task_id)}/cancel"
+    answer = call(client, settings, APP, "POST", path)
+    return dict(answer) if isinstance(answer, dict) else {}
+
+
+def revise_unit(
+    client: httpx.Client, settings: Settings, project_id: str, unit_key: str, instructions: str
+) -> dict[str, Any]:
+    """``POST …/units/{key}/revise``: a revision into a new version, within IdeaPress's bounds.
+
+    Raises:
+        AppRefused: ``STAGE_PRECONDITION_FAILED`` for a unit IdeaPress will not revise, or another.
+        AppUnreachable: It did not answer.
+    """
+    answer = call(
+        client, settings, APP, "POST",
+        f"projects/{segment(project_id)}/units/{segment(unit_key)}/revise",
+        body={"instructions": instructions}, timeout_seconds=ACTION_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(answer) if isinstance(answer, dict) else {}
+
+
+def resume_unit(
+    client: httpx.Client, settings: Settings, project_id: str, unit_key: str
+) -> dict[str, Any]:
+    """A draft run over one unit with ``resume``: IdeaPress's own workspace resume, as its API.
+
+    A unit a gone run stranded mid-flight is returned to ``paused`` by IdeaPress first (row WI1).
+
+    Raises:
+        AppRefused: IdeaPress refused.
+        AppUnreachable: It did not answer.
+    """
+    return start_stage(client, settings, project_id, "draft", {"units": [unit_key], "resume": True})
+
+
+def write_export(
+    client: httpx.Client, settings: Settings, project_id: str, fmt: str
+) -> dict[str, Any]:
+    """``POST /projects/{id}/export``: the file IdeaPress wrote into the project's directory.
+
+    Raises:
+        AppRefused: ``EXPORT_FAILED`` (a partial plan, an unknown format), or another refusal.
+        AppUnreachable: It did not answer.
+    """
+    answer = call(
+        client, settings, APP, "POST", f"projects/{segment(project_id)}/export",
+        params={"format": fmt}, timeout_seconds=ACTION_TIMEOUT_SECONDS,
+    )  # fmt: skip
+    return dict(answer) if isinstance(answer, dict) else {}
+
+
+def read_export(
+    client: httpx.Client, settings: Settings, project_id: str, fmt: str
+) -> tuple[str, str]:
+    """``GET /projects/{id}/export``: the rendered document, written nowhere.
+
+    Returns:
+        ``(media type, text)`` as IdeaPress served them.
+
+    Raises:
+        AppRefused: ``EXPORT_FAILED``, or another refusal.
+        AppUnreachable: It did not answer.
+    """
+    return fetch_text(
+        client, settings, APP, f"projects/{segment(project_id)}/export",
+        params={"format": fmt}, timeout_seconds=ACTION_TIMEOUT_SECONDS,
+    )  # fmt: skip
