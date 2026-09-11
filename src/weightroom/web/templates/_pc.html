@@ -7,15 +7,15 @@
 
 {% macro short(value) -%}
 {%- if value and value | length > 14 -%}
-<span class="mono" title="{{ value }}">{{ value[:6] }}…{{ value[-4:] }}</span>
+<span class="mono kit-id" title="{{ value }}">{{ value[:6] }}…{{ value[-4:] }}</span>
 {%- elif value -%}
-<span class="mono">{{ value }}</span>
+<span class="mono kit-id">{{ value }}</span>
 {%- else -%}—{%- endif -%}
 {%- endmacro %}
 
 {% macro trajectory_link(trajectory_id) -%}
 {%- if trajectory_id -%}
-<a class="mono" href="/apps/promptcadence/trajectories/{{ trajectory_id | urlencode }}" title="{{ trajectory_id }}">{{ trajectory_id[:6] }}…{{ trajectory_id[-4:] }}</a>
+<a class="mono kit-id" href="/apps/promptcadence/trajectories/{{ trajectory_id | urlencode }}" title="{{ trajectory_id }}">{{ trajectory_id[:6] }}…{{ trajectory_id[-4:] }}</a>
 {%- else -%}—{%- endif -%}
 {%- endmacro %}
 
