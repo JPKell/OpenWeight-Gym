@@ -232,14 +232,45 @@ exempt, WP2 §3), an adapter with data, and the 500-run export refusal (tests on
    throwaway console's database only, which is stopped at the end of this session.
 4. **Not this row's, seen in passing:** two failed transient scopes in the user manager,
    `run-p119078-i133784.scope` and `run-p119326-i137042.scope`
-   (`llama-server --model …/bge-m3-q4_k_m.gguf --port 8180`). Worth a look from WP5 or IdeaPress.
+   (`llama-server --model …/bge-m3-q4_k_m.gguf --port 8180`). **Investigated read-only after the
+   row:**
+   * **Not WP5's and not IdeaPress's.** Both scopes started on **2026-09-09 at 12:22:38 and
+     12:22:54 PDT**, the day of the memory incident, and two days before WP5.
+   * **Killed on start.** Each was a `systemd-run --user --scope` with `MemoryMax=64M` and
+     `MemoryHigh=infinity`. So it was not the suite's cap wrapper, which sets `MemoryHigh`. The
+     kernel OOM killer stopped each the moment it started (`Failed with result 'oom-kill'`). 64 M is
+     the kill-proof cap from `MEMORY_SAFETY.md` §2.3, far below a 0.4 GB model.
+   * **Launcher not found.** The binary is `~/.local/bin/llama-server`, a link to
+     `~/ai/tools/llama.cpp/build/bin/llama-server`. The model file was downloaded at 00:05 that day.
+     No suite document, no Claude transcript kept for this workspace and no `~/.openclaw` or
+     `~/.config` file names that command line, so it was typed by hand or started by a tool outside
+     the suite.
+   * **Harmless.** Nothing is running and the units hold no cgroup. They are records only, and
+     `systemctl --user reset-failed` clears them.
 5. **Polish seen in the screenshots, not changed here (WP1's kit):** a refusal still renders in the
    success-green `.notice` box. A refused comparison's footer says *The API did not answer this
    page: freeweight refused …*, although the API answered with a refusal. The stopped footer names
    the application in lower case. The Results page's Export form stacks every field full width.
 6. FreeWeight `989e5a7` is unpushed. Its CHANGELOG carries the entries under `[Unreleased]`.
 
-## 7. What runs next
+## 7. The operator's decisions (interviewed 2026-09-11, after the row)
+
+1. **Merge now.** WP3 finished first, so it was merged into `main` at `c1c9ba6` (`--no-ff`) and
+   `weightroom.service` was restarted. WP5 merges `main` in under §3's rules.
+2. **Keep the three demonstration runs** in FreeWeight's database. They are genuine measurements.
+3. **Pages with no console home go to WP6**: FreeWeight's Dashboard, Sources and System, and
+   LoadCoach's System. They are written into WP6's kickoff.
+4. **Adapters are turned on in a later row.** WP6's parity run sets FreeWeight's
+   `[adapters] directory` to `~/ai/models/adapters/llm`, measures one adapter beside its base and
+   reads its page.
+5. **Evidence staleness and confidence factors go on FreeWeight's API.** This is placed in WP4's
+   Gate A, not WP6, because WP6 ships no code.
+6. **Stopped reads stay API-only** for Results, Compare, Evidence and Provider (§2 item 5).
+7. **WP4 fixes the kit polish of §6 item 5** as it builds the goal pages. This is written into
+   WP4's kickoff.
+8. **The failed scopes of §6 item 4 were investigated** (read-only). See that item.
+
+## 8. What runs next
 
 WP4 (FreeWeight Goals) from `main` once WP3 is merged. Its calibration run reuses this row's run
 event proxy (`routes/freeweight.run_events`, `freeweight_pages.run_log_frames`) and the
