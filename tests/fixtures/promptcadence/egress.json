@@ -1,0 +1,30 @@
+{
+  "items": [
+    {
+      "decided_at": "2026-09-11T02:04:10.257Z",
+      "decision_id": "01M273AGMH7HS7CCWC5XVN7P8Y",
+      "policy_name": "OrderedClassificationPolicy",
+      "policy_version": "1.0",
+      "reason": "target_not_remote",
+      "request": {
+        "data_classification": "internal",
+        "requested_at": null,
+        "run_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "source_ref": "01M273AGMF7829G0QFPAGTV373",
+        "target": {
+          "max_data_classification": null,
+          "name": "local_fast",
+          "provider_kind": null,
+          "remote": false
+        }
+      },
+      "verdict": "approved"
+    }
+  ],
+  "page": {
+    "has_more": false,
+    "limit": 50,
+    "next_cursor": null,
+    "total": null
+  }
+}

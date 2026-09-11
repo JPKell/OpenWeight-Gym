@@ -1,0 +1,36 @@
+{
+  "default_tier": "local_fast",
+  "escalation_order": [
+    "local_fast",
+    "local_large"
+  ],
+  "remote_provider": false,
+  "row_count": 2,
+  "rows": [
+    {
+      "available": true,
+      "context_budget_tokens": 16384,
+      "effective_max_classification": "confidential",
+      "egress_class": "local",
+      "is_remote": false,
+      "max_data_classification": null,
+      "name": "local_fast",
+      "pricing_source": "",
+      "task_profile": "tools.agent.local_fast",
+      "unavailable_reason": null
+    },
+    {
+      "available": true,
+      "context_budget_tokens": 32768,
+      "effective_max_classification": "confidential",
+      "egress_class": "local",
+      "is_remote": false,
+      "max_data_classification": null,
+      "name": "local_large",
+      "pricing_source": "",
+      "task_profile": "tools.agent.local_large",
+      "unavailable_reason": null
+    }
+  ],
+  "snapshot_id": "sha256:b3fbd98fd7a3a57ec5eaa55407919e6f73dd015e14338808b5524345ce37e809"
+}

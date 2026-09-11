@@ -1,0 +1,50 @@
+{
+  "as_of": "2026-09-11T02:57:18.473Z",
+  "day": {
+    "binds": false,
+    "exceeded": false,
+    "money_is_floor": true,
+    "money_remaining": {
+      "currency": "USD",
+      "nanos": 20000000000
+    },
+    "money_remaining_display": "at most 20 USD",
+    "partial_pricing": "floor",
+    "scope": "day",
+    "tokens_are_floor": false,
+    "tokens_remaining": null,
+    "tokens_remaining_display": "—",
+    "unmetered_debit_count": 0,
+    "unpriced_debit_count": 1,
+    "untotalled_debit_count": 0
+  },
+  "projects": [],
+  "tiers": [
+    {
+      "money_is_floor": true,
+      "money_spent": [],
+      "money_spent_display": "—",
+      "tier": "local_fast",
+      "tokens_are_floor": true,
+      "tokens_spent": 45669,
+      "tokens_spent_display": "at least 45669",
+      "unmetered_debit_count": 5,
+      "unpriced_debit_count": 66,
+      "untotalled_debit_count": 0
+    },
+    {
+      "money_is_floor": false,
+      "money_spent": [],
+      "money_spent_display": "—",
+      "tier": "local_large",
+      "tokens_are_floor": false,
+      "tokens_spent": 0,
+      "tokens_spent_display": "0",
+      "unmetered_debit_count": 0,
+      "unpriced_debit_count": 0,
+      "untotalled_debit_count": 0
+    }
+  ],
+  "trajectory": null,
+  "utc_day": "2026-09-11"
+}

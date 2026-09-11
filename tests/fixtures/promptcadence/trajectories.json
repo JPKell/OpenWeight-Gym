@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "approval_policy_version": "sha256:e6a4d66edaa1835dbbb066af92cb25f7badab9232645ae46ecd8a4019e0b2f8f",
+      "approver": null,
+      "budget": {
+        "money": {
+          "currency": "USD",
+          "nanos": 5000000000
+        },
+        "partial_pricing": null,
+        "tokens": 2000000
+      },
+      "bypass_planning": false,
+      "cancel_requested": false,
+      "cause": "the provider declared finish_reason=stop",
+      "completed_at": "2026-09-11T02:04:11.762Z",
+      "created_at": "2026-09-11T02:04:01.527Z",
+      "data_classification": "internal",
+      "error_code": null,
+      "lease": {
+        "expires_at": null,
+        "owner": null
+      },
+      "max_steps": null,
+      "max_turns": null,
+      "project": null,
+      "state": "completed",
+      "task": "State in one sentence what 2+2 is.",
+      "tier": null,
+      "tier_snapshot_id": "sha256:b3fbd98fd7a3a57ec5eaa55407919e6f73dd015e14338808b5524345ce37e809",
+      "tools": [],
+      "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+      "updated_at": "2026-09-11T02:04:11.762Z",
+      "window_wait": null
+    }
+  ],
+  "page": {
+    "has_more": true,
+    "limit": 1,
+    "next_cursor": "MjAyNi0wOS0xMVQwMjowNDowMS41MjdafDAxTTI3M0E4M1FLOVFZUVdWRDA3WDhRSEE0",
+    "total": null
+  }
+}

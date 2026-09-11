@@ -132,10 +132,6 @@ _PAGE_PHASE: dict[tuple[str, str], str] = {
     },
     ("freeweight", "Goals"): "WP4",
     **{("ideapress", label): "WP5" for label in ("Projects", "Units", "Workflows", "Backends")},
-    **{
-        ("promptcadence", label): "WP1"
-        for label in ("Trajectories", "Approvals", "Tiers", "Tools", "Ledger", "Egress")
-    },
 }
 """The row in ``roadmap/weightroom-work.md`` that builds each still-unbuilt page, keyed by
 application as well as label: FreeWeight's Models and LoadCoach's are two rows. W3 left every
@@ -158,6 +154,13 @@ _PAGE_HREF: dict[str, str] = {
     "Prompts": "/apps/{app}/prompts",
     "Database": "/apps/{app}/database",
     "Logs": "/apps/{app}/logs",
+    # PromptCadence's own pages (row WP1); no other application's menu names these labels.
+    "Trajectories": "/apps/{app}/trajectories",
+    "Approvals": "/apps/{app}/approvals",
+    "Tiers": "/apps/{app}/tiers",
+    "Tools": "/apps/{app}/tools",
+    "Ledger": "/apps/{app}/ledger",
+    "Egress": "/apps/{app}/egress",
 }
 """Where a built page lives; anything absent is still a stub."""
 

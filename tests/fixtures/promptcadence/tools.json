@@ -1,0 +1,144 @@
+{
+  "isolation": {
+    "limits_unenforced": [],
+    "reason": "podman: not installed; docker at /usr/bin/docker ran the canary under the container tier's flags with image 'python:3.12-slim'.",
+    "runtime": "docker",
+    "tier": "container"
+  },
+  "tools": [
+    {
+      "description": "Read a UTF-8 text file from the workspace and return its contents. Paths are relative to the workspace root unless absolute, and a path outside the workspace is refused. Files over 1048576 bytes are refused rather than partly read, as are files that are not text.",
+      "egress": "none",
+      "name": "read_file",
+      "parameters": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "description": "The file to read, relative to the workspace root or absolute.",
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "redact_args": false,
+      "registered": true,
+      "requires_isolation": false,
+      "risk_class": "read_only",
+      "withheld_cause": null
+    },
+    {
+      "description": "List a directory in the workspace, sorted by name. Each line gives the kind (dir, file, link or other) and the name; symbolic links are named as links and not followed. At most 1000 entries are returned, and the listing says how many were omitted.",
+      "egress": "none",
+      "name": "list_dir",
+      "parameters": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "description": "The directory to list, relative to the workspace root or absolute.",
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "redact_args": false,
+      "registered": true,
+      "requires_isolation": false,
+      "risk_class": "read_only",
+      "withheld_cause": null
+    },
+    {
+      "description": "Write UTF-8 text to a file in the workspace, replacing it entirely — there is no append and no partial edit. Missing parent directories are created inside the workspace write root. Paths are relative to that root unless absolute, and a path outside it, or reached through a symbolic link, is refused.",
+      "egress": "none",
+      "name": "write_file",
+      "parameters": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "description": "The complete new contents of the file. The write replaces; it never appends.",
+            "type": "string"
+          },
+          "path": {
+            "description": "The file to write, relative to the workspace root or absolute.",
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ],
+        "type": "object"
+      },
+      "redact_args": false,
+      "registered": true,
+      "requires_isolation": false,
+      "risk_class": "mutating",
+      "withheld_cause": null
+    },
+    {
+      "description": "Run one command in the workspace, isolated and without network. Supply argv already split: there is no shell, so no globbing, pipes, redirection or variable expansion. The workspace is the working directory and the only writable place. A command that backgrounds a child and returns holds this call open until the timeout, when the whole process tree is killed — do not start a server with it. The exit code and whether output was truncated are both reported.",
+      "egress": "none",
+      "name": "run_command",
+      "parameters": {
+        "additionalProperties": false,
+        "properties": {
+          "argv": {
+            "description": "The command and its arguments, already split. There is no shell: no globbing, no pipes, no redirection, no variable expansion, and no quoting to get right.",
+            "items": {
+              "maxLength": 4096,
+              "type": "string"
+            },
+            "maxItems": 256,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "argv"
+        ],
+        "type": "object"
+      },
+      "redact_args": false,
+      "registered": true,
+      "requires_isolation": true,
+      "risk_class": "mutating",
+      "withheld_cause": null
+    },
+    {
+      "description": "Fetch one http or https URL and return its body as text. Only a short list of hosts may be fetched from, and a URL naming any other host is refused; so is any scheme other than http and https, any address in the link-local range, and any redirect that changes host. The response must be text — HTML, Markdown, plain text, CSV, JSON or XML — and there is a size limit, above which the transfer is stopped rather than truncated. No credentials are sent and none can be supplied.",
+      "egress": "network",
+      "name": "http_fetch",
+      "parameters": {
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "description": "An http or https URL whose host is on this tool's allowlist.",
+            "maxLength": 2048,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "type": "object"
+      },
+      "redact_args": false,
+      "registered": true,
+      "requires_isolation": false,
+      "risk_class": "read_only",
+      "withheld_cause": null
+    }
+  ]
+}

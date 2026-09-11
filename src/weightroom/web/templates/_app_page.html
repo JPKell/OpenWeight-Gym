@@ -1,5 +1,5 @@
 {#- Macros every page under an application's tab shares (row WP1's page kit). -#}
-{% from "mirrorwall/components.html" import badge %}
+{% from "mirrorwall/components.html" import badge, empty_state, table %}
 
 {% macro page_source(sourced) -%}
 {#- Spec §7.3: every page names its source in the footer — from the API, from the database at a
@@ -15,4 +15,24 @@
 
 {% macro level_badge(level) -%}
 {{ badge(level, tone=("danger" if level in ("emerg", "alert", "crit", "err", "error", "critical") else ("warning" if level in ("warning", "warn") else "neutral"))) }}
+{%- endmacro %}
+
+{% macro rows_table(rows, columns, caption) -%}
+{#- Rows a database read returned (`app_pages.rows_where`) as a dense table. `columns` is
+    `[(label, key), …]`, or `(label, key, limit)` for a column whose text should run longer than
+    160 characters; every cell goes through `cell_text` — escaped, `NULL` for a null, long text
+    cut with an ellipsis. -#}
+{% if rows %}
+{% set head = [] %}
+{% for column in columns %}{% set _ = head.append({"label": column[0]}) %}{% endfor %}
+{% set body = [] %}
+{% for row in rows %}
+{% set cells = [] %}
+{% for column in columns %}{% set _ = cells.append(row.get(column[1]) | cell_text(limit=(column[2] if column | length > 2 else 160))) %}{% endfor %}
+{% set _ = body.append(cells) %}
+{% endfor %}
+{{ table(head, body, caption=caption, density="dense", complete=false, row_count=body | length) }}
+{% else %}
+{{ empty_state("No " ~ (caption | lower) ~ " recorded.") }}
+{% endif %}
 {%- endmacro %}

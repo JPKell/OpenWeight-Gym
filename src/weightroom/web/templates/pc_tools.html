@@ -1,0 +1,56 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list, table, empty_state, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% block title %}Tools — PromptCadence — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Tools {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/promptcadence/settings">Settings</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Every tool configuration names, registered or not. A tool asked for and withheld is
+here with its cause — a list of only the working tools cannot tell that apart from a tool nobody
+asked for.</p>
+{{ refusal(sourced.error) }}
+{% set report = sourced.data %}
+{% if report is not none %}
+<h3>Isolation</h3>
+{% set isolation = report.get("isolation") %}
+{% if isolation %}
+{{ kv_list([
+  {"label": "Rung", "value": isolation.get("tier") or "none"},
+  {"label": "Runtime", "value": isolation.get("runtime") or "—"},
+  {"label": "Reason", "value": isolation.get("reason") or "—"},
+  {"label": "Resource limits unenforced", "value": (isolation.get("limits_unenforced") or []) | join(", ") or "none"},
+]) }}
+<p class="muted">Where no sandbox rung is available, <code>run_command</code> refuses with a recorded
+reason rather than executing unisolated.</p>
+{% else %}
+<p class="muted">The isolation ladder has not been probed in PromptCadence's process.</p>
+{% endif %}
+
+<h3>Registry</h3>
+{% set rows = [] %}
+{% for one in report.get("tools") or [] %}
+{% set _ = rows.append([
+  one.get("name"),
+  badge("registered", tone="success") if one.get("registered") else badge("withheld", tone="warning"),
+  one.get("risk_class") or "—",
+  one.get("egress") or "—",
+  "yes" if one.get("requires_isolation") else "no",
+  "yes" if one.get("redact_args") else "no",
+  one.get("withheld_cause") or "—",
+  one.get("description") | cell_text(limit=300)
+]) %}
+{% endfor %}
+{% if rows %}
+{{ table([{"label": "Tool", "mono": true}, {"label": "Registered"}, {"label": "Risk"}, {"label": "Egress"}, {"label": "Isolation required"}, {"label": "Args redacted"}, {"label": "Cause"}, {"label": "Description"}], rows, caption="Configured tools", density="dense", row_count=rows | length) }}
+{% for one in report.get("tools") or [] %}
+{% if one.get("parameters") %}{{ json_viewer(one.get("parameters"), label=one.get("name") ~ " arguments") }}{% endif %}
+{% endfor %}
+{% else %}
+{{ empty_state("No tools are enabled.") }}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

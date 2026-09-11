@@ -1,0 +1,63 @@
+{#- PromptCadence's vocabulary as WeightRoom renders it — the helpers PromptCadence's own console
+    keeps in its `_macros.html`. Every one builds markup rather than concatenating it: a cell that
+    holds a model's text is escaped text, and no call site can switch that off. Dictionary fields
+    are read with `.get`, because the environment is StrictUndefined and an application omitting an
+    optional key is not a page error. -#}
+{% from "mirrorwall/components.html" import badge %}
+
+{% macro short(value) -%}
+{%- if value and value | length > 14 -%}
+<span class="mono" title="{{ value }}">{{ value[:6] }}…{{ value[-4:] }}</span>
+{%- elif value -%}
+<span class="mono">{{ value }}</span>
+{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro trajectory_link(trajectory_id) -%}
+{%- if trajectory_id -%}
+<a class="mono" href="/apps/promptcadence/trajectories/{{ trajectory_id | urlencode }}" title="{{ trajectory_id }}">{{ trajectory_id[:6] }}…{{ trajectory_id[-4:] }}</a>
+{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro measure(value, unit="") -%}
+{#- A number with its unit, or an em dash for one nobody reported — never a fabricated zero
+    (ADR-0016). -#}
+{%- if value is none or value == "unsupported" or value == "" -%}
+<span class="muted" title="not reported; not the same as zero">—</span>
+{%- else -%}{{ value }}{% if unit %} {{ unit }}{% endif %}{%- endif -%}
+{%- endmacro %}
+
+{% macro money(amount) -%}
+{%- if amount is mapping and amount.get("nanos") is not none -%}
+{{ "%.2f" | format(amount.get("nanos") / 1000000000) }} {{ amount.get("currency") }}
+{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro state_badge(state) -%}
+{{ badge(state or "—", tone={"completed": "success", "failed": "danger", "halted": "danger", "rejected": "danger", "awaiting_approval": "warning", "awaiting_window": "warning"}.get(state, "neutral")) }}
+{%- endmacro %}
+
+{% macro verdict_badge(verdict) -%}
+{{ badge(verdict or "—", tone={"approved": "success", "denied": "danger", "violation": "danger"}.get(verdict, "neutral")) }}
+{%- endmacro %}
+
+{% macro outcome_badge(status) -%}
+{%- if status in ("ok", "completed", "passed", "granted", "approved") -%}{{ badge(status, tone="success") }}
+{%- elif status in ("failed", "error", "unavailable", "denied") -%}{{ badge(status, tone="danger") }}
+{%- elif status in ("refused", "degraded", "pending", "expired", "not_configured") -%}{{ badge(status, tone="warning") }}
+{%- else -%}{{ badge(status or "—", tone="neutral") }}{%- endif -%}
+{%- endmacro %}
+
+{% macro content_cell(content) -%}
+{#- Model output, and an operator's task: text, always escaped, pre-wrapped. A body removed by
+    retention says so, and a turn that said nothing says that — an empty string is content. -#}
+{%- if content is mapping and content.get("removed") -%}
+<span class="muted">content removed by retention</span>
+{%- elif content is mapping and not content.get("text") -%}
+<span class="muted" title="the provider declared a finish and returned no text">no text</span>
+{%- elif content is mapping -%}
+<div class="pc-content">{{ content.get("text") }}</div>
+{%- elif content -%}
+<div class="pc-content">{{ content }}</div>
+{%- else -%}—{%- endif -%}
+{%- endmacro %}

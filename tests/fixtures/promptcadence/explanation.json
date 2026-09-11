@@ -1,0 +1,613 @@
+{
+  "approvals": [],
+  "compactions": [],
+  "deviations": [],
+  "egress_decisions": [
+    {
+      "decided_at": "2026-09-11T02:04:10.257Z",
+      "decision_id": "01M273AGMH7HS7CCWC5XVN7P8Y",
+      "policy_name": "OrderedClassificationPolicy",
+      "policy_version": "1.0",
+      "reason": "target_not_remote",
+      "request": {
+        "data_classification": "internal",
+        "requested_at": null,
+        "run_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "source_ref": "01M273AGMF7829G0QFPAGTV373",
+        "target": {
+          "max_data_classification": null,
+          "name": "local_fast",
+          "provider_kind": null,
+          "remote": false
+        }
+      },
+      "verdict": "approved"
+    }
+  ],
+  "events": [
+    {
+      "data": {
+        "bypass_planning": false,
+        "classification": "internal",
+        "project": null,
+        "token_budget": 2000000,
+        "tool_allowlist": [],
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4"
+      },
+      "event_type": "trajectory.created",
+      "sequence": 1,
+      "timestamp": "2026-09-11T02:04:01.527Z"
+    },
+    {
+      "data": {
+        "lease_expires_at": "2026-09-11T02:05:01.646550+00:00",
+        "state": "planning",
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "worker_id": "Jordan-main:2612311/0"
+      },
+      "event_type": "trajectory.claimed",
+      "sequence": 2,
+      "timestamp": "2026-09-11T02:04:01.646Z"
+    },
+    {
+      "data": {
+        "attempt": 1,
+        "document_sha256": "708f3fd700360bea9e7a40e8b6b915af543e156c020b70bcb3c413cca82700a3",
+        "issue_count": 0,
+        "plan_id": "01M273AGJCEZMD2296J76X689G",
+        "step_count": 1,
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "valid": true
+      },
+      "event_type": "plan.drafted",
+      "sequence": 3,
+      "timestamp": "2026-09-11T02:04:10.188Z"
+    },
+    {
+      "data": {
+        "approval_policy_version": "sha256:e6a4d66edaa1835dbbb066af92cb25f7badab9232645ae46ecd8a4019e0b2f8f",
+        "redlined_count": 0,
+        "step_count": 1,
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4"
+      },
+      "event_type": "plan.approved",
+      "sequence": 4,
+      "timestamp": "2026-09-11T02:04:10.199Z"
+    },
+    {
+      "data": {
+        "approval_request_id": null,
+        "approved_tier": "local_fast",
+        "fallback_tiers": [],
+        "gated": false,
+        "intent_id": "01M273AGK9K8QZYQZ66V81775B",
+        "max_classification": "internal",
+        "max_turns": 8,
+        "minted_by": "policy",
+        "revision": 1,
+        "step_id": "s1",
+        "supersedes": null,
+        "token_budget": 1712,
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4"
+      },
+      "event_type": "intent.minted",
+      "sequence": 5,
+      "timestamp": "2026-09-11T02:04:10.199Z"
+    },
+    {
+      "data": {
+        "approved_tier": "local_fast",
+        "depends_on": [],
+        "intent_id": "01M273AGK9K8QZYQZ66V81775B",
+        "intent_revision": 1,
+        "step_id": "s1",
+        "thread_id": "01M273AGM22A0JAY3XH22VHC7J",
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4"
+      },
+      "event_type": "step.started",
+      "sequence": 6,
+      "timestamp": "2026-09-11T02:04:10.242Z"
+    },
+    {
+      "data": {
+        "decision_id": "01M273AGMH7HS7CCWC5XVN7P8Y",
+        "policy_name": "OrderedClassificationPolicy",
+        "policy_version": "1.0",
+        "reason": "target_not_remote",
+        "remote": false,
+        "source_ref": "01M273AGMF7829G0QFPAGTV373",
+        "target": "local_fast",
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "verdict": "approved"
+      },
+      "event_type": "egress.evaluated",
+      "sequence": 7,
+      "timestamp": "2026-09-11T02:04:10.260Z"
+    },
+    {
+      "data": {
+        "intent_id": "01M273AGK9K8QZYQZ66V81775B",
+        "intent_revision": 1,
+        "sequence": 3,
+        "task_profile": "tools.agent.local_fast",
+        "tier": "local_fast",
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "turn_id": "01M273AGMF7829G0QFPAGTV373"
+      },
+      "event_type": "turn.started",
+      "sequence": 8,
+      "timestamp": "2026-09-11T02:04:10.267Z"
+    },
+    {
+      "data": {
+        "entry_id": "01M273AJ3NQEH5KB9YPWBANQJ7",
+        "headroom": [
+          {
+            "exceeded": false,
+            "money_remaining": {
+              "currency": "USD",
+              "nanos": 5000000000
+            },
+            "partial_pricing": "floor",
+            "scope": "trajectory",
+            "tokens_remaining": 1999763,
+            "unmetered_debit_count": 0,
+            "unpriced_debit_count": 1,
+            "untotalled_debit_count": 0
+          },
+          {
+            "exceeded": false,
+            "money_remaining": {
+              "currency": "USD",
+              "nanos": 20000000000
+            },
+            "partial_pricing": "floor",
+            "scope": "day",
+            "tokens_remaining": null,
+            "unmetered_debit_count": 0,
+            "unpriced_debit_count": 1,
+            "untotalled_debit_count": 0
+          }
+        ],
+        "pricing_hash": null,
+        "project": null,
+        "tier": "local_fast",
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "turn_id": "01M273AGMF7829G0QFPAGTV373",
+        "unpriced": true,
+        "usage": {
+          "cache_read": 0,
+          "cache_write": 0,
+          "input": 129,
+          "output": 108
+        }
+      },
+      "event_type": "budget.debited",
+      "sequence": 9,
+      "timestamp": "2026-09-11T02:04:11.762Z"
+    },
+    {
+      "data": {
+        "decision": "complete",
+        "finish_reason": "stop",
+        "input_tokens": 129,
+        "loadcoach_job_id": "01M273AGMYFW2VZJX65WPV6GAZ",
+        "loadcoach_ms": 1441,
+        "model_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+        "output_tokens": 108,
+        "overhead_ms": 53,
+        "schema_validated": false,
+        "sequence": 3,
+        "tier": "local_fast",
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "turn_id": "01M273AGMF7829G0QFPAGTV373"
+      },
+      "event_type": "turn.completed",
+      "sequence": 10,
+      "timestamp": "2026-09-11T02:04:11.762Z"
+    },
+    {
+      "data": {
+        "final_turn_id": "01M273AGMF7829G0QFPAGTV373",
+        "intent_id": "01M273AGK9K8QZYQZ66V81775B",
+        "intent_revision": 1,
+        "step_id": "s1",
+        "thread_id": "01M273AGM22A0JAY3XH22VHC7J",
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "turn_count": 3
+      },
+      "event_type": "step.completed",
+      "sequence": 11,
+      "timestamp": "2026-09-11T02:04:11.762Z"
+    },
+    {
+      "data": {
+        "step_count": 1,
+        "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+        "turn_count": 3
+      },
+      "event_type": "trajectory.completed",
+      "sequence": 12,
+      "timestamp": "2026-09-11T02:04:11.762Z"
+    }
+  ],
+  "intents": [
+    {
+      "approval_request_id": null,
+      "approved_tier": "local_fast",
+      "approved_tools": [],
+      "budget_sample_count": 65,
+      "budget_source": "historical",
+      "fallback_tiers": [],
+      "gate": {
+        "cost_gated": false,
+        "egress_classification": null,
+        "egress_gated": false,
+        "gating_tier": "local_fast"
+      },
+      "intent_id": "01M273AGK9K8QZYQZ66V81775B",
+      "max_classification": "internal",
+      "max_turns": 8,
+      "minted_at": "2026-09-11T02:04:10.199090+00:00",
+      "minted_by": "policy",
+      "money_budget": null,
+      "permitted_egress_class": "local",
+      "revision": 1,
+      "step_id": "s1",
+      "supersedes": null,
+      "token_budget": 1712,
+      "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4"
+    }
+  ],
+  "ledger_entries": [
+    {
+      "ceilings": [
+        {
+          "binds": false,
+          "exceeded": false,
+          "money_is_floor": true,
+          "money_remaining": {
+            "currency": "USD",
+            "nanos": 5000000000
+          },
+          "money_remaining_display": "at most 5 USD",
+          "partial_pricing": "floor",
+          "scope": "trajectory",
+          "tokens_are_floor": false,
+          "tokens_remaining": 1999763,
+          "tokens_remaining_display": "1999763",
+          "unmetered_debit_count": 0,
+          "unpriced_debit_count": 1,
+          "untotalled_debit_count": 0
+        },
+        {
+          "binds": false,
+          "exceeded": false,
+          "money_is_floor": true,
+          "money_remaining": {
+            "currency": "USD",
+            "nanos": 20000000000
+          },
+          "money_remaining_display": "at most 20 USD",
+          "partial_pricing": "floor",
+          "scope": "day",
+          "tokens_are_floor": false,
+          "tokens_remaining": null,
+          "tokens_remaining_display": "—",
+          "unmetered_debit_count": 0,
+          "unpriced_debit_count": 1,
+          "untotalled_debit_count": 0
+        }
+      ],
+      "entry_id": "01M273AJ3NQEH5KB9YPWBANQJ7",
+      "occurred_at": "2026-09-11T02:04:11.762Z",
+      "pricing_hash": null,
+      "tags": [
+        "tier:local_fast"
+      ],
+      "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+      "turn_id": "01M273AGMF7829G0QFPAGTV373",
+      "unpriced": true,
+      "usage": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 129,
+        "output": 108
+      }
+    }
+  ],
+  "plan": {
+    "approval": {
+      "approval_id": "01M273AGK88XNK7CJC3ZEA7KVP",
+      "approval_policy_version": "sha256:e6a4d66edaa1835dbbb066af92cb25f7badab9232645ae46ecd8a4019e0b2f8f",
+      "created_at": "2026-09-11T02:04:10.199Z",
+      "outcome": "approved",
+      "verdict": {
+        "approval_policy_version": "sha256:e6a4d66edaa1835dbbb066af92cb25f7badab9232645ae46ecd8a4019e0b2f8f",
+        "headroom": [
+          {
+            "exceeded": false,
+            "money_remaining": {
+              "currency": "USD",
+              "nanos": 5000000000
+            },
+            "partial_pricing": "floor",
+            "scope": "trajectory",
+            "tokens_remaining": 2000000,
+            "unmetered_debit_count": 0,
+            "unpriced_debit_count": 0,
+            "untotalled_debit_count": 0
+          },
+          {
+            "exceeded": false,
+            "money_remaining": {
+              "currency": "USD",
+              "nanos": 20000000000
+            },
+            "partial_pricing": "floor",
+            "scope": "day",
+            "tokens_remaining": null,
+            "unmetered_debit_count": 0,
+            "unpriced_debit_count": 0,
+            "untotalled_debit_count": 0
+          }
+        ],
+        "outcome": "approved",
+        "steps": [
+          {
+            "approved_tier": "local_fast",
+            "declared_tier": "local_fast",
+            "error_code": null,
+            "estimate": {
+              "money_estimate": null,
+              "sample_count": 65,
+              "source": "historical",
+              "token_estimate": 856
+            },
+            "fallback_tiers": [],
+            "gate": {
+              "cost_gated": false,
+              "egress_classification": null,
+              "egress_gated": false,
+              "gating_tier": "local_fast"
+            },
+            "headroom_is_floor": false,
+            "outcome": "approved",
+            "reason": "auto_approved",
+            "requires_human_approval": false,
+            "step_id": "s1"
+          }
+        ]
+      }
+    },
+    "attempts": [
+      {
+        "attempt": 1,
+        "created_at": "2026-09-11T02:04:10.188Z",
+        "document_sha256": "708f3fd700360bea9e7a40e8b6b915af543e156c020b70bcb3c413cca82700a3",
+        "issues": [],
+        "loadcoach_job_id": "01M273A8C2S1FTNY8VDYC8FZW8",
+        "loadcoach_ms": 8339.0,
+        "model_canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+        "plan_id": "01M273AGJCEZMD2296J76X689G",
+        "prompt": {
+          "prompt_id": "planner.draft",
+          "sha256": "sha256:a1df9c57824b74984a880f87b5df50f2944a0538ad027ffcb4057cb2f9012fbb",
+          "version": "1.1.0"
+        },
+        "raw_document": "{\"steps\":[{\"step_id\":\"s1\",\"description\":\"Answer the question: 2+2 equals 4.\",\"depends_on\":[],\"tools\":[],\"tier\":\"local_fast\",\"data_classification\":\"internal\",\"expected_turns\":1}]}",
+        "usage": {
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "input_tokens": 711,
+          "output_tokens": 50
+        },
+        "valid": true
+      }
+    ],
+    "plan_id": "01M273AGJCEZMD2296J76X689G",
+    "steps": [
+      {
+        "completed_at": "2026-09-11T02:04:11.762Z",
+        "data_classification": "internal",
+        "depends_on": [],
+        "description": "Answer the question: 2+2 equals 4.",
+        "expected_turns": 1,
+        "sequence": 1,
+        "started_at": "2026-09-11T02:04:10.242Z",
+        "status": "committed",
+        "step_id": "s1",
+        "tier": "local_fast",
+        "tools": []
+      }
+    ],
+    "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4"
+  },
+  "schema": "promptcadence.trajectory_explanation",
+  "threads": [
+    {
+      "created_at": "2026-09-11T02:04:10.242Z",
+      "failed_attempts": [],
+      "kind": "step",
+      "step_id": "s1",
+      "thread_id": "01M273AGM22A0JAY3XH22VHC7J",
+      "turns": [
+        {
+          "adapter": null,
+          "content": {
+            "removed": false,
+            "sha256": "abd17434fef87e46ca85e366c630c7b6ea428d00e68c409ab744e74c4a341c69",
+            "text": "State in one sentence what 2+2 is."
+          },
+          "created_at": "2026-09-11T02:04:10.251Z",
+          "finish_reason": null,
+          "intent_id": "01M273AGK9K8QZYQZ66V81775B",
+          "intent_revision": 1,
+          "loadcoach_job_id": null,
+          "loadcoach_ms": null,
+          "model": {
+            "canonical_id": null,
+            "digest": null,
+            "provider_kind": null,
+            "provider_name": null
+          },
+          "overhead_ms": null,
+          "prompt": {
+            "prompt_id": null,
+            "sha256": null,
+            "version": null
+          },
+          "role": "user",
+          "sequence": 1,
+          "tier": "local_fast",
+          "tool_call_id": null,
+          "tool_calls": [],
+          "turn_id": "01M273AGM3WE4FA5VT6SMYYNZF",
+          "usage": {
+            "cache_read_tokens": "unsupported",
+            "cache_write_tokens": "unsupported",
+            "input_tokens": "unsupported",
+            "output_tokens": "unsupported",
+            "thinking_tokens": "unsupported"
+          }
+        },
+        {
+          "adapter": null,
+          "content": {
+            "removed": false,
+            "sha256": "49e17352f6aedd0ebc473b9d1f1993cf087926c0d3ed82d5ca2008ca93c3672f",
+            "text": "You are executing step s1 of an approved plan for the task above.\n\nSTEP\nAnswer the question: 2+2 equals 4.\n\nUse only these tools: none. When the step is complete, answer with the step's result and stop."
+          },
+          "created_at": "2026-09-11T02:04:10.251Z",
+          "finish_reason": null,
+          "intent_id": "01M273AGK9K8QZYQZ66V81775B",
+          "intent_revision": 1,
+          "loadcoach_job_id": null,
+          "loadcoach_ms": null,
+          "model": {
+            "canonical_id": null,
+            "digest": null,
+            "provider_kind": null,
+            "provider_name": null
+          },
+          "overhead_ms": null,
+          "prompt": {
+            "prompt_id": "step.execute",
+            "sha256": "sha256:f5d0a7d2918d7d5fc81551275e3dc217bc208d09d3ac31dbf4d749139d1ffd50",
+            "version": "1.0.0"
+          },
+          "role": "user",
+          "sequence": 2,
+          "tier": "local_fast",
+          "tool_call_id": null,
+          "tool_calls": [],
+          "turn_id": "01M273AGM5PK16EGV7ETNR10RN",
+          "usage": {
+            "cache_read_tokens": "unsupported",
+            "cache_write_tokens": "unsupported",
+            "input_tokens": "unsupported",
+            "output_tokens": "unsupported",
+            "thinking_tokens": "unsupported"
+          }
+        },
+        {
+          "adapter": null,
+          "content": {
+            "removed": false,
+            "sha256": "8fe8515f785dafa99d36900e844da29e7c1e6ddca144e2c10e01e34fb2dbd009",
+            "text": "2+2 equals 4."
+          },
+          "created_at": "2026-09-11T02:04:11.774Z",
+          "finish_reason": "stop",
+          "intent_id": "01M273AGK9K8QZYQZ66V81775B",
+          "intent_revision": 1,
+          "loadcoach_job_id": "01M273AGMYFW2VZJX65WPV6GAZ",
+          "loadcoach_ms": 1441.0,
+          "model": {
+            "canonical_id": "ollama/gpt-oss:20b@sha256:17052f91a42e",
+            "digest": null,
+            "provider_kind": null,
+            "provider_name": "ollama"
+          },
+          "overhead_ms": 53.68570697354153,
+          "prompt": {
+            "prompt_id": null,
+            "sha256": null,
+            "version": null
+          },
+          "role": "assistant",
+          "sequence": 3,
+          "tier": "local_fast",
+          "tool_call_id": null,
+          "tool_calls": [],
+          "turn_id": "01M273AGMF7829G0QFPAGTV373",
+          "usage": {
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "input_tokens": 129,
+            "output_tokens": 108,
+            "thinking_tokens": "unsupported"
+          }
+        }
+      ]
+    }
+  ],
+  "tool_calls": [],
+  "trajectory": {
+    "approval_policy_version": "sha256:e6a4d66edaa1835dbbb066af92cb25f7badab9232645ae46ecd8a4019e0b2f8f",
+    "approver": null,
+    "budget": {
+      "money": {
+        "currency": "USD",
+        "nanos": 5000000000
+      },
+      "partial_pricing": null,
+      "tokens": 2000000
+    },
+    "bypass_planning": false,
+    "cancel_requested": false,
+    "cause": "the provider declared finish_reason=stop",
+    "completed_at": "2026-09-11T02:04:11.762Z",
+    "created_at": "2026-09-11T02:04:01.527Z",
+    "data_classification": "internal",
+    "error_code": null,
+    "max_steps": null,
+    "max_turns": null,
+    "project": null,
+    "state": "completed",
+    "task": "State in one sentence what 2+2 is.",
+    "tier": null,
+    "tier_snapshot": {
+      "default_tier": "local_fast",
+      "escalation_order": [
+        "local_fast",
+        "local_large"
+      ],
+      "tier_snapshot_id": "sha256:b3fbd98fd7a3a57ec5eaa55407919e6f73dd015e14338808b5524345ce37e809",
+      "tiers": [
+        {
+          "context_budget_tokens": 16384,
+          "egress_class": "local",
+          "max_data_classification": null,
+          "name": "local_fast",
+          "pricing_source": "",
+          "task_profile": "tools.agent.local_fast"
+        },
+        {
+          "context_budget_tokens": 32768,
+          "egress_class": "local",
+          "max_data_classification": null,
+          "name": "local_large",
+          "pricing_source": "",
+          "task_profile": "tools.agent.local_large"
+        }
+      ]
+    },
+    "tier_snapshot_id": "sha256:b3fbd98fd7a3a57ec5eaa55407919e6f73dd015e14338808b5524345ce37e809",
+    "tools": [],
+    "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+    "updated_at": "2026-09-11T02:04:11.762Z",
+    "window_wait": null
+  },
+  "version": "1.0"
+}

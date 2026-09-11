@@ -7,6 +7,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **PromptCadence's pages under its tab** (row WP1), at parity with PromptCadence's own console,
+  which a browser on the LAN cannot reach: **Trajectories** (filtered by state, paged by
+  PromptCadence's cursor), **one trajectory's whole record** (the explanation document PromptCadence
+  renders — request, plan attempts and steps, envelopes, every thread's turns, tool calls,
+  compactions, debits, egress decisions, deviations, approvals, events — with a live event pane
+  while it runs), **Approvals** (pending, and every request ever raised), **Tiers** (availability
+  and why not), **Tools** (withheld tools with their cause, the isolation rung), **Ledger** (today's
+  position, per-project and per-tier, the debits behind it) and **Egress** (newest first, by
+  verdict and trajectory). A stopped PromptCadence's pages render from its database at a known
+  revision; the approval history and egress decisions read the database even while it runs,
+  because its API lists neither.
 - **A Logs page under every application's tab** (row WP1): the unit's journal history, filtered
   by time, level-and-worse and literal text and paged by cursor, above its live pane.
 - **The page kit every application page is built on** (row WP1): `services/app_api.py`, one

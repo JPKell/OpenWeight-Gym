@@ -1,0 +1,120 @@
+{
+  "items": [
+    {
+      "ceilings": [
+        {
+          "binds": false,
+          "exceeded": false,
+          "money_is_floor": true,
+          "money_remaining": {
+            "currency": "USD",
+            "nanos": 5000000000
+          },
+          "money_remaining_display": "at most 5 USD",
+          "partial_pricing": "floor",
+          "scope": "trajectory",
+          "tokens_are_floor": false,
+          "tokens_remaining": 1999763,
+          "tokens_remaining_display": "1999763",
+          "unmetered_debit_count": 0,
+          "unpriced_debit_count": 1,
+          "untotalled_debit_count": 0
+        },
+        {
+          "binds": false,
+          "exceeded": false,
+          "money_is_floor": true,
+          "money_remaining": {
+            "currency": "USD",
+            "nanos": 20000000000
+          },
+          "money_remaining_display": "at most 20 USD",
+          "partial_pricing": "floor",
+          "scope": "day",
+          "tokens_are_floor": false,
+          "tokens_remaining": null,
+          "tokens_remaining_display": "—",
+          "unmetered_debit_count": 0,
+          "unpriced_debit_count": 1,
+          "untotalled_debit_count": 0
+        }
+      ],
+      "entry_id": "01M273AJ3NQEH5KB9YPWBANQJ7",
+      "occurred_at": "2026-09-11T02:04:11.762Z",
+      "pricing_hash": null,
+      "tags": [
+        "tier:local_fast"
+      ],
+      "trajectory_id": "01M273A83QK9QYQWVD07X8QHA4",
+      "turn_id": "01M273AGMF7829G0QFPAGTV373",
+      "unpriced": true,
+      "usage": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 129,
+        "output": 108
+      }
+    },
+    {
+      "ceilings": [
+        {
+          "binds": false,
+          "exceeded": false,
+          "money_is_floor": true,
+          "money_remaining": {
+            "currency": "USD",
+            "nanos": 5000000000
+          },
+          "money_remaining_display": "at most 5 USD",
+          "partial_pricing": "floor",
+          "scope": "trajectory",
+          "tokens_are_floor": false,
+          "tokens_remaining": 1997276,
+          "tokens_remaining_display": "1997276",
+          "unmetered_debit_count": 0,
+          "unpriced_debit_count": 4,
+          "untotalled_debit_count": 0
+        },
+        {
+          "binds": false,
+          "exceeded": false,
+          "money_is_floor": true,
+          "money_remaining": {
+            "currency": "USD",
+            "nanos": 20000000000
+          },
+          "money_remaining_display": "at most 20 USD",
+          "partial_pricing": "floor",
+          "scope": "day",
+          "tokens_are_floor": false,
+          "tokens_remaining": null,
+          "tokens_remaining_display": "—",
+          "unmetered_debit_count": 0,
+          "unpriced_debit_count": 48,
+          "untotalled_debit_count": 0
+        }
+      ],
+      "entry_id": "01M258EKQRBMYWWEF9PDC6X904",
+      "occurred_at": "2026-09-10T08:55:18.518Z",
+      "pricing_hash": null,
+      "tags": [
+        "tier:local_fast"
+      ],
+      "trajectory_id": "01M258E5C183708SECK4AGJ0ZG",
+      "turn_id": "01M258EJ2DT0T163F0NVBNDDCX",
+      "unpriced": true,
+      "usage": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 647,
+        "output": 128
+      }
+    }
+  ],
+  "page": {
+    "has_more": true,
+    "limit": 2,
+    "next_cursor": null,
+    "total": null
+  }
+}

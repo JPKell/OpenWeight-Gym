@@ -1,0 +1,40 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_pc.html" import short, trajectory_link, verdict_badge %}
+{% block title %}Egress decisions — PromptCadence — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Egress decisions {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/promptcadence/tiers">Tiers</a> · <a href="/apps/promptcadence/approvals">Approvals</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Every decision about whether data could leave this machine, approvals and refusals
+alike. A declined call is as auditable as an approved one, so both are on one page.</p>
+
+<form class="filter-bar" action="/apps/promptcadence/egress" method="get" role="search">
+  <div class="field"><label for="pc-verdict">Verdict</label>
+    <select id="pc-verdict" name="verdict">
+      <option value=""{{ ' selected' if not verdict else '' }}>All verdicts</option>
+      {% for one in verdicts %}<option value="{{ one }}"{{ ' selected' if verdict == one else '' }}>{{ one }}</option>{% endfor %}
+    </select></div>
+  <div class="field"><label for="pc-egress-trajectory">Trajectory</label>
+    <input id="pc-egress-trajectory" name="trajectory_id" value="{{ trajectory_id }}" placeholder="a trajectory id"></div>
+  <button type="submit">Filter</button>
+</form>
+
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% if sourced.data %}
+{% set rows = [] %}
+{% for one in sourced.data %}
+{% set _ = rows.append([short(one.get("decision_id")), verdict_badge(one.get("verdict")), trajectory_link(one.get("trajectory_id")), one.get("target") or "—", one.get("classification") or "—", one.get("policy") or "—", one.get("reason") or "—", one.get("decided_at") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Decision"}, {"label": "Verdict"}, {"label": "Trajectory"}, {"label": "Target", "mono": true}, {"label": "Classification"}, {"label": "Policy"}, {"label": "Reason"}, {"label": "When", "mono": true}], rows, caption="Recorded egress decisions, newest first", density="dense", complete=false, row_count=rows | length) }}
+{% else %}
+{{ empty_state("No egress decisions match this filter.", "Every decision", "/apps/promptcadence/egress") }}
+{% endif %}
+{% endif %}
+<p class="muted page-source">{{ sourced.detail }} — PromptCadence's API lists decisions oldest first
+with no cursor, so the newest are read from its database.</p>
+{% endblock %}

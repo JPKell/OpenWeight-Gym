@@ -1,0 +1,53 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, pagination %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_pc.html" import trajectory_link, state_badge %}
+{% block title %}Trajectories — PromptCadence — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Trajectories {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/promptcadence/approvals">Approvals</a> · <a href="/apps/promptcadence/ledger">Ledger</a> · <a href="/chat">Chat</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Newest first. Each row opens the whole record — the plan, every turn, every tool
+call, every debit and every egress verdict — as PromptCadence itself explains it.</p>
+
+<form class="filter-bar" action="/apps/promptcadence/trajectories" method="get" role="search">
+  <div class="field">
+    <label for="pc-state">State</label>
+    <select id="pc-state" name="state">
+      <option value=""{{ ' selected' if not state else '' }}>All states</option>
+      {% for one in states %}<option value="{{ one }}"{{ ' selected' if state == one else '' }}>{{ one }}</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit">Filter</button>
+</form>
+
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% set found = sourced.data["items"] %}
+{% if found %}
+{% set columns = [
+  {"label": "Trajectory", "mono": true}, {"label": "State"}, {"label": "Task"},
+  {"label": "Classification"}, {"label": "Planned"}, {"label": "Created", "mono": true}, {"label": "Cause"}
+] %}
+{% set rows = [] %}
+{% for one in found %}
+{% set _ = rows.append([
+  trajectory_link(one.get("trajectory_id")),
+  state_badge(one.get("state")),
+  one.get("task") | cell_text,
+  one.get("data_classification") or "—",
+  "bypassed" if one.get("bypass_planning") else "planned",
+  one.get("created_at") or "—",
+  (one.get("cause") or "—") | cell_text
+]) %}
+{% endfor %}
+{{ table(columns, rows, caption="Trajectories, newest first", density="dense", complete=false, row_count=rows | length) }}
+{{ pagination(next_href=next_href) }}
+{% else %}
+{{ empty_state("No trajectories match this filter.", "Show all states", "/apps/promptcadence/trajectories") }}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

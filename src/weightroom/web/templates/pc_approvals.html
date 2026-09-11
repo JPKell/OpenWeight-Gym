@@ -1,0 +1,49 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_pc.html" import short, trajectory_link, outcome_badge %}
+{% block title %}Approvals — PromptCadence — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Approvals {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/promptcadence/trajectories">Trajectories</a> · <a href="/apps/promptcadence/egress">Egress</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Every request waiting for a person, oldest first. A grant mints the envelope the work
+then runs under, and a denial halts the trajectory with the reason on the record — so both answers
+are recorded, not only the one that let work continue.</p>
+
+<h3>Pending</h3>
+{{ refusal(pending.error) }}
+{% if pending.data is not none %}
+{% if pending.data %}
+{% for one in pending.data %}
+<section class="card pc-approval" id="request-{{ one.get('request_id') }}">
+  <h4>{{ one.get("kind") }} — {{ trajectory_link(one.get("trajectory_id")) }}</h4>
+  <p>{{ one.get("reason") or "—" }}</p>
+  <p class="muted">{% if one.get("age_seconds") is not none %}Waiting {{ one.get("age_seconds") | round(0) | int }} s · {% endif %}requested {{ one.get("created_at") or "—" }} ·
+    expires {{ one.get("expires_at") or "—" }} · steps {{ (one.get("step_ids") or []) | join(", ") or "—" }}</p>
+  {% if one.get("detail") %}{{ json_viewer(one.get("detail"), label="What a grant would widen") }}{% endif %}
+</section>
+{% endfor %}
+{% else %}
+{{ empty_state("Nothing is waiting for a person.", "Trajectories", "/apps/promptcadence/trajectories") }}
+{% endif %}
+{% endif %}
+{{ page_source(pending) }}
+
+<h3>Every request</h3>
+{{ refusal(history.error) }}
+{% if history.data is not none %}
+{% if history.data %}
+{% set rows = [] %}
+{% for one in history.data %}
+{% set _ = rows.append([short(one.get("request_id")), trajectory_link(one.get("trajectory_id")), one.get("kind") or "—", outcome_badge(one.get("status")), one.get("approver_token_id") or "—", one.get("resolution_reason") or "—", one.get("created_at") or "—", one.get("resolved_at") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Request"}, {"label": "Trajectory"}, {"label": "Kind"}, {"label": "Status"}, {"label": "Approver", "mono": true}, {"label": "Reason"}, {"label": "Requested", "mono": true}, {"label": "Resolved", "mono": true}], rows, caption="Every approval request, newest first", density="dense", complete=false, row_count=rows | length) }}
+{% else %}
+{{ empty_state("No approval request has been raised.") }}
+{% endif %}
+{% endif %}
+<p class="muted page-source">{{ history.detail }} — PromptCadence's API lists resolved requests only per trajectory.</p>
+{% endblock %}

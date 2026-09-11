@@ -196,6 +196,15 @@ def _view(request: Request, app: str, *, refresh: bool = False) -> AppView:
     )
 
 
+def app_view(request: Request, app: str) -> AppView:
+    """One application as this request sees it: its unit, its version, its verdict.
+
+    Raises:
+        AppUnknown: ``app`` is not one of the four.
+    """
+    return _view(request, require_app(app))
+
+
 def revision_pairs(
     request: Request, apps: Sequence[str] = APPLICATIONS
 ) -> dict[str, tuple[str | None, bool | None]]:
@@ -516,7 +525,7 @@ def read_app_page[T](
     request: Request,
     view: AppView,
     *,
-    api: Callable[[], T],
+    api: Callable[[], T] | None,
     database: Callable[[AppDatabase], T] | None,
 ) -> Sourced[T]:
     """:func:`weightroom.services.app_pages.read`, with this request's database opener bound."""

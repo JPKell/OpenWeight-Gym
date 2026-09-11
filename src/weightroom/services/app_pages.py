@@ -7,6 +7,8 @@ One rule for every page under an application's tab, written once so no page re-d
   could not answer (the Overview's rule, W3).
 * **Stopped, or not answering** — the application's database, read-only and only at a revision
   this console knows (ADR-0123 rule 3); a page with no database source says so.
+* **Where the API has no view of the subject** — the database, running or not (spec §7.3's own
+  words); the page passes no API reader and says why beside its footer.
 * **A version outside the range** — neither: the page degrades by name (spec §19).
 
 The footer names which, in words (spec §7.3: *from the API*, *from the database at revision 0015*).
@@ -14,19 +16,25 @@ The footer names which, in words (spec §7.3: *from the API*, *from the database
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from datetime import date, datetime
+from datetime import time as clock_time
+from decimal import Decimal
+from typing import TYPE_CHECKING, Any, Literal
 
 from baseaicore import SuiteError
+from sqlalchemy import column, inspect, select, table
+from sqlalchemy.exc import SQLAlchemyError
 
 from weightroom.services.apps import AppVersionMismatch
+from weightroom.services.db_reader import ReadFailed, TableUnknown, statement_deadline
 
 if TYPE_CHECKING:
     from weightroom.services.apps import AppView
     from weightroom.services.db_reader import AppDatabase
 
-__all__ = ["Sourced", "read"]
+__all__ = ["Sourced", "read", "rows_where"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,7 +62,7 @@ class Sourced[T]:
 def read[T](
     view: AppView,
     *,
-    api: Callable[[], T],
+    api: Callable[[], T] | None,
     database: Callable[[AppDatabase], T] | None,
     open_database: Callable[[], AppDatabase],
 ) -> Sourced[T]:
@@ -62,7 +70,8 @@ def read[T](
 
     Args:
         view: The application as this request sees it.
-        api: Reads the data from the running application's API.
+        api: Reads the data from the running application's API; ``None`` for a subject its API has
+            no view of, which the database answers whether or not the application runs.
         database: Reads the same data from an open, known-revision database handle; ``None`` for a
             page whose subject exists only in the running process (a tool registry, a probe).
         open_database: Opens the application's database read-only, refusing an unknown revision
@@ -80,7 +89,7 @@ def read[T](
             details={"app": view.name, "version": view.version},
         )
         return Sourced("none", mismatch.message, None, mismatch)
-    if view.running and view.reachable:
+    if api is not None and view.running and view.reachable:
         try:
             return Sourced("api", "From the API", api())
         except SuiteError as exc:
@@ -99,3 +108,85 @@ def read[T](
             )
     except SuiteError as exc:
         return Sourced("none", exc.message, None, exc)
+
+
+def _json_safe(value: Any) -> Any:  # noqa: ANN401 — whatever the driver returned
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return f"<{len(bytes(value))} bytes>"
+    if isinstance(value, (datetime, date, clock_time)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
+    return value
+
+
+def rows_where(
+    handle: AppDatabase,
+    table_name: str,
+    *,
+    equals: Mapping[str, object] | None = None,
+    order_by: str | None = None,
+    descending: bool = True,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    """Rows of one of an application's tables, filtered by equality, as dictionaries.
+
+    The read an application page falls back to (``data-model.md`` §4): untyped columns, so a
+    stored value comes back as the driver gives it rather than through a reflected type that may
+    not parse another application's format, over the handle's read-only connection and timeout.
+
+    Args:
+        handle: The open, revision-checked database.
+        table_name: The table.
+        equals: ``column → value`` conditions, all of which must hold; a ``None`` or empty value
+            is no condition, so an unset page filter reads everything.
+        order_by: The column to order by, or ``None`` for the database's order.
+        descending: Newest first, when ``order_by`` is a timestamp.
+        limit: Rows at most.
+        offset: Rows to skip, for a numbered page.
+
+    Returns:
+        The rows, each ``{column: value}`` with values JSON-safe.
+
+    Raises:
+        TableUnknown: The database has no such table.
+        ReadFailed: A named column is not one of the table's, or the database refused or ran past
+            the timeout.
+    """
+    inspector = inspect(handle.engine)
+    if table_name not in inspector.get_table_names():
+        raise TableUnknown(
+            f"{handle.app}'s database has no table {table_name!r}.",
+            details={"app": handle.app, "table": table_name},
+        )
+    names = [str(one["name"]) for one in inspector.get_columns(table_name)]
+    conditions = {key: value for key, value in (equals or {}).items() if value not in (None, "")}
+    for name in [*conditions, *([order_by] if order_by else [])]:
+        if name not in names:
+            raise ReadFailed(
+                f"{name!r} is not a column of {handle.app}'s {table_name}.",
+                details={"app": handle.app, "table": table_name, "column": name},
+            )
+    source = table(table_name, *(column(name) for name in names))
+    statement = select(*source.c)
+    for key, value in conditions.items():
+        statement = statement.where(source.c[key] == value)
+    if order_by:
+        key_column = source.c[order_by]
+        statement = statement.order_by(key_column.desc() if descending else key_column.asc())
+    statement = statement.limit(max(1, limit)).offset(max(0, offset))
+    try:
+        with (
+            handle.engine.connect() as connection,
+            statement_deadline(connection, handle.timeout_seconds),
+        ):
+            return [
+                {str(key): _json_safe(value) for key, value in row.items()}
+                for row in connection.execute(statement).mappings()
+            ]
+    except SQLAlchemyError as exc:
+        raise ReadFailed(
+            f"{handle.app}'s {table_name} could not be read: {exc}",
+            details={"app": handle.app, "table": table_name},
+        ) from exc

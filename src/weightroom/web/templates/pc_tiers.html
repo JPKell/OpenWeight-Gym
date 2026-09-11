@@ -1,0 +1,45 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list, table, empty_state, status_dot %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_pc.html" import short %}
+{% block title %}Tiers — PromptCadence — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Tiers {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/promptcadence/settings">Settings</a> · <a href="/apps/loadcoach">LoadCoach</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">A tier is configuration over exactly one LoadCoach task profile: which model serves
+it is LoadCoach's decision. Escalation is explicit and ordered — nothing silently climbs to a more
+capable tier. A remote tier serves only when LoadCoach has a remote registration <em>and</em> the
+tier is priced (ADR-0098).</p>
+{{ refusal(sourced.error) }}
+{% set report = sourced.data %}
+{% if report is not none %}
+{{ kv_list([
+  {"label": "Snapshot", "value": report.get("snapshot_id") or "—"},
+  {"label": "Default tier", "value": report.get("default_tier") or "—"},
+  {"label": "Escalation order", "value": (report.get("escalation_order") or []) | join(" → ") or "—"},
+  {"label": "Remote provider registered", "value": "yes" if report.get("remote_provider") else "no"},
+]) }}
+{% set rows = [] %}
+{% for one in report.get("rows") or [] %}
+{% set _ = rows.append([
+  one.get("name"),
+  one.get("task_profile") or "—",
+  badge("remote" if one.get("is_remote") else "local", tone="warning" if one.get("is_remote") else "success"),
+  one.get("effective_max_classification") or "—",
+  (one.get("context_budget_tokens") ~ " tokens") if one.get("context_budget_tokens") is not none else "—",
+  status_dot("ok" if one.get("available") else "degraded", label="available" if one.get("available") else (one.get("unavailable_reason") or "unavailable"))
+]) %}
+{% endfor %}
+{% if rows %}
+{{ table([{"label": "Tier", "mono": true}, {"label": "Task profile", "mono": true}, {"label": "Egress"}, {"label": "Max classification"}, {"label": "Context budget", "numeric": true}, {"label": "Available"}], rows, caption="Configured tiers", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No tiers are configured.") }}
+{% endif %}
+<p class="muted">A local tier's declared ceiling is shown as its <em>effective</em> one: nothing leaves
+the machine, so a local tier admits every classification whatever it declares.</p>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

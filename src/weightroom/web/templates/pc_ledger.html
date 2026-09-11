@@ -1,0 +1,72 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, card, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_pc.html" import short, measure, trajectory_link %}
+{% block title %}Ledger — PromptCadence — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Ledger {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/costs">Costs, every application</a> · <a href="/apps/promptcadence/settings">Ceilings</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">What was spent, and what each ceiling said at the moment it was spent. Money is never
+stored — every figure is derived from recorded usage and a pricing hash (ADR-0030) — and a local
+model's cost is <em>unpriced</em>, never <code>$0.00</code>.</p>
+{{ refusal(sourced.error) }}
+{% set data = sourced.data %}
+{% if data is not none %}
+{% set position = data["position"] %}
+{% if position %}
+{% set day = position.get("day") or {} %}
+<h3>Today</h3>
+<ul class="card-grid">
+  {{ card("Day tokens left", day.get("tokens_remaining_display") or "—", note="UTC day " ~ (position.get("utc_day") or "—"), kind="figure") }}
+  {{ card("Day money left", day.get("money_remaining_display") or "—", note="the shared per-day ceiling", kind="figure") }}
+  {{ card("Unpriced debits", day.get("unpriced_debit_count") if day.get("unpriced_debit_count") is not none else "—", note="today, counted beside every money figure", kind="figure") }}
+  {% if position.get("trajectory") %}
+  {{ card("This trajectory", position.get("trajectory").get("tokens_remaining_display") or "—", note="tokens left on its own ceiling", kind="figure") }}
+  {% endif %}
+</ul>
+{% if position.get("projects") %}
+<h3>Projects</h3>
+{% set rows = [] %}
+{% for one in position.get("projects") %}
+{% set _ = rows.append([one.get("project"), one.get("tokens_remaining_display") or "—", one.get("money_remaining_display") or "—", badge("binding", tone="warning") if one.get("binds") else "no"]) %}
+{% endfor %}
+{{ table([{"label": "Project"}, {"label": "Tokens left"}, {"label": "Money left"}, {"label": "Binds"}], rows, caption="Configured project ceilings", density="dense") }}
+{% endif %}
+{% if position.get("tiers") %}
+<h3>Per-tier spend</h3>
+<p class="muted">Spend, not headroom: no tier ceiling is configured, so nothing about a tier can be exceeded.</p>
+{% set rows = [] %}
+{% for one in position.get("tiers") %}
+{% set _ = rows.append([one.get("tier"), one.get("tokens_spent_display") or "—", one.get("money_spent_display") or "—", one.get("unpriced_debit_count")]) %}
+{% endfor %}
+{{ table([{"label": "Tier", "mono": true}, {"label": "Tokens"}, {"label": "Money"}, {"label": "Unpriced", "numeric": true}], rows, caption="Ledger-wide spend by tier", density="dense") }}
+{% endif %}
+{% else %}
+<p class="notice">Today's position is PromptCadence's own arithmetic over its ceilings, and it is not
+answering; the <a href="/costs">Costs</a> page reads the same balances from its database.</p>
+{% endif %}
+
+<h3>Recorded debits</h3>
+<form class="filter-bar" action="/apps/promptcadence/ledger" method="get" role="search">
+  <div class="field"><label for="pc-ledger-trajectory">Trajectory</label>
+    <input id="pc-ledger-trajectory" name="trajectory_id" value="{{ trajectory_id }}" placeholder="a trajectory id"></div>
+  <div class="field"><label for="pc-ledger-tag">Tag</label>
+    <input id="pc-ledger-tag" name="tag" value="{{ tag }}" placeholder="tier:local_fast, project:billing"></div>
+  <button type="submit">Filter</button>
+</form>
+{% if data["entries"] %}
+{% set rows = [] %}
+{% for one in data["entries"] %}
+{% set usage = one.get("usage") or {} %}
+{% set _ = rows.append([trajectory_link(one.get("trajectory_id")), short(one.get("turn_id")), one.get("occurred_at") or "—", measure(usage.get("input")), measure(usage.get("output")), measure(usage.get("cache_read")), badge("unpriced", tone="neutral") if one.get("unpriced") else badge("priced", tone="success"), (one.get("tags") or []) | join(", ") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Trajectory"}, {"label": "Turn"}, {"label": "When", "mono": true}, {"label": "Input", "numeric": true}, {"label": "Output", "numeric": true}, {"label": "Cache read", "numeric": true}, {"label": "Priced"}, {"label": "Tags"}], rows, caption="Recorded debits, newest first", density="dense", complete=false, row_count=rows | length) }}
+{% else %}
+{{ empty_state("No debits recorded for this filter.", "Every debit", "/apps/promptcadence/ledger") }}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}
