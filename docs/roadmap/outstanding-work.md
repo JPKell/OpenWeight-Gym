@@ -96,7 +96,9 @@ transition was removed at row W10).
 ### 1.2 Arcs with their own file
 
 * **WeightRoomGym** → [`roadmap/weightroom-work.md`](weightroom-work.md) (rows W0–W10, WS1–WS4, WM,
-  WM2; started 2026-09-09; W0 done the same day, `history/handoffs/W0_HANDOFF.md`).
+  WA1, WI1, WM2; started 2026-09-09; W0–W9 and the side rows done, W10 built 2026-09-10 with
+  `wr-gym 1.0.0` prepared and its independent-device verification the operator's,
+  `history/handoffs/W10_HANDOFF.md`; WM2 after the release).
 
 ### 1.1 M9 — Suite 1.0, outside the arcs
 

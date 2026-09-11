@@ -9,7 +9,7 @@ prompt per row under `docs/history/prompts/`. A person opening this directory se
 
 | File | Arc | Started | Status |
 |---|---|---|---|
-| [`weightroom-work.md`](weightroom-work.md) | **WeightRoomGym** — the fifth application, the host operator's console (rows W0–W10, WS1–WS4, WM, WM2) | 2026-09-09 | W0 done 2026-09-09; W1 next |
+| [`weightroom-work.md`](weightroom-work.md) | **WeightRoomGym** — the fifth application, the host operator's console (rows W0–W10, WS1–WS4, WM, WM2) | 2026-09-09 | W0–W9, WS1–WS4, WM, WA1, WI1 done; W10 built 2026-09-10 (`1.0.0` prepared), its Gate D verification the operator's; WM2 next, after the release |
 | [`outstanding-work.md`](outstanding-work.md) | The PromptCadence arc (M10–M13), the Adapter arc (LA0–LA3), M9 and the follow-up rows A1–N6 — every row before the per-arc convention | 2026-09-02 | All rows done by 2026-09-09; keeps the index of arc files in its §1.2 |
 
 ## Roadmaps — the rationale
