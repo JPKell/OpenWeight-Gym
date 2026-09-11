@@ -17,6 +17,7 @@ from weightroom.services.settings_forms import (
     SchemaCache,
     is_secret_key,
     read_schema_document,
+    save_settings,
     settings_form,
 )
 
@@ -186,6 +187,58 @@ def test_a_database_row_the_environment_shadows_is_marked_shadowed(tmp_path: Pat
     document["config_path"] = str(config)
     form = settings_form(_settings(tmp_path), "loadcoach", document=document, document_error=None)
     assert form.field_for(key).shadowed  # type: ignore[union-attr]
+
+
+# --- Unset, which TOML cannot hold (row WPF1) ----------------------------------------------
+
+
+def test_a_leaf_the_model_allows_to_be_unset_says_so(tmp_path: Path) -> None:
+    """WP6 finding 1: the form had no way to say *unset*, so every widget invented a value."""
+    form = _form("freeweight", tmp_path, toml="[runtime]\ncontext_size = 8192\n")
+    flash = form.field_for("runtime.flash_attention")
+    precision = form.field_for("runtime.kv_cache_precision")
+    port = form.field_for("server.port")
+    assert flash is not None and precision is not None and port is not None
+    assert (flash.kind, flash.nullable, flash.value) == ("boolean", True, None)
+    assert (precision.nullable, precision.value) == (True, None)
+    assert precision.choices == ("f16", "q8_0", "q4_0")
+    assert not port.nullable
+
+
+@pytest.mark.parametrize("key", ["runtime.flash_attention", "runtime.kv_cache_precision"])
+def test_an_empty_post_on_a_nullable_leaf_is_unset_not_a_value(key: str, tmp_path: Path) -> None:
+    one = _form("freeweight", tmp_path).field_for(key)
+    assert one is not None
+    assert one.parse("") is None
+
+
+def test_an_unset_key_the_file_does_not_name_is_unchanged_not_a_write(tmp_path: Path) -> None:
+    form = _form("freeweight", tmp_path, toml="[runtime]\ncontext_size = 8192\n")
+    result = save_settings(
+        _settings(tmp_path),
+        "freeweight",
+        {"runtime.flash_attention": None, "runtime.kv_cache_precision": None},
+        form=form,
+        base_mtime=form.base_mtime,
+    )
+    assert {one.outcome for one in result.outcomes} == {"unchanged"}
+    assert result.keys_with("written") == ()
+
+
+def test_unsetting_a_key_the_file_names_is_refused_by_name_and_alone(tmp_path: Path) -> None:
+    """TOML has no null, so *unset* on a key the file carries is a deletion — the raw editor's
+    job. Only that key is refused; the rest of the save is unaffected."""
+    form = _form("freeweight", tmp_path, toml='[runtime]\nkv_cache_precision = "q8_0"\n')
+    result = save_settings(
+        _settings(tmp_path),
+        "freeweight",
+        {"runtime.kv_cache_precision": None},
+        form=form,
+        base_mtime=form.base_mtime,
+    )
+    refused = {one.key: one for one in result.refused}
+    assert set(refused) == {"runtime.kv_cache_precision"}
+    assert "deletion" in (refused["runtime.kv_cache_precision"].message or "")
 
 
 # --- Secrets -------------------------------------------------------------------------------

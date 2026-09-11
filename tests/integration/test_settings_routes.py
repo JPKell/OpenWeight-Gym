@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import tomllib
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -394,6 +395,120 @@ def test_the_settings_page_renders_every_section_and_the_raw_editor(tmp_path: Pa
         "/apps/loadcoach/settings/raw", headers={"Accept": "text/html"}
     ).text
     assert 'name="text"' in editor
+
+
+class _BrowserForm(HTMLParser):
+    """What a browser would post back from a rendered page, left exactly as it was served.
+
+    The console's own tests had always built the post by hand, so WP6's finding 1 — a select with
+    no *unset* option posting ``false`` for a key nobody touched — could not be seen from a test
+    (row WPF1). This reads the markup instead: a text input posts its ``value``, and a select
+    posts its ``selected`` option, or its first when none is marked, exactly as a browser does.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.data: dict[str, str] = {}
+        self._select = ""
+        self._selected: str | None = None
+        self._first: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        one = dict(attrs)
+        name = one.get("name") or ""
+        if tag == "input" and name and one.get("type") not in {"submit", "button"}:
+            self.data[name] = one.get("value") or ""
+        elif tag == "select" and name:
+            self._select, self._selected, self._first = name, None, None
+        elif tag == "option" and self._select:
+            value = one.get("value") or ""
+            self._first = value if self._first is None else self._first
+            if "selected" in one:
+                self._selected = value
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "select" and self._select:
+            chosen = self._selected if self._selected is not None else self._first
+            self.data[self._select] = chosen or ""
+            self._select = ""
+
+
+def _as_a_browser_would_post(page: str) -> dict[str, str]:
+    """The settings form's own controls out of ``page`` — the other forms' fields left behind."""
+    parser = _BrowserForm()
+    parser.feed(page)
+    return {
+        name: value
+        for name, value in parser.data.items()
+        if name.startswith("field:") or name in {"base_mtime", "to_file"}
+    }
+
+
+def test_the_page_posted_back_untouched_writes_nothing(tmp_path: Path) -> None:
+    """WP6 findings 1: on FreeWeight's own default provider, no save through the form could land.
+
+    Its `runtime.flash_attention` (a nullable boolean) and `runtime.kv_cache_precision` (a
+    nullable enum) had no *unset* option, so an untouched save posted `false` and `f16`, wrote
+    two keys the operator never touched, and FreeWeight refused the whole file.
+    """
+    console, config = _console(
+        tmp_path, app="freeweight", config_toml="[runtime]\ncontext_size = 8192\n"
+    )
+    console.login()
+    before = config.read_text()
+    page = console.client.get("/apps/freeweight/settings", headers={"Accept": "text/html"}).text
+    posted = _as_a_browser_would_post(page)
+    assert posted["field:runtime.flash_attention"] == ""
+    assert posted["field:runtime.kv_cache_precision"] == ""
+    response = console.post_form("/apps/freeweight/settings", posted)
+    assert response.status_code == 200
+    assert "Nothing changed." in response.text
+    assert config.read_text() == before
+    assert not config.with_name("config.toml.bak").exists()
+
+
+def test_the_page_saves_one_changed_key_beside_the_unset_ones(tmp_path: Path) -> None:
+    """The other half of WP6 finding 1: the save the operator actually meant still lands."""
+    console, config = _console(
+        tmp_path, app="freeweight", config_toml="[runtime]\ncontext_size = 8192\n"
+    )
+    console.login()
+    page = console.client.get("/apps/freeweight/settings", headers={"Accept": "text/html"}).text
+    posted = _as_a_browser_would_post(page)
+    posted["field:adapters.directory"] = str(tmp_path / "adapters")
+    response = console.post_form("/apps/freeweight/settings", posted)
+    assert response.status_code == 200
+    assert "1 written to the file" in response.text
+    written = tomllib.loads(config.read_text())
+    assert written["adapters"]["directory"] == str(tmp_path / "adapters")
+    assert "flash_attention" not in written["runtime"]
+    assert "kv_cache_precision" not in written["runtime"]
+
+
+def test_a_nullable_key_set_through_the_form_is_written_and_can_be_seen_again(
+    tmp_path: Path,
+) -> None:
+    """*unset* is a rendering, not a ceiling: the key still saves when the operator picks one."""
+    console, config = _console(
+        tmp_path, app="freeweight", config_toml="[runtime]\ncontext_size = 8192\n"
+    )
+    console.login()
+    page = console.client.get("/apps/freeweight/settings", headers={"Accept": "text/html"}).text
+    posted = _as_a_browser_would_post(page)
+    posted["field:runtime.kv_cache_precision"] = "q8_0"
+    assert console.post_form("/apps/freeweight/settings", posted).status_code == 200
+    assert tomllib.loads(config.read_text())["runtime"]["kv_cache_precision"] == "q8_0"
+    again = console.client.get("/apps/freeweight/settings", headers={"Accept": "text/html"}).text
+    posted = _as_a_browser_would_post(again)
+    assert posted["field:runtime.kv_cache_precision"] == "q8_0"
+    # Back to *unset* is a deletion the raw editor owns: that key alone is refused, and the other
+    # change in the same save still lands (row WPF1).
+    posted["field:runtime.kv_cache_precision"] = ""
+    posted["field:runtime.context_size"] = "4096"
+    response = console.post_form("/apps/freeweight/settings", posted)
+    assert "deletion" in response.text
+    written = tomllib.loads(config.read_text())["runtime"]
+    assert (written["kv_cache_precision"], written["context_size"]) == ("q8_0", 4096)
 
 
 def test_a_secret_is_never_rendered_on_the_page(tmp_path: Path) -> None:

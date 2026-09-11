@@ -142,6 +142,9 @@ class FormField:
             applied live (row W10; ``history/handoffs/WI1_HANDOFF.md`` §5 item 4a).
         stored: Whether the running application holds a stored row for this key — one a
             *clear* hands back to configuration (WI1 §5 item 4b).
+        nullable: Whether the model allows the key to be **unset** (``bool | None``). A widget
+            that cannot say *unset* has to invent a value, and an untouched form then writes a
+            key the operator never touched (row WPF1; ``WP6_HANDOFF.md`` finding 1).
     """
 
     key: str
@@ -162,6 +165,7 @@ class FormField:
     in_file: bool = False
     applies: str = ""
     stored: bool = False
+    nullable: bool = False
 
     @property
     def value_text(self) -> str:
@@ -191,6 +195,11 @@ class FormField:
             ValueError: The text is not a value of this field's type.
         """
         text = raw.strip()
+        if raw == "" and self.nullable:
+            # The model says this key may be unset, so an empty box or a select's *unset* option
+            # is *unset* for every kind — never a written `false`, `""` or the first choice of a
+            # list the operator never opened (row WPF1).
+            return None
         if self.kind == "string":
             # An empty box on a string the model has no value for means *leave it unset*, not
             # "set it to the empty string" — otherwise submitting an untouched form would write
@@ -494,10 +503,17 @@ def _number_text(value: float) -> str:
     return str(value)
 
 
+_NULLABLE: Final = "wr_gym_nullable"
+"""Where :func:`_resolve` records that it unwrapped a ``null`` member, so the field can still say
+the model allows *unset* after the union is gone. A private marker on the resolved copy, never on
+the application's own document, and read only through :func:`_is_nullable`."""
+
+
 def _resolve(schema: Mapping[str, Any], defs: Mapping[str, Any]) -> dict[str, Any]:
     """Follow ``$ref`` and unwrap a nullable ``anyOf``/``allOf`` to the field's real schema."""
     seen = 0
     current: dict[str, Any] = dict(schema)
+    nullable = False
     while seen < 8:
         seen += 1
         reference = current.get("$ref")
@@ -514,13 +530,24 @@ def _resolve(schema: Mapping[str, Any], defs: Mapping[str, Any]) -> dict[str, An
                     one for one in members if isinstance(one, Mapping) and one.get("type") != "null"
                 ]
                 if len(real) == 1:
+                    nullable = nullable or len(real) != len(members)
                     merged = dict(real[0])
                     merged.update({k: v for k, v in current.items() if k != keyword})
                     current = merged
                     break
         else:
             break
+    if nullable:
+        current[_NULLABLE] = True
     return current
+
+
+def _is_nullable(schema: Mapping[str, Any]) -> bool:
+    """Whether the model says this leaf may be unset — ``bool | None``, ``type: [ …, "null"]``."""
+    declared = schema.get("type")
+    if isinstance(declared, list):
+        return "null" in declared
+    return bool(schema.get(_NULLABLE))
 
 
 _KINDS: Final[dict[str, str]] = {
@@ -934,6 +961,7 @@ def _build_field(
         choices=_choices_of(schema, defs),
         live=live,
         in_file=in_file,
+        nullable=_is_nullable(schema),
         applies=str((definition or {}).get("applies") or "") if runtime else "",
         stored=bool(runtime and definition is not None and definition.get("stored") is not None),
     )
@@ -1093,10 +1121,26 @@ def save_settings(
             )
         elif one.secret and value == REDACTED:
             outcomes.append(KeyOutcome(key, "unchanged"))
-        elif not one.secret and value == one.value:
+        elif value == one.value:
+            # `one.secret` is not a carve-out here: a secret whose value is *empty* is rendered
+            # in the clear (`REDACTED` stands in only for a value there is one of), so it comes
+            # back as itself and is as unchanged as any other key (row WPF1).
             outcomes.append(KeyOutcome(key, "unchanged"))
         elif one.runtime and key not in to_file:
             runtime_changes[key] = value
+        elif value is None:
+            # The file names the key and the form says *unset*. TOML has no null, so that is a
+            # deletion, not an edit — refused by name, and only this key, rather than failing
+            # every other change in the same save inside `apply_changes` (row WPF1).
+            outcomes.append(
+                KeyOutcome(
+                    key,
+                    "refused",
+                    f"{key} is set in {form.config_path}, and TOML has no null: unsetting it is a "
+                    f"deletion. Remove the line in the raw editor.",
+                    "CONFIG_VALIDATION_FAILED",
+                )
+            )
         else:
             file_changes[key] = value
 

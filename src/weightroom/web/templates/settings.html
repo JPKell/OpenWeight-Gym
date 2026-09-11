@@ -87,16 +87,21 @@ Each one below offers <em>save to the file instead</em>, which takes effect at t
           <span class="field-hint">default <code>{{ one.default_text or "—" }}</code></span>
         </th>
         <td>
+          {#- A select always posts something, so a key the model allows to be unset needs an
+              *unset* option, or every save writes a value the operator never chose (row WPF1). -#}
+          {% set unset = one.nullable and one.value is none %}
           {% if one.choices %}
           <select id="{{ field_id }}" name="field:{{ one.key }}">
+            {% if one.nullable %}<option value=""{% if unset %} selected{% endif %}>unset</option>{% endif %}
             {% for choice in one.choices %}
-            <option value="{{ choice }}"{% if choice == one.value_text %} selected{% endif %}>{{ choice }}</option>
+            <option value="{{ choice }}"{% if not unset and choice == one.value_text %} selected{% endif %}>{{ choice }}</option>
             {% endfor %}
           </select>
           {% elif one.kind == "boolean" %}
           <select id="{{ field_id }}" name="field:{{ one.key }}">
+            {% if one.nullable %}<option value=""{% if unset %} selected{% endif %}>unset</option>{% endif %}
             <option value="true"{% if one.value is sameas true %} selected{% endif %}>true</option>
-            <option value="false"{% if one.value is not sameas true %} selected{% endif %}>false</option>
+            <option value="false"{% if not unset and one.value is not sameas true %} selected{% endif %}>false</option>
           </select>
           {% else %}
           <input id="{{ field_id }}" name="field:{{ one.key }}"

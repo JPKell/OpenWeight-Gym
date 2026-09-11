@@ -50,6 +50,18 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   note that they were not on its API.
 
 ### Fixed
+- **The settings form could not save FreeWeight's file keys** (row WPF1, from WP6 finding 1). A
+  key the application's model allows to be *unset* was rendered by a widget that cannot say so: a
+  nullable boolean (`runtime.flash_attention`) as a true/false select with `false` preselected,
+  and a nullable enum (`runtime.kv_cache_precision`) as its first choice. Every save therefore
+  wrote two keys the operator never touched, and FreeWeight refused the whole file whenever its
+  provider was `ollama` — no save through the form could land. Nullable leaves now render an
+  *unset* option, an empty submission on one means *unset* for every type, and a secret whose
+  value is empty (so rendered in the clear rather than as `********`) is compared like any other
+  key instead of being written back on every save. Picking *unset* on a key the file names is
+  refused by name as the deletion it is — that stays the raw editor's job — and only that key:
+  the rest of the same save still lands. Nothing here names a key of any application (ADR-0127
+  rule 3).
 - A form with a `fieldset` overflowed a phone (row WP4's phone demonstration): a fieldset's
   default `min-width: min-content` let a select whose options carry scale descriptors widen
   FreeWeight's grading form to 839 px on a 412 px screen, and taps on *Save and go on* landed on
