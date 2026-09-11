@@ -9,7 +9,7 @@ import pytest
 import respx
 
 from weightroom.config import Settings, load_settings
-from weightroom.services.app_api import AppRefused, call, stream
+from weightroom.services.app_api import AppRefused, call, download, stream
 from weightroom.services.apps import AppUnreachable
 
 BASE = "http://127.0.0.1:8768"
@@ -106,3 +106,62 @@ def test_a_refused_stream_ends_with_the_code_and_a_closing_frame(settings: Setti
     assert "event: error" in text
     assert "TRAJECTORY_NOT_FOUND" in text
     assert "event: stream.closed" in text
+
+
+@respx.mock
+def test_a_download_answers_its_headers_then_streams_the_bytes_unchanged(
+    settings: Settings,
+) -> None:
+    chunks = [b"run_id,metric_key\n", b"01A,ttft_ms\n", b"01B,load_ms\n"]
+    route = respx.get(f"{BASE}/api/v1/results/export").mock(
+        return_value=httpx.Response(
+            200,
+            headers={
+                "content-type": "text/csv; charset=utf-8",
+                "content-disposition": 'attachment; filename="freeweight-run.csv"',
+            },
+            content=iter(chunks),
+        )
+    )
+    with httpx.Client() as client:
+        headers, body = download(
+            client, settings, "promptcadence", "results/export",
+            params={"format": "csv", "selector": None},
+        )  # fmt: skip
+        assert headers == {
+            "content-type": "text/csv; charset=utf-8",
+            "content-disposition": 'attachment; filename="freeweight-run.csv"',
+        }
+        assert list(body) == chunks
+    sent = route.calls.last.request
+    assert sent.url.params["format"] == "csv"
+    assert "selector" not in sent.url.params
+    assert sent.headers["Authorization"] == f"Bearer {TOKEN}"
+
+
+@respx.mock
+def test_a_refused_download_raises_before_any_byte(settings: Settings) -> None:
+    respx.get(f"{BASE}/api/v1/results/export").mock(
+        return_value=httpx.Response(
+            400,
+            json={
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "That selection covers 612 runs; the limit is 500.",
+                    "details": {"matched": 612, "limit": 500},
+                }
+            },
+        )
+    )
+    with httpx.Client() as client, pytest.raises(AppRefused) as raised:
+        download(client, settings, "promptcadence", "results/export")
+    assert raised.value.details["app_code"] == "VALIDATION_ERROR"
+    assert raised.value.details["app_details"] == {"matched": 612, "limit": 500}
+    assert "612 runs" in raised.value.message
+
+
+@respx.mock
+def test_an_unanswered_download_is_unreachable(settings: Settings) -> None:
+    respx.get(f"{BASE}/api/v1/results/export").mock(side_effect=httpx.ConnectError("refused"))
+    with httpx.Client() as client, pytest.raises(AppUnreachable):
+        download(client, settings, "promptcadence", "results/export")

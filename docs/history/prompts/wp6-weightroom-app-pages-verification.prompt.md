@@ -23,6 +23,9 @@ independent-device run was done); spec §7.3, §20.
 * **Parity is judged against each application's own UI.** Do not judge it against the WP
   handoffs' own tables, which are the builders' claims. Open each application's UI on the host
   over loopback beside the console.
+* **Pages with no console home are judged here** (operator, 2026-09-11). These are FreeWeight's
+  Dashboard, Sources and System, and LoadCoach's System (`WP2_HANDOFF.md` §4, `WP3_HANDOFF.md`
+  §3). Each one becomes a row that amends spec §7.3, or is recorded as not needed and why.
 
 ## The run
 
@@ -36,6 +39,11 @@ from a desktop browser, in both themes:
    * the LoadCoach queue paused, resumed and drained, then undrained by restart;
    * a provider edited and a security key re-authenticated;
    * a FreeWeight run started, followed and compared;
+   * FreeWeight's adapters turned on and one adapter's page read with live data (operator,
+     2026-09-11; WP3 could show only *Adapters are off*). From the console, set FreeWeight's
+     `[adapters] directory` to `~/ai/models/adapters/llm`. Measure one adapter and its bare base
+     on the `llamacpp` provider, one live load at a time. Then read that adapter's page: its base,
+     its runs and results, and the deltas beside the base;
    * a goal forked, calibrated, graded across a reload, and exported;
    * an IdeaPress project created, planned, drafted, revised and exported.
 

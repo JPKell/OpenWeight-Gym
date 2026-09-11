@@ -1,0 +1,64 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import yes_no, value, availability, link %}
+{% block title %}Adapters — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data %}
+<div class="page-head">
+  <h2>Adapters {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/evidence">Evidence</a> · <a href="/apps/freeweight/provider">Provider</a> · <a href="/apps/loadcoach/adapters">LoadCoach's adapters</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">The LoRA adapters FreeWeight can measure a base under: the operator's adapter directory as FreeWeight reads it
+(ADR-0061), beside FreeWeight's own record of every adapter it has measured under, which outlives the directory. A subject is a
+base with one adapter applied, and its evidence is measured on it, never inherited from the base (ADR-0059). Only
+<code>provider.kind = "llamacpp"</code> serves an adapter subject.</p>
+{{ refusal(sourced.error) }}
+{% if data is not none %}
+{% if data.get("enabled") is sameas false %}
+<p class="notice" role="status">Adapters are off. {{ data.get("note") or "" }}</p>
+{% elif data.get("note") %}
+<p class="notice" role="alert">{{ data.get("note") }}</p>
+{% elif data.get("directory") %}
+<p>Directory: <code>{{ data.get("directory") }}</code></p>
+{% endif %}
+
+{% if data.get("adapters") %}
+{% set rows = [] %}
+{% for adapter in data.get("adapters") %}
+{% set _ = rows.append([
+  link("/apps/freeweight/adapters/" ~ ((adapter.get("name") or "") | urlencode), adapter.get("name") or "—", class_="mono"),
+  (adapter.get("base_model_name") or "—") ~ " · " ~ (adapter.get("base_confidence") or "—"),
+  (adapter.get("declared_capabilities") or []) | join(", ") or "none declared",
+  adapter.get("data_classification") or "—",
+  availability(adapter),
+  yes_no(adapter.get("in_directory")),
+  "yes" if adapter.get("measured") else "no",
+  value(adapter.get("run_count"), fmt="%d"),
+  adapter.get("last_run_at") or "—"
+]) %}
+{% endfor %}
+{{ table([{"label": "Adapter"}, {"label": "Base · proven by"}, {"label": "Declares"}, {"label": "Classification"}, {"label": "Availability"}, {"label": "In the directory"}, {"label": "Measured"}, {"label": "Runs", "numeric": true}, {"label": "Last run", "mono": true}], rows, caption="Each adapter by its artifact digest; one measured and since removed from the directory stays listed", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No adapter in the directory, and none measured under.") }}
+{% endif %}
+
+{% if data.get("invalid") %}
+<h3>Manifests FreeWeight could not read</h3>
+{% set rows = [] %}
+{% for one in data.get("invalid") %}{% set _ = rows.append([one.get("path") or "—", one.get("problem") or "—"]) %}{% endfor %}
+{{ table([{"label": "Manifest", "mono": true}, {"label": "Problem"}], rows, density="dense", row_count=rows | length) }}
+{% endif %}
+{% if data.get("drafts") %}
+<h3>Drafts</h3>
+<p class="muted">Never registered until a person reviews one and renames it.</p>
+<ul>{% for one in data.get("drafts") %}<li class="mono">{{ one }}</li>{% endfor %}</ul>
+{% endif %}
+{% if data.get("unmanifested") %}
+<h3>Artifacts with no manifest</h3>
+<ul>{% for one in data.get("unmanifested") %}<li class="mono">{{ one }}</li>{% endfor %}</ul>
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

@@ -122,10 +122,19 @@ def test_a_suite_run_is_launched_under_the_memory_cap_with_freewights_own_flags(
         settings,
         services,
         "freeweight_suite_run",
-        {"model": "ollama/qwen3:8b", "suite": "native.performance", "allow_prompt_override": allow},
+        {
+            "model": "ollama/qwen3:8b",
+            "suite": "native.performance",
+            "allow_prompt_override": allow,
+            "label": "q8 baseline" if allow else None,
+        },
     )
     assert outcome == Outcome("completed")
     argv = (tmp_path / "systemd-run.argv").read_text().splitlines()
+    # Row WP3: the Runs page's label reaches `run start --label` as one argument, and only when set.
+    assert ("--label" in argv) is allow
+    if allow:
+        assert argv[argv.index("--label") + 1] == "q8 baseline"
     assert argv[:10] == [
         "--user",
         "--scope",

@@ -1,0 +1,89 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link, short, value, machine_link %}
+{% block title %}Evidence — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Evidence {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/results">Results</a> · <a href="/apps/loadcoach/evidence">LoadCoach's import</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">What LoadCoach routes on: one <code>capability.evidence</code> record per subject, runtime profile, machine and
+capability. A capability nobody measured is absent, never scored zero, and a goal below its calibration gate emits nothing.
+A <code>user.*</code> record carries its goal hash, jury and calibration beside its score (ADR-0032).</p>
+
+<form method="get" action="/apps/freeweight/evidence" class="filter-bar" aria-label="Evidence filters">
+  <div class="field"><label for="fw-ev-capability">Capability</label><input id="fw-ev-capability" name="capability" value="{{ filters.capability }}" placeholder="tool_use or user.house_voice"></div>
+  <div class="field"><label for="fw-ev-model">Model</label><input id="fw-ev-model" name="model" value="{{ filters.model }}"></div>
+  <div class="field"><label for="fw-ev-machine">Machine fingerprint</label><input id="fw-ev-machine" name="machine" value="{{ filters.machine }}"></div>
+  <div class="field"><label for="fw-ev-profile">Runtime profile hash</label><input id="fw-ev-profile" name="runtime_hash" value="{{ filters.runtime_profile }}"></div>
+  <div class="field"><label for="fw-ev-confidence">Minimum confidence</label><input id="fw-ev-confidence" name="min_confidence" value="{{ filters.min_confidence }}" inputmode="decimal" placeholder="0.0 – 1.0"></div>
+  <button type="submit">Apply</button>
+  <a href="/apps/freeweight/evidence">Clear</a>
+</form>
+
+{{ refusal(sourced.error) }}
+{% set data = sourced.data %}
+{% if data is not none %}
+{% if data.get("items") %}
+{% set rows = [] %}
+{% for record in data.get("items") %}
+{% set calibration = record.get("calibration") or {} %}
+{% set _ = rows.append([
+  record.get("capability_id") ~ (" · goal" if record.get("goal_hash") else ""),
+  (record.get("subject") or "—") ~ (" + " ~ record.get("adapter") if record.get("adapter") else ""),
+  value(record.get("score"), fmt="%.3f"),
+  value(record.get("confidence"), fmt="%.2f"),
+  (record.get("sample_count") | string) ~ (" (+" ~ record.get("excluded_count") ~ " excluded)" if record.get("excluded_count") else ""),
+  record.get("measured_at") or "—",
+  short(record.get("runtime_profile_hash")),
+  machine_link(record.get("machine_fingerprint")),
+  record.get("schema_version") or "—"
+]) %}
+{% endfor %}
+{{ table([{"label": "Capability", "mono": true}, {"label": "Subject", "mono": true}, {"label": "Score", "numeric": true}, {"label": "Confidence", "numeric": true}, {"label": "Samples", "numeric": true}, {"label": "Measured", "mono": true}, {"label": "Runtime profile"}, {"label": "Machine"}, {"label": "Schema"}], rows, caption="Current records, by capability", density="dense", complete=next_href is none, row_count=rows | length) }}
+{% if next_href %}<p><a href="{{ next_href }}">Next page</a></p>{% endif %}
+
+<h3>Why each score is what it is</h3>
+<p class="muted">What FreeWeight exports with each record. The staleness badge and the six confidence factors its own page shows are
+computed inside FreeWeight and are not on its API, so they are not repeated here.</p>
+{% for record in data.get("items") %}
+{% set calibration = record.get("calibration") or {} %}
+<details class="kit-details"><summary><span class="mono">{{ record.get("capability_id") }}</span> on <span class="mono">{{ record.get("subject") or "—" }}</span>{% if record.get("adapter") %} + {{ record.get("adapter") }}{% endif %} — {{ value(record.get("score"), fmt="%.3f") }}</summary>
+{% set rows = [] %}
+{% for metric in record.get("contributing_metrics") or [] %}{% set _ = rows.append([metric.get("metric_key") or "—", value(metric.get("weight"), fmt="%.2f"), value(metric.get("sample_count"), fmt="%d")]) %}{% endfor %}
+{% if rows %}{{ table([{"label": "Contributing metric", "mono": true}, {"label": "Weight", "numeric": true}, {"label": "Samples", "numeric": true}], rows, density="dense", row_count=rows | length) }}{% endif %}
+{% set runs = [] %}
+{% for run_id in record.get("source_run_ids") or [] %}{% set _ = runs.append(run_link(run_id)) %}{% endfor %}
+{{ kv_list([
+  {"label": "Policy · vocabulary", "value": (record.get("policy_version") or "—") ~ " · " ~ ((record.get("payload") or {}).get("vocabulary_version") or "—")},
+  {"label": "Judge validity factor", "value": value(record.get("judge_validity_factor"), fmt="%.2f")},
+  {"label": "Goal hash", "value": record.get("goal_hash") or "— (not a goal)"},
+  {"label": "Calibration", "value": (("κw " ~ ("%.2f" | format(calibration.get("kappa_w"))) if calibration.get("kappa_w") is number else "κw —") ~ " over " ~ (calibration.get("n_holdout") if calibration.get("n_holdout") is not none else "—") ~ " held-out samples" ~ (", graded by " ~ calibration.get("graded_by") if calibration.get("graded_by") else "")) if calibration else "—"},
+  {"label": "Score method mix", "value": ((record.get("score_method_mix") or {}).items() | map("join", " ") | join(", ")) if record.get("score_method_mix") else "—"},
+  {"label": "Runtime profile", "value": record.get("runtime_profile_hash") or "—"},
+  {"label": "Source runs", "value": runs | join(" ") | safe if runs else "—"},
+]) }}
+{% if record.get("judge_set") %}{{ json_viewer(record.get("judge_set"), label="The jury") }}{% endif %}
+{% if record.get("payload") %}{{ json_viewer(record.get("payload"), label="The record as FreeWeight exports it") }}{% endif %}
+</details>
+{% endfor %}
+{% else %}
+{{ empty_state("No capability evidence under these filters. Evidence is computed when a run completes; a goal with judged criteria also needs calibrating first.", "Start a run", "/apps/freeweight/runs") }}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+
+<h3 id="export">Export the bundle</h3>
+{{ refusal(export_error) }}
+<p class="muted">One <code>benchmark.evidence_bundle</code> envelope — the file LoadCoach imports. Any filter, or <code>since</code>, makes it
+incremental (<code>complete: false</code>); only a bundle nothing narrowed can tell a consumer something was removed. Send back the
+<code>generated_at</code> of the last bundle as <code>since</code>, never a clock of your own.</p>
+<form method="get" action="/apps/freeweight/evidence/export" class="card kit-form">
+  <div class="field"><label for="fw-evx-since">Since (the previous bundle's generated_at)</label><input id="fw-evx-since" name="since" value="{{ since }}"></div>
+  {% for name, key in [("capability", "capability"), ("model", "model"), ("machine", "machine"), ("runtime_hash", "runtime_profile"), ("min_confidence", "min_confidence")] %}<input type="hidden" name="{{ name }}" value="{{ filters.get(key) }}">{% endfor %}
+  <div class="kit-wide"><button type="submit" data-variant="primary"{% if not sourced.live %} disabled title="FreeWeight is not answering"{% endif %}>Download the bundle</button>
+  <span class="muted">with this page's filters</span></div>
+</form>
+{% endblock %}

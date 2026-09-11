@@ -59,7 +59,8 @@ from weightroom.services.db_reader import (
     run_query,
     table_page,
 )
-from weightroom.web.routes.apps import render_shell_page
+from weightroom.services.freeweight_pages import database_stats_api
+from weightroom.web.routes.apps import app_view, render_shell_page
 from weightroom.web.session import CurrentOperator, now_of, reauthenticated
 
 __all__ = ["open_for", "router", "ui_router"]
@@ -525,6 +526,26 @@ def _tables_context(request: Request, app: str) -> dict[str, Any]:
         return {"revision": None, "tables": (), "unavailable": exc.message}
 
 
+def _application_stats(request: Request, app: str) -> dict[str, Any]:
+    """FreeWeight's own ``GET /database/stats`` while it answers (row WP3).
+
+    It adds what ``freeweight db status`` does not report — the backups taken and the artifacts
+    beside the database — so the page shows FreeWeight's own figures for them rather than none.
+    The other applications serve no such route, and a stopped FreeWeight is not called.
+    """
+    empty: dict[str, Any] = {"app_stats": None, "app_stats_error": None}
+    if app != "freeweight":
+        return empty
+    view = app_view(request, app)
+    if not (view.running and view.reachable):
+        return empty
+    try:
+        stats = database_stats_api(request.app.state.http, request.app.state.settings)
+    except SuiteError as exc:
+        return {"app_stats": None, "app_stats_error": exc}
+    return {"app_stats": stats, "app_stats_error": None}
+
+
 def _database_page(request: Request, principal: Principal, app: str, **extra: Any) -> HTMLResponse:
     context: dict[str, Any] = {
         "sql": "",
@@ -543,6 +564,7 @@ def _database_page(request: Request, principal: Principal, app: str, **extra: An
         deletion_scopes=RESULTS_DELETION.get(app, ()),
         backups=list_backups(app),
         **_tables_context(request, app),
+        **_application_stats(request, app),
         **context,
     )
 

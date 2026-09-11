@@ -1,0 +1,38 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import value, yes_no, link %}
+{% block title %}Machines — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Machines {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/runs">Runs</a> · <a href="/apps/freeweight/results">Results</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Every machine FreeWeight has measured on. A machine is recorded when a run is created on it, so the list is
+legitimately empty before anything has been measured, and reading it never makes a machine look freshly used.
+{% if fingerprint %}Showing <span class="mono">{{ fingerprint[:16] }}…</span> — <a href="/apps/freeweight/machines">every machine</a>.{% endif %}</p>
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% set rows = [] %}
+{% for machine in sourced.data if not fingerprint or machine.get("machine_fingerprint") == fingerprint %}
+{% set _ = rows.append([
+  link("/apps/freeweight/machines/" ~ ((machine.get("id") or "") | urlencode), ((machine.get("machine_fingerprint") or "—")[:16]) ~ "…", class_="mono kit-id", title=machine.get("machine_fingerprint") or ""),
+  machine.get("hostname") or "—",
+  ((machine.get("os_name") or "—") ~ " " ~ (machine.get("os_version") or ""))[:60],
+  machine.get("cpu_model") or "—",
+  value(machine.get("logical_cores"), fmt="%d"),
+  (machine.get("ram_bytes") | bytes_human) if machine.get("ram_bytes") is number else "—",
+  machine.get("first_seen_at") or "—",
+  machine.get("last_seen_at") or "—",
+  badge("this host", tone="success") if machine.get("is_current") else yes_no(machine.get("is_current"))
+]) %}
+{% endfor %}
+{% if rows %}
+{{ table([{"label": "Fingerprint"}, {"label": "Hostname"}, {"label": "OS"}, {"label": "CPU"}, {"label": "Cores", "numeric": true}, {"label": "RAM", "numeric": true}, {"label": "First seen", "mono": true}, {"label": "Last seen", "mono": true}, {"label": "Current"}], rows, caption="The current host is flagged: a fingerprint is not a name anyone recognises", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No machine recorded yet: one is recorded when a run is created on it.") }}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

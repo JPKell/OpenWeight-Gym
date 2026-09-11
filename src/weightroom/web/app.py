@@ -62,6 +62,7 @@ from weightroom.web.routes import costs as costs_routes
 from weightroom.web.routes import databases as databases_routes
 from weightroom.web.routes import docs as docs_routes
 from weightroom.web.routes import doctor as doctor_routes
+from weightroom.web.routes import freeweight as freeweight_routes
 from weightroom.web.routes import ideapress as ideapress_routes
 from weightroom.web.routes import jobs as jobs_routes
 from weightroom.web.routes import loadcoach as loadcoach_routes
@@ -445,6 +446,7 @@ def create_app(
     app.include_router(promptcadence_routes.ui_router)
     app.include_router(loadcoach_routes.ui_router)
     app.include_router(ideapress_routes.ui_router)
+    app.include_router(freeweight_routes.ui_router)
 
     mount_static(app, environment=templates(), extra_dirs={"/app-static": APP_STATIC_DIR})
     return app

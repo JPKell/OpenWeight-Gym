@@ -54,6 +54,18 @@ note which have no `/api/v1` equivalent.
   alpha per criterion and weighted, the gate verdict, `judge_validity_factor`, and the
   worst-diverging holdout samples with both rationales. A figure FreeWeight cannot compute
   renders `—` with its reason, never `0`.
+* **Evidence staleness and confidence factors go on the API** (operator, 2026-09-11, from WP3).
+  FreeWeight's own Evidence page shows each record's staleness state and its six confidence
+  factors, and `GET /evidence` serves neither. Add both in a FreeWeight commit in Gate A, with
+  `api.md` edited first and mirrored. Then render them on the console's Evidence page in place of
+  its "not on the API" note (`WP3_HANDOFF.md` §2 item 13).
+* **Fix WP3's kit polish while building these pages** (operator, 2026-09-11; `WP3_HANDOFF.md` §6
+  item 5). Four items, all in WP1's kit:
+  * a refusal renders in the success-green `.notice` box;
+  * `page_source` says *The API did not answer this page* for an application's refusal, which is
+    an answer;
+  * the stopped notice names the application in lower case (*freeweight is not answering*);
+  * the Results page's Export form stacks every field full width.
 
 ## Gates
 

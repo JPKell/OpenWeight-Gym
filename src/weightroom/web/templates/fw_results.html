@@ -1,0 +1,92 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link, short, status_badge, value, machine_link, link %}
+{% block title %}Results — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>Results {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/results/compare">Compare</a> · <a href="/apps/freeweight/evidence">Evidence</a> · <a href="/apps/freeweight/machines">Machines</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Every stored metric, newest run first. Completed runs only unless you ask otherwise: a metric from a run
+that stopped halfway measured a different set of cases than the row beside it.</p>
+
+<form method="get" action="/apps/freeweight/results" class="filter-bar" aria-label="Result filters">
+  <div class="field"><label for="fw-res-model">Model</label><input id="fw-res-model" name="model" value="{{ filters.model }}" placeholder="canonical ID, ULID or name"></div>
+  <div class="field"><label for="fw-res-suite">Suite</label><input id="fw-res-suite" name="suite" value="{{ filters.suite }}"></div>
+  <div class="field"><label for="fw-res-metric">Metric key</label><input id="fw-res-metric" name="metric_key" value="{{ filters.metric_key }}"></div>
+  <div class="field"><label for="fw-res-machine">Machine fingerprint</label><input id="fw-res-machine" name="machine" value="{{ filters.machine }}"></div>
+  <div class="field"><label for="fw-res-profile">Runtime profile hash</label><input id="fw-res-profile" name="runtime_hash" value="{{ filters.runtime_profile }}"></div>
+  <div class="field"><label for="fw-res-adapter">Adapter</label><input id="fw-res-adapter" name="adapter" value="{{ filters.adapter }}" placeholder="name or digest"></div>
+  <div class="field"><label for="fw-res-since">Since (RFC 3339)</label><input id="fw-res-since" name="since" value="{{ filters.since }}"></div>
+  <div class="field"><label for="fw-res-until">Until</label><input id="fw-res-until" name="until" value="{{ filters.until }}"></div>
+  <div class="field"><label for="fw-res-status">Run status</label>
+    <select id="fw-res-status" name="status">
+      {% for one in ["", "failed", "interrupted", "any"] %}<option value="{{ one }}"{{ " selected" if filters.status == one else "" }}>{{ one or "completed" }}</option>{% endfor %}
+    </select></div>
+  <button type="submit">Apply</button>
+  <a href="/apps/freeweight/results">Clear</a>
+</form>
+
+{{ refusal(sourced.error) }}
+{% set data = sourced.data %}
+{% if data is not none %}
+{% if data.get("items") %}
+{% set rows = [] %}
+{% for row in data.get("items") %}
+{% set _ = rows.append([
+  row.get("metric_key") or "—",
+  value(row.get("value"), row.get("unavailable_reason"), fmt="%.6g"),
+  row.get("unit") or "—",
+  value(row.get("sample_count"), fmt="%d"),
+  value(row.get("excluded_count"), fmt="%d"),
+  value(row.get("stddev")),
+  value(row.get("coefficient_of_variation"), fmt="%.3g"),
+  row.get("model") or "—",
+  (row.get("suite") or "—") ~ " " ~ (row.get("suite_version") or ""),
+  row.get("run_test_key") or "run",
+  machine_link(row.get("machine_fingerprint")),
+  short(row.get("runtime_profile_hash")),
+  status_badge(row.get("run_status")),
+  row.get("created_at") or "—",
+  link("/apps/freeweight/runs/" ~ ((row.get("run_id") or "") | urlencode) ~ ("/tests/" ~ (row.get("run_test_id") | urlencode) if row.get("run_test_id") else ""), (row.get("run_id") or "—")[:8])
+]) %}
+{% endfor %}
+{{ table([{"label": "Metric", "mono": true}, {"label": "Value", "numeric": true}, {"label": "Unit"}, {"label": "n", "numeric": true}, {"label": "Excluded", "numeric": true}, {"label": "Stddev", "numeric": true}, {"label": "CV", "numeric": true}, {"label": "Model", "mono": true}, {"label": "Suite"}, {"label": "Test"}, {"label": "Machine"}, {"label": "Runtime profile"}, {"label": "Run status"}, {"label": "Created", "mono": true}, {"label": "Raw source"}], rows, caption="Stored metrics; an unsupported measurement shows —, never 0", density="dense", complete=next_href is none, row_count=rows | length) }}
+{% if next_href %}<p><a href="{{ next_href }}">Next page</a></p>{% endif %}
+{% else %}
+{{ empty_state("Nothing measured under these filters.", "Start a run", "/apps/freeweight/runs") }}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+
+<h3>Compare</h3>
+<form method="get" action="/apps/freeweight/results/compare" class="filter-bar" aria-label="Compare runs or models">
+  <div class="field kit-wide"><label for="fw-cmp-subjects">Subjects</label><input id="fw-cmp-subjects" name="subjects" placeholder="run ULIDs or prefixes, or model references, comma separated" required></div>
+  <div class="field"><label for="fw-cmp-suite">Suite</label><input id="fw-cmp-suite" name="suite" placeholder="needed for a model subject"></div>
+  <button type="submit"{% if not sourced.live %} disabled title="FreeWeight is not answering"{% endif %}>Compare</button>
+</form>
+
+<h3 id="export">Export</h3>
+{{ refusal(export_error) }}
+<p class="muted">FreeWeight streams the export as it writes it; JSON and JSONL are a <code>freeweight.export</code> envelope, CSV
+the flattened spreadsheet form. It refuses a selection of more than 500 runs rather than truncating one: narrow it
+with the window, which is half-open, so consecutive windows tile.</p>
+<form method="get" action="/apps/freeweight/results/export" class="card kit-form">
+  <div class="field"><label for="fw-exp-format">Format</label>
+    <select id="fw-exp-format" name="format">{% for one in formats %}<option value="{{ one }}"{{ " selected" if export_form.get("format") == one else "" }}>{{ one }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="fw-exp-scope">Scope</label>
+    <select id="fw-exp-scope" name="scope">{% for one in scopes %}<option value="{{ one }}"{{ " selected" if (export_form.get("scope") or "all") == one else "" }}>{{ one }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="fw-exp-selector">Selector</label><input id="fw-exp-selector" name="selector" value="{{ export_form.get('selector', '') }}" placeholder="a run, a model, a suite key, or runs comma separated">
+    <span class="field-hint">Left empty for scope all.</span></div>
+  <div class="field"><label for="fw-exp-since">Since (RFC 3339)</label><input id="fw-exp-since" name="since" value="{{ export_form.get('since', '') }}"></div>
+  <div class="field"><label for="fw-exp-until">Until</label><input id="fw-exp-until" name="until" value="{{ export_form.get('until', '') }}"></div>
+  <div class="kit-wide">
+    <label class="kit-check"><input type="checkbox" name="include_samples" value="true"{{ " checked" if export_form.get("include_samples") == "true" else "" }}> include samples</label>
+    <label class="kit-check"><input type="checkbox" name="include_prompts" value="true"{{ " checked" if export_form.get("include_prompts") == "true" else "" }}> include prompt identity</label>
+    <label class="kit-check"><input type="checkbox" name="include_prompt_text" value="true"{{ " checked" if export_form.get("include_prompt_text") == "true" else "" }}> include the prompt appendix</label>
+  </div>
+  <div class="kit-wide"><button type="submit" data-variant="primary"{% if not sourced.live %} disabled title="FreeWeight is not answering"{% endif %}>Download</button></div>
+</form>
+{% endblock %}

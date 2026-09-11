@@ -268,6 +268,19 @@ def _text(pattern: re.Pattern[str] | None = None, *, max_chars: int = 4096) -> _
     return check
 
 
+def _optional_text(*, max_chars: int) -> _Check:
+    """Text that may be left out: ``None`` or blank is ``None``, anything longer is refused."""
+
+    def check(kind: str, name: str, value: Any) -> str | None:  # noqa: ANN401 — JSON input
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        if not isinstance(value, str) or len(value) > max_chars:
+            raise _refuse(kind, name, f"must be text of at most {max_chars} characters")
+        return value.strip()
+
+    return check
+
+
 def _flag(kind: str, name: str, value: Any) -> bool:  # noqa: ANN401 — JSON input
     if not isinstance(value, bool):
         raise _refuse(kind, name, "must be true or false")
@@ -303,6 +316,8 @@ _PARAMS: Final[Mapping[str, Mapping[str, tuple[_Check, Any]]]] = {
         "model": (_text(max_chars=512), _REQUIRED),
         "suite": (_text(_SUITE_KEY, max_chars=128), _REQUIRED),
         "allow_prompt_override": (_flag, False),
+        # Row WP3: the Runs page's label, passed through as `run start --label`.
+        "label": (_optional_text(max_chars=120), None),
     },
     "retention_trim": {
         "guarded_backup_days": (_days(0), 90),

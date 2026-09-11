@@ -273,6 +273,18 @@ SPEC_14_ROWS: dict[str, tuple[str, ...]] = {
         "test_each_state_changing_route_writes_exactly_one_audit_row",
     ),
     # a LoadCoach registration's security keys, a new one and a removal re-authenticate (row WP2)
+    # FreeWeight's provider block re-authenticates on kind and base_url (row WP3)
+    "integration/test_freeweight_adapters_provider.py": (
+        "test_a_base_url_change_without_a_fresh_reauth_is_refused_and_nothing_is_sent",
+        "test_a_wrong_password_is_refused_and_nothing_is_sent",
+    ),
+    # a sample's response, a juror's rationale and a comparison's labels render inert (row WP3)
+    "integration/test_freeweight_pages.py": (
+        "test_the_case_inspector_renders_model_and_juror_text_inert",
+    ),
+    "integration/test_freeweight_results_evidence.py": (
+        "test_labels_on_a_comparison_render_inert",
+    ),
     "integration/test_loadcoach_providers_adapters.py": (
         "test_a_security_key_without_a_fresh_reauth_is_refused_and_nothing_is_sent",
         "test_a_wrong_password_is_refused_and_nothing_is_sent",

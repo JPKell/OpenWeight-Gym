@@ -1,0 +1,158 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, kv_list, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import short, status_badge, value, chart, styles, link %}
+{% block title %}Run — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{{ styles() }}
+{% set data = sourced.data or {} %}
+{% set run = data.get("run") %}
+<div class="page-head">
+  <h2>Run {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions">
+    <a href="/apps/freeweight/runs">Every run</a>
+    {% if run and run.get("machine_fingerprint") %} · <a href="/apps/freeweight/machines?fingerprint={{ run.get('machine_fingerprint') | urlencode }}">Its machine</a>{% endif %}
+    {% if run %} · <a href="/apps/freeweight/results?model={{ (run.get('model') or '') | urlencode }}&amp;suite={{ ((run.get('suite') or {}).get('key') or '') | urlencode }}">Its results</a>{% endif %}
+    {% if run and sourced.live and run.get("status") not in terminal %}
+    <form method="post" action="/apps/freeweight/runs/{{ (run.get('id') or run_id) | urlencode }}/cancel" class="kit-inline">
+      <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+      <button type="submit" data-variant="danger">Cancel run</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{% set blockers = ((action_error.details.get("app_details") or {}).get("blockers") if action_error else none) or [] %}
+{% if blockers %}
+{% set rows = [] %}
+{% for one in blockers %}{% set _ = rows.append([one.get("field") or one.get("path") or "—", one.get("recorded") | string if one.get("recorded") is not none else "—", one.get("observed") | string if one.get("observed") is not none else "—", one.get("explanation") or one.get("reason") or "—"]) %}{% endfor %}
+{{ table([{"label": "Field", "mono": true}, {"label": "Recorded"}, {"label": "Here now"}, {"label": "Why it matters"}], rows, caption="What moved since the original run; Repeat with force proceeds and records it on the new run", density="dense", row_count=rows | length) }}
+{% endif %}
+{{ refusal(sourced.error) }}
+{% if run %}
+{% set suite = run.get("suite") or {} %}
+{% set provenance = run.get("provenance") or {} %}
+{% set pack = provenance.get("prompt_pack") or {} %}
+<p><span class="mono">{{ run.get("id") }}</span> {{ status_badge(run.get("status")) }} · {{ suite.get("key") or "—" }} <span class="muted">{{ suite.get("version") or "" }}</span> ·
+<a class="mono" href="/apps/freeweight/runs?model={{ (run.get('model') or '') | urlencode }}">{{ run.get("model") or "—" }}</a>{% if run.get("label") %} · {{ run.get("label") }}{% endif %}</p>
+{% if run.get("error") %}<p class="notice" role="alert"><strong><code>{{ run.get("error").get("code") }}</code></strong> {{ run.get("error").get("message") }}</p>{% endif %}
+
+{{ kv_list([
+  {"label": "Created · started · completed", "value": (run.get("created_at") or "—") ~ " · " ~ (run.get("started_at") or "—") ~ " · " ~ (run.get("completed_at") or "—")},
+  {"label": "Adapter", "value": run.get("adapter") or "none — the bare base"},
+  {"label": "Machine", "value": run.get("machine_fingerprint") or "—"},
+  {"label": "Runtime profile", "value": run.get("runtime_profile_hash") or "—"},
+  {"label": "Reproducibility fingerprint", "value": run.get("reproducibility_fingerprint") or "—"},
+  {"label": "Served context", "value": ((provenance.get("served_context") | string) ~ " tokens (" ~ (provenance.get("served_context_source") or "—") ~ ")") if provenance.get("served_context") is not none else "— (neither the caller, the provider nor the descriptor reported one)"},
+  {"label": "Attributed device", "value": ("GPU " ~ provenance.get("gpu_index")) if provenance.get("gpu_index") is not none else "—"},
+  {"label": "More than one GPU visible", "value": "yes — memory, KV and energy figures are unsupported unless the provider reports placement" if provenance.get("multi_gpu_visible") else "no"},
+  {"label": "Telemetry sampling overhead", "value": ("%.3f %%" | format(provenance.get("telemetry_overhead_percent"))) if provenance.get("telemetry_overhead_percent") is number else "— (not calibrated on this run)"},
+  {"label": "Prompt pack", "value": ((pack.get("id") or "") ~ " " ~ (pack.get("version") or "") ~ " " ~ (pack.get("hash") or "")) if pack.get("id") else "this suite renders no prompt records"},
+]) }}
+
+{% if sourced.live %}
+<details class="card kit-form"{% if repeat_form %} open{% endif %}>
+  <summary><strong>Repeat this run</strong> <span class="muted">— its frozen configuration and stored runtime profile, never today's defaults</span></summary>
+  <p class="muted">FreeWeight checks this machine against the original's fingerprint first and refuses by naming what moved. Force proceeds
+  and records the divergence on the new run, among its degradations. FreeWeight runs the repeat in <code>freeweight.service</code>, which
+  carries the host memory cap in its unit file (ADR-0119).</p>
+  <form method="post" action="/apps/freeweight/runs/{{ (run.get('id') or run_id) | urlencode }}/repeat">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <div class="field"><label for="fw-repeat-label">Label</label><input id="fw-repeat-label" name="label" value="{{ repeat_form.get('label', '') }}" placeholder="repeat of {{ (run.get('id') or '')[:10] }}" maxlength="120"></div>
+    <label class="kit-check"><input type="checkbox" name="force" value="true"{{ " checked" if repeat_form.get("force") == "true" else "" }}> force past blockers, recording the divergence</label>
+    <div class="kit-wide"><button type="submit" data-variant="primary">Repeat</button></div>
+  </form>
+</details>
+{% endif %}
+
+{% if run.get("degradations") %}
+<h3>Degradations</h3>
+<p class="muted">Conditions this run was measured under that are worth knowing about — a forced repeat's divergence among them.</p>
+{% set rows = [] %}
+{% for one in run.get("degradations") %}{% set _ = rows.append([one.get("kind") or "—", json_viewer(one, label="Detail")]) %}{% endfor %}
+{{ table([{"label": "Kind", "mono": true}, {"label": "Detail"}], rows, density="dense", row_count=rows | length) }}
+{% endif %}
+
+<h3 id="tests">Tests</h3>
+{% if run.get("tests") %}
+{% set rows = [] %}
+{% for test in run.get("tests") %}
+{% set _ = rows.append([
+  link("/apps/freeweight/runs/" ~ ((run.get("id") or run_id) | urlencode) ~ "/tests/" ~ ((test.get("id") or "") | urlencode), test.get("name") or "—") ~ " " ~ (test.get("key") or ""),
+  status_badge(test.get("status")),
+  (test.get("completed_cases") | string) ~ " / " ~ (test.get("total_cases") | string),
+  value(test.get("repetitions"), fmt="%d"),
+  test.get("skip_reason") or "—",
+  (test.get("error") or {}).get("code") or "—"
+]) %}
+{% endfor %}
+{{ table([{"label": "Test"}, {"label": "Status"}, {"label": "Cases", "numeric": true}, {"label": "Repetitions", "numeric": true}, {"label": "Skip reason"}, {"label": "Error", "mono": true}], rows, caption="Each test links to its raw samples", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No tests enumerated yet.") }}
+{% endif %}
+
+<h3>Metrics</h3>
+{% if run.get("metrics") %}
+{% set rows = [] %}
+{% for metric in run.get("metrics") %}
+{% set _ = rows.append([
+  metric.get("metric_key") or "—",
+  "run" if metric.get("run_test_id") is none else "test",
+  value(metric.get("gpu_index"), fmt="%d"),
+  value(metric.get("value"), metric.get("unavailable_reason")),
+  metric.get("unit") or "—",
+  metric.get("aggregation") or "—",
+  value(metric.get("stddev")),
+  value(metric.get("sample_count"), fmt="%d"),
+  value(metric.get("excluded_count"), fmt="%d"),
+  link("/apps/freeweight/runs/" ~ ((run.get("id") or run_id) | urlencode) ~ "/tests/" ~ (metric.get("run_test_id") | urlencode), "samples") if metric.get("run_test_id") else link("#tests", "every test")
+]) %}
+{% endfor %}
+{{ table([{"label": "Metric", "mono": true}, {"label": "Scope"}, {"label": "GPU", "numeric": true}, {"label": "Value", "numeric": true}, {"label": "Unit"}, {"label": "Aggregation"}, {"label": "Spread (stddev)", "numeric": true}, {"label": "Samples", "numeric": true}, {"label": "Excluded", "numeric": true}, {"label": "Raw source"}], rows, caption="An unsupported measurement shows —, never 0", density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("No aggregates yet: they are written once every sample is durable.") }}
+{% endif %}
+
+<h3>Telemetry</h3>
+{% if data.get("charts") is none %}
+<p class="muted">A run's telemetry series is read only from FreeWeight's running API.</p>
+{% elif data.get("charts") %}
+<p class="muted">{{ data.get("telemetry_samples") }} observation(s) recorded while this run executed. Each series names its device;
+nothing is summed or averaged across GPUs, and a reading this machine could not take is a gap, never a zero.</p>
+<div class="fw-charts">{% for one in data.get("charts") %}{{ chart(one) }}{% endfor %}</div>
+{% else %}
+<p class="muted">No telemetry was recorded for this run: either this machine reports none, or <code>telemetry.persist_during_runs</code> is off.</p>
+{% endif %}
+
+<details class="kit-details"><summary>Fingerprint document</summary>{{ json_viewer(provenance.get("fingerprint_document") or {}, label="The inputs the fingerprint was taken over") }}</details>
+{% if run.get("effective_config") %}<details class="kit-details"><summary>Effective configuration</summary>{{ json_viewer(run.get("effective_config"), label="Frozen at creation") }}</details>{% endif %}
+
+<h3>Events</h3>
+{% if sourced.live %}
+{% set stream_url = events_url %}
+{% include "_log_pane.html" %}
+{% if run.get("status") not in terminal %}
+<script>
+  // FreeWeight's own run page keeps its badge current (runs.js). This one reloads when the stream
+  // ends, which it does at the run's terminal event, so the tests, metrics and telemetry appear.
+  // A finished run renders without this hook, so the reload happens once.
+  (() => {
+    const status = document.querySelector("[data-log-status]");
+    if (!status) return;
+    new MutationObserver(() => {
+      if (status.textContent === "reader ended") location.reload();
+    }).observe(status, { childList: true, characterData: true, subtree: true });
+  })();
+</script>
+{% endif %}
+{% elif data.get("events") %}
+{% set rows = [] %}
+{% for one in data.get("events") %}{% set _ = rows.append([one.get("sequence"), one.get("timestamp") or "—", one.get("type") or "—", one.get("message") or ""]) %}{% endfor %}
+{{ table([{"label": "#", "numeric": true}, {"label": "At", "mono": true}, {"label": "Event", "mono": true}, {"label": "Message"}], rows, caption="The events FreeWeight stored, in order", density="dense", row_count=rows | length) }}
+{% else %}
+<p class="muted">No events recorded.</p>
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

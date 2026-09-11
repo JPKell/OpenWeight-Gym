@@ -1,0 +1,56 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge %}
+{% from "_app_page.html" import page_source, refusal %}
+{% block title %}Provider — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data %}
+<div class="page-head">
+  <h2>Provider {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/models">Models</a> · <a href="/apps/freeweight/adapters">Adapters</a> · <a href="/apps/freeweight/settings">Every other key</a></div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{% if saved %}<p class="notice" role="status">Saved: FreeWeight wrote its <code>[provider]</code> block and re-opened its provider.</p>{% endif %}
+<p class="muted">FreeWeight has one provider, not a registry: this is the <code>[provider]</code> block of its own configuration file.
+FreeWeight validates a change by loading the file through its own precedence chain, keeps the previous file as
+<code>config.toml.bak</code>, writes only this block with comments and key order intact, and re-opens the provider, so the change
+applies to work started from now on; nothing else it read at startup is re-read (ADR-0117). Changing
+<code>{{ security_fields | sort | join("</code> or <code>") | safe }}</code> asks for your password (spec §7.4).</p>
+
+{{ refusal(sourced.error) }}
+{% if data is not none %}
+{% set provider = data.get("provider") or {} %}
+{% set mine = form if form else provider %}
+<p>File: <code>{{ data.get("config_path") or "—" }}</code></p>
+{% if provider.get("shadowed_by") %}
+<p class="notice" role="status">{{ badge("shadowed", tone="warning") }} by <code>{{ provider.get("shadowed_by") }}</code>: the file is written,
+and the environment keeps winning until that variable is unset.</p>
+{% endif %}
+<section class="card kit-form" id="provider">
+  <form method="post" action="/apps/freeweight/provider">
+    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    <input type="hidden" name="base_digest" value="{{ data.get('config_digest') or '' }}">
+    <div class="field"><label for="fw-provider-kind">kind{% if "kind" in security_fields %} <span class="muted">· security</span>{% endif %}</label>
+      <input id="fw-provider-kind" name="kind" value="{{ mine.get('kind', '') }}" required>
+      <span class="field-hint">ollama, llamacpp, or fake for tests</span></div>
+    <div class="field"><label for="fw-provider-base_url">base_url{% if "base_url" in security_fields %} <span class="muted">· security</span>{% endif %}</label>
+      <input id="fw-provider-base_url" name="base_url" value="{{ mine.get('base_url', '') }}">
+      <span class="field-hint">where every prompt is sent; ignored by llamacpp, which launches its own server</span></div>
+    <div class="field"><label for="fw-provider-timeout">timeout_seconds</label>
+      <input id="fw-provider-timeout" name="timeout_seconds" inputmode="decimal" value="{{ mine.get('timeout_seconds', '') }}"></div>
+    <div class="field"><label for="fw-provider-model_directory">model_directory</label>
+      <input id="fw-provider-model_directory" name="model_directory" value="{{ mine.get('model_directory', '') }}">
+      <span class="field-hint">llamacpp: the GGUF weights it serves; required for that kind</span></div>
+    <div class="field"><label for="fw-provider-state_dir">state_dir</label>
+      <input id="fw-provider-state_dir" name="state_dir" value="{{ mine.get('state_dir', '') }}"></div>
+    <div class="field"><label for="fw-provider-server_path">server_path</label>
+      <input id="fw-provider-server_path" name="server_path" value="{{ mine.get('server_path', '') }}"></div>
+    <div class="field"><label for="fw-provider-password">Your password</label>
+      <input id="fw-provider-password" name="password" type="password" autocomplete="current-password">
+      <span class="field-hint">Needed when kind or base_url changes.</span></div>
+    <div class="kit-wide"><button type="submit" data-variant="primary">Save provider</button></div>
+  </form>
+</section>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

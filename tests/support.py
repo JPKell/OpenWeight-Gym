@@ -393,6 +393,24 @@ def mock_loadcoach(
     return route
 
 
+FREEWEIGHT_URL = "http://127.0.0.1:8765"
+
+
+def mock_freeweight(router: Any, *, version: str = "1.2.1") -> Any:  # noqa: ANN401 — respx
+    """FreeWeight's version probe, in the shape the reference machine's FreeWeight answers it."""
+    import httpx
+
+    return router.get(f"{FREEWEIGHT_URL}/api/v1/version").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "application": {"name": "freeweight", "version": version, "git_commit": None},
+                "api": {"current": "v1", "supported": ["v1"], "deprecated": []},
+            },
+        )
+    )
+
+
 PROMPTCADENCE_URL = "http://127.0.0.1:8768"
 RECORDED_TRAJECTORY = "01M253YZNV3QQY0CZPWH0E4AYC"
 
