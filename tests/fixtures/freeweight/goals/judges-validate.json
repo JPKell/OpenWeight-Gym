@@ -1,0 +1,12 @@
+{
+  "goal": "wp4_voice",
+  "candidate": null,
+  "jurors": [
+    "fake/fake-model:8b-q8_0@sha256:fa4efa4efa4e"
+  ],
+  "requested_size": 3,
+  "jury_reduced": true,
+  "reduction_reason": "jury_reduced",
+  "remote": false,
+  "refused": []
+}

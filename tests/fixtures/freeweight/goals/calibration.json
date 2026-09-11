@@ -1,0 +1,117 @@
+{
+  "slug": "wp4_voice",
+  "items": [
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSB",
+      "origin": "pasted",
+      "partition": "anchor",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:b9cd54bb829b25719151b928a9cf5663b71f983ee6afabe533e3714a9fe06f92",
+      "content": "Calibration sample 0: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSC",
+      "origin": "pasted",
+      "partition": "holdout",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:7e47d9f2fdc313112b5575afbe755bef68a333eadc8e39bd567489b268568a45",
+      "content": "Calibration sample 1: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSD",
+      "origin": "pasted",
+      "partition": "holdout",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:d33d1585362a040ab20fb684062499e9b11baf9a587f2bce3fcbe2ec4ddb7935",
+      "content": "Calibration sample 2: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSE",
+      "origin": "pasted",
+      "partition": "holdout",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:96cef7e45d4ce64f056a913fc01eea8552deaeaace347ad0c46a23e37ecd200e",
+      "content": "Calibration sample 3: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSF",
+      "origin": "pasted",
+      "partition": "holdout",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:71560341dc67476d63b6d6bc59a294acdfe4c29b6bba1b6f21e236ad4116b9f3",
+      "content": "Calibration sample 4: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSG",
+      "origin": "pasted",
+      "partition": "holdout",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:43cdaa7cbb4b52111cfa94702b6ec7c3be4ecb581ec04a16a304448f5c45a00c",
+      "content": "Calibration sample 5: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSH",
+      "origin": "pasted",
+      "partition": "anchor",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:6616c8e4663419d3985dc413f1fe99ae7b477d754cc4e9bb107903abd47dd4f6",
+      "content": "Calibration sample 6: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSJ",
+      "origin": "pasted",
+      "partition": "anchor",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:643f04c5ac921b3e8303b77a67e8ca92986bc57e4a06817c7831c3fbb7ed58b9",
+      "content": "Calibration sample 7: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSK",
+      "origin": "pasted",
+      "partition": "anchor",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:167c8cca90d038dde793845b3b9638a7a19f3e736026ea7c9dfe54aa0ac187f8",
+      "content": "Calibration sample 8: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSM",
+      "origin": "pasted",
+      "partition": "anchor",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:b808217122db2f809ae4b0327423b11e0d2ae3a608110804d9d63d68e707316e",
+      "content": "Calibration sample 9: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSN",
+      "origin": "pasted",
+      "partition": "anchor",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:a91a7835628b8ac9583bc64e89613699d7b171ff7fe11ec2ef96af6775618c42",
+      "content": "Calibration sample 10: the inventory did not add up, and I counted twice."
+    },
+    {
+      "id": "01M27T29YV3SG3N6EYBG5EAMSP",
+      "origin": "pasted",
+      "partition": "anchor",
+      "partition_seed": 20260828,
+      "content_sha256": "sha256:52f95d78b5f3708704be50f1914c3195971d3efc7970dd098173803fe996ca36",
+      "content": "Calibration sample 11: the inventory did not add up, and I counted twice."
+    }
+  ],
+  "page": {
+    "limit": 12,
+    "next_cursor": null,
+    "has_more": false
+  },
+  "total": 12,
+  "progress": {
+    "samples": 12,
+    "judged_criteria": 2,
+    "expected_grades": 24,
+    "recorded_grades": 24,
+    "remaining": [],
+    "complete": true,
+    "min_samples": 8,
+    "target_samples": 12
+  }
+}

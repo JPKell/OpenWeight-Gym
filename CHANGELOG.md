@@ -25,6 +25,26 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   splits; each proposed rule accepted one at a time with its parameters as edited; tasks; save;
   abandon. Nine audit actions; no row carries an intent, a prompt or a descriptor. A stopped
   FreeWeight's goal list, one goal's criteria and tasks, and its stored report read its database.
+- **FreeWeight's calibration, grading, agreement report and judges** (row WP4 Gate B).
+  **Calibration**: the set counted by partition and origin with its grading progress — no sample
+  listed one by one, since a row pairing a sample with its origin would unblind grading; samples
+  added by pasting, by promoting a completed goal run's samples (FreeWeight reads each stored
+  answer itself), or generated over a model spread by running the goal on one model after
+  another through the Runs page's capped start. **Running the calibration** is the new
+  `freeweight_goal_calibrate` job — `freeweight goals calibrate --progress --json` under the
+  host memory cap in a `wr-gym-fwrun-` scope — whose page shows FreeWeight's progress as the jury
+  works, one line per holdout sample and never a grade. **Grading**: FreeWeight's blinded view, one
+  sample at a time, opening at the first unfinished sample; each criterion's grade picked from its
+  scale's descriptors with a note, saved per `(sample, criterion)`; a save FreeWeight did not
+  answer is audited `failed` and the page re-reads what FreeWeight holds, so a resend lands each
+  grade once. A goal run's human criteria are graded the same way (`/apps/freeweight/runs/{id}/grade`).
+  **Report**: the gate verdict, weighted κw with n anchor and n holdout, the judge validity factor,
+  and per criterion κw, ρ, MAE, bias, inter-juror α, n and validity with the lint's read and the
+  worst-diverging samples with your note and the jury's rationale; a figure FreeWeight could not
+  compute is `—` with its reason. **Judges**: eligibility with each refusal's reason and each
+  model's `native.judge` figures, and a jury dry run for a goal and a candidate. A stopped
+  FreeWeight's calibration set and stored report read its database. Three audit actions;
+  `app_side_nav_stubs("freeweight") == ()`.
 - **FreeWeight's Evidence page shows each record's staleness and its six confidence factors**
   (row WP4), from the `explanations` FreeWeight now serves beside the envelopes, in place of the
   note that they were not on its API.

@@ -1,0 +1,23 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list %}
+{% from "_app_page.html" import refusal %}
+{% block title %}Calibrating — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set here = "/apps/freeweight/goals/" ~ (slug | urlencode) %}
+<div class="page-head">
+  <h2>Calibrating {{ slug }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ here }}">The goal</a> · <a href="{{ here }}/calibration">Calibration</a> · <a href="{{ here }}/report">Report</a>{% if job %} · <a href="/jobs/{{ job.id | urlencode }}">The job</a>{% endif %}</div>
+</div>
+{{ refusal(error) }}
+{% if job %}
+{{ kv_list([
+  {"label": "Job", "value": job.id},
+  {"label": "Queued", "value": job.queued_at.isoformat() if job.queued_at else "—"},
+  {"label": "Graded by", "value": job.params.get("graded_by") or "—"},
+]) }}
+<p class="muted">FreeWeight partitions the graded set and its jury grades the held-out samples, inside the host memory cap. Each JSON line below
+is FreeWeight's own progress — how far the jury has got, never what it graded; the last is the report itself. The report page reads it once the
+job has completed.</p>
+{% include "_job_output.html" %}
+{% endif %}
+{% endblock %}

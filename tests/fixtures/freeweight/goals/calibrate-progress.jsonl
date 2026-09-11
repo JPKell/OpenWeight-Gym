@@ -1,0 +1,7 @@
+{"event": "calibration.started", "goal": "wp4_voice", "anchors": 7, "holdout": 5, "jurors": ["ollama/juror-a", "ollama/juror-b"]}
+{"event": "calibration.sample_judged", "sample": 1, "of": 5}
+{"event": "calibration.sample_judged", "sample": 2, "of": 5}
+{"event": "calibration.sample_judged", "sample": 3, "of": 5}
+{"event": "calibration.sample_judged", "sample": 4, "of": 5}
+{"event": "calibration.sample_judged", "sample": 5, "of": 5}
+{"event": "calibration.completed", "state": "calibrated", "weighted_kappa_w": 0.8615984405458088, "n_holdout": 5}

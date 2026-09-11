@@ -1013,6 +1013,32 @@ EXERCISES.update(
 )
 
 
+EXERCISES.update(
+    {
+        # Row WP4 Gate B: calibration samples, one sample's grades on a calibration set and on a
+        # goal run, and the calibration itself — whose one row is the queue's `job.enqueue`.
+        ("POST", "/apps/freeweight/goals/{slug}/calibration/samples"): _fw_form(
+            f"/apps/freeweight/goals/{_FW_GOAL}/calibration/samples",
+            {"mode": "paste", "content": "A sample to grade."},
+            reply=("POST", f"goals/{_FW_GOAL}/calibration/samples", 201, {"count": 1}),
+        ),
+        ("POST", "/apps/freeweight/goals/{slug}/calibration/run"): _fw_form(
+            f"/apps/freeweight/goals/{_FW_GOAL}/calibration/run", {}
+        ),
+        ("POST", "/apps/freeweight/goals/{slug}/grade"): _fw_form(
+            f"/apps/freeweight/goals/{_FW_GOAL}/grade",
+            {"sample_id": "01AUDITSAMPLE", "criterion": "dry_wit", "grade": "4", "note": "wry"},
+            reply=("POST", f"goals/{_FW_GOAL}/calibration/grades", 200, {"recorded": 1}),
+        ),
+        ("POST", "/apps/freeweight/runs/{run_id}/grade"): _fw_form(
+            f"/apps/freeweight/runs/{_FW_RUN}/grade",
+            {"sample_id": "01AUDITSAMPLE", "criterion": "would_ship", "grade": "4", "note": ""},
+            reply=("POST", f"runs/{_FW_RUN}/grades", 200, {"recorded": 1}),
+        ),
+    }
+)
+
+
 def _ip_form(
     path: str, data: dict[str, str], *, reply: tuple[str, str, int, Any] | None = None
 ) -> Exercise:

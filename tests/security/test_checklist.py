@@ -293,6 +293,11 @@ SPEC_14_ROWS: dict[str, tuple[str, ...]] = {
     "integration/test_freeweight_goals.py": (
         "test_the_injection_corpus_renders_inert_in_a_goal_and_a_draft",
     ),
+    # a sample's text, a grader's note and a juror's rationale render inert when grading and in
+    # the agreement report (row WP4)
+    "integration/test_freeweight_calibration.py": (
+        "test_the_injection_corpus_renders_inert_in_grading_and_the_report",
+    ),
     "integration/test_loadcoach_providers_adapters.py": (
         "test_a_security_key_without_a_fresh_reauth_is_refused_and_nothing_is_sent",
         "test_a_wrong_password_is_refused_and_nothing_is_sent",

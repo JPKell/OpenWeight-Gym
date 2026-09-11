@@ -1,0 +1,100 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, kv_list, json_viewer %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw_goals.html" import figure, percent %}
+{% block title %}Agreement — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data or {} %}
+{% set goal = data.get("goal") or {} %}
+{% set report = data.get("report") %}
+{% set here = "/apps/freeweight/goals/" ~ (slug | urlencode) %}
+<div class="page-head">
+  <h2>Agreement — {{ goal.get("name") or slug }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ here }}">The goal</a> · <a href="{{ here }}/calibration">Calibration</a> · <a href="{{ here }}/grade">Grade</a>
+  {% if sourced.live and report and report.get("criteria") %} · <a href="{{ here }}/report/export"><code>benchmark.calibration_report</code></a>{% endif %}</div>
+</div>
+{% include "_app_state.html" %}
+{{ refusal(action_error) }}
+{{ refusal(sourced.error) }}
+{% if report %}
+{% set state = report.get("calibration_state") %}
+{% if state in ("calibrated", "uncalibrated") %}
+<div class="{{ 'notice' if state == 'calibrated' else 'warning-state' }}" role="status">
+  <h3>{% if state == "calibrated" %}The jury agrees with you well enough to be worth trusting{% else %}Not measurable yet — and that is a useful answer{% endif %}</h3>
+  <p>Across the judged criteria the jury and you agree at κ<sub>w</sub> <strong>{{ figure(report.get("weighted_kappa_w"), "no judged criterion produced a coefficient", "%.2f") }}</strong>
+  over <strong>{{ report.get("n_holdout") }}</strong> held-out samples, with {{ report.get("n_anchor") }} anchors shown to the jury; the gate is
+  {{ figure(report.get("min_agreement"), "not recorded", "%.2f") }}.</p>
+  <p>{% if state == "calibrated" %}Results from this goal emit capability evidence, its confidence multiplied by a judge validity factor of
+  {{ figure(report.get("judge_validity_factor"), "not recorded", "%.2f") }}.{% else %}The goal still runs and every sample stays inspectable; it
+  emits no capability evidence — not discounted evidence, none. The criteria below are where the jury and you diverged most.{% endif %}</p>
+</div>
+{% if report.get("goal_hash") and goal.get("goal_hash") and report.get("goal_hash") != goal.get("goal_hash") %}
+<p class="warning-state">This report was measured against <span class="mono">{{ report.get("goal_hash") }}</span>; the goal is now
+<span class="mono">{{ goal.get("goal_hash") }}</span>. Calibrate again to measure the rubric as it stands.</p>
+{% endif %}
+{{ kv_list([
+  {"label": "Gate verdict", "value": badge("passed", tone="success") if report.get("passed_gate") else badge("not passed", tone="danger")},
+  {"label": "Band", "value": (report.get("band") | replace("_", " ")) if report.get("band") else "— (FreeWeight names the band from its running API)"},
+  {"label": "Weighted κw", "value": figure(report.get("weighted_kappa_w"), "no judged criterion produced a coefficient")},
+  {"label": "Inter-juror α, weighted", "value": figure(none, "FreeWeight reports inter-juror agreement per criterion and computes no weighted figure")},
+  {"label": "n anchor · n holdout", "value": (report.get("n_anchor") | string) ~ " · " ~ (report.get("n_holdout") | string)},
+  {"label": "Judge validity factor", "value": figure(report.get("judge_validity_factor"), "not recorded")},
+  {"label": "Measured", "value": (report.get("measured_at") or "—") ~ ((", graded by " ~ report.get("graded_by")) if report.get("graded_by") else "")},
+  {"label": "Policy", "value": report.get("policy_version") or "—"},
+]) }}
+
+<h3>What the number means</h3>
+{{ table([{"label": "Band"}, {"label": "κw"}, {"label": "What it means for you"}], [
+  ["Strong", "0.75 and above", "The judge tracks your grading closely."],
+  ["Good", "0.60 to 0.75", "Usable; expect the occasional sample you would score differently."],
+  ["Fair", "0.40 to 0.60", "Evidence is emitted, but confidence is reduced substantially."],
+  ["Not measurable yet", "below 0.40", "Results run and are inspectable; no evidence is emitted."],
+], caption="The coefficient is beside the words, never instead of them", density="dense", row_count=4) }}
+
+<h3>Per criterion</h3>
+{% set rows = [] %}
+{% for one in report.get("criteria") or [] %}
+{% set _ = rows.append([
+  one.get("criterion") or "—",
+  percent(one.get("weight")),
+  figure(one.get("kappa_w"), "the grades for this criterion do not vary, so there was nothing to agree about"),
+  figure(one.get("rho"), "a rank correlation over grades that do not vary is undefined"),
+  figure(one.get("mae"), "not recorded", "%.2f"),
+  figure(one.get("bias"), "not recorded", "%+.2f"),
+  figure(one.get("inter_juror_alpha"), "a jury of one has no inter-juror agreement"),
+  one.get("n_holdout") if one.get("n_holdout") is not none else "—",
+  figure(one.get("judge_validity_factor"), "not recorded", "%.2f"),
+  (one.get("band") | replace("_", " ")) if one.get("band") else "—",
+  one.get("lint") or "—"
+]) %}
+{% endfor %}
+{{ table([{"label": "Criterion", "mono": true}, {"label": "Weight", "numeric": true}, {"label": "κw", "numeric": true}, {"label": "ρ", "numeric": true}, {"label": "MAE", "numeric": true}, {"label": "Bias", "numeric": true}, {"label": "α", "numeric": true}, {"label": "n holdout", "numeric": true}, {"label": "Validity", "numeric": true}, {"label": "Band"}, {"label": "The lint's read"}], rows, caption="Every coefficient with its n: a κw without its n is a number pretending to be a fact", density="dense", row_count=rows | length) }}
+
+{% for one in report.get("criteria") or [] %}
+{% if one.get("disagreements") %}
+<h3>Where <span class="mono">{{ one.get("criterion") }}</span> diverged most</h3>
+{% for disagreement in one.get("disagreements") %}
+{{ table([{"label": ""}, {"label": "Grade", "numeric": true}, {"label": "Why"}], [
+  ["You", disagreement.get("author_grade"), disagreement.get("author_note") or "—"],
+  ["The jury", figure(disagreement.get("jury_grade"), "not recorded", "%g"), disagreement.get("jury_rationale") or "—"],
+], density="dense", row_count=2) }}
+<details class="kit-details"><summary>The sample</summary><pre class="kit-output">{{ disagreement.get("excerpt") or "—" }}</pre></details>
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% if report.get("warnings") %}
+<div class="warning-state"><h3>Before you read those numbers</h3><ul>{% for warning in report.get("warnings") %}<li>{{ warning }}</li>{% endfor %}</ul></div>
+{% endif %}
+{% if report.get("judge_set") %}{{ json_viewer(report.get("judge_set"), label="The jury the agreement was measured for") }}{% endif %}
+<p class="muted">FreeWeight proposes no rewritten criterion text: it names the problem and shows the evidence. The rubric is yours.</p>
+{% elif state == "not_required" %}
+<p class="notice">Every criterion of this goal is scored without a judge, so there is nothing to calibrate: its judge validity factor is 1.0.</p>
+{% else %}
+<p class="warning-state">No agreement has been measured for this goal yet. Grade the calibration set — at least the minimum number of samples —
+then run the calibration. Too few grades is work still to do, not a rubric that failed.</p>
+<p><a href="{{ here }}/calibration">Calibration</a></p>
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

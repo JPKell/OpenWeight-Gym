@@ -131,6 +131,12 @@ ACTIONS: Final[frozenset[str]] = frozenset(
         "freeweight.draft_edit",
         "freeweight.draft_save",
         "freeweight.draft_delete",
+        # WP4 Gate B. Calibration samples added (pasted, or a run's promoted), one sample's grades
+        # recorded on a calibration set or on a goal run (`failed` when FreeWeight did not answer
+        # mid-save). Running the calibration is the `job.enqueue` of `freeweight_goal_calibrate`.
+        "freeweight.calibration_samples",
+        "freeweight.calibration_grades",
+        "freeweight.run_grades",
     }
 )
 """The closed action vocabulary."""

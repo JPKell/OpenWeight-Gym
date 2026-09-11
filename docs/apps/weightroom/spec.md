@@ -339,7 +339,10 @@ Kinds in 1.0: `freeweight_suite_run` (`freeweight run start --model … --suite 
 executes the run and exits with its outcome, launched inside `systemd-run --user --scope` under
 `[host] memory_high`/`memory_max` — ADR-0119's wrapper for a run started outside FreeWeight's unit,
 refused rather than run uncapped without `systemd-run` — and followed with `freeweight run wait`
-when another process holds FreeWeight's execution slot), `retention_trim` (WeightRoomGym's own
+when another process holds FreeWeight's execution slot), `freeweight_goal_calibrate`
+(`freeweight goals calibrate <slug> --progress --json` — a goal's jury grading its held-out samples,
+model loads under the same scope, prefix and cap; FreeWeight's API calibration is synchronous and
+unstreamed, so the job's output is how the Goals page follows it live, row WP4), `retention_trim` (WeightRoomGym's own
 retention — finished jobs after 90 days, guarded-write backups after `guarded_backup_days`,
 ADR-0134 rule 3 — and FreeWeight's own deletion of results older than
 `freeweight_older_than_days` when that is set; LoadCoach and PromptCadence retain inside their own

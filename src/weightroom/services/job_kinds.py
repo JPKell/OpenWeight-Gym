@@ -14,6 +14,10 @@ should read into its output, checks ``context.cancelled()`` between steps, and r
   Whether a benchmark may render an overridden prompt is FreeWeight's rule: the job passes
   ``--allow-prompt-override`` only when its own parameter says so, and FreeWeight refuses
   otherwise (prompt standards §6).
+* ``freeweight_goal_calibrate`` — ``freeweight goals calibrate <slug> --progress --json`` (row WP4):
+  a goal's jury grading its held-out samples, under the same scope, prefix and cap as a suite run —
+  the jurors are model loads — its output one JSON line per holdout sample judged, naming no grade,
+  and the report last.
 * ``backup`` — each application's own ``db backup`` (``db_curated.run_curated``), and
   WeightRoomGym's own in-process.
 * ``model_refresh`` — ``models refresh --json`` on FreeWeight and LoadCoach, then the catalog join.
@@ -67,6 +71,7 @@ __all__ = [
     "backup",
     "catalog_pull",
     "docs_index",
+    "freeweight_goal_calibrate",
     "freeweight_suite_run",
     "model_refresh",
     "retention_trim",
@@ -123,6 +128,56 @@ def run_id_in(text: str) -> str | None:
     return None
 
 
+def _capped(context: JobContext, wrapper: str, executable: str) -> list[str]:
+    """``systemd-run --user --scope`` under ADR-0119's cap, then the FreeWeight executable.
+
+    The scope is named with :data:`SUITE_RUN_SCOPE_PREFIX` and the job's id, so the memory-cap alert
+    recognises a kill inside any FreeWeight workload the console starts.
+    """
+    host = context.settings.host
+    return [
+        wrapper, "--user", "--scope", "--quiet", f"--unit={SUITE_RUN_SCOPE_PREFIX}{context.job.id}",
+        "-p", f"MemoryHigh={host.memory_high}", "-p", f"MemoryMax={host.memory_max}",
+        "-p", "MemorySwapMax=0", executable,
+    ]  # fmt: skip
+
+
+def freeweight_goal_calibrate(context: JobContext) -> Outcome:
+    """One goal's calibration, capped, FreeWeight's progress printed as its jury works (row WP4).
+
+    ``freeweight goals calibrate`` partitions the graded set and has the jury grade the holdout —
+    model loads, so it runs in the same capped scope as a suite run, and one at a time with the
+    console's other jobs. It is not idempotent: a second execution is a second set of model loads,
+    so a lost lease fails it rather than requeueing it.
+    """
+    params = context.job.params
+    which = _which(context)
+    executable = executable_for(context.settings, "freeweight", which=which)
+    if executable is None:
+        return Outcome("failed", "FreeWeight is not installed: set [apps.freeweight] executable.")
+    wrapper = which("systemd-run")
+    if wrapper is None:
+        return Outcome(
+            "failed",
+            "ADR-0119: a calibration started by the console runs its jury under the host memory "
+            "cap "
+            f"([host] memory_max = {context.settings.host.memory_max}), and systemd-run is not on "
+            "PATH to apply it. Nothing was started.",
+        )
+    argv = [*_capped(context, wrapper, executable), "goals", "calibrate", str(params["goal"])]
+    argv += ["--progress", "--json"]
+    if params.get("graded_by"):
+        argv += ["--graded-by", str(params["graded_by"])]
+    result = _stream(context, argv, timeout_seconds=SUITE_RUN_TIMEOUT_SECONDS)
+    if result.cancelled:
+        return Outcome("cancelled", "the calibration stopped on the operator's cancel")
+    if result.timed_out:
+        return Outcome("failed", "the calibration did not finish within 12 hours and was stopped")
+    if result.ok:
+        return Outcome("completed")
+    return Outcome("failed", f"freeweight exited {result.returncode}")
+
+
 def freeweight_suite_run(context: JobContext) -> Outcome:
     """One FreeWeight suite run, capped, followed to its end (module docstring)."""
     params = context.job.params
@@ -139,10 +194,7 @@ def freeweight_suite_run(context: JobContext) -> Outcome:
             f"([host] memory_max = {host.memory_max}), and systemd-run is not on PATH to apply it. "
             "The run was not started.",
         )
-    argv = [wrapper, "--user", "--scope", "--quiet"]
-    argv += [f"--unit={SUITE_RUN_SCOPE_PREFIX}{context.job.id}"]
-    argv += ["-p", f"MemoryHigh={host.memory_high}", "-p", f"MemoryMax={host.memory_max}"]
-    argv += ["-p", "MemorySwapMax=0", executable, "run", "start"]
+    argv = [*_capped(context, wrapper, executable), "run", "start"]
     argv += ["--model", str(params["model"]), "--suite", str(params["suite"]), "--json"]
     if params.get("label"):
         argv += ["--label", str(params["label"])]
@@ -358,6 +410,7 @@ def docs_index(context: JobContext) -> Outcome:
 
 EXECUTORS: Final[dict[str, Executor]] = {
     "freeweight_suite_run": freeweight_suite_run,
+    "freeweight_goal_calibrate": freeweight_goal_calibrate,
     "retention_trim": retention_trim,
     "backup": backup,
     "model_refresh": model_refresh,

@@ -13,6 +13,8 @@
   <div class="page-actions">
     <a href="/apps/freeweight/goals">Every goal</a>
     {% if sourced.live %} · <a href="{{ here }}/edit">Edit</a>{% endif %}
+    · <a href="{{ here }}/calibration">Calibration</a> · <a href="{{ here }}/grade">Grade</a> · <a href="{{ here }}/report">Report</a>
+    · <a href="/apps/freeweight/judges?goal={{ slug | urlencode }}">Judges</a>
   </div>
 </div>
 {% include "_app_state.html" %}

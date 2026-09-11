@@ -326,3 +326,70 @@ def test_a_pull_holds_ollamas_progress_for_the_page_and_summarises_it_on_the_job
     assert held is not None
     assert held.ok
     assert len(held.events) == 4
+
+
+# --- freeweight_goal_calibrate (row WP4) ----------------------------------------------------------
+
+
+def _calibrating_freeweight(tmp_path: Path, *, exit_code: int = 0) -> Path:
+    return _script(
+        tmp_path / "freeweight",
+        'if [ "$1" = "goals" ] && [ "$2" = "calibrate" ]; then\n'
+        '  echo \'{"event": "calibration.started", "holdout": 2}\'\n'
+        '  echo \'{"event": "calibration.sample_judged", "sample": 1, "of": 2}\'\n'
+        '  echo \'{"event": "calibration.sample_judged", "sample": 2, "of": 2}\'\n'
+        '  echo \'{"event": "calibration.completed", "state": "calibrated"}\'\n'
+        f"  exit {exit_code}\n"
+        "fi\n"
+        "exit 2\n",
+    )
+
+
+def test_a_calibration_runs_its_jury_under_the_memory_cap_and_prints_its_progress(
+    tmp_path: Path, database: Database
+) -> None:
+    wrapper = _systemd_run(tmp_path)
+    freeweight = _calibrating_freeweight(tmp_path)
+    settings = settings_for(
+        tmp_path,
+        f'[apps.freeweight]\nexecutable = "{freeweight}"\n'
+        '[host]\nmemory_high = "20G"\nmemory_max = "22G"\n',
+    )
+    services = replace(
+        services_for(), which=lambda name: str(wrapper) if name == "systemd-run" else None
+    )
+    outcome, text, job = run_kind(
+        database, settings, services, "freeweight_goal_calibrate",
+        {"goal": "wp4_voice", "graded_by": "jordan"},
+    )  # fmt: skip
+    assert outcome == Outcome("completed")
+    argv = (tmp_path / "systemd-run.argv").read_text().splitlines()
+    assert argv[3] == f"--unit={SUITE_RUN_SCOPE_PREFIX}{job.id}"
+    assert argv[4:10] == ["-p", "MemoryHigh=20G", "-p", "MemoryMax=22G", "-p", "MemorySwapMax=0"]
+    assert argv[10:] == [
+        str(freeweight.resolve()), "goals", "calibrate", "wp4_voice", "--progress", "--json",
+        "--graded-by", "jordan",
+    ]  # fmt: skip
+    assert text.count("calibration.sample_judged") == 2
+
+
+def test_a_calibration_is_never_started_uncapped_and_a_failure_is_named(
+    tmp_path: Path, database: Database
+) -> None:
+    freeweight = _calibrating_freeweight(tmp_path, exit_code=5)
+    settings = settings_for(tmp_path, f'[apps.freeweight]\nexecutable = "{freeweight}"\n')
+    uncapped, _text, _job = run_kind(
+        database, settings, replace(services_for(), which=lambda _name: None),
+        "freeweight_goal_calibrate", {"goal": "wp4_voice"},
+    )  # fmt: skip
+    assert uncapped.state == "failed" and "ADR-0119" in (uncapped.error or "")
+    wrapper = _systemd_run(tmp_path)
+    services = replace(
+        services_for(), which=lambda name: str(wrapper) if name == "systemd-run" else None
+    )
+    failed, _text, _job = run_kind(
+        database, settings, services, "freeweight_goal_calibrate", {"goal": "wp4_voice"}
+    )
+    assert failed == Outcome("failed", "freeweight exited 5")
+    argv = (tmp_path / "systemd-run.argv").read_text().splitlines()
+    assert "--graded-by" not in argv

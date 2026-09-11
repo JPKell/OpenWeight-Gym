@@ -1,0 +1,40 @@
+{
+  "run_id": "01WP4GRADERUN000000000000A",
+  "goal_slug": "wp4_voice",
+  "goal_name": "Style and tone in creative non-fiction",
+  "criteria": [
+    {
+      "key": "would_publish",
+      "name": "Would publish it",
+      "weight": 0.3,
+      "scale_points": 5,
+      "descriptors": {
+        "5": "As is.",
+        "3": "With edits.",
+        "1": "No."
+      }
+    }
+  ],
+  "samples": [
+    {
+      "sample_id": "01WP4SAMPLE0000000000000A",
+      "case_id": "warehouse",
+      "response_text": "The inventory did not add up.",
+      "grades": {}
+    },
+    {
+      "sample_id": "01WP4SAMPLE0000000000000B",
+      "case_id": "ledger",
+      "response_text": "I wrote the number down twice.",
+      "grades": {
+        "would_publish": {
+          "grade": 4,
+          "note": "close"
+        }
+      }
+    }
+  ],
+  "expected_grades": 2,
+  "recorded_grades": 1,
+  "complete": false
+}

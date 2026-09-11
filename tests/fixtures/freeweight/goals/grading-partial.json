@@ -1,0 +1,211 @@
+{
+  "slug": "wp4_voice",
+  "goal_hash": "sha256:2bda90e86468600b479f62e987bc7f83f5b219a57fe90538e409cb77a41e0a6c",
+  "criteria": [
+    {
+      "key": "dry_wit",
+      "name": "Dry wit, never winking",
+      "rung": "judge",
+      "scale_points": 5,
+      "descriptors": {
+        "5": "Wry and understated throughout. The humour is in what is noticed, never in a nudge to the reader.",
+        "4": "Mostly understated, with one or two moments that reach for the laugh.",
+        "3": "Occasional flashes of wit over mostly flat reportage.",
+        "2": "Earnest with an occasional joke that is announced before it lands.",
+        "1": "Earnest throughout, or nudging the reader to notice it was funny."
+      }
+    },
+    {
+      "key": "concrete_over_abstract",
+      "name": "Concrete over abstract",
+      "rung": "judge",
+      "scale_points": 5,
+      "descriptors": {
+        "5": "Every claim is anchored to something specific: a number, an object, an incident.",
+        "4": "Mostly anchored; one or two passages float free.",
+        "3": "Mixed; abstractions carry about half the argument.",
+        "2": "Mostly abstract, with a specific detail used as decoration.",
+        "1": "Abstraction throughout; nothing you could photograph."
+      }
+    }
+  ],
+  "samples": [
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSF",
+      "content": "Calibration sample 4: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 5,
+          "note": "graded 5"
+        },
+        "concrete_over_abstract": {
+          "grade": 5,
+          "note": "graded 5"
+        }
+      }
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSE",
+      "content": "Calibration sample 3: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 4,
+          "note": "graded 4"
+        },
+        "concrete_over_abstract": {
+          "grade": 4,
+          "note": "graded 4"
+        }
+      }
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSH",
+      "content": "Calibration sample 6: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 2,
+          "note": "graded 2"
+        },
+        "concrete_over_abstract": {
+          "grade": 2,
+          "note": "graded 2"
+        }
+      }
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSN",
+      "content": "Calibration sample 10: the inventory did not add up, and I counted twice.",
+      "grades": {}
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSC",
+      "content": "Calibration sample 1: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 2,
+          "note": "graded 2"
+        },
+        "concrete_over_abstract": {
+          "grade": 2,
+          "note": "graded 2"
+        }
+      }
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSK",
+      "content": "Calibration sample 8: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 4,
+          "note": "graded 4"
+        },
+        "concrete_over_abstract": {
+          "grade": 4,
+          "note": "graded 4"
+        }
+      }
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSD",
+      "content": "Calibration sample 2: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 3,
+          "note": "graded 3"
+        },
+        "concrete_over_abstract": {
+          "grade": 3,
+          "note": "graded 3"
+        }
+      }
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSJ",
+      "content": "Calibration sample 7: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 3,
+          "note": "graded 3"
+        },
+        "concrete_over_abstract": {
+          "grade": 3,
+          "note": "graded 3"
+        }
+      }
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSG",
+      "content": "Calibration sample 5: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 1,
+          "note": "graded 1"
+        },
+        "concrete_over_abstract": {
+          "grade": 1,
+          "note": "graded 1"
+        }
+      }
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSM",
+      "content": "Calibration sample 9: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 5,
+          "note": "graded 5"
+        },
+        "concrete_over_abstract": {
+          "grade": 5,
+          "note": "graded 5"
+        }
+      }
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSP",
+      "content": "Calibration sample 11: the inventory did not add up, and I counted twice.",
+      "grades": {}
+    },
+    {
+      "sample_id": "01M27T29YV3SG3N6EYBG5EAMSB",
+      "content": "Calibration sample 0: the inventory did not add up, and I counted twice.",
+      "grades": {
+        "dry_wit": {
+          "grade": 1,
+          "note": "graded 1"
+        },
+        "concrete_over_abstract": {
+          "grade": 1,
+          "note": "graded 1"
+        }
+      }
+    }
+  ],
+  "progress": {
+    "samples": 12,
+    "judged_criteria": 2,
+    "expected_grades": 24,
+    "recorded_grades": 20,
+    "remaining": [
+      {
+        "sample_id": "01M27T29YV3SG3N6EYBG5EAMSN",
+        "criterion": "dry_wit"
+      },
+      {
+        "sample_id": "01M27T29YV3SG3N6EYBG5EAMSN",
+        "criterion": "concrete_over_abstract"
+      },
+      {
+        "sample_id": "01M27T29YV3SG3N6EYBG5EAMSP",
+        "criterion": "dry_wit"
+      },
+      {
+        "sample_id": "01M27T29YV3SG3N6EYBG5EAMSP",
+        "criterion": "concrete_over_abstract"
+      }
+    ],
+    "complete": false,
+    "min_samples": 8,
+    "target_samples": 12
+  }
+}

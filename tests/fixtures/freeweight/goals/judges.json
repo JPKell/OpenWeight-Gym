@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "model": "fake/fake-model:8b-q8_0@sha256:fa4efa4efa4e",
+      "eligible": true,
+      "reasons": [],
+      "judge_benchmark_suite": "native.judge",
+      "judge_results": null
+    }
+  ],
+  "page": {
+    "limit": 1,
+    "next_cursor": null,
+    "has_more": false
+  },
+  "total": 1,
+  "jury_size": 3
+}

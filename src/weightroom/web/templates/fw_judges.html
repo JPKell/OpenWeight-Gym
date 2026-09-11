@@ -1,0 +1,62 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, kv_list, empty_state %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link %}
+{% from "_fw_goals.html" import figure %}
+{% block title %}Judges — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data or {} %}
+<div class="page-head">
+  <h2>Judges {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/goals">Goals</a>{% if goal %} · <a href="/apps/freeweight/goals/{{ goal | urlencode }}">{{ goal }}</a>{% endif %}</div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">The models FreeWeight may seat on a jury, why each refused one is refused, and each one's own <code>native.judge</code> figures —
+how trustworthy the instrument is, one row away from every judged score. A juror never judges its own output, and a remote one needs both
+remote permissions.</p>
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+{% set judges = data.get("judges") or {} %}
+{% set keys = ["pairwise_accuracy", "swap_consistency", "position_preference_rate", "repetition_agreement_rate", "verbosity_preference_rate", "style_preference_rate", "transitivity_violation_rate", "self_preference_delta"] %}
+{% if judges.get("items") %}
+{% set rows = [] %}
+{% for one in judges.get("items") %}
+{% set results = one.get("judge_results") %}
+{% set row = [one.get("model") or "—", badge("eligible", tone="success") if one.get("eligible") else badge("refused", tone="danger"), (one.get("reasons") or []) | join(", ") or "—", run_link(results.get("run_id")) if results else "—"] %}
+{% for key in keys %}{% set _ = row.append(figure((results.get("metrics") or {}).get(key) if results else none, ("its native.judge run reported none" if results else "never measured as a judge"))) %}{% endfor %}
+{% set _ = rows.append(row) %}
+{% endfor %}
+{% set head = [{"label": "Model", "mono": true}, {"label": "Eligible"}, {"label": "Refused because"}, {"label": "native.judge run"}] %}
+{% for key in keys %}{% set _ = head.append({"label": key | replace("_", " "), "numeric": true}) %}{% endfor %}
+{{ table(head, rows, caption="Jury size " ~ (judges.get("jury_size") if judges.get("jury_size") is not none else "—"), density="dense", row_count=rows | length) }}
+{% else %}
+{{ empty_state("FreeWeight's provider lists no model to seat on a jury.") }}
+{% endif %}
+
+<h3 id="validate">Dry-run a jury</h3>
+<p class="muted">FreeWeight assembles the jury a goal would run with and names every refusal — self-judging, remote permission, a juror not installed.
+Nothing is generated.</p>
+<form method="get" action="/apps/freeweight/judges#validate" class="card kit-form">
+  <div class="field"><label for="fw-jury-goal">Goal</label>
+    <select id="fw-jury-goal" name="goal"><option value="">the configured jury</option>{% for slug in data.get("goals") or [] %}<option value="{{ slug }}"{{ " selected" if goal == slug else "" }}>{{ slug }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="fw-jury-candidate">Candidate being measured</label><input id="fw-jury-candidate" name="candidate" value="{{ candidate }}" placeholder="a canonical model id"></div>
+  <div class="kit-wide"><button type="submit"{% if not sourced.live %} disabled{% endif %}>Assemble</button></div>
+</form>
+{% set validation = data.get("validation") %}
+{% if validation %}
+{{ kv_list([
+  {"label": "Goal · candidate", "value": (validation.get("goal") or "the configured jury") ~ " · " ~ (validation.get("candidate") or "none")},
+  {"label": "Jurors", "value": (validation.get("jurors") or []) | join(", ") or "none — judged criteria would skip"},
+  {"label": "Asked for", "value": validation.get("requested_size") if validation.get("requested_size") is not none else "—"},
+  {"label": "Reduced", "value": (validation.get("reduction_reason") or "yes") if validation.get("jury_reduced") else "no"},
+  {"label": "Remote", "value": "yes" if validation.get("remote") else "no"},
+]) }}
+{% if validation.get("refused") %}
+{% set rows = [] %}
+{% for one in validation.get("refused") %}{% set _ = rows.append([one.get("model_canonical_id") or one.get("model") or "—", (one.get("reasons") or []) | join(", ") or "—"]) %}{% endfor %}
+{{ table([{"label": "Refused", "mono": true}, {"label": "Why"}], rows, density="dense", row_count=rows | length) }}
+{% endif %}
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

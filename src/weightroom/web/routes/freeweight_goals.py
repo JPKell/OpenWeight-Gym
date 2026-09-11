@@ -24,6 +24,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from weightroom.services import freeweight_goals as goals
 from weightroom.services.app_api import download
+from weightroom.services.apps import AppUnreachable
 from weightroom.services.freeweight_pages import _document, segment
 from weightroom.web.routes.apps import app_view, read_app_page, render_app_page
 from weightroom.web.routes.freeweight import (
@@ -35,6 +36,7 @@ from weightroom.web.routes.freeweight import (
     _href,
     _unanswered,
 )
+from weightroom.web.routes.jobs import enqueue_job
 from weightroom.web.session import CurrentOperator
 
 if TYPE_CHECKING:
@@ -46,6 +48,8 @@ ui_router = APIRouter(tags=["ui"], include_in_schema=False)
 
 GOALS: Final = f"{BASE}/goals"
 _Text = Annotated[str, Form()]
+_Texts = Annotated[list[str] | None, Form()]
+CALIBRATE: Final = "freeweight_goal_calibrate"
 
 _DONE: Final[Mapping[str, str]] = {
     "created": "FreeWeight wrote the goal. Its lint findings, if any, are below; none blocks it.",
@@ -55,6 +59,7 @@ _DONE: Final[Mapping[str, str]] = {
     "imported": "Imported: FreeWeight checked the bundle's size, members and hash before writing.",
     "deleted": "Deleted: the pack and its rows are gone; the runs it measured keep their results.",
     "draft_deleted": "The draft is abandoned.",
+    "samples_added": "FreeWeight added the samples, skipping any whose text the set already had.",
 }
 """What a finished action says on the page it lands on — fixed sentences keyed by the redirect's
 ``done``, so nothing a URL carries is ever rendered as prose."""
@@ -569,3 +574,373 @@ def edit_from_page(  # noqa: PLR0913 — the edited documents and the hashes a c
     return RedirectResponse(
         _href(f"{GOALS}/{segment(slug)}", done="edited"), status_code=status.HTTP_303_SEE_OTHER
     )
+
+
+# --- Calibration --------------------------------------------------------------------------------
+
+
+def _calibration(
+    request: Request,
+    principal: Principal,
+    slug: str,
+    *,
+    action_error: SuiteError | None = None,
+    form: Mapping[str, str] | None = None,
+    done: str | None = None,
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request,
+        view,
+        api=lambda: goals.calibration_api(client, settings, slug),
+        database=lambda handle: goals.calibration_db(handle, slug),
+    )
+    return render_app_page(
+        request, principal, APP, "fw_goal_calibration.html", selected="Goals", view=view,
+        sourced=sourced, slug=slug, action_error=action_error, form=dict(form or {}),
+        done_message=_done(done),
+    )  # fmt: skip
+
+
+@ui_router.get(
+    f"{GOALS}/{{slug}}/calibration", summary="A goal's calibration", response_class=HTMLResponse
+)
+def calibration_page(
+    request: Request, principal: CurrentOperator, slug: str, done: str | None = None
+) -> HTMLResponse:
+    """The calibration set by partition and origin with its grading progress, and how to add to it,
+    grade it and run it."""
+    return _calibration(request, principal, slug, done=done)
+
+
+@ui_router.post(f"{GOALS}/{{slug}}/calibration/samples", summary="Add calibration samples")
+def samples_from_page(  # noqa: PLR0913 — the paste form's fields and the promotion's run
+    request: Request,
+    principal: CurrentOperator,
+    slug: str,
+    mode: _Text = "paste",
+    content: _Text = "",
+    task: _Text = "",
+    run_id: _Text = "",
+) -> Response:
+    """Paste one text, or promote every completed sample of a run of this goal.
+
+    A promotion names each sample by id and FreeWeight reads the text it stored; the audit row names
+    the mode, the run and the counts, never a sample's text.
+    """
+    client, settings = _clients(request)
+    promoting = mode == "promote"
+    params = {"mode": "promote" if promoting else "paste", "run": run_id.strip() or None}
+    try:
+        if promoting:
+            outcome = goals.promote_run(client, settings, slug, run_id.strip())
+        else:
+            outcome = goals.add_pasted(client, settings, slug, content=content, task=task)
+    except SuiteError as exc:
+        _refused(request, principal, "freeweight.calibration_samples", slug, exc, params=params)
+        return _calibration(
+            request, principal, slug, action_error=exc,
+            form={} if promoting else {"content": content},
+        )  # fmt: skip
+    _audit(
+        request, principal, "freeweight.calibration_samples", target=slug, outcome="ok",
+        params={**params, "sent": outcome.get("sent"), "added": outcome.get("added")},
+    )  # fmt: skip
+    return RedirectResponse(
+        _href(f"{GOALS}/{segment(slug)}/calibration", done="samples_added"),
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@ui_router.post(f"{GOALS}/{{slug}}/calibration/run", summary="Run a goal's calibration")
+def calibrate_from_page(request: Request, principal: CurrentOperator, slug: str) -> Response:
+    """Enqueue ``freeweight_goal_calibrate`` — ADR-0119's cap, one ``job.enqueue`` row — and follow.
+
+    The operator's name is the report's ``graded_by``: the grades the jury is scored against are
+    the ones this operator recorded.
+    """
+    try:
+        job = enqueue_job(
+            request, principal, kind=CALIBRATE,
+            params={"goal": slug, "graded_by": principal.username}, schedule_id=None,
+        )  # fmt: skip
+    except SuiteError as exc:
+        return _calibration(request, principal, slug, action_error=exc)
+    return RedirectResponse(
+        f"{GOALS}/{segment(slug)}/calibration/jobs/{segment(job.id)}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@ui_router.get(
+    f"{GOALS}/{{slug}}/calibration/jobs/{{job_id}}",
+    summary="A calibration being run",
+    response_class=HTMLResponse,
+)
+def calibrating_page(
+    request: Request, principal: CurrentOperator, slug: str, job_id: str
+) -> HTMLResponse:
+    """The job's output as FreeWeight prints it — a line per holdout sample judged — polled live."""
+    from weightroom.services.jobs import get_job
+
+    job = None
+    error: SuiteError | None = None
+    try:
+        job = get_job(request.app.state.database, job_id)
+        if job.kind != CALIBRATE or job.params.get("goal") != slug:
+            message = f"Job {job_id} is not a calibration of {slug}."
+            raise goals.GoalFormInvalid(message, details={"job_id": job_id})
+    except SuiteError as exc:
+        job, error = None, exc
+    return render_app_page(
+        request, principal, APP, "fw_goal_calibrating.html", selected="Goals", slug=slug,
+        job=job, error=error,
+    )  # fmt: skip
+
+
+# --- Grading --------------------------------------------------------------------------------------
+
+
+def _grading(  # noqa: PLR0913 — where the page opens, and what a failed save leaves on it
+    request: Request,
+    principal: Principal,
+    *,
+    slug: str | None,
+    run_id: str | None,
+    sample: str | None = None,
+    after: str | None = None,
+    action_error: SuiteError | None = None,
+    unreachable: bool = False,
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    if slug is not None:
+        base = f"{GOALS}/{segment(slug)}"
+        form_action, back = f"{base}/grade", (f"{base}/calibration", "Calibration")
+        sourced = read_app_page(
+            request, view, api=lambda: goals.grading_api(client, settings, slug), database=None
+        )
+    else:
+        form_action = f"{BASE}/runs/{segment(run_id or '')}/grade"
+        back = (f"{BASE}/runs/{segment(run_id or '')}", "The run")
+        sourced = read_app_page(
+            request, view, api=lambda: goals.run_grading_api(client, settings, run_id or ""),
+            database=None,
+        )  # fmt: skip
+    data = sourced.data or {}
+    samples = list(data.get("samples") or [])
+    index = goals.pick_sample(samples, len(data.get("criteria") or []), sample=sample, after=after)
+    current = samples[index] if index is not None else None
+    previous_href = next_href = None
+    if index is not None and index > 0:
+        previous_href = _href(form_action, sample=samples[index - 1].get("sample_id")) + "#sample"
+    if index is not None and index + 1 < len(samples):
+        next_href = _href(form_action, sample=samples[index + 1].get("sample_id")) + "#sample"
+    return render_app_page(
+        request, principal, APP, "fw_goal_grade.html",
+        selected="Goals" if slug is not None else "Runs", view=view, sourced=sourced,
+        title=data.get("name") or slug or run_id, back_href=back[0], back_label=back[1],
+        report_href=f"{GOALS}/{segment(slug)}/report" if slug is not None else None,
+        form_action=form_action, current=current, position=(index or 0) + 1, total=len(samples),
+        previous_href=previous_href, next_href=next_href, recorded=data.get("recorded"),
+        expected=data.get("expected"), complete=data.get("complete"), unreachable=unreachable,
+        action_error=action_error,
+        empty_message=(
+            "No sample to grade yet: add samples on the calibration page."
+            if slug is not None
+            else "This run stored no completed sample with its text."
+        ),
+    )  # fmt: skip
+
+
+def _grade(  # noqa: PLR0913 — one sample's aligned fields, and whose set they grade
+    request: Request,
+    principal: Principal,
+    *,
+    slug: str | None,
+    run_id: str | None,
+    sample_id: str,
+    criterion: list[str] | None,
+    grade: list[str] | None,
+    note: list[str] | None,
+) -> Response:
+    """Save one sample's grades — calibration or run — and move on to the next unfinished sample.
+
+    Whatever happens writes one audit row naming the sample and the criteria graded. A save
+    FreeWeight refused renders its refusal; one it did not answer is ``failed``, and the page
+    re-reads what FreeWeight holds, because a batch cut off mid-send may have landed in part — and
+    sending it again is safe, each grade being an upsert on its ``(sample, criterion)``.
+    """
+    criteria, grades, notes = list(criterion or []), list(grade or []), list(note or [])
+    action = "freeweight.calibration_grades" if slug is not None else "freeweight.run_grades"
+    target = slug if slug is not None else run_id
+    params = {
+        "sample": sample_id,
+        "criteria": [one for one, value in zip(criteria, grades, strict=False) if value.strip()],
+    }
+    client, settings = _clients(request)
+    try:
+        batch = goals.grades_from_form(
+            sample_id=sample_id, criteria=criteria, grades=grades, notes=notes
+        )
+        if slug is not None:
+            goals.submit_grades(client, settings, slug, batch, graded_by=principal.username)
+        else:
+            goals.submit_run_grades(
+                client, settings, run_id or "", batch, graded_by=principal.username
+            )
+    except AppUnreachable as exc:
+        _audit(
+            request, principal, action, target=target, outcome="failed", params=params,
+            message=exc.message,
+        )  # fmt: skip
+        return _grading(
+            request, principal, slug=slug, run_id=run_id, sample=sample_id, unreachable=True
+        )
+    except SuiteError as exc:
+        _refused(request, principal, action, target, exc, params=params)
+        return _grading(
+            request, principal, slug=slug, run_id=run_id, sample=sample_id, action_error=exc
+        )
+    _audit(request, principal, action, target=target, outcome="ok", params=params)
+    base = (
+        f"{GOALS}/{segment(slug)}/grade"
+        if slug is not None
+        else f"{BASE}/runs/{segment(run_id or '')}/grade"
+    )
+    return RedirectResponse(
+        _href(base, after=sample_id) + "#sample", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+@ui_router.get(
+    f"{GOALS}/{{slug}}/grade", summary="Grade a calibration set", response_class=HTMLResponse
+)
+def grade_page(
+    request: Request,
+    principal: CurrentOperator,
+    slug: str,
+    sample: str | None = None,
+    after: str | None = None,
+) -> HTMLResponse:
+    """One blinded sample at a time, opening at the first one not finished — a sitting resumes."""
+    return _grading(request, principal, slug=slug, run_id=None, sample=sample, after=after)
+
+
+@ui_router.post(f"{GOALS}/{{slug}}/grade", summary="Grade one calibration sample")
+def grade_from_page(  # noqa: PLR0913 — the sample and its aligned per-criterion fields
+    request: Request,
+    principal: CurrentOperator,
+    slug: str,
+    sample_id: _Text = "",
+    criterion: _Texts = None,
+    grade: _Texts = None,
+    note: _Texts = None,
+) -> Response:
+    """``POST /goals/{slug}/calibration/grades`` with one sample's grades, then the next sample."""
+    return _grade(
+        request, principal, slug=slug, run_id=None, sample_id=sample_id, criterion=criterion,
+        grade=grade, note=note,
+    )  # fmt: skip
+
+
+@ui_router.get(
+    f"{BASE}/runs/{{run_id}}/grade", summary="Grade a goal run", response_class=HTMLResponse
+)
+def run_grade_page(
+    request: Request,
+    principal: CurrentOperator,
+    run_id: str,
+    sample: str | None = None,
+    after: str | None = None,
+) -> HTMLResponse:
+    """A completed goal run's samples on its human criteria, blinded as FreeWeight's own screen."""
+    return _grading(request, principal, slug=None, run_id=run_id, sample=sample, after=after)
+
+
+@ui_router.post(f"{BASE}/runs/{{run_id}}/grade", summary="Grade one of a goal run's samples")
+def run_grade_from_page(  # noqa: PLR0913 — the sample and its aligned per-criterion fields
+    request: Request,
+    principal: CurrentOperator,
+    run_id: str,
+    sample_id: _Text = "",
+    criterion: _Texts = None,
+    grade: _Texts = None,
+    note: _Texts = None,
+) -> Response:
+    """``POST /runs/{id}/grades``: FreeWeight refreshes the composites, aggregates and evidence."""
+    return _grade(
+        request, principal, slug=None, run_id=run_id, sample_id=sample_id, criterion=criterion,
+        grade=grade, note=note,
+    )  # fmt: skip
+
+
+# --- The report, judges ---------------------------------------------------------------------------
+
+
+def _report(
+    request: Request, principal: Principal, slug: str, *, action_error: SuiteError | None = None
+) -> HTMLResponse:
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request,
+        view,
+        api=lambda: goals.report_api(client, settings, slug),
+        database=lambda handle: goals.report_db(handle, slug),
+    )
+    return render_app_page(
+        request, principal, APP, "fw_goal_report.html", selected="Goals", view=view,
+        sourced=sourced, slug=slug, action_error=action_error,
+    )  # fmt: skip
+
+
+@ui_router.get(
+    f"{GOALS}/{{slug}}/report", summary="A goal's agreement", response_class=HTMLResponse
+)
+def report_page(request: Request, principal: CurrentOperator, slug: str) -> HTMLResponse:
+    """κw, ρ, MAE, bias, α and n per criterion; the gate; the validity factor; the divergences."""
+    return _report(request, principal, slug)
+
+
+@ui_router.get(
+    f"{GOALS}/{{slug}}/report/export", summary="Download the report", response_model=None
+)
+def report_download(request: Request, principal: CurrentOperator, slug: str) -> Response:
+    """``GET /goals/{slug}/calibration/report/export``: ``benchmark.calibration_report``."""
+    client, settings = _clients(request)
+    try:
+        refused = _unanswered(request)
+        if refused is not None:
+            raise refused
+        headers, body = download(
+            client, settings, APP, f"goals/{segment(slug)}/calibration/report/export"
+        )
+    except SuiteError as exc:
+        return _report(request, principal, slug, action_error=exc)
+    return _download(headers, body, f"{slug}.calibration-report.json")
+
+
+@ui_router.get(f"{BASE}/judges", summary="Judges", response_class=HTMLResponse)
+def judges_page(
+    request: Request,
+    principal: CurrentOperator,
+    goal: str | None = None,
+    candidate: str | None = None,
+) -> HTMLResponse:
+    """Every model FreeWeight may seat, with its refusals and ``native.judge`` figures, and a jury
+    dry run for a goal and a candidate — reads, so a query string, not a form post."""
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    wanted, measured = (goal or "").strip() or None, (candidate or "").strip() or None
+    sourced = read_app_page(
+        request,
+        view,
+        api=lambda: goals.judges_api(client, settings, goal=wanted, candidate=measured),
+        database=None,
+    )
+    return render_app_page(
+        request, principal, APP, "fw_judges.html", selected="Goals", view=view, sourced=sourced,
+        goal=wanted or "", candidate=measured or "",
+    )  # fmt: skip

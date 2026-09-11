@@ -1,0 +1,130 @@
+{
+  "goal_slug": "wp4_voice",
+  "goal_hash": "sha256:2bda90e86468600b479f62e987bc7f83f5b219a57fe90538e409cb77a41e0a6c",
+  "calibration_state": "calibrated",
+  "passed_gate": true,
+  "weighted_kappa_w": 0.8615984405458088,
+  "min_agreement": 0.4,
+  "judge_validity_factor": 0.7655452599818175,
+  "n_holdout": 5,
+  "n_anchor": 7,
+  "graded_samples": 0,
+  "min_samples": 8,
+  "policy_version": "1.0",
+  "band": "strong",
+  "criteria": [
+    {
+      "criterion": "dry_wit",
+      "weight": 0.35,
+      "kappa_w": 0.8421052631578947,
+      "rho": 0.9486832980505138,
+      "mae": 0.6,
+      "bias": 0.6,
+      "n_holdout": 5,
+      "scale_points": 5,
+      "inter_juror_alpha": 1.0,
+      "judge_validity_factor": 0.5954583420518295,
+      "band": "strong",
+      "lint": "",
+      "disagreements": [
+        {
+          "sample_id": "01M27T29YV3SG3N6EYBG5EAMSC",
+          "criterion": "dry_wit",
+          "author_grade": 2,
+          "jury_grade": 3.0,
+          "divergence": 1.0,
+          "author_note": "graded 2",
+          "jury_rationale": "It announces the joke instead of letting it sit.",
+          "excerpt": "Calibration sample 1: the inventory did not add up, and I counted twice."
+        },
+        {
+          "sample_id": "01M27T29YV3SG3N6EYBG5EAMSE",
+          "criterion": "dry_wit",
+          "author_grade": 4,
+          "jury_grade": 5.0,
+          "divergence": 1.0,
+          "author_note": "graded 4",
+          "jury_rationale": "It announces the joke instead of letting it sit.",
+          "excerpt": "Calibration sample 3: the inventory did not add up, and I counted twice."
+        },
+        {
+          "sample_id": "01M27T29YV3SG3N6EYBG5EAMSG",
+          "criterion": "dry_wit",
+          "author_grade": 1,
+          "jury_grade": 2.0,
+          "divergence": 1.0,
+          "author_note": "graded 1",
+          "jury_rationale": "It announces the joke instead of letting it sit.",
+          "excerpt": "Calibration sample 5: the inventory did not add up, and I counted twice."
+        }
+      ]
+    },
+    {
+      "criterion": "concrete_over_abstract",
+      "weight": 0.25,
+      "kappa_w": 0.8888888888888888,
+      "rho": 0.9486832980505138,
+      "mae": 0.4,
+      "bias": -0.4,
+      "n_holdout": 5,
+      "scale_points": 5,
+      "inter_juror_alpha": 1.0,
+      "judge_validity_factor": 0.6285393610547089,
+      "band": "strong",
+      "lint": "",
+      "disagreements": [
+        {
+          "sample_id": "01M27T29YV3SG3N6EYBG5EAMSD",
+          "criterion": "concrete_over_abstract",
+          "author_grade": 3,
+          "jury_grade": 2.0,
+          "divergence": 1.0,
+          "author_note": "graded 3",
+          "jury_rationale": "It announces the joke instead of letting it sit.",
+          "excerpt": "Calibration sample 2: the inventory did not add up, and I counted twice."
+        },
+        {
+          "sample_id": "01M27T29YV3SG3N6EYBG5EAMSF",
+          "criterion": "concrete_over_abstract",
+          "author_grade": 5,
+          "jury_grade": 4.0,
+          "divergence": 1.0,
+          "author_note": "graded 5",
+          "jury_rationale": "It announces the joke instead of letting it sit.",
+          "excerpt": "Calibration sample 4: the inventory did not add up, and I counted twice."
+        }
+      ]
+    }
+  ],
+  "judge_set": {
+    "jurors": [
+      "ollama/juror-a",
+      "ollama/juror-b"
+    ],
+    "prompt_id": "goals.judge.rubric",
+    "prompt_version": "1.0.0",
+    "prompt_sha256": "sha256:abababababababababababababababababababababababababababababababab",
+    "remote": false,
+    "judge_benchmark": {
+      "suite_key": "native.judge",
+      "metric_keys": [
+        "pairwise_accuracy",
+        "swap_consistency",
+        "position_preference_rate",
+        "repetition_agreement_rate",
+        "verbosity_preference_rate",
+        "style_preference_rate",
+        "transitivity_violation_rate",
+        "self_preference_delta"
+      ]
+    },
+    "requested_size": 2,
+    "jury_reduced": false,
+    "reduction_reason": null,
+    "refused": []
+  },
+  "partition_seed": 20260828,
+  "graded_by": "operator",
+  "measured_at": "2026-09-11T08:41:38.539Z",
+  "warnings": []
+}

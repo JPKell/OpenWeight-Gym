@@ -1,0 +1,101 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, table, empty_state, card %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw.html" import run_link %}
+{% from "_fw_goals.html" import calibration, csrf with context %}
+{% block title %}Calibration — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data or {} %}
+{% set goal = data.get("goal") or {} %}
+{% set here = "/apps/freeweight/goals/" ~ (slug | urlencode) %}
+{% set off = not sourced.live %}
+<div class="page-head">
+  <h2>Calibration — {{ goal.get("name") or slug }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ here }}">The goal</a> · <a href="{{ here }}/grade">Grade</a> · <a href="{{ here }}/report">Report</a> · <a href="/apps/freeweight/judges?goal={{ slug | urlencode }}">Judges</a></div>
+</div>
+{% include "_app_state.html" %}
+{% if done_message %}<p class="notice" role="status">{{ done_message }}</p>{% endif %}
+{{ refusal(action_error) }}
+<p class="muted">Before a judged criterion is believed, you grade a set of samples yourself. FreeWeight splits the graded set: the
+<em>anchors</em> reach the jury's prompt as examples, the <em>holdout</em> never does, and the jury is scored on the holdout against your
+grades. Minimum {{ data.get("min_samples") or "—" }} graded samples, target {{ data.get("target_samples") or "—" }}.</p>
+{{ refusal(sourced.error) }}
+{% if sourced.data is not none %}
+<p>{{ calibration(goal) if goal else "" }}</p>
+<div class="cards">
+  {{ card("Samples", data.get("samples") if data.get("samples") is not none else "—", note="in the calibration set", kind="figure") }}
+  {{ card("Grades recorded", (data.get("recorded_grades") ~ " of " ~ data.get("expected_grades")) if data.get("expected_grades") is not none else (data.get("recorded_grades") if data.get("recorded_grades") is not none else "—"), note="one per sample and graded criterion", kind="figure") }}
+  {{ card("Fully graded", data.get("complete_samples") if data.get("complete_samples") is not none else "—", note="samples with every criterion graded", kind="figure") }}
+</div>
+{% set rows = [] %}
+{% for one in data.get("partitions") or [] %}{% set _ = rows.append([one.get("partition"), one.get("samples"), one.get("complete") if one.get("complete") is not none else "—"]) %}{% endfor %}
+{% if rows %}{{ table([{"label": "Partition"}, {"label": "Samples", "numeric": true}, {"label": "Fully graded", "numeric": true}], rows, caption="By partition — assigned when the calibration runs; until then every sample waits in the holdout", density="dense", row_count=rows | length) }}{% endif %}
+{% set rows = [] %}
+{% for origin, count in (data.get("origins") or {}) | dictsort %}{% set _ = rows.append([origin, count]) %}{% endfor %}
+{% if rows %}{{ table([{"label": "Origin"}, {"label": "Samples", "numeric": true}], rows, caption="By where the samples came from", density="dense", row_count=rows | length) }}{% endif %}
+<p class="muted">No sample is listed one by one here: a row pairing a sample with its origin or its partition would unblind the grading page.</p>
+
+<h3 id="grade">Grade</h3>
+<p><a href="{{ here }}/grade"><button type="button" data-variant="primary">{{ "Resume grading" if data.get("recorded_grades") else "Start grading" }}</button></a></p>
+
+<h3 id="add">Add samples</h3>
+<p class="muted">A set that is all excellent or all poor gives the jury nothing to agree with you about: the set needs work of different quality.
+FreeWeight skips a sample whose text is already in the set.</p>
+<details class="card kit-details" open>
+  <summary><strong>Generate over a model spread</strong></summary>
+  <p class="muted">Run the goal on one model at a time — a capped run, as the Runs page starts it, which the page then follows live — and
+  promote its samples below once it completes. Choose models of different sizes and families for the spread. A goal run also runs its jury on
+  the answers, if any juror is eligible.</p>
+  {% if data.get("models") is none %}
+  <p class="muted">The models are read only from FreeWeight's running API.</p>
+  {% else %}
+  <form method="post" action="/apps/freeweight/runs" class="kit-form">
+    {{ csrf() }}
+    <input type="hidden" name="suite" value="goal.{{ slug }}">
+    <input type="hidden" name="label" value="calibration samples for {{ slug }}">
+    <div class="field"><label for="fw-gen-model">Model</label>
+      <select id="fw-gen-model" name="model" required>{% for one in data.get("models") %}<option value="{{ one.get('canonical_id') }}">{{ one.get("canonical_id") }}</option>{% endfor %}</select></div>
+    <div class="kit-wide"><button type="submit"{% if off %} disabled{% endif %}>Run the goal on this model</button></div>
+  </form>
+  {% endif %}
+</details>
+<details class="card kit-details" open>
+  <summary><strong>Promote a completed run's samples</strong></summary>
+  <p class="muted">FreeWeight reads each sample's stored answer itself and records it as <code>imported_run_sample</code> with the run's model,
+  refusing anything that is not a completed sample of a run of this goal.</p>
+  {% if data.get("runs") is none %}
+  <p class="muted">A goal's runs are read only from FreeWeight's running API.</p>
+  {% elif data.get("runs") %}
+  {% set rows = [] %}
+  {% for run in data.get("runs") %}
+  {% set promote %}<form method="post" action="{{ here }}/calibration/samples" class="kit-inline">{{ csrf() }}<input type="hidden" name="mode" value="promote"><input type="hidden" name="run_id" value="{{ run.get('id') }}"><button type="submit"{% if off %} disabled{% endif %}>Promote its samples</button></form>{% endset %}
+  {% set _ = rows.append([run_link(run.get("id")), run.get("model") or "—", run.get("label") or "—", run.get("created_at") or "—", promote]) %}
+  {% endfor %}
+  {{ table([{"label": "Run"}, {"label": "Model", "mono": true}, {"label": "Label"}, {"label": "Created", "mono": true}, {"label": ""}], rows, caption="Completed runs of goal." ~ slug, density="dense", row_count=rows | length) }}
+  {% else %}
+  <p class="muted">No completed run of this goal yet.</p>
+  {% endif %}
+</details>
+<details class="card kit-details">
+  <summary><strong>Paste text you already have</strong></summary>
+  <form method="post" action="{{ here }}/calibration/samples" class="kit-form">
+    {{ csrf() }}
+    <input type="hidden" name="mode" value="paste">
+    <div class="field kit-wide"><label for="fw-paste">The text</label><textarea id="fw-paste" name="content" rows="6" required>{{ form.get("content", "") }}</textarea></div>
+    <div class="field"><label for="fw-paste-task">For the task</label>
+      <select id="fw-paste-task" name="task"><option value="">none</option>{% for task in goal.get("tasks") or [] %}<option value="{{ task.get('key') }}">{{ task.get("name") }}</option>{% endfor %}</select></div>
+    <div class="kit-wide"><button type="submit"{% if off %} disabled{% endif %}>Add the sample</button></div>
+  </form>
+</details>
+
+<h3 id="run">Run the calibration</h3>
+<p class="muted">FreeWeight partitions the graded samples, then the jury grades the holdout — model loads, minutes rather than seconds. It runs
+as a capped job, one at a time with the console's other FreeWeight runs, and its page shows FreeWeight's progress as the jury works. The
+report replaces the last one.</p>
+<form method="post" action="{{ here }}/calibration/run" class="kit-actions">
+  {{ csrf() }}
+  <button type="submit" data-variant="primary"{% if off %} disabled title="FreeWeight is not answering"{% endif %}>Run the calibration</button>
+</form>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}

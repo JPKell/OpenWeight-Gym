@@ -13,6 +13,8 @@
     <a href="/apps/freeweight/runs">Every run</a>
     {% if run and run.get("machine_fingerprint") %} · <a href="/apps/freeweight/machines?fingerprint={{ run.get('machine_fingerprint') | urlencode }}">Its machine</a>{% endif %}
     {% if run %} · <a href="/apps/freeweight/results?model={{ (run.get('model') or '') | urlencode }}&amp;suite={{ ((run.get('suite') or {}).get('key') or '') | urlencode }}">Its results</a>{% endif %}
+    {% if run and ((run.get("suite") or {}).get("key") or "").startswith("goal.") %} · <a href="/apps/freeweight/runs/{{ (run.get('id') or run_id) | urlencode }}/grade">Grade its human criteria</a>
+    · <a href="/apps/freeweight/goals/{{ ((run.get('suite') or {}).get('key') or '')[5:] | urlencode }}">Its goal</a>{% endif %}
     {% if run and sourced.live and run.get("status") not in terminal %}
     <form method="post" action="/apps/freeweight/runs/{{ (run.get('id') or run_id) | urlencode }}/cancel" class="kit-inline">
       <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">

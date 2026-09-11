@@ -64,6 +64,7 @@ __all__ = [
 
 JOB_KINDS: Final[tuple[str, ...]] = (
     "freeweight_suite_run",
+    "freeweight_goal_calibrate",
     "retention_trim",
     "backup",
     "model_refresh",
@@ -239,6 +240,8 @@ def cap_output(text: str, cap_bytes: int) -> str:
 
 _SUITE_KEY: Final = re.compile(r"^[a-z0-9_]+(\.[a-z0-9_]+)+$")
 _PULL_NAME: Final = re.compile(r"^[A-Za-z0-9._/:-]{1,256}$")
+_GOAL_SLUG: Final = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+"""FreeWeight's own slug pattern (``domain/goals/pack.SLUG_PATTERN``); it is one CLI argument."""
 
 
 class _Required:
@@ -318,6 +321,11 @@ _PARAMS: Final[Mapping[str, Mapping[str, tuple[_Check, Any]]]] = {
         "allow_prompt_override": (_flag, False),
         # Row WP3: the Runs page's label, passed through as `run start --label`.
         "label": (_optional_text(max_chars=120), None),
+    },
+    # Row WP4: a goal's calibration — its jury grading the holdout — run as `goals calibrate`.
+    "freeweight_goal_calibrate": {
+        "goal": (_text(_GOAL_SLUG, max_chars=64), _REQUIRED),
+        "graded_by": (_optional_text(max_chars=120), None),
     },
     "retention_trim": {
         "guarded_backup_days": (_days(0), 90),

@@ -1,0 +1,55 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge %}
+{% from "_app_page.html" import page_source, refusal %}
+{% from "_fw_goals.html" import csrf with context %}
+{% block title %}Grade — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+{% set data = sourced.data %}
+<div class="page-head">
+  <h2>Grade — {{ title }} {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="{{ back_href }}">{{ back_label }}</a>{% if report_href %} · <a href="{{ report_href }}">Report</a>{% endif %}</div>
+</div>
+{% include "_app_state.html" %}
+{% if unreachable %}
+<p class="warning-state" role="alert">FreeWeight did not answer while these grades were being saved, so some may have landed and some not. What
+this page shows is what FreeWeight holds now; send the sample again — a grade sent twice replaces itself.</p>
+{% endif %}
+{{ refusal(action_error) }}
+{{ refusal(sourced.error) }}
+{% if data %}
+<p class="muted">Blinded: which model wrote a sample, where it came from and which half of the calibration set it is in are never shown, and the
+order is FreeWeight's own shuffle rather than the order the samples were made in. No jury grade appears on this page. Each save lands in
+FreeWeight at once, so you can stop anywhere; this page reopens at the first sample you have not finished.</p>
+<p><strong>{{ recorded }}</strong> of <strong>{{ expected }}</strong> grades recorded{% if complete %} — every sample is graded{% endif %}.</p>
+{% if current %}
+{% set grades = current.get("grades") or {} %}
+<h3 id="sample">Sample {{ position }} of {{ total }}{% if current.get("case_id") %} <span class="muted">· task {{ current.get("case_id") }}</span>{% endif %}</h3>
+<pre class="kit-output">{{ current.get("text") }}</pre>
+<form method="post" action="{{ form_action }}" class="card">
+  {{ csrf() }}
+  <input type="hidden" name="sample_id" value="{{ current.get('sample_id') }}">
+  {% for criterion in data.get("criteria") or [] %}
+  {% set points = criterion.get("scale_points") or 5 %}
+  {% set described = criterion.get("descriptors") or {} %}
+  {% set held = grades.get(criterion.get("key")) or {} %}
+  <fieldset class="field">
+    <legend><strong>{{ criterion.get("name") }}</strong> <span class="mono kit-id">{{ criterion.get("key") }}</span>{% if held.get("grade") %} {{ badge("graded " ~ held.get("grade"), tone="success") }}{% endif %}</legend>
+    <input type="hidden" name="criterion" value="{{ criterion.get('key') }}">
+    <label for="fw-grade-{{ loop.index }}">Your grade, 1 to {{ points }}</label>
+    <select id="fw-grade-{{ loop.index }}" name="grade"{% if loop.first %} autofocus{% endif %}>
+      <option value="">not graded yet</option>
+      {% for point in range(points, 0, -1) %}<option value="{{ point }}"{{ " selected" if held.get("grade") == point else "" }}>{{ point }}{% if described.get(point | string) %} — {{ described.get(point | string) }}{% endif %}</option>{% endfor %}
+    </select>
+    <label for="fw-note-{{ loop.index }}">Note — what the report quotes back when the jury disagrees</label>
+    <input id="fw-note-{{ loop.index }}" name="note" value="{{ held.get('note') or '' }}">
+  </fieldset>
+  {% endfor %}
+  <button type="submit" data-variant="primary"{% if not sourced.live %} disabled title="FreeWeight is not answering"{% endif %}>Save and go on</button>
+</form>
+<p>{% if previous_href %}<a href="{{ previous_href }}">Previous sample</a>{% endif %}{% if previous_href and next_href %} · {% endif %}{% if next_href %}<a href="{{ next_href }}">Next sample</a>{% endif %}</p>
+{% else %}
+<p class="muted">{{ empty_message }}</p>
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}
