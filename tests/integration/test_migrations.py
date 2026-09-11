@@ -110,3 +110,35 @@ def test_ensure_ready_refuses_a_revision_this_build_does_not_know() -> None:
             connection.execute(text("UPDATE alembic_version SET version_num = '9999'"))
         with pytest.raises(SchemaAhead, match="9999"):
             ensure_ready(Database(engine), auto_migrate=True)
+
+
+def test_a_database_from_the_first_release_upgrades_to_head_with_its_rows_intact() -> None:
+    """The upgrade path from ``0.x``: a database at migration ``0001`` — the schema `wr-gym 0.1.0`
+    shipped — carries an operator and an audit row through every later migration to head, with the
+    rows readable and ``known_revisions`` seeded (packaging standards §6.1; row W10, gate B)."""
+    with temporary_sqlite() as engine:
+        runner = MigrationRunner(engine, script_location=MIGRATIONS_LOCATION)
+        assert runner.upgrade("0001", backup=False).to_revision == "0001"
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO operators (id, username, password_hash, password_salt, "
+                    "kdf_params, created_at, password_changed_at) VALUES "
+                    "('01OPERATOR000000000000000', 'jordan', X'00', X'00', '{}', "
+                    "'2026-09-09 12:00:00', '2026-09-09 12:00:00')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO audit_log (id, operator_id, actor, at, action, params, outcome, "
+                    "security) VALUES ('01AUDIT0000000000000000000', '01OPERATOR000000000000000', "
+                    "'operator', '2026-09-09 12:00:00', 'login', '{}', 'ok', 0)"
+                )
+            )
+        assert runner.upgrade(backup=False).to_revision == _head()
+        with engine.connect() as connection:
+            operators = connection.execute(text("SELECT username FROM operators")).scalars().all()
+            actions = connection.execute(text("SELECT action FROM audit_log")).scalars().all()
+        assert operators == ["jordan"] and actions == ["login"]
+        assert _seed(engine) >= EXPECTED_SEED
+        _assert_parity(runner.check_parity(Base.metadata))

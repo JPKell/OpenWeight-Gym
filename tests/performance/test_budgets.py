@@ -1,0 +1,360 @@
+"""Spec §15, every budget, measured on the reference machine and asserted (row W10, gate B).
+
+Marked ``performance`` and excluded from the default gate, like every budget assertion in the
+suite. Each test measures WeightRoomGym's **own** work — the render, the frame, the page, the
+relay — over fakes and fixtures, so the number is the console's overhead and not a peer's. The
+figures are printed so a gate report can quote them beside the budget.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import statistics
+import time
+from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import httpx
+import pytest
+from mirrorwall import Event, format_frame
+
+from tests.integration.test_db_guard import _rig
+from tests.security.test_chat_isolation import _loadcoach_stream
+from tests.support import (
+    JSON_HEADERS,
+    Console,
+    api_routes,
+    build_console,
+    fake_application,
+    fill_rows,
+    fixture_database,
+    mock_loadcoach,
+)
+from weightroom.config import APPLICATIONS, load_settings
+from weightroom.services.chat import run_loadcoach_reply
+from weightroom.services.chat_loadcoach import stream_reply
+from weightroom.services.database import Database, ensure_ready
+from weightroom.services.db_reader import (
+    CONSOLE_ROW_CAP,
+    STATEMENT_TIMEOUT_SECONDS,
+    DatabaseUrlCache,
+    open_app_database,
+    table_page,
+)
+from weightroom.services.docs import render_markdown
+from weightroom.services.docs_index import rebuild_index, search
+from weightroom.services.journal import parse_entry
+from weightroom.services.processes import FakeSystemdController
+from weightroom.services.telemetry import _GENERATOR, TelemetryService, read_since, sample_frame
+
+pytestmark = pytest.mark.performance
+
+DOCS_ROOT = Path(__file__).resolve().parents[2] / "docs"
+_WARMUP = 3
+_MEASURED = 15
+
+
+def _median_ms(work: Callable[[], object], *, measured: int = _MEASURED) -> float:
+    for _ in range(_WARMUP):
+        work()
+    samples = []
+    for _ in range(measured):
+        started = time.perf_counter()
+        work()
+        samples.append((time.perf_counter() - started) * 1000.0)
+    return statistics.median(samples)
+
+
+def _report(name: str, value: float, budget: float, unit: str = "ms") -> None:
+    print(f"\n{name}: {value:.1f} {unit} (budget {budget:g} {unit})")  # noqa: T201 — the gate report quotes it
+
+
+@pytest.fixture
+def console(tmp_path: Path) -> Console:
+    lines = [f'[docs]\nroot = "{DOCS_ROOT}"\n']
+    for app in APPLICATIONS:
+        executable, _config, _document = fake_application(tmp_path, app)
+        lines.append(f'[apps.{app}]\nexecutable = "{executable}"\n')
+    console = build_console(
+        tmp_path / "console",
+        extra_toml="".join(lines),
+        systemd=FakeSystemdController(states={"loadcoach.service": "active"}),
+    )
+    console.login()
+    return console
+
+
+# --- Shell render (top bar, strip, menu) on a warm process: ≤ 50 ms ------------------------------
+
+
+def test_shell_render_on_a_warm_process(console: Console) -> None:
+    def work() -> None:
+        assert console.client.get("/", headers={"Accept": "text/html"}).status_code == 200
+
+    median = _median_ms(work)
+    _report("shell render", median, 50)
+    assert median <= 50
+
+
+# --- Application Overview page, application running: ≤ 300 ms -----------------------------------
+
+
+def test_application_overview_with_the_application_running(
+    console: Console, respx_mock: Any
+) -> None:
+    mock_loadcoach(respx_mock)
+
+    def work() -> None:
+        page = console.client.get("/apps/loadcoach", headers={"Accept": "text/html"})
+        assert page.status_code == 200
+
+    median = _median_ms(work)
+    _report("overview page (loadcoach running)", median, 300)
+    assert median <= 300
+
+
+# --- Telemetry sample → SSE frame ≤ 20 ms; the 1 s cadence held within ±100 ms -----------------
+
+
+def test_telemetry_sample_to_frame_and_the_sampler_cadence(tmp_path: Path) -> None:
+    file = tmp_path / "c.toml"
+    file.write_text(
+        f'[storage]\ndatabase_url = "sqlite:///{tmp_path}/wr.sqlite3"\n'
+        "[telemetry]\ninterval_ms = 1000\n",
+        encoding="utf-8",
+    )
+    settings = load_settings(config_path=file).settings
+    database = Database.from_url(settings.storage.database_url or "")
+    ensure_ready(database, auto_migrate=True)
+    service = TelemetryService(database, settings)
+    service.start()
+    try:
+        time.sleep(5.2)
+    finally:
+        service.stop()
+    rows = read_since(database, after_id=0, limit=100)
+    assert len(rows) >= 4, "the sampler must have run at 1 s for five seconds"
+    gaps_ms = [
+        (later.at - earlier.at).total_seconds() * 1000.0
+        for earlier, later in zip(rows, rows[1:], strict=False)
+    ]
+    worst = max(abs(gap - 1000.0) for gap in gaps_ms)
+    _report("sampler cadence drift (worst)", worst, 100)
+    assert worst <= 100, gaps_ms
+
+    row = rows[-1]
+    median = _median_ms(lambda: sample_frame(row, queue=None), measured=50)
+    _report("telemetry sample → SSE frame", median, 20)
+    assert median <= 20
+
+
+# --- Journal line → SSE frame ≤ 50 ms ------------------------------------------------------------
+
+
+def test_journal_line_to_frame() -> None:
+    raw = {
+        "__CURSOR": "s=1;i=1",
+        "__REALTIME_TIMESTAMP": str(int(datetime(2026, 9, 10, tzinfo=UTC).timestamp() * 1e6)),
+        "PRIORITY": "6",
+        "_SYSTEMD_USER_UNIT": "loadcoach.service",
+        "SYSLOG_IDENTIFIER": "loadcoach",
+        "_PID": "4242",
+        "MESSAGE": json.dumps(
+            {
+                "level": "INFO",
+                "logger": "loadcoach.web",
+                "message": "request.completed",
+                "request_id": "01REQ",
+                "path": "/api/v1/route",
+                "duration_ms": 12.5,
+            }
+        ),
+    }
+
+    def work() -> None:
+        line = parse_entry(raw)
+        assert line is not None
+        format_frame(Event(sequence=1, type="log", payload=line.as_json()), generator=_GENERATOR)
+
+    median = _median_ms(work, measured=50)
+    _report("journal line → SSE frame", median, 50)
+    assert median <= 50
+
+
+# --- Database table page, 100 rows, SQLite ≤ 150 ms; the SQL console caps ----------------------
+
+
+def test_database_table_page_of_a_hundred_rows(tmp_path: Path) -> None:
+    path = fixture_database(tmp_path, "freeweight-0010")
+    fill_rows(
+        path,
+        "samples",
+        [
+            {
+                "id": f"01SAMPLE{index:018d}",
+                "run_test_id": "RT1",
+                "ordinal": index,
+                "status": "completed",
+            }
+            for index in range(1000)
+        ],
+    )
+    executable, _config, _document = fake_application(
+        tmp_path, "freeweight", database_url=f"sqlite:///{path}"
+    )
+    file = tmp_path / "console.toml"
+    file.write_text(f'[apps.freeweight]\nexecutable = "{executable}"\n', encoding="utf-8")
+    settings = load_settings(config_path=file).settings
+    own = Database.from_url(f"sqlite:///{tmp_path / 'weightroom.sqlite3'}")
+    ensure_ready(own, auto_migrate=True)
+    handle = open_app_database(settings, own, "freeweight", urls=DatabaseUrlCache(), now=0.0)
+
+    def work() -> None:
+        page = table_page(handle, "samples", page=3)
+        assert len(page.rows) == 100
+
+    median = _median_ms(work)
+    _report("table page, 100 rows, SQLite", median, 150)
+    assert median <= 150
+
+
+def test_the_sql_console_caps_are_the_specified_ones() -> None:
+    assert STATEMENT_TIMEOUT_SECONDS == 30.0
+    assert CONSOLE_ROW_CAP == 10_000
+
+
+# --- Guarded write, end to end ≤ 2 s -------------------------------------------------------------
+
+
+def test_guarded_write_end_to_end(tmp_path: Path) -> None:
+    rig = _rig(tmp_path)
+    started = time.perf_counter()
+    result = rig.write()
+    elapsed_ms = (time.perf_counter() - started) * 1000.0
+    assert result.counts.rows == 3
+    _report("guarded write, dry run + backup + statement + audit", elapsed_ms, 2000)
+    assert elapsed_ms <= 2000
+
+
+# --- Docs page render, ≥ 40 KB markdown ≤ 100 ms; search over the whole tree ≤ 200 ms ----------
+
+
+def test_docs_render_and_search(tmp_path: Path) -> None:
+    root = DOCS_ROOT.resolve()
+    page = root / "apps" / "promptcadence" / "spec.md"
+    assert page.stat().st_size >= 40 * 1024, "the fixture page must be at least 40 KB"
+    median = _median_ms(lambda: render_markdown(root, page))
+    _report(f"docs render ({page.stat().st_size // 1024} KB markdown)", median, 100)
+    assert median <= 100
+
+    database = Database.from_url(f"sqlite:///{tmp_path / 'wr.sqlite3'}")
+    ensure_ready(database, auto_migrate=True)
+    indexed = rebuild_index(database, root)
+    assert indexed > 100
+
+    def work() -> None:
+        assert search(database, "guard", limit=20).hits
+
+    median = _median_ms(work)
+    _report(f"docs search over {indexed} documents", median, 200)
+    assert median <= 200
+
+
+# --- Chat: first token after LoadCoach's first chunk ≤ 30 ms added latency ----------------------
+
+
+def test_chat_adds_at_most_thirty_milliseconds_before_the_first_token(
+    console: Console, respx_mock: Any
+) -> None:
+    mock_loadcoach(respx_mock, stream=_loadcoach_stream("one token", thinking=""))
+    created = console.client.post(
+        "/api/v1/chat/conversations",
+        json={"backend": "loadcoach", "title": "budget"},
+        headers=JSON_HEADERS,
+    )
+    conversation_id = created.json()["id"]
+    state = console.client.app.state  # type: ignore[attr-defined]
+    base_url = state.settings.apps.loadcoach.base_url
+
+    def raw_stream() -> None:
+        with httpx.Client() as client:
+            list(stream_reply(client, base_url=base_url, token=None, body={"prompt": "go"}))
+
+    def relay() -> None:
+        sent = console.client.post(
+            f"/api/v1/chat/conversations/{conversation_id}/messages",
+            json={"text": "go"},
+            headers=JSON_HEADERS,
+        )
+        message_id = sent.json()["message_id"]
+        with httpx.Client() as client:
+            run_loadcoach_reply(
+                state.database,
+                client,
+                settings=state.settings,
+                conversation_id=conversation_id,
+                message_id=message_id,
+                attachments_root=state.attachments_root,
+            )
+
+    upstream = _median_ms(raw_stream, measured=10)
+    whole = _median_ms(relay, measured=10)
+    added = max(whole - upstream, 0.0)
+    _report("chat relay, added over the raw LoadCoach stream", added, 30)
+    assert added <= 30
+
+
+# --- JS per page ≤ 60 KB of the console's own, the pinned libraries budgeted by name (ADR-0138) --
+
+_SCRIPT_SRC = re.compile(r'<script[^>]+src="([^"]+)"')
+_INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", re.S)
+_VENDORED = ("vendor/mermaid/", "vendor/echarts/", "vendor/htmx/")
+"""ADR-0138 rule 2: the pinned libraries, by path — nothing else is excluded from the count."""
+_HTMX_PAIR_BUDGET_BYTES = 64 * 1024
+
+
+def _pages(console: Console) -> Iterator[str]:
+    for path, route in api_routes(console.client.app):
+        if "GET" not in (route.methods or set()) or path.startswith("/api/"):
+            continue
+        if path.replace("{app}", "").count("{") or "/stream" in path or path == "/trust/root.crt":
+            continue
+        if "{app}" in path:
+            yield from (path.replace("{app}", app) for app in APPLICATIONS)
+        else:
+            yield path
+
+
+def test_javascript_per_page_stays_under_sixty_kilobytes(console: Console) -> None:
+    own: dict[str, int] = {}
+    whole: dict[str, int] = {}
+    htmx_pair = 0
+    counted: set[str] = set()
+    for path in sorted(set(_pages(console))):
+        response = console.client.get(path, headers={"Accept": "text/html"})
+        if response.status_code != 200:
+            continue
+        inline = sum(len(script) for script in _INLINE_SCRIPT.findall(response.text))
+        own[path] = inline
+        whole[path] = inline
+        for src in _SCRIPT_SRC.findall(response.text):
+            asset = console.client.get(src)
+            assert asset.status_code == 200, (path, src)
+            counted.add(src.split("?")[0])
+            whole[path] += len(asset.content)
+            if "vendor/htmx/" in src:
+                htmx_pair = max(htmx_pair, len(asset.content))
+            if not any(name in src for name in _VENDORED):
+                own[path] += len(asset.content)
+    worst_path, worst = max(own.items(), key=lambda item: item[1])
+    print("\ncounted:", ", ".join(sorted(counted)))  # noqa: T201 — ADR-0138 rule 2
+    _report(f"own JS on the heaviest page ({worst_path})", worst / 1024, 60, unit="KB")
+    total_kib = whole[worst_path] / 1024
+    print(f"\nJS in total on the same page, vendored included: {total_kib:.1f} KB")  # noqa: T201
+    assert worst <= 60 * 1024, own
+    pair = sum(len(console.client.get(src).content) for src in counted if "vendor/htmx/" in src)
+    _report("htmx + its SSE extension at the pin", pair / 1024, 64, unit="KB")
+    assert pair <= _HTMX_PAIR_BUDGET_BYTES
