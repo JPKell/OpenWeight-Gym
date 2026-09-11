@@ -223,11 +223,17 @@ the log pane closes with *— the journal reader ended —*, its Logs-page wordi
 
 ## 7. For the operator
 
-1. **Merge.** Per `weightroom-work.md` §3: whichever of WP3 and WP5 finishes first is merged by you; the
-   second merges `main` into its branch. Expect conflicts in `web/rendering.py` (`_PAGE_PHASE`,
-   `_PAGE_HREF`), `domain/audit.py` (`ACTIONS`), `tests/security/test_audit_routes.py` (`EXERCISES`),
-   `tests/security/test_checklist.py` (`SPEC_14_ROWS`), `tests/support.py` (appended helpers) and
-   `CHANGELOG.md` — keep both rows' entries.
+1. **Merge — `main` already merged into this branch; the branch is ready for you to merge.** WP3
+   reached `main` first (`a4281ec`), so under `weightroom-work.md` §3 this row merged `main` into
+   `row/wp5-ideapress-pages` as `a7d29e3`. Five files conflicted and each keeps both rows:
+   `domain/audit.py` (`ACTIONS`), `web/app.py` (both routers), `web/rendering.py` (`_PAGE_HREF`;
+   `_PAGE_PHASE` now holds only FreeWeight's *Goals* → WP4), `CHANGELOG.md` (both `[Unreleased]`
+   entries) and `tests/security/test_audit_routes.py` (main's file with WP5's `_ip_form` and its two
+   `EXERCISES` blocks added before `_state_changing_routes`). `tests/support.py`,
+   `tests/security/test_checklist.py` and `roadmap/weightroom-work.md` (both rows' marks) merged
+   without conflict. Neither row changed the console's OpenAPI snapshot or `api.md`, so nothing was
+   regenerated; the snapshot test passes. **The gate after the merge**, Python 3.14.4: format, lint,
+   mypy (222 files), `lint-imports` (5 kept), `pytest` → **1781 passed, 3 skipped**.
 2. **Restart `weightroom.service` after the merge** to serve these pages.
 3. **Left on the reference machine:** IdeaPress project `01M27NB0G65YFXBE5YD6FNYBB3` (*WP5 demo:
    drafting on your own machine*, U-01 at version 2, U-02 at version 1), its five stage runs, their
