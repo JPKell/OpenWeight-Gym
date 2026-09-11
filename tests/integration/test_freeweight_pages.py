@@ -307,6 +307,20 @@ def test_one_run_shows_its_tests_metrics_charts_and_the_live_pane(tmp_path: Path
     assert f'data-log-stream="{BASE}/runs/{RUN}/events"' in text
     assert f'action="{BASE}/runs/{RUN}/repeat"' in text
     assert f'action="{BASE}/runs/{RUN}/cancel"' not in text  # a completed run is not cancellable
+    assert "MutationObserver" not in text  # nor reloaded when its stream ends
+
+
+def test_a_running_run_reloads_once_its_stream_ends_to_show_its_final_figures(
+    tmp_path: Path,
+) -> None:
+    console, _database = freeweight_console(tmp_path, state="active")
+    running = {**fixture("run"), "status": "running"}
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router, bodies={f"runs/{RUN}": running})
+        text = page(console, f"{BASE}/runs/{RUN}")
+    assert f'action="{BASE}/runs/{RUN}/cancel"' in text
+    assert "MutationObserver" in text
+    assert 'status.textContent === "reader ended"' in text
 
 
 def test_the_event_stream_keeps_freeweights_sequence_and_carries_last_event_id(

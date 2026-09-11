@@ -132,6 +132,20 @@ nothing is summed or averaged across GPUs, and a reading this machine could not 
 {% if sourced.live %}
 {% set stream_url = events_url %}
 {% include "_log_pane.html" %}
+{% if run.get("status") not in terminal %}
+<script>
+  // FreeWeight's own run page keeps its badge current (runs.js). This one reloads when the stream
+  // ends, which it does at the run's terminal event, so the tests, metrics and telemetry appear.
+  // A finished run renders without this hook, so the reload happens once.
+  (() => {
+    const status = document.querySelector("[data-log-status]");
+    if (!status) return;
+    new MutationObserver(() => {
+      if (status.textContent === "reader ended") location.reload();
+    }).observe(status, { childList: true, characterData: true, subtree: true });
+  })();
+</script>
+{% endif %}
 {% elif data.get("events") %}
 {% set rows = [] %}
 {% for one in data.get("events") %}{% set _ = rows.append([one.get("sequence"), one.get("timestamp") or "—", one.get("type") or "—", one.get("message") or ""]) %}{% endfor %}

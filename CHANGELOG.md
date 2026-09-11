@@ -136,6 +136,11 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   counts its list (they rendered `—`, `—` and `[]`); IdeaPress's *Active stage runs* counts its
   list and *Pinned* reads `pinned`; FreeWeight's disk headroom is humanised. Each application's
   status body is pinned by a recorded fixture.
+- **A job's live output reaches its row while the child is quiet** (row WP3). The buffer flushed
+  only when a new line arrived, so the last line before a silence waited for the next line or the
+  exit. `freeweight run start --json` prints the run id and then nothing until the run ends, so
+  the Runs page could not follow a run it started until that run had finished. `run_streaming`
+  now flushes between polls, within `_OUTPUT_FLUSH_SECONDS`.
 
 ## [1.0.0] — 2026-09-10
 

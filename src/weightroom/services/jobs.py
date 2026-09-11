@@ -707,19 +707,32 @@ class OutputBuffer:
         self._interval = interval_seconds
         self._clock = clock
         self._flushed_at = float("-inf")
+        self._unflushed = False
 
     def write(self, text: str) -> None:
         """Append ``text``; compact when it has grown past four caps; flush when it is time."""
-        pending: str | None = None
         with self._lock:
             self._parts.append(text)
             self._size += len(text)
             if self._size > 4 * self._cap:
                 collapsed = cap_output("".join(self._parts), self._cap)
                 self._parts, self._size = [collapsed], len(collapsed)
+            self._unflushed = True
+        self.flush_due()
+
+    def flush_due(self) -> None:
+        """Flush what was written since the last flush, once ``interval_seconds`` have passed.
+
+        ``run_streaming`` also calls it between polls, so a line a child prints before going quiet —
+        the run id ``freeweight run start --json`` prints, which the Runs page follows — reaches the
+        row within one interval, not when the child next prints or exits.
+        """
+        pending: str | None = None
+        with self._lock:
             now = self._clock()
-            if self._flush is not None and now - self._flushed_at >= self._interval:
-                self._flushed_at = now
+            due = now - self._flushed_at >= self._interval
+            if self._flush is not None and self._unflushed and due:
+                self._flushed_at, self._unflushed = now, False
                 pending = cap_output("".join(self._parts), self._cap)
         if pending is not None and self._flush is not None:
             try:
@@ -859,7 +872,7 @@ def run_streaming(
             returncode = process.wait(timeout=poll_seconds)
             break
         except subprocess.TimeoutExpired:
-            pass
+            output.flush_due()
         if stopped_at is None:
             if cancelled():
                 was_cancelled, stopped_at = True, time.monotonic()
