@@ -48,8 +48,8 @@ reached, shown as warnings.</p>
 
 <h3>Attempts</h3>
 <p class="muted">A row's <code>transport_call</code> numbers the calls inside one attempt from 0: a
-call above 0 is one IdeaPress discarded and retried — a <code>provider_error</code> there is that
-retry, not a second failed attempt.</p>
+call above 0 is one IdeaPress discarded — a <code>provider_error</code> there is the call it threw
+away, not a second failed attempt; the same attempt's call 0 is the retry whose answer it kept.</p>
 {% set rows = [] %}
 {% for a in t.get("attempts") or [] %}
 {% set _ = rows.append([
