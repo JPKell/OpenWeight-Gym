@@ -48,20 +48,35 @@ refusal reason is already the field every reader of this fact consumes — the v
 arrives everywhere at once with no new column, no migration and no schema change. `finish_reason`
 is the evidence for the refusal, not the refusal.
 
-### 2. A judge call is bounded: `[judge] max_output_tokens`, default 2048
+### 2. The judge call *can* be bounded — `[judge] max_output_tokens` — but is not by default
 
-A judge answer is one small JSON object — a grade and a one-sentence reason. 2 048 tokens is an
-order of magnitude more than that needs, and a juror that cannot produce it inside that budget is
-not answering the rubric. Unbounded, such a juror spends the whole served window instead, which is
-what the measurement above is.
+The setting exists and reaches every juror's request. **Its default is `null`: the provider's own
+limit, which on a served model is the context window.** That is the shape FreeWeight has always had,
+and this decision keeps it deliberately rather than by omission.
 
-The budget does not rescue a reasoning juror and is not meant to: it makes the same refusal arrive
-in about a minute rather than seven, under a name that says what happened. `null` restores the
-provider's own limit, and a raised value is how an operator keeps a juror that genuinely needs room.
+The first draft of this ADR defaulted it to 2 048, on the reasoning that a judge answer is one small
+JSON object and anything larger is a juror not answering the rubric. **Row WPF9's Gate B measured
+that default and it was wrong**, on the juror it was supposed to be safe for:
 
-The knob exists because the right figure is a property of the juror, not of FreeWeight. It is not a
-`runtime_profile` field: the profile is how a model is *served* (ADR-0023), the same for candidate
-and jury, while this is how one call is asked.
+| `wp6_goal`, `gemma-4-12b-it-Q4_K_M`, 4 holdout samples | unbounded (WPF8) | 2 048 |
+|---|---|---|
+| `technical_correctness` | κ_w 0.4, n 4 | κ_w 0.4, n 4 |
+| `audience_fit` | κ_w 0.2286, **n 3** | κ_w **0.0**, **n 2** |
+| Goal κ_w | 0.3429 | 0.2667 |
+
+A 12 B *instruct* juror — the one the operator forked to precisely because it answers the rubric
+directly — hit 2 048 on two of eight calls and lost a sample it had been grading. **A default that
+silently narrows a measurement is worse than a slow refusal**, because FreeWeight is the instrument:
+the cap's only benefit is that a bad juror fails sooner, and that benefit does not pay for a
+coefficient computed over fewer pairs.
+
+So the figure is the operator's, not FreeWeight's: set it to make a reasoning juror fail fast, leave
+it unset to let every juror finish. Either way decision 1 names what happened, because the served
+context bounds the generation even when nothing else does — `finish_reason: length` is exactly what
+the Context above records, with no budget set at all.
+
+It is not a `runtime_profile` field: the profile is how a model is *served* (ADR-0023), the same for
+candidate and jury, while this is how one call is asked.
 
 ### 3. FreeWeight does not ask a reasoning juror not to reason
 
@@ -102,10 +117,17 @@ than on the second.
 * A report that previously said `protocol_error` for a truncated juror now says `output_truncated`,
   and carries a warning in words. Reports written before this row keep the word they were written
   with — the exclusion is stored text, and nothing rewrites it.
-* Every juror is now polled under a 2 048-token ceiling by default, including jurors that answered
-  fine before. A juror whose legitimate answer exceeds 2 048 tokens — none observed; the instruct
-  juror this arc measured answers in a few hundred characters — would newly refuse
-  `output_truncated`, which the report names, and the remedy is the setting.
-* `judge_verdicts` rows carry the new reason like any other; the column is a free-text `String`.
+* **No juror's behaviour changes unless an operator sets the budget.** Every existing calibration
+  and goal run reproduces exactly as before, which is what makes WPF8's figures still comparable.
+* What a set budget costs is now measured rather than assumed, and it is not small. At 2 048 on
+  `wp6_goal`: `Qwen3.5-9B` (reasoning) went from answering 3 of 8 rubric calls to 0 of 8, and the
+  run finished in 8 minutes instead of 22 — the same verdict, `uncalibrated` with no coefficient,
+  arriving faster and named. `gemma-4-12b-it` (instruct) went from 1 dropped sample to 2, and the
+  goal's κ_w from 0.3429 to 0.2667. Speed on a hopeless juror, accuracy on a working one — which is
+  why the figure belongs to whoever knows which they have.
+* A goal *run*'s `judge_verdicts` rows carry the new reason like any other — the column is a
+  free-text `String`. A *calibration* writes no verdict rows: its exclusions and warnings live in
+  `calibration_reports.disagreement_json`, which is where WPF8 put them and why this row needed no
+  migration either.
 * The `benchmark.calibration_report` export is untouched: exclusions are a report-level fact and
   never entered the frozen `1.0` payload.
