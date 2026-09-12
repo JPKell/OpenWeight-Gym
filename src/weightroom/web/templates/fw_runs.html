@@ -37,6 +37,14 @@
       {% else %}
       <input id="fw-start-suite" name="suite" value="{{ form.get('suite', '') }}" required placeholder="native.echo">
       {% endif %}</div>
+    {% if adapters %}
+    <div class="field"><label for="fw-start-adapter">Adapter</label>
+      <select id="fw-start-adapter" name="adapter">
+        <option value="">none — the bare base</option>
+        {% for one in adapters %}<option value="{{ one.get('name') }}"{{ " selected" if form.get("adapter") == one.get("name") else "" }}>{{ one.get("name") }} · base {{ one.get("base_model_name") }}</option>{% endfor %}
+      </select>
+      <span class="field-hint">A run under an adapter measures a different subject, never the base (ADR-0058). Available adapters only.</span></div>
+    {% endif %}
     <div class="field"><label for="fw-start-label">Label</label>
       <input id="fw-start-label" name="label" value="{{ form.get('label', '') }}" maxlength="120"></div>
     <div class="kit-wide"><button type="submit" data-variant="primary">Start run</button></div>

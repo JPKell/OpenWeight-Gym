@@ -9,6 +9,9 @@ hash), [ADR-0064](0064-adapters-are-selected-through-the-capability-vocabulary.m
 (the manifest's classification field), [ADR-0009](0009-setspec-schema-strategy.md) (payload
 versioning), [ADR-0010](0010-queue-implementation.md) (the no-new-infrastructure precedent).
 **Source:** [Adapter roadmap §2, A-4](../roadmap/adapter-roadmap.md).
+**Amended by:** [ADR-0140](0140-adapters-are-inert-under-a-provider-that-cannot-serve-them.md) —
+rule 2 said only that an *empty* directory means off; a set directory under a provider that cannot
+serve a LoRA is inert, not fatal.
 
 ## Context
 

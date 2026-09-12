@@ -152,6 +152,56 @@ def test_a_suite_run_is_launched_under_the_memory_cap_with_freewights_own_flags(
     assert RUN_ID in text
 
 
+def test_a_suite_run_carries_the_adapter_into_the_childs_argv(
+    tmp_path: Path, database: Database
+) -> None:
+    """Row WPF2: the adapter is one more argument to the same capped command.
+
+    Asserted on the child's own argv, not on the form: H6's lesson is that an adapter stored and
+    never sent measures the bare base and files the numbers under the adapter's name.
+    """
+    wrapper = _systemd_run(tmp_path)
+    freeweight = _freeweight(tmp_path)
+    settings = settings_for(tmp_path, f'[apps.freeweight]\nexecutable = "{freeweight}"\n')
+    services = replace(
+        services_for(), which=lambda name: str(wrapper) if name == "systemd-run" else None
+    )
+
+    outcome, _text, _job = run_kind(
+        database,
+        settings,
+        services,
+        "freeweight_suite_run",
+        {"model": "ollama/qwen3:8b", "suite": "native.performance", "adapter": "terse"},
+    )
+
+    assert outcome == Outcome("completed")
+    argv = (tmp_path / "systemd-run.argv").read_text().splitlines()
+    assert argv[argv.index("--adapter") + 1] == "terse"
+
+
+def test_a_suite_run_with_no_adapter_sends_no_adapter_flag(
+    tmp_path: Path, database: Database
+) -> None:
+    """The bare base is still the default, and says nothing rather than saying "none"."""
+    wrapper = _systemd_run(tmp_path)
+    freeweight = _freeweight(tmp_path)
+    settings = settings_for(tmp_path, f'[apps.freeweight]\nexecutable = "{freeweight}"\n')
+    services = replace(
+        services_for(), which=lambda name: str(wrapper) if name == "systemd-run" else None
+    )
+
+    run_kind(
+        database,
+        settings,
+        services,
+        "freeweight_suite_run",
+        {"model": "ollama/qwen3:8b", "suite": "native.performance"},
+    )
+
+    assert "--adapter" not in (tmp_path / "systemd-run.argv").read_text().splitlines()
+
+
 def test_a_suite_run_another_process_holds_is_followed_to_its_end(
     tmp_path: Path, database: Database
 ) -> None:

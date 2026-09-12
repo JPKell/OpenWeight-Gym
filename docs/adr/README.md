@@ -174,6 +174,7 @@ an ADR is superseded rather than edited.
 | [0137](0137-an-alert-is-an-episode-a-condition-clears-itself-an-event-waits-for-acknowledgement.md) | An alert is an episode: a condition clears itself, an event (a memory-cap kill) waits for its acknowledgement, a reading that could not look clears nothing, an inactive unit is not down, and the evaluator has its own thread | Accepted |
 | [0138](0138-the-per-page-javascript-budget-excludes-the-vendored-libraries-and-names-them.md) | The per-page JavaScript budget (spec §15) counts the console's own scripts and excludes the vendored, pinned libraries — htmx and its SSE extension, ECharts, mermaid — which are budgeted by name; the total is reported beside the part | Superseded by 0139 |
 | [0139](0139-the-per-page-javascript-budget-is-a-total-of-120-kb.md) | The per-page JavaScript budget is one total, 120 KB, everything a shell page downloads (htmx included); only mermaid and ECharts, which load where used, are outside it; the test prints the breakdown | Accepted |
+| [0140](0140-adapters-are-inert-under-a-provider-that-cannot-serve-them.md) | A configured `[adapters] directory` under a provider that cannot serve a LoRA is inert, not fatal: the directory is read and listed, nothing is offered to the provider, a run naming an adapter is still refused by name, and every listing says `provider_can_serve` | Accepted |
 
 ## Writing a new ADR
 

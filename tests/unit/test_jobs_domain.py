@@ -218,12 +218,19 @@ def test_parameters_are_filled_with_defaults_and_unknown_keys_refused() -> None:
         "suite": "native.performance",
         "allow_prompt_override": False,
         "label": None,
+        "adapter": None,
     }
     assert (
         validate_params(
             "freeweight_suite_run", {"model": "m", "suite": "native.x", "label": " q8 "}
         )["label"]
         == "q8"
+    )
+    assert (
+        validate_params(
+            "freeweight_suite_run", {"model": "m", "suite": "native.x", "adapter": " terse "}
+        )["adapter"]
+        == "terse"
     )
     with pytest.raises(JobParamsInvalid):
         validate_params("docs_index", {"root": "/"})
@@ -237,6 +244,10 @@ def test_parameters_are_filled_with_defaults_and_unknown_keys_refused() -> None:
         ("freeweight_suite_run", {"suite": "native.performance"}),
         ("freeweight_suite_run", {"model": "m", "suite": "not a suite"}),
         ("freeweight_suite_run", {"model": "m", "suite": "native.x", "allow_prompt_override": 1}),
+        # Row WPF2: the adapter reaches a child's argv, so its name is checked against the pattern
+        # `model.adapter_manifest` 1.0 states. Whether it *exists* is FreeWeight's answer.
+        ("freeweight_suite_run", {"model": "m", "suite": "native.x", "adapter": "Terse"}),
+        ("freeweight_suite_run", {"model": "m", "suite": "native.x", "adapter": "--fit"}),
         ("backup", {"apps": []}),
         ("backup", {"apps": ["hermes"]}),
         ("model_refresh", {"apps": ["ideapress"]}),
