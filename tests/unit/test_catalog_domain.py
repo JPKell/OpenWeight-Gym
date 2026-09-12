@@ -17,10 +17,12 @@ import respx
 from tests.support import fake_application, fill_rows, fixture_database
 from weightroom.config import Settings, load_settings
 from weightroom.services import catalog
+from weightroom.services.app_api import AppTimedOut, outcome_of
 from weightroom.services.catalog import (
     CatalogDropinRefused,
     CatalogRefused,
     PullJob,
+    catalog_delete_confirm,
     catalog_delete_preview,
     catalog_entries,
     find_entry,
@@ -240,6 +242,33 @@ def test_enable_disable_raises_on_refusal(tmp_path: Path) -> None:
     )
     with pytest.raises(CatalogRefused):
         set_enabled(settings, "loadcoach", "nope", enabled=True, client=httpx.Client())
+    # A refusal still audits `refused` through the same function a timeout audits `pending` with.
+    assert outcome_of(CatalogRefused("no", details={})) == "refused"
+
+
+@respx.mock
+def test_enable_disable_raises_apptimedout_on_a_timeout_not_catalogrefused(
+    tmp_path: Path,
+) -> None:
+    """Row WPF11: a slow ``enabled`` call is not a refusal — LoadCoach may still be applying it.
+
+    ``outcome_of`` (WPF1) reads ``AppTimedOut`` as ``pending``; before this row every failure here
+    was ``CatalogRefused``, which every caller (``catalog.py``, ``freeweight.py``, ``loadcoach.py``)
+    audits `refused` whatever the cause.
+    """
+    settings = _prepare(tmp_path)
+    respx.post(f"{LC_URL}/api/v1/models/01LC0000000000000000000001/enabled").mock(
+        side_effect=httpx.ReadTimeout("timed out")
+    )
+    with pytest.raises(AppTimedOut) as excinfo:
+        set_enabled(
+            settings,
+            "loadcoach",
+            "01LC0000000000000000000001",
+            enabled=False,
+            client=httpx.Client(),
+        )
+    assert outcome_of(excinfo.value) == "pending"
 
 
 def test_validate_gguf_refuses_bad_magic_and_undersize(tmp_path: Path) -> None:
@@ -364,6 +393,61 @@ def test_delete_preview_reads_freeweights_own_preview(tmp_path: Path) -> None:
     assert preview.freeweight is not None
     assert preview.freeweight.output["token"] == "tok-123"
     assert preview.freeweight.output["run_count"] == 3
+
+
+@respx.mock
+def test_delete_preview_raises_apptimedout_on_an_ollama_timeout(tmp_path: Path) -> None:
+    """Row WPF11: a preview must not say *nothing to remove* because the tag check gave up
+    waiting — that is not the same fact as Ollama answering that there is no such tag."""
+    settings = _prepare(tmp_path)
+    respx.get(f"{settings.host.ollama_base_url}/api/tags").mock(
+        side_effect=httpx.ReadTimeout("timed out")
+    )
+    entries = catalog_entries(
+        settings, _own(tmp_path), urls=DatabaseUrlCache(), monotonic=0.0, ollama_client=None
+    )
+    entry = find_entry(entries, "ollama/gemma3:12b@sha256:aaa")
+    with pytest.raises(AppTimedOut) as excinfo:
+        catalog_delete_preview(settings, entry, client=httpx.Client())
+    assert outcome_of(excinfo.value) == "pending"
+
+
+@respx.mock
+def test_delete_preview_still_degrades_to_not_found_on_a_real_ollama_failure(
+    tmp_path: Path,
+) -> None:
+    """Only a timeout is `pending` (row WPF11); Ollama answering with an error, or being
+    unreachable outright, is the ``False`` this preview always degraded to (W8)."""
+    settings = _prepare(tmp_path)
+    respx.get(f"{settings.host.ollama_base_url}/api/tags").mock(return_value=httpx.Response(500))
+    respx.post(f"{FW_URL}/api/v1/database/delete-preview").mock(
+        return_value=httpx.Response(200, json={"run_count": 0, "token": "tok"})
+    )
+    entries = catalog_entries(
+        settings, _own(tmp_path), urls=DatabaseUrlCache(), monotonic=0.0, ollama_client=None
+    )
+    entry = find_entry(entries, "ollama/gemma3:12b@sha256:aaa")
+    preview = catalog_delete_preview(settings, entry, client=httpx.Client())
+    assert preview.ollama_tag_found is False
+
+
+@respx.mock
+def test_delete_confirm_raises_apptimedout_on_an_ollama_timeout(tmp_path: Path) -> None:
+    """Row WPF11: a timed-out ``ollama rm`` may have already removed the tag — reporting
+    ``ollama_removed=False`` would tell the operator nothing happened when it might have."""
+    settings = _prepare(tmp_path)
+    respx.request("DELETE", f"{settings.host.ollama_base_url}/api/delete").mock(
+        side_effect=httpx.ReadTimeout("timed out")
+    )
+    entries = catalog_entries(
+        settings, _own(tmp_path), urls=DatabaseUrlCache(), monotonic=0.0, ollama_client=None
+    )
+    entry = find_entry(entries, "ollama/gemma3:12b@sha256:aaa")
+    with pytest.raises(AppTimedOut) as excinfo:
+        catalog_delete_confirm(
+            settings, entry, typed=entry.canonical_id, token="", client=httpx.Client()
+        )
+    assert outcome_of(excinfo.value) == "pending"
 
 
 def test_pull_worker_parses_ndjson_progress_and_finishes_ok() -> None:
