@@ -213,3 +213,21 @@ Nothing. The two transient units were `--collect`ed and are gone (`systemctl --u
 'wpf4*'` is empty), ports 8798/8799 are free, and everything the demonstration wrote is under this
 session's scratchpad — no XDG file, no database and no unit file of the operator's was touched. All
 five application units were `active` before and after.
+
+## 9. The live check, 2026-09-12, by the merging session
+
+Both halves merged (LoadCoach on its `main`, the console at `950b591`'s chain), then the units
+restarted onto them.
+
+**Before, by accident and usefully:** the first restart went through the console while
+`loadcoach.service` was still running the pre-merge binary, with the queue stream and a job's event
+stream held open. It reproduced WP6 finding 6 exactly — `Waiting for connections to close`, then
+`State 'stop-sigterm' timed out. Killing.`, `Killing process 188441 (loadcoach) with signal SIGKILL`,
+`status=9/KILL` at 90 s (`TimeoutStopUSec=1min 30s`). **And the console read it correctly**: the audit
+row was `unit.restart … pending`, *"/usr/bin/systemctl did not answer within 30s; loadcoach.service is
+deactivating (success)"* — where WP6 got `failed`. That is this row's console half, proved against the
+very failure it was written for.
+
+**After**, same two streams open, merged binary: the control call returned in **5.2 s**,
+`Application shutdown complete` then `Stopped` and `Started`, unit `active`, audit row
+`unit.restart … ok` (`2026-09-12T05:00:02.422Z`), and **no `app_down` alert** on the banner.

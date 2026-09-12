@@ -297,6 +297,22 @@ Pass for §1 item 7: neither run carries `served_context_assumed_incorrectly` **
 new wording, which names both possibilities instead of claiming an assumption. Screenshots in both
 themes, as the kickoff asks.
 
+## 6a. Gate C — run, 2026-09-12, by the merging session
+
+Both branches merged first (FreeWeight `ba26703` chain, WeightRoomGym `950b591` chain), then
+`freeweight.service` and `weightroom.service` restarted onto them. Nothing else held the GPU.
+
+| Step | Result |
+|---|---|
+| 0 | `GET /api/v1/adapters` → `provider_can_serve: true`, adapters `['terse']` |
+| 1 | `freeweight models refresh --json` → `{"added": 0, "updated": 0, "unchanged": 27, "total": 27}` in **6.12 s** (254 s before the row), `digests.json` mtime and size unchanged |
+| 3 | `kind = vllm` on the console's Provider page → FreeWeight's own refusal, *kind='vllm' is not supported; expected one of ['fake', 'llamacpp', 'ollama']*; `config.toml` digest **identical** (`98cd6a97…`), no new `.bak`, provider still `llamacpp`, unit `active`. Then `kind = ollama` with `[adapters] directory` set → **accepted** (ADR-0140), FreeWeight re-opened on Ollama reporting `provider_can_serve: false` with the directory still configured and `terse` still listed, then `llamacpp` restored (`can serve: true`) |
+| 4 | Bare base `01M2A0BQSCVNPYWCH7853PVH3K` and `terse` `01M2A0FCMRWCMRAKMT16PN9PZV`, both `completed`, both started from the Runs page on `native.structured_output` with no CLI. Evidence subjects: `llamacpp/Qwen2.5-1.5B-Instruct.Q8_0@sha256:5926a692b27b` and `…5926a692b27b+terse@sha256:c582629216c5` — **the argument reached the wire** (H6's lesson). **Repeat** on the adapter run (`01M2A14FG1JC5E8TSZXN67JFF9`, `adapter: terse`) recorded the **same adapter subject**, which is decision 5's new behaviour |
+| 2 | **Settled, and it is not this row's defect.** The live argv was `llama-server --model …Qwen2.5-1.5B-Instruct.Q8_0.gguf … --lora …terse.gguf --lora-init-without-apply **--ctx-size 8192** --fit off`, and FreeWeight recorded `served_context 8192 / configured`, while the provider reported `observed_served_context 32768` — Qwen2.5-1.5B's trained context. So the request did reach the server and **ModelRack's `read_served_context` is the wrong half**, which is neither of this row's repositories. The degradation carried this row's new wording, naming both possibilities rather than claiming an assumption |
+
+**Not done:** the screenshot pass in both themes. Every step above was driven over the LAN console
+with its own session and audited; no visual sweep was taken, and WP6's remains the last one.
+
 ## 7. The gate, with the interpreter named
 
 **FreeWeight** — `~/ai/worktrees/freeweight-wpf2/.venv/bin/python`, **CPython 3.14.4**
