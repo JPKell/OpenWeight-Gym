@@ -120,7 +120,44 @@ the right exception) and `web/routes/catalog.py` (read it with the existing func
 
 ## Gate B, on the reference machine
 
-(orchestrator fills in)
+**Run 2026-09-12 by the wave-4 orchestrating session (Fable 5.1), after the merge — PASS for the
+pull; the timeout path itself was not exercised live (below).**
+
+Two corrections to the wave kickoff first. `ollama.service` is a **system** unit
+(`/etc/systemd/system/ollama.service`, `MemoryMax` 24 GiB), active since 2026-09-11 10:20 PDT —
+`systemctl --user is-active ollama.service` reports `inactive` only because no user unit of that
+name exists. It was not started or stopped for this gate and is still active. And `smollm2:135m`
+was already pulled, so it was removed first (`DELETE /api/delete` straight to Ollama, 02:14:10
+PDT, `/api/tags` then empty of it) to make the pull real.
+
+WeightRoom `main` at `6f50fa8` (the merge of `47221d1`); `weightroom.service` restarted onto it at
+02:12:55 PDT. The pull was driven through a **throwaway console** of the same checkout
+(`127.0.0.1:8779`, own XDG tree, no operator, `[host] ollama_base_url` default → the machine's real
+Ollama) because the operator's console needs a login this session did not have; the code path is
+the merged one. A JSON `POST` needs `Sec-Fetch-Site: same-origin` (ADR-0126 rule 5) — the first
+attempt without it was a `403 CSRF_FAILED`, which is the console working, not the row failing.
+
+| Step | Evidence |
+|---|---|
+| `POST /api/v1/catalog/pull {"name":"smollm2:135m"}` at 02:16:26 | `202 {"job_id":"01M2AEERDEGH8Z4ZX15QG0FFPB"}` |
+| audit | `01M2AEERDFBWD1HGQD2X2MKNR8 catalog.pull ok smollm2:135m {job_id: 01M2AEERDEGH8Z4ZX15QG0FFPB}` written at enqueue; then `01M2AEERDK8PWAZ5AFWVEHWQSM job.run ok` for the pull and `01M2AEF33W2ZQ12SYZ4B1ZZMMA job.run ok` for the `model_refresh` it queued |
+| job `01M2AEERDEGH8Z4ZX15QG0FFPB` | `catalog_pull`, `running` at 02:16:26, **`completed` 02:16:37** (10.95 s), output Ollama's own lines `pulling manifest … verifying sha256 digest / writing manifest / success / queued model_refresh 01M2AEF33RS84696GG5EMP2M7S` |
+| Ollama's journal | **exactly one** `POST "/api/pull"` (`200`, 10.946 s, 02:16:37) after the one `DELETE "/api/delete"` — no second pull |
+| Ollama afterwards | `/api/tags` lists `smollm2:135m` (270 898 672 bytes) again; `/api/ps` empty — a pull loads nothing, the GPU stayed idle throughout |
+
+**Not shown: the model on the catalog page.** The throwaway has no `[apps.*]` configured, so its
+`model_refresh` reported `freeweight: not installed; skipped / loadcoach: not installed; skipped /
+0 model(s) joined`; and the operator's own catalog joins FreeWeight's and LoadCoach's `models`
+tables, where an Ollama tag appears only after those applications refresh (FreeWeight is on
+`llamacpp` at the moment and would never list it). That is W8's catalog design, not this row.
+
+**Not run live: the row's own change.** A `catalog.enabled` / `catalog.delete` audited `pending`
+needs an application or Ollama that accepts the connection and never answers within
+`_HTTP_TIMEOUT_SECONDS`; making one of the operator's units hang is not a thing to do to a running
+host for a screenshot. Its proof is `tests/unit/test_catalog_domain.py` (six timeout/refusal cases
+on `set_enabled`, `_ollama_tag_exists`, `_ollama_delete_tag`) and the route-to-audit test in
+`tests/integration/test_loadcoach_pages.py`, the same way WPF5 §9 left the stopped-application
+rendering to its tests.
 
 **What to watch**, for the orchestrator's live `smollm2:135m` pull with `ollama.service` up:
 
