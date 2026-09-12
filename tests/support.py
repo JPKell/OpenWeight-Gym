@@ -141,6 +141,7 @@ def fake_application(
     document: dict[str, Any] | None = None,
     schema_exit: int = 0,
     database_url: str | None = None,
+    show_delay_seconds: float = 0.0,
 ) -> tuple[Path, Path, dict[str, Any]]:
     """An executable that answers ADR-0127's two verbs, over a real config file in ``tmp_path``.
 
@@ -156,6 +157,9 @@ def fake_application(
         schema_exit: What `config schema` exits with — non-zero exercises the degraded page.
         database_url: What `config show --json` names as the effective `storage.database_url`
             (row W7's reader); without it the verb prints nothing, as a broken application might.
+        show_delay_seconds: How long `config show` sleeps before answering. A real application's
+            is a Python interpreter start, about 0.5 s on the reference machine (row WPF6); the
+            default makes the shell script as cheap as it has always been.
 
     Returns:
         ``(executable, config_path, document)``.
@@ -174,8 +178,13 @@ def fake_application(
     show_file.write_text(
         json.dumps({"values": {"storage": {"database_url": database_url}}}), encoding="utf-8"
     )
+    sleep = f"  sleep {show_delay_seconds}\n" if show_delay_seconds else ""
     show = (
-        f'if [ "$1" = "config" ] && [ "$2" = "show" ]; then\n  cat {show_file}\n  exit 0\nfi\n'
+        'if [ "$1" = "config" ] && [ "$2" = "show" ]; then\n'
+        f"{sleep}"
+        f"  cat {show_file}\n"
+        "  exit 0\n"
+        "fi\n"
         if database_url is not None
         else ""
     )

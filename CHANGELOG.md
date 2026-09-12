@@ -71,6 +71,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   note that they were not on its API.
 
 ### Fixed
+- **An application's Overview renders inside its budget** (row WPF6, from WP6 finding 7). Every
+  Overview render launched `<app> config show --json` — about 0.5 s — to find the application's
+  database, instead of reading it through the `DatabaseUrlCache` every other database-backed page
+  already shares. PromptCadence's Overview painted at 580 ms and LoadCoach's at 544 ms against
+  spec §15's 300 ms, while every other page of the four tabs came in at 224 ms or less. The page
+  now goes through the cache (one launch a minute per application, ADR-0133 rule 4 unchanged:
+  the URL is still the application's own). The budget test no longer measures a fake that answers
+  in milliseconds — its LoadCoach sleeps for a real launch, so the budget is met only by not
+  launching per render.
+
 - **A unit verb slower than the console's limit is no longer audited as a failure** (row WPF4,
   from WP6 finding 6). `systemctl` is killed after 30 s, which says nothing about the unit: at
   row WP6 a `restart` of LoadCoach that succeeded ninety seconds later was audited `failed`

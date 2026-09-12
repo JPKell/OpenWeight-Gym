@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 
     from weightroom.config import Settings
     from weightroom.services.apps import AppView
+    from weightroom.services.db_reader import DatabaseUrlCache
 
 __all__ = ["Figure", "Overview", "OverviewTable", "overview_for"]
 
@@ -257,6 +258,8 @@ def overview_for(
     settings: Settings,
     database: Database,
     client: httpx.Client,
+    urls: DatabaseUrlCache,
+    now: float,
 ) -> Overview:
     """Build one application's Overview: figures, the primary table, and where they came from.
 
@@ -267,6 +270,10 @@ def overview_for(
         database: WeightRoomGym's own database, for the :data:`known_revisions <KnownRevision>`
             check (ADR-0123 rule 3).
         client: The pooled HTTP client for the application's own ``/system/status``.
+        urls: The URL cache every other database-reading page already goes through — ``config
+            show --json`` is a process launch of about 0.5 s, and this page paid it on every
+            render until row WPF6.
+        now: A monotonic clock reading, for the cache.
 
     Returns:
         The Overview. Never raises: every failure path renders ``—`` or an empty table instead.
@@ -287,7 +294,9 @@ def overview_for(
         figures_resolved = False
         figures = ()  # filled from the database below, or left dashed if that fails too
 
-    database_url, database_error = effective_database_url(settings, app)
+    database_url, database_error = urls.get(
+        app, now=now, read=lambda: effective_database_url(settings, app)
+    )
     if database_url is None:
         table = _empty_table(app, message=f"No database reachable: {database_error}.")
         if not figures_resolved:
