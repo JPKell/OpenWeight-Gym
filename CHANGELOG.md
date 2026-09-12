@@ -71,6 +71,10 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   note that they were not on its API.
 
 ### Fixed
+- **The FreeWeight Dashboard's *Latest run* card fits its card** (row WPF5's browser check,
+  2026-09-12). The full RFC 3339 stamp was rendered as a figure — mono, large, unwrappable — and
+  overflowed the card at every width, scrolling the whole page sideways on a phone. The date is
+  the figure now and the clock is the card's note.
 - **An application's Overview renders inside its budget** (row WPF6, from WP6 finding 7). Every
   Overview render launched `<app> config show --json` — about 0.5 s — to find the application's
   database, instead of reading it through the `DatabaseUrlCache` every other database-backed page

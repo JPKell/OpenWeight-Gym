@@ -199,3 +199,33 @@ merged `main`, regenerates the OpenAPI snapshot and `api.md` from a scratch XDG 
 hand-merging (same rule WP3/WP5 used), and resolves `rendering.py`/`weightroom-work.md` by hand —
 this row is the only one touching `rendering.py` and the §14 registry this wave, so the conflict,
 if any, is textual proximity in `weightroom-work.md`'s row list, not a logic conflict.
+
+## 9. The browser half of Gate C, run 2026-09-12 (operator interview)
+
+Playwright against the system Chrome (`channel="chrome"`, headless), a throwaway console on
+`127.0.0.1:8779` with its own XDG tree and no operator, its `[apps.*]` pointed at the reference
+machine's **own** FreeWeight, LoadCoach, IdeaPress and PromptCadence (real data, reads only; no
+unit touched, GPU idle after WPF9). `/apps/freeweight/dashboard`, `/apps/freeweight/system`,
+`/apps/loadcoach/system` and, for WPF2's adapter field, `/apps/freeweight/runs` — each in
+`prefers-color-scheme` light and dark, at 1440×900 and 412×915, full-page screenshots read by eye
+plus a probe of `document.documentElement.scrollWidth` against `clientWidth` and of every element
+wider than its box without `overflow-x: auto`.
+
+| Page | 1440 light/dark | 412 light/dark |
+|---|---|---|
+| FreeWeight Dashboard | renders; the *Latest run* card's value ran past its right edge | **`scrollWidth` 442 on a 412 viewport** — the page scrolled sideways; culprit `UL.card-grid` |
+| FreeWeight System | ok | ok (`412/412`; the components table scrolls inside its own wrapper) |
+| LoadCoach System | ok | ok |
+| FreeWeight Runs (adapter field) | ok, field present under `llamacpp` | ok, form stacks |
+
+**The one defect** was this row's own: `fw_dashboard.html` passed the full RFC 3339
+`latest_run_at` (`2026-09-12T05:23:57.516Z`, 24 characters) as a `kind="figure"` card value —
+mono, `--mw-font-size-figure`, no wrap — which no card width on any viewport fits. Fixed the same
+day: the date is the figure and the clock is the note (*Completed at 05:23:57 UTC.*), with a test
+that the full stamp no longer appears in the page. After the fix every page probes
+`scrollWidth == clientWidth` at both widths in both themes. The general hardening — a
+`overflow-wrap: anywhere` on MirrorWall's `.card-value` — is a package change and was left alone;
+every other `card-grid` page renders numbers or short words there.
+
+**Not run:** §5 step 5, the stopped-application rendering, because it needs a shared unit stopped;
+the three `test_a_stopped_*` tests stay its proof.

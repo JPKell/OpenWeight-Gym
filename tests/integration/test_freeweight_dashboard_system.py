@@ -58,6 +58,12 @@ def test_the_dashboard_reads_freeweights_summary_and_heatmap(tmp_path: Path) -> 
     assert dashboard["heatmap"]["suites"][0] in text
     assert f'href="/apps/freeweight/runs/{RUN}"' in text
     assert "From the API" in text
+    # The latest-run figure is the date alone; the full RFC 3339 stamp overflowed the card at every
+    # width (WPF5's browser check). The clock survives in the note.
+    stamp = dashboard["cards"]["latest_run_at"]
+    assert stamp not in text
+    assert stamp[:10] in text
+    assert f"Completed at {stamp[11:19]} UTC." in text
 
 
 def test_the_dashboards_filters_reach_freeweights_query(tmp_path: Path) -> None:

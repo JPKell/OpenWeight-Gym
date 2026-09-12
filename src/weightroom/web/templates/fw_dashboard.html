@@ -36,7 +36,10 @@ Nothing here is averaged across runs — every figure links to the samples that 
   {{ card("Samples stored", cards.get("samples_stored"), note="Every figure below drills to one of these.", kind="figure") }}
   {{ card("Unsupported measurements", cards.get("unsupported_metrics"), note="Shown as — everywhere, never 0.", kind="figure") }}
   {{ card("Machines", cards.get("machines"), note=("More than one: figures are not comparable across them." if (cards.get("machines") or 0) > 1 else "One machine, so hardware figures are comparable."), kind="figure") }}
-  {{ card("Latest run", cards.get("latest_run_at") or "—", note="Completed.", kind="figure") }}
+  {# A full RFC 3339 stamp is too wide for a figure card at any width (WPF5's browser check,
+     2026-09-12): the date is the figure, the clock is the note. #}
+  {% set latest = cards.get("latest_run_at") or "" %}
+  {{ card("Latest run", latest[:10] if latest else "—", note=("Completed at " ~ latest[11:19] ~ " UTC.") if latest else "No completed run.", kind="figure") }}
 </ul>
 
 <h3 id="heatmap">Comparison heatmap</h3>
