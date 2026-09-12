@@ -17,6 +17,7 @@ import respx
 from weightroom.config import load_settings
 from weightroom.services.apps import AppView
 from weightroom.services.database import Database, ensure_ready
+from weightroom.services.db_reader import DatabaseUrlCache
 from weightroom.services.overview import overview_for
 
 APP = "loadcoach"
@@ -24,12 +25,17 @@ BASE_URL = "http://127.0.0.1:8766"
 
 
 def _fake_cli(tmp_path: Path, *, database_url: str) -> Path:
-    """A one-file ``loadcoach`` stand-in that answers ``config show --json`` and nothing else."""
+    """A one-file ``loadcoach`` stand-in that answers ``config show --json`` and nothing else.
+
+    Every ``config show`` appends a line to ``tmp_path/show.calls``: the launch is what row WPF6
+    is about, so a test counts them rather than trusting the cache's own bookkeeping.
+    """
     script = tmp_path / "loadcoach"
     script.write_text(
         textwrap.dedent(f"""\
             #!/bin/sh
             if [ "$1 $2 $3" = "config show --json" ]; then
+              echo . >> {tmp_path / "show.calls"}
               echo '{{"values": {{"storage": {{"database_url": "{database_url}"}}}}}}'
               exit 0
             fi
@@ -38,6 +44,11 @@ def _fake_cli(tmp_path: Path, *, database_url: str) -> Path:
     )
     script.chmod(0o755)
     return script
+
+
+def _show_calls(tmp_path: Path) -> int:
+    calls = tmp_path / "show.calls"
+    return len(calls.read_text().splitlines()) if calls.exists() else 0
 
 
 def _synthetic_db(tmp_path: Path, *, revision: str, model_rows: int = 2) -> str:
@@ -106,7 +117,13 @@ def test_running_and_reachable_reads_figures_from_the_api_and_the_table_from_the
     view = _view(installed=True, running=True, reachable=True, executable=str(executable))
 
     overview = overview_for(
-        APP, view, settings=settings, database=console_db, client=httpx.Client()
+        APP,
+        view,
+        settings=settings,
+        database=console_db,
+        client=httpx.Client(),
+        urls=DatabaseUrlCache(),
+        now=0.0,
     )
 
     assert overview.source == "api"
@@ -131,7 +148,13 @@ def test_stopped_reads_both_figures_and_the_table_from_the_database_at_a_known_r
     view = _view(installed=True, running=False, reachable=False, executable=str(executable))
 
     overview = overview_for(
-        APP, view, settings=settings, database=console_db, client=httpx.Client()
+        APP,
+        view,
+        settings=settings,
+        database=console_db,
+        client=httpx.Client(),
+        urls=DatabaseUrlCache(),
+        now=0.0,
     )
 
     assert overview.source == "database"
@@ -150,7 +173,13 @@ def test_an_unknown_revision_degrades_the_table_by_name_never_zero(tmp_path: Pat
     view = _view(installed=True, running=False, reachable=False, executable=str(executable))
 
     overview = overview_for(
-        APP, view, settings=settings, database=console_db, client=httpx.Client()
+        APP,
+        view,
+        settings=settings,
+        database=console_db,
+        client=httpx.Client(),
+        urls=DatabaseUrlCache(),
+        now=0.0,
     )
 
     assert overview.source == "none"
@@ -165,7 +194,13 @@ def test_neither_api_nor_database_renders_every_figure_as_a_dash(tmp_path: Path)
     view = _view(installed=False, running=False, reachable=False, executable=None)
 
     overview = overview_for(
-        APP, view, settings=settings, database=console_db, client=httpx.Client()
+        APP,
+        view,
+        settings=settings,
+        database=console_db,
+        client=httpx.Client(),
+        urls=DatabaseUrlCache(),
+        now=0.0,
     )
 
     assert overview.source == "none"
@@ -186,7 +221,52 @@ def test_a_status_call_that_fails_while_running_still_renders_dashes_not_a_crash
     view = _view(installed=True, running=True, reachable=True, executable=str(executable))
 
     overview = overview_for(
-        APP, view, settings=settings, database=console_db, client=httpx.Client()
+        APP,
+        view,
+        settings=settings,
+        database=console_db,
+        client=httpx.Client(),
+        urls=DatabaseUrlCache(),
+        now=0.0,
     )
 
     assert all(figure.value == "—" for figure in overview.figures)
+
+
+def test_the_database_url_is_launched_once_per_ttl_not_once_per_render(tmp_path: Path) -> None:
+    """Row WPF6: ``config show --json`` is a process launch, so the Overview shares the cache.
+
+    Every other database-reading page already goes through :class:`DatabaseUrlCache`; the
+    Overview called :func:`effective_database_url` directly, which is why it painted at 544 ms
+    against spec §15's 300 ms budget while every other page of the tab paid 224 ms or less.
+    """
+    database_url = _synthetic_db(tmp_path, revision="0015")
+    executable = _fake_cli(tmp_path, database_url=database_url)
+    settings = _settings(tmp_path, executable=executable)
+    console_db = _console_database(tmp_path)
+    view = _view(installed=True, running=False, reachable=False, executable=str(executable))
+    urls = DatabaseUrlCache()
+
+    for now in (0.0, 10.0, 59.0):
+        overview = overview_for(
+            APP,
+            view,
+            settings=settings,
+            database=console_db,
+            client=httpx.Client(),
+            urls=urls,
+            now=now,
+        )
+        assert overview.table.rows, "the page still renders from the cached URL"
+    assert _show_calls(tmp_path) == 1
+
+    overview_for(
+        APP,
+        view,
+        settings=settings,
+        database=console_db,
+        client=httpx.Client(),
+        urls=urls,
+        now=61.0,  # past URL_TTL_SECONDS: a configuration file may have changed
+    )
+    assert _show_calls(tmp_path) == 2

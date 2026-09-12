@@ -72,11 +72,31 @@ def _report(name: str, value: float, budget: float, unit: str = "ms") -> None:
     print(f"\n{name}: {value:.1f} {unit} (budget {budget:g} {unit})")  # noqa: T201 — the gate report quotes it
 
 
+CONFIG_SHOW_SECONDS = 0.5
+"""What ``<app> config show --json`` costs on the reference machine — a Python interpreter start.
+
+Row W10's budget table measured the Overview at 3.0 ms because the fake application answers in
+milliseconds, so the launch the page made on every render cost nothing here while costing 0.5 s
+on the reference machine (WP6 finding 7: ``loadcoach config show --json`` 576 ms, the Overview
+544 ms). The fake now sleeps for it, so the budget below is only met by not launching per render.
+"""
+
+
 @pytest.fixture
 def console(tmp_path: Path) -> Console:
     lines = [f'[docs]\nroot = "{DOCS_ROOT}"\n']
     for app in APPLICATIONS:
-        executable, _config, _document = fake_application(tmp_path, app)
+        # Only LoadCoach pays the realistic launch cost: it is the Overview this file measures,
+        # and a sleep in all four would tax the fixture of every other budget below.
+        slow = app == "loadcoach"
+        executable, _config, _document = fake_application(
+            tmp_path,
+            app,
+            database_url=f"sqlite:///{fixture_database(tmp_path, 'loadcoach-0015')}"
+            if slow
+            else None,
+            show_delay_seconds=CONFIG_SHOW_SECONDS if slow else 0.0,
+        )
         lines.append(f'[apps.{app}]\nexecutable = "{executable}"\n')
     console = build_console(
         tmp_path / "console",
@@ -114,6 +134,7 @@ def test_application_overview_with_the_application_running(
     median = _median_ms(work)
     _report("overview page (loadcoach running)", median, 300)
     assert median <= 300
+    assert median < CONFIG_SHOW_SECONDS * 1000, "a per-render config show cannot fit the budget"
 
 
 # --- Telemetry sample → SSE frame ≤ 20 ms; the 1 s cadence held within ±100 ms -----------------

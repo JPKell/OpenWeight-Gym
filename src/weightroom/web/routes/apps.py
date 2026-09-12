@@ -566,6 +566,8 @@ def app_page(request: Request, principal: CurrentOperator, app: str) -> HTMLResp
         settings=request.app.state.settings,
         database=request.app.state.database,
         client=request.app.state.http,
+        urls=request.app.state.database_urls,
+        now=_now(),
     )
     return render_app_page(
         request,
