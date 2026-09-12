@@ -269,6 +269,19 @@ def test_a_cancelled_task_is_shown_as_its_state_not_as_an_error(tmp_path: Path) 
     assert "stages.draft.write" in page, "its attempts"
 
 
+def test_a_tasks_attempts_name_the_transport_call_of_a_discarded_retry(tmp_path: Path) -> None:
+    console, _database = ideapress_console(tmp_path, state="active")
+    cancelled = ideapress_fixture("task-cancelled")
+    with respx.mock(assert_all_called=False) as router:
+        _mock(router, **{f"projects__{PROJECT}__tasks__{CANCELLED}": cancelled})
+        page = _page(console, f"{PAGES}/tasks/{CANCELLED}")
+    assert "transport_call</code> numbers the calls" in page, "row WPF12's one line of copy"
+    assert "· round 2 · call 1" in page, "the discarded call, named within its attempt"
+    assert "· round 2 · call 0" in page, "the retry that kept its answer"
+    assert "provider_error" in page, "the discarded call reads as discarded, not a bare failure"
+    assert "EMPTY_GENERATION" in page
+
+
 def test_the_task_stream_becomes_log_lines_with_the_pause_and_the_end_as_states(
     tmp_path: Path,
 ) -> None:
@@ -363,6 +376,18 @@ def test_a_unit_shows_sanitised_content_provenance_history_and_offers_revise(
     assert "stages.draft.write" in page
     assert f'action="{PAGES}/units/U-01/revise"' in page
     assert f'action="{PAGES}/units/U-01/resume"' not in page, "a committed unit is revised"
+
+
+def test_a_units_provenance_names_the_transport_call_of_a_discarded_retry(tmp_path: Path) -> None:
+    console, _database = ideapress_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        _mock(router)
+        page = _page(console, f"{PAGES}/units/U-01")
+    assert "transport_call</code> numbers the calls" in page, "row WPF12's one line of copy"
+    assert "· round 2 · call 1" in page, "the discarded call, named within its attempt"
+    assert "· round 2 · call 0" in page, "the retry that kept its answer"
+    assert "provider_error" in page, "the discarded call reads as discarded, not a bare failure"
+    assert "empty_generation_retried" in page
 
 
 def test_revise_sends_the_instructions_and_audits_only_that_there_were_some(
