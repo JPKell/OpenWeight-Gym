@@ -475,6 +475,16 @@ class TelemetryService:
         self._reader_at = self._clock()
         return self._queue
 
+    def forget_queue(self) -> None:
+        """Drop the last queue reading, so the next paint shows ``—`` rather than a stale figure.
+
+        Called when the console itself drives LoadCoach's unit. The reading refreshes every
+        :data:`QUEUE_REFRESH_SECONDS` on the sampler thread, so a stop made anywhere else still
+        shows its last figure for up to that window — but a stop the operator has just clicked
+        must not answer with the depth LoadCoach had before it (row WPF1; ``WP6_HANDOFF.md`` §4).
+        """
+        self._queue = None
+
     def peek_queue(self) -> dict[str, Any] | None:
         """The value :meth:`queue_snapshot` returns, without renewing the reader window.
 

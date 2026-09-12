@@ -17,9 +17,15 @@ separate them are listed with the reason.</p>
     <span class="field-hint">Two or more. A model reference means that model's latest completed run of the suite.</span></div>
   <div class="field"><label for="fw-cmp-suite">Suite</label><input id="fw-cmp-suite" name="suite" value="{{ suite }}">
     <span class="field-hint">Refuses any run of another suite rather than comparing across suites.</span></div>
-  <button type="submit">Compare</button>
+  {#- Compare is FreeWeight's own comparability verdict and has no database reading behind it, so
+      a stopped FreeWeight can answer nothing here (row WPF1; `WP6_HANDOFF.md` §4). -#}
+  <button type="submit"{% if not view.reachable %} disabled title="FreeWeight is not answering"{% endif %}>Compare</button>
 </form>
 
+{% if not view.reachable %}
+<p class="muted">Compare is FreeWeight's own verdict on whether two runs may be read against each
+other, and it has no database reading behind it. Start FreeWeight to compare.</p>
+{% endif %}
 {% if sourced is none %}
 {{ empty_state("Name two or more runs, or models and a suite, to compare them.") }}
 {% else %}

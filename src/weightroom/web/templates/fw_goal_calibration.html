@@ -36,7 +36,15 @@ grades. Minimum {{ data.get("min_samples") or "—" }} graded samples, target {{
 <p class="muted">No sample is listed one by one here: a row pairing a sample with its origin or its partition would unblind the grading page.</p>
 
 <h3 id="grade">Grade</h3>
-<p><a href="{{ here }}/grade"><button type="button" data-variant="primary">{{ "Resume grading" if data.get("recorded_grades") else "Start grading" }}</button></a></p>
+{%- set grade_label = "Resume grading" if data.get("recorded_grades") else "Start grading" %}
+{#- Grading reads and records through FreeWeight's API, so the page it leads to cannot work while
+    FreeWeight is stopped; the enabled button sent the operator to a refusal (row WPF1). -#}
+{% if off %}
+<p><button type="button" data-variant="primary" disabled title="FreeWeight is not answering">{{ grade_label }}</button>
+  <span class="field-hint">Grading reads and records through FreeWeight's API. Start FreeWeight first.</span></p>
+{% else %}
+<p><a href="{{ here }}/grade"><button type="button" data-variant="primary">{{ grade_label }}</button></a></p>
+{% endif %}
 
 <h3 id="add">Add samples</h3>
 <p class="muted">A set that is all excellent or all poor gives the jury nothing to agree with you about: the set needs work of different quality.

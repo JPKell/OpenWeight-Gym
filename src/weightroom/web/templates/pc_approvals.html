@@ -10,6 +10,7 @@
 </div>
 {% include "_app_state.html" %}
 {{ refusal(action_error) }}
+{% if done_message %}<p class="notice" role="status">{{ done_message }}</p>{% endif %}
 <p class="muted">Every request waiting for a person, oldest first. A grant mints the envelope the work
 then runs under, and a denial halts the trajectory with the reason on the record — so both answers
 are recorded, not only the one that let work continue.</p>

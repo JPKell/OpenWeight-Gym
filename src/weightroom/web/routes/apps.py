@@ -307,6 +307,10 @@ def _control(request: Request, principal: CurrentOperator, app: str, verb: str) 
             },
         )
     state.versions.forget(name)
+    telemetry = getattr(state, "telemetry", None)
+    if name == "loadcoach" and telemetry is not None:
+        # The strip's QUEUE is a reading taken before this verb ran (WP6 §4, row WPF1).
+        telemetry.forget_queue()
     after = _view(request, name, refresh=False)
     return {"audit_id": audit_id, "unit": unit, "state": after.pill, "unit_state": after.unit_state}
 

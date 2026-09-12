@@ -232,8 +232,14 @@
 
   .shell-menu > summary { display: none; }
   /* A config path or a command is one unbroken token; on a phone it would push the page sideways
-     rather than wrap, since `code` has no break opportunity of its own. */
-  .shell-main code { overflow-wrap: anywhere; }
+     rather than wrap, since `code` has no break opportunity of its own. `.mono` is the same token
+     in a `span` or a `p` — a machine fingerprint, a model identity with two digests in it — and it
+     scrolled FreeWeight's machine page by 138 px and its adapter page by 96 px at 412 px until it
+     was given the same rule (row WPF1; `WP6_HANDOFF.md` §4). `anywhere` rather than `break-word`
+     because only `anywhere` shrinks the element's own min-content width, which is what the page
+     was being stretched by. */
+  .shell-main code,
+  .shell-main .mono { overflow-wrap: anywhere; }
 
   @media (max-width: 900px) {
     .telemetry-sep { display: none; }

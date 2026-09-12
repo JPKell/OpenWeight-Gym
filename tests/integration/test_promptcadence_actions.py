@@ -235,9 +235,12 @@ def test_a_denial_sends_its_reason_and_next_cannot_leave_the_tab(tmp_path: Path)
             f"{BASE}/approvals/{TRAJECTORY}/deny",
             {"reason": "not today", "next": "//evil.example.net/x"},
         )
-    assert response.headers["location"] == f"{BASE}/approvals"
+    # An off-tab `next` falls back to the Approvals page, which now says what was decided (WPF1).
+    assert response.headers["location"] == f"{BASE}/approvals?done=denied"
     assert json.loads(deny.calls.last.request.content) == {"reason": "not today"}
     assert _audit(console, "trajectory.deny")[0]["outcome"] == "ok"
+    landed = console.client.get(f"{BASE}/approvals?done=denied", headers={"Accept": "text/html"})
+    assert "Denied. The trajectory is halted" in landed.text
 
 
 def test_the_pages_offer_the_forms_only_where_they_can_work(tmp_path: Path) -> None:

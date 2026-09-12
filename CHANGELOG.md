@@ -81,6 +81,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   row is `pending`, the outcome vocabulary's word for *no state moved that we know of*, across
   every action of all four application tabs. A GGUF drop-in no longer reports an application as
   refreshed when its discovery pass did not answer. Spec §11 contract 2 now states both rules.
+- Polish from WP6 §4 (row WPF1). A machine fingerprint or a model identity in a `.mono` span had
+  no break opportunity and stretched the page at phone width: FreeWeight's machine page scrolled
+  sideways by 138 px and its adapter page by 96 px on a 412 px screen, so `.mono` now breaks where
+  `code` already did. The strip's QUEUE showed the depth LoadCoach had before the operator stopped
+  it; a unit verb the console runs drops the reading. A job that ended without a model read *not
+  yet routed*, which invites waiting for a routing that is not coming; it now reads *never routed*
+  unless the job is still queued or running. The Approvals page showed a decision's new state and
+  said nothing about it; a grant or a denial now lands on a notice. A stopped FreeWeight's Compare
+  offered an enabled query form for a page that has no database reading behind it, and its
+  calibration page offered *Start grading* for a page that needs the API; both now say so.
 - A form with a `fieldset` overflowed a phone (row WP4's phone demonstration): a fieldset's
   default `min-width: min-content` let a select whose options carry scale descriptors widen
   FreeWeight's grading form to 839 px on a 412 px screen, and taps on *Save and go on* landed on

@@ -33,13 +33,16 @@
 {% set usage = job.get("usage") or {} %}
 {% set error = job.get("error") %}
 {% set adapter = model.get("adapter") %}
+{#- A job that ended without a model was never routed, and saying *not yet* invites the operator
+    to wait for a routing that is not coming (row WPF1; `WP6_HANDOFF.md` §4). -#}
+{% set unrouted = "not yet routed" if job.get("state") in ("queued", "running") else "never routed" %}
 {{ kv_list([
   {"label": "State", "value": (job.get("state") or "—") ~ ((" (" ~ job.get("state_reason") ~ ")") if job.get("state_reason") else "")},
   {"label": "Class · priority", "value": (job.get("class") or "—") ~ " · " ~ (priority.get("base") if priority.get("base") is not none else "—") ~ " → " ~ (priority.get("effective") if priority.get("effective") is not none else "—")},
   {"label": "Task profile", "value": (task.get("id") or "—") ~ " " ~ (task.get("version") or "")},
   {"label": "Source", "value": job.get("source") or "—"},
   {"label": "Idempotent", "value": "yes" if job.get("idempotent") else "no"},
-  {"label": "Model", "value": model.get("subject_canonical_id") or model.get("canonical_id") or "not yet routed"},
+  {"label": "Model", "value": model.get("subject_canonical_id") or model.get("canonical_id") or unrouted},
   {"label": "Adapter", "value": (adapter.get("name") if adapter is mapping else adapter) or "none"},
   {"label": "Served context", "value": (model.get("served_context") ~ " tokens (" ~ (model.get("served_context_source") or "—") ~ ")") if model.get("served_context") else "—"},
   {"label": "Target GPU", "value": model.get("target_gpu_index") if model.get("target_gpu_index") is not none else "—"},

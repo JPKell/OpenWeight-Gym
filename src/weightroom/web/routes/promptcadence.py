@@ -14,7 +14,7 @@ it came from, in PromptCadence's words, with what the operator typed kept; a gra
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, Final
 
 from baseaicore import SuiteError
 from fastapi import APIRouter, Form, Request, status
@@ -308,8 +308,24 @@ def trajectory_events(
 # --- Approvals ------------------------------------------------------------------------------------
 
 
+_DONE: Final[dict[str, str]] = {
+    "granted": "Granted. The trajectory runs on under the envelope this decision minted.",
+    "granted_raised": "Granted with a new ceiling. The trajectory runs on under it.",
+    "denied": "Denied. The trajectory is halted, with the reason on its record.",
+}
+"""What a finished decision says on the page it lands on, keyed by the redirect's ``done``.
+
+Fixed sentences, as FreeWeight's goal pages do it: nothing a URL carries is ever rendered as prose.
+The page showed the decision's new state and said nothing about it until row WPF1 (§4 of
+``WP6_HANDOFF.md``)."""
+
+
 def _approvals(
-    request: Request, principal: Principal, *, action_error: SuiteError | None = None
+    request: Request,
+    principal: Principal,
+    *,
+    action_error: SuiteError | None = None,
+    done: str | None = None,
 ) -> HTMLResponse:
     from weightroom.services.chat_promptcadence import token_can_approve
 
@@ -332,13 +348,14 @@ def _approvals(
         history=history,
         can_approve=token_can_approve(settings) if pending.live else None,
         action_error=action_error,
+        done_message=_DONE.get(done or ""),
     )
 
 
 @ui_router.get(f"{BASE}/approvals", summary="Approvals", response_class=HTMLResponse)
-def approvals_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+def approvals_page(request: Request, principal: CurrentOperator, done: str = "") -> HTMLResponse:
     """What is waiting for a person, and every request ever raised."""
-    return _approvals(request, principal)
+    return _approvals(request, principal, done=done)
 
 
 def _decide(
@@ -388,8 +405,9 @@ def _decide(
             "raised": raised,
         },
     )
+    done = "denied" if decision != "approve" else ("granted_raised" if raised else "granted")
     return RedirectResponse(
-        _within(next_path, f"{BASE}/approvals"), status_code=status.HTTP_303_SEE_OTHER
+        _within(next_path, f"{BASE}/approvals?done={done}"), status_code=status.HTTP_303_SEE_OTHER
     )
 
 
