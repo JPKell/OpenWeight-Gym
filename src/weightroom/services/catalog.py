@@ -24,6 +24,15 @@ do not belong in the database, and the job row answers once the process is gone.
 API (``/api/pull``, streamed newline-delimited JSON) is used directly: pulling a model is not in
 ModelRack's scope (its spec's explicit non-goal list), so there is no client to reuse here as there
 is for residency.
+
+**A slow call is not a refusal here either** (row WPF11, the rule ``app_api`` already carries for
+every application call, WPF1's own §2 item 3). ``set_enabled`` and the two Ollama calls in the
+delete path raise :class:`~weightroom.services.app_api.AppTimedOut` on a timeout and this module's
+own :class:`CatalogRefused` for anything the far side actually answered no to; each route audits
+the result with ``app_api.outcome_of``, the same function every other application call already
+uses — no second vocabulary. The pull's own request only enqueues a ``catalog_pull`` job (row W9)
+and never talks to Ollama itself, so it cannot time out at that layer — see
+``docs/history/handoffs/WPF11_HANDOFF.md``.
 """
 
 from __future__ import annotations
@@ -41,6 +50,7 @@ import httpx
 from baseaicore import SuiteError
 from sqlalchemy import func, select
 
+from weightroom.services.app_api import AppTimedOut
 from weightroom.services.apps import bearer_token
 from weightroom.services.db_curated import CuratedResult, delete_results
 from weightroom.services.db_reader import AppDatabaseUnavailable, open_app_database, reflect_table
@@ -396,6 +406,17 @@ def _error_message(response: httpx.Response) -> str:
     return str(response.status_code)
 
 
+def _timed_out(app: str, method: str, path: str) -> AppTimedOut:
+    """The console gave up waiting on ``method path``; reuses WPF1's wording verbatim (app_api's
+    own ``_unreachable``, not exported) so an operator sees one sentence for every slow call."""
+    return AppTimedOut(
+        f"{app} has not answered {method} {path} within {_HTTP_TIMEOUT_SECONDS:g} s, so the "
+        f"console stopped waiting. The work may still be running — nothing was cancelled and "
+        f"nothing was sent again. Check the page again shortly.",
+        details={"app": app, "path": path, "timeout_seconds": _HTTP_TIMEOUT_SECONDS},
+    )
+
+
 def _call(
     settings: Settings,
     app: str,
@@ -435,20 +456,27 @@ def set_enabled(
     """``POST {app}/api/v1/models/{model_id}/enabled`` — ADR-0118, api.md §5.
 
     Raises:
-        CatalogRefused: The application did not answer, or refused.
+        AppTimedOut: ``app`` did not answer within the timeout; it may still be working
+            (row WPF11) — the caller audits this ``pending`` via ``app_api.outcome_of``, not
+            ``refused``.
+        CatalogRefused: The application answered with an error, or did not answer for a reason
+            that is not a timeout (connection refused, DNS, TLS, …).
     """
     base_url = getattr(settings.apps, app).base_url
+    path = f"/api/v1/models/{model_id}/enabled"
     headers = {}
     token = bearer_token(settings, app)
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
         response = client.post(
-            f"{base_url.rstrip('/')}/api/v1/models/{model_id}/enabled",
+            f"{base_url.rstrip('/')}{path}",
             json={"enabled": enabled},
             headers=headers,
             timeout=_HTTP_TIMEOUT_SECONDS,
         )
+    except httpx.TimeoutException as exc:
+        raise _timed_out(app, "POST", path) from exc
     except httpx.HTTPError as exc:
         raise CatalogRefused(f"{app} did not answer: {exc}", details={"app": app}) from exc
     if not response.is_success:
@@ -643,12 +671,23 @@ def perform_dropin_stream(
 
 
 def _ollama_tag_exists(settings: Settings, name: str, *, client: httpx.Client) -> bool:
+    """Whether Ollama's own ``/api/tags`` names ``name``.
+
+    Raises:
+        AppTimedOut: Ollama did not answer within the timeout (row WPF11) — whether the tag is
+            still there is unknown, not ``False``; a preview must not tell the operator there is
+            nothing to remove when the truth is that the check gave up waiting. Every other
+            failure (Ollama unreachable, a bad body) still degrades to ``False``: the preview is a
+            best-effort read, and only a timeout is the *pending* case app_api's vocabulary means.
+    """
     try:
         response = client.get(
             f"{settings.host.ollama_base_url.rstrip('/')}/api/tags", timeout=_HTTP_TIMEOUT_SECONDS
         )
         response.raise_for_status()
         body = response.json()
+    except httpx.TimeoutException as exc:
+        raise _timed_out("ollama", "GET", "/api/tags") from exc
     except (httpx.HTTPError, ValueError):
         return False
     models = body.get("models") if isinstance(body, dict) else None
@@ -658,6 +697,14 @@ def _ollama_tag_exists(settings: Settings, name: str, *, client: httpx.Client) -
 
 
 def _ollama_delete_tag(settings: Settings, name: str, *, client: httpx.Client) -> bool:
+    """``DELETE /api/delete`` on Ollama's own API; ``True`` when it answered success.
+
+    Raises:
+        AppTimedOut: Ollama did not answer within the timeout (row WPF11) — the deletion may have
+            landed; reporting ``ollama_removed=False`` on a timeout would tell the operator
+            nothing happened when it might still be running. Every other failure still degrades to
+            ``False`` (Database Standards §8's own carve-out for a call that answered no).
+    """
     try:
         response = client.request(
             "DELETE",
@@ -665,6 +712,8 @@ def _ollama_delete_tag(settings: Settings, name: str, *, client: httpx.Client) -
             json={"name": name},
             timeout=_HTTP_TIMEOUT_SECONDS,
         )
+    except httpx.TimeoutException as exc:
+        raise _timed_out("ollama", "DELETE", "/api/delete") from exc
     except httpx.HTTPError:
         return False
     return response.is_success

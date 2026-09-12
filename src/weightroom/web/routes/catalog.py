@@ -4,7 +4,10 @@ Every route leaves exactly one ``catalog.*`` audit row whatever happens (spec §
 ``catalog.pull`` when a pull starts, ``catalog.enabled`` for an enable/disable, ``catalog.dropin``
 for a GGUF drop-in, ``catalog.delete`` for both a preview and a confirmed removal (a preview
 changes nothing but is the row that shows what was about to happen). A refusal is audited too, as
-``outcome: "refused"`` — the same discipline ``web/routes/databases.py`` uses.
+``outcome: "refused"`` — the same discipline ``web/routes/databases.py`` uses. ``catalog.enabled``,
+``catalog.delete`` and ``catalog.pull`` audit through ``app_api.outcome_of`` rather than a bare
+``"refused"`` (row WPF11): a call that only timed out is ``"pending"``, because the application or
+Ollama may still be doing the work (WPF1 §2 item 3's rule, extended here).
 
 ``{ref}`` is the catalog's canonical id, which contains ``/`` (ADR-0008) — a plain FastAPI path
 parameter never sees past the first one, so ``enable`` and the delete route both take
@@ -23,6 +26,7 @@ from fastapi import APIRouter, File, Form, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from weightroom.services.app_api import outcome_of
 from weightroom.services.audit import record
 from weightroom.services.auth import Principal, require_fresh_reauth
 from weightroom.services.catalog import (
@@ -140,7 +144,13 @@ def _start_pull(request: Request, principal: Principal, name: str) -> JobView:
             state.database, kind="catalog_pull", params={"name": name}, now=now_of(request)
         )
     except SuiteError as exc:
-        _audit(request, principal, "catalog.pull", name, outcome="refused", message=exc.message)
+        # `outcome_of` for the same reason every other application call uses it (row WPF11): this
+        # call only ever writes a local row, so it never raises `AppTimedOut` today and this is
+        # always `refused` in practice — kept uniform rather than a special case that would need
+        # revisiting the day a slow enqueue becomes possible.
+        _audit(
+            request, principal, "catalog.pull", name, outcome=outcome_of(exc), message=exc.message
+        )
         raise
     _audit(request, principal, "catalog.pull", name, params={"job_id": job.id})
     worker = getattr(state, "jobs", None)
@@ -271,7 +281,7 @@ def _enable(request: Request, principal: Principal, ref: str, *, app: str, enabl
             principal,
             "catalog.enabled",
             ref,
-            outcome="refused",
+            outcome=outcome_of(exc),
             message=exc.message,
             app=app,
             params={"app": app, "enabled": enabled},
@@ -313,7 +323,7 @@ def _delete(
             principal,
             "catalog.delete",
             ref,
-            outcome="refused",
+            outcome=outcome_of(exc),
             message=exc.message,
             security=bool(confirm),
             params={"preview": not confirm},
