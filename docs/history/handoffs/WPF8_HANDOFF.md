@@ -7,8 +7,11 @@ Sonnet 5 · **Kickoff:**
 
 ## 1. Status
 
-**Gate A is done and committed** (FreeWeight `2cc8942`, WeightRoom `c44cc23`). **Gate B — the live
-proof — did not run.** At the point this row would have started it, `nvidia-smi` showed a
+**Done.** Gate A was committed 2026-09-11 (FreeWeight `2cc8942`, WeightRoom `c44cc23`) and is on
+`main` in both repositories. **Gate B ran 2026-09-12** on the reference machine, at the operator's
+instruction — **§9**. What §1 recorded when Gate B was first held is kept below for the record.
+
+**Gate B — the live proof — did not run on 2026-09-11.** At the point this row would have started it, `nvidia-smi` showed a
 judge-sized model (`Qwen3.5-9B` class) loaded via Ollama 65 seconds earlier, 10.2 GiB of the
 machine's 16 GiB in use, ~4.6 GiB free — almost certainly another Wave 1 row's live step
 (WPF1/WPF3/WPF7 all run live steps this wave), not idle leftover state. ADR-0119 is one live
@@ -124,13 +127,87 @@ component's `docs/apps/**` edit, not after.
 
 ## 8. What's left
 
-* **Gate B** — the live proof: on the reference machine, with `wp6_goal` (12 samples, 24 grades
-  already installed), regrade enough samples to give a criterion real variance, run the
-  calibration from the console's Goals page, and confirm the report and its export agree on both
-  the count and the criteria now that the fix is in. Needs a GPU window clear of the other Wave 1
-  rows' live steps — check `nvidia-smi` and for a live-graded row of the wave in progress before
-  starting.
-* Merge `row/wpf8-calibration-report` to FreeWeight `main` once Gate B lands (this row is first
-  into FreeWeight this arc; nothing to rebase onto).
-* Mark the row done in `weightroom-work.md` at that point — it currently reads "Gate A done, Gate
-  B pending" rather than done.
+* Nothing from this row. Gate B ran (§9), `row/wpf8-calibration-report` was merged into FreeWeight
+  `main` during wave 2, and the row is marked done.
+* **One new finding, from Gate B: a reasoning juror answers nothing at all** — §9.2. It is a
+  FreeWeight defect, not this row's, and it is scheduled as its own row.
+
+## 9. Gate B, on the reference machine (2026-09-12)
+
+The GPU was clear when this ran (3.7 GiB of 16 GiB used, `ollama ps` empty, no other live row in
+flight), and every step went through the operator's own console at `https://10.77.10.84:8769`.
+
+### 9.1 The author's grades, which WP6 never gave it
+
+WP6 left eleven of the twelve samples at a flat grade of 3. A criterion whose author grades do not
+vary gives Spearman's ρ nothing to correlate, so the count was not the only thing missing. The four
+**holdout** samples were regraded through the console's own blinded grading page, on merit —
+5 / 4 / 3 / 2 for both judged criteria, best to weakest (audit rows `freeweight.calibration_grades`,
+four saves). The anchors were left as they were.
+
+### 9.2 Run 1 — the count is explained, and a second defect appears
+
+Job **`01M2A4BC71X084EWBM2BN823SD`**, enqueued from the Goals page, capped as ADR-0119 requires
+(`MemoryHigh=22G MemoryMax=24G MemorySwapMax=0`), juror
+`llamacpp/Qwen3.5-9B-UD-Q8_K_XL@sha256:2c4e08e0e72c` — the goal pack's own. Completed in 22 minutes,
+`calibration.sample_judged` 4 of 4.
+
+**WP6's finding 10 is closed.** The report carries `n_judged 4` against `n_holdout 2`, and every
+dropped sample is named with its reason: `technical_correctness` excluded three
+(`protocol_error`), `audience_fit` excluded two. WP6 got a bare `n_holdout 2` with nothing to
+explain it.
+
+**But no criterion produced a coefficient**, so the export was `criteria: []` again — not the
+export's rule misfiring (§3), the jury failing. One rubric call to that juror, by hand, read-only,
+says exactly why:
+
+```
+finish_reason: length
+usage: input_tokens=1180, output_tokens=7012
+raw answer: (empty)
+parsed: (None, None)
+```
+
+**The juror spends its whole output budget thinking and emits no answer at all.** FreeWeight's
+judge request sets no `max_output_tokens` and never suppresses reasoning
+(`services/jury.py::JuryService._request`), and the refusal records only `protocol_error` — not the
+`finish_reason` that would have named the cause. This is the same shape as WPF7's IdeaPress
+finding, in FreeWeight's jury. **It is a new row**, not this one's to fix.
+
+### 9.3 Run 2 — the fork, and the proof
+
+The juror is pinned by **the goal pack**, not by settings (`build_jury`: `pack.judge.models` wins),
+which a settings-level pin proved by being ignored — that run was cancelled after 0 samples and the
+setting restored. At the operator's decision (2026-09-12) `wp6_goal`'s pack was forked onto an
+instruct juror: `judge.models = ["llamacpp/gemma-4-12b-it-Q4_K_M@sha256:0a270ec9fe6b"]`, everything
+else unchanged. `goal_hash` moved `sha256:3143423b…` → `sha256:aae8aaa9…` and the old report went
+`stale`; the twelve samples and twenty-four grades survived (`sync_goals` upserts by slug). The
+original pack is in the session scratchpad.
+
+Job **`01M2A68P2RRZGSCK1WJ7BE5EBE`**, from the Goals page, completed in **5 minutes** — about
+90 seconds a sample against the reasoning juror's seven.
+
+| | `technical_correctness` | `audience_fit` |
+|---|---|---|
+| `kappa_w` | 0.4 | 0.2286 |
+| `rho` | 0.5774 | 0.5000 |
+| `n_holdout` | 4 | 3 |
+| `n_judged` | 4 | 4 |
+| `excluded` | — | `01M2977TGDE7RYSADQQRA0RJCK` (`protocol_error`) |
+
+Goal level: `n_holdout 4`, `n_judged 4`, `weighted_kappa_w 0.3429`, `passed_gate false`,
+`calibration_state uncalibrated` (0.34 is under the goal's own `min_agreement` 0.4 — a real answer,
+not a failure to measure).
+
+**Finding 11 is closed.** `GET /api/v1/goals/wp6_goal/calibration/report/export` now carries **both**
+criteria, each with its `kappa_w`, `rho`, `mae`, `bias` and `n_holdout` — and the counts agree with
+the page: export `n_holdout 4` against the report's 4, and `audience_fit`'s `n_holdout 3` in both.
+WP6 saw `"criteria": []` beside a page showing two.
+
+**Both halves agree, and the one exclusion is still visible in the report and absent from the
+export** — which is §3's rule working as documented, since an excluded *sample* narrows a
+criterion's `n_holdout` rather than removing the criterion.
+
+The console's own Goals page reads **`Calibration uncalibrated κw 0.34 over 4 held out`** —
+WP6 read `over 2 held out` for the same four judged samples. Screenshots of the goal and
+calibration pages, both themes, are in the session scratchpad (`wpf8-shots/`).
