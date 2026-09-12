@@ -64,7 +64,7 @@ Index `(expires_at)`.
 | `target` | text, null | the unit, key list, table, model ref, prompt id, job id |
 | `params` | json | redacted: tokens, passwords and URL credentials replaced before the row is written |
 | `outcome` | text | `pending` \| `ok` \| `failed` \| `refused` |
-| `message` | text, null | the failure or refusal text |
+| `message` | text, null | the failure or refusal text; on an `ok` or `pending` unit verb, the note that `systemctl` outlived its limit and what the unit was re-read as (row WPF4) |
 | `backup_path`, `dry_run_count`, `actual_count`, `statement` | null | the [ADR-0124](../../adr/0124-a-raw-write-into-another-applications-database-passes-a-five-part-guard.md) condition-5 fields |
 | `security` | bool | true for a security-key change or a guarded write (re-authenticated) |
 | `request_id` | text, null | |

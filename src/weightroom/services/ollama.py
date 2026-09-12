@@ -403,7 +403,8 @@ def restart_ollama(
         user: The operator's OS user, for the rule text.
 
     Returns:
-        systemd's own output on success, which is usually empty.
+        systemd's own output on success, which is usually empty — or, when the call outlived its
+        30 s limit and the unit came up anyway, the note saying so (row WPF4).
 
     Raises:
         OllamaRestartNotPermitted: polkit refused. ``details`` carries the command to run, the
@@ -412,11 +413,14 @@ def restart_ollama(
             answered with systemd's message rather than with a polkit rule.
         UnitUnsupported: This host has no systemd.
     """
-    from weightroom.services.processes import UnitActionFailed
+    from weightroom.services.processes import UnitActionFailed, act_and_settle
 
-    result = controller.act(settings.host.ollama_unit, "restart", scope="system")
-    if result.ok:
-        return result.stdout.strip()
+    # A restart slow enough to outlive the 30 s call (Ollama unloading a large model) is judged by
+    # the state the unit reached, not by the timeout (row WPF4).
+    report = act_and_settle(controller, settings.host.ollama_unit, "restart", scope="system")
+    result = report.result
+    if report.outcome == "ok":
+        return report.note or result.stdout.strip()
     text = result.failure_text.lower()
     if any(signature in text for signature in _NOT_PERMITTED_SIGNATURES):
         raise OllamaRestartNotPermitted(

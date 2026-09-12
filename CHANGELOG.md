@@ -60,6 +60,19 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   note that they were not on its API.
 
 ### Fixed
+- **A unit verb slower than the console's limit is no longer audited as a failure** (row WPF4,
+  from WP6 finding 6). `systemctl` is killed after 30 s, which says nothing about the unit: at
+  row WP6 a `restart` of LoadCoach that succeeded ninety seconds later was audited `failed`
+  (`01M28ZA6T3HHPBQK0SFQ8V9PQD`). The console now re-reads the unit after a timeout and reports
+  what it actually reached — `ok` when it is the state the verb asked for (with a message saying
+  the call outlived the limit), `failed` with systemd's own `Result` when the unit failed, and
+  `pending` while systemd is still `activating`/`deactivating`, with the live state on the page.
+  The calls stay blocking and keep systemd's own words, since a normal verb answers in well under
+  a second: only a timed-out call costs one extra `systemctl show`. `wr-gym units start|stop|
+  restart` reports the same way. An *inactive* unit was never an outage to the alert evaluator,
+  so a console-requested stop raises no `app_down` alert; what fired at row WP2 was the `failed`
+  unit that a `SIGKILL`ed stop left behind, which LoadCoach's own fix removes.
+
 - **The settings form could not save FreeWeight's file keys** (row WPF1, from WP6 finding 1). A
   key the application's model allows to be *unset* was rendered by a widget that cannot say so: a
   nullable boolean (`runtime.flash_attention`) as a true/false select with `false` preselected,

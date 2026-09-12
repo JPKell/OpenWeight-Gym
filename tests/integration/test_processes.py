@@ -12,6 +12,7 @@ import json
 import os
 import stat
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -20,9 +21,13 @@ import pytest
 from weightroom.config import Settings, load_settings
 from weightroom.services.processes import (
     ENV_ALLOWLIST,
+    FakeSystemdController,
+    Scope,
     SubprocessSystemdController,
     UnitActionFailed,
+    UnitStatus,
     UnitUnsupported,
+    act_and_settle,
     executable_for,
     plan_units,
     sync_units,
@@ -119,6 +124,74 @@ def test_each_verb_is_an_explicit_argv_with_user_and_no_ask_password(host: Path)
     for argv in argvs:
         assert all(isinstance(part, str) for part in argv)
         assert not any(";" in part or "&&" in part or "|" in part for part in argv)
+
+
+# --- a verb that outlives the console's limit (row WPF4) ------------------------------------------
+
+UNIT = "loadcoach.service"
+
+
+def test_a_call_that_answers_in_time_is_not_re_read() -> None:
+    """The common path costs nothing extra: one ``act`` and no ``show``."""
+    fake = FakeSystemdController(states={UNIT: "active"})
+    report = act_and_settle(fake, UNIT, "stop")
+    assert report.outcome == "ok"
+    assert report.note is None
+    assert report.settled is None
+    assert [call for call in fake.calls if call[0] == "show"] == []
+
+
+def test_a_verb_that_outlived_the_limit_is_judged_by_the_state_the_unit_reached() -> None:
+    """Row WP6's restart: ``systemctl`` was killed at 30 s and the unit came back anyway."""
+    fake = FakeSystemdController(states={UNIT: "inactive"}, slow={(UNIT, "restart"): "active"})
+    report = act_and_settle(fake, UNIT, "restart")
+    assert report.result.timed_out
+    assert report.reached
+    assert report.outcome == "ok"
+    assert report.note is not None
+    assert "did not answer within 30s" in report.note
+    assert f"{UNIT} is active" in report.note
+
+
+def test_a_unit_still_deactivating_after_the_limit_is_pending_not_failed() -> None:
+    """systemd is still working on it, so the trail says so rather than inventing a failure."""
+    fake = FakeSystemdController(states={UNIT: "active"}, slow={(UNIT, "stop"): "deactivating"})
+    report = act_and_settle(fake, UNIT, "stop")
+    assert report.outcome == "pending"
+    assert report.reached is False
+    assert report.note is not None
+    assert "is deactivating" in report.note
+
+
+def test_a_unit_that_failed_after_the_limit_is_a_failure_in_systemds_own_words() -> None:
+    """The one case that is a failure: the unit's own ``Result`` says why."""
+    fake = FakeSystemdController(states={UNIT: "active"}, slow={(UNIT, "stop"): "failed"})
+    report = act_and_settle(fake, UNIT, "stop")
+    assert report.outcome == "failed"
+    assert report.note is not None
+    assert "is failed (timeout)" in report.note
+
+
+def test_a_verb_with_no_state_to_reach_keeps_its_timeout_as_a_failure() -> None:
+    """``enable`` writes a symlink; there is no state a re-read could judge it by."""
+    fake = FakeSystemdController(states={UNIT: "active"}, slow={(UNIT, "enable"): "active"})
+    report = act_and_settle(fake, UNIT, "enable")
+    assert report.outcome == "failed"
+    assert report.settled is None
+    assert [call for call in fake.calls if call[0] == "show"] == []
+
+
+def test_a_re_read_that_fails_leaves_the_timeout_as_the_whole_answer() -> None:
+    """Two failures are not more information than one, so the bare result stands."""
+
+    class Mute(FakeSystemdController):
+        def show(self, units: Sequence[str], *, scope: Scope = "user") -> dict[str, UnitStatus]:
+            raise UnitActionFailed("systemctl show failed: bus went away")
+
+    fake = Mute(states={UNIT: "active"}, slow={(UNIT, "stop"): "inactive"})
+    report = act_and_settle(fake, UNIT, "stop")
+    assert report.outcome == "failed"
+    assert report.note == "systemctl did not answer within 30s"
 
 
 def test_a_system_scope_call_omits_user_but_keeps_no_ask_password(host: Path) -> None:

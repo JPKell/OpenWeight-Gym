@@ -244,6 +244,57 @@ def test_a_verb_systemd_refuses_is_502_and_still_writes_the_row(tmp_path: Path) 
 
 
 @respx.mock
+def test_a_restart_slower_than_the_limit_is_audited_as_the_state_the_unit_reached(
+    tmp_path: Path,
+) -> None:
+    """Row WPF4: row WP6's restart succeeded ninety seconds later and was audited ``failed``.
+
+    The console does not guess from its own timeout: it reads the unit again and reports that.
+    """
+    _version()
+    console = _console(
+        tmp_path,
+        systemd=FakeSystemdController(
+            states={"loadcoach.service": "active"},
+            slow={("loadcoach.service", "restart"): "active"},
+        ),
+    )
+    console.login()
+    response = console.client.post("/api/v1/apps/loadcoach/restart", headers=JSON_HEADERS)
+    assert response.status_code == 202
+    body = response.json()
+    assert body["unit_state"] == "active"
+    row = console.client.get(f"/api/v1/audit/{body['audit_id']}").json()
+    assert row["action"] == "unit.restart"
+    assert row["outcome"] == "ok"
+    assert "did not answer within 30s" in row["message"]
+    assert "loadcoach.service is active" in row["message"]
+
+
+@respx.mock
+def test_a_stop_still_deactivating_after_the_limit_is_pending_and_shows_that_state(
+    tmp_path: Path,
+) -> None:
+    """systemd is still stopping it: a ``pending`` row, and the page shows ``deactivating``."""
+    _version()
+    console = _console(
+        tmp_path,
+        systemd=FakeSystemdController(
+            states={"loadcoach.service": "active"},
+            slow={("loadcoach.service", "stop"): "deactivating"},
+        ),
+    )
+    console.login()
+    response = console.client.post("/api/v1/apps/loadcoach/stop", headers=JSON_HEADERS)
+    assert response.status_code == 202
+    body = response.json()
+    assert body["unit_state"] == "deactivating"
+    row = console.client.get(f"/api/v1/audit/{body['audit_id']}").json()
+    assert row["outcome"] == "pending"
+    assert "is deactivating" in row["message"]
+
+
+@respx.mock
 def test_starting_an_application_that_is_not_installed_is_refused_by_name(
     running: Console,
 ) -> None:

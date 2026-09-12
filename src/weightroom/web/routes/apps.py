@@ -45,7 +45,7 @@ from weightroom.services.journal import (
     JOURNAL_PAGE_CAP,
     JournalReader,
 )
-from weightroom.services.processes import UnitActionFailed, UnitUnsupported
+from weightroom.services.processes import UnitActionFailed, UnitUnsupported, act_and_settle
 from weightroom.web.csrf import render_form_page
 from weightroom.web.session import CurrentOperator
 
@@ -264,6 +264,12 @@ def get_app_health(request: Request, principal: CurrentOperator, app: str) -> JS
 def _control(request: Request, principal: CurrentOperator, app: str, verb: str) -> dict[str, Any]:
     """Run one verb against one application's unit, audit it, and report the new state.
 
+    A ``systemctl`` call that outlives the console's limit is **not** a failure: the audit row
+    carries the state the unit actually reached, and the unit is still working on it while systemd
+    reports ``activating``/``deactivating``, which is a ``pending`` row rather than an invented
+    failure (:func:`~weightroom.services.processes.act_and_settle`, row WPF4). At row WP6 a restart
+    that succeeded ninety seconds later was audited ``failed``.
+
     Raises:
         AppUnknown: Not one of the four.
         AppNotInstalled: No executable, so no unit to drive.
@@ -283,27 +289,27 @@ def _control(request: Request, principal: CurrentOperator, app: str, verb: str) 
             f"run `wr-gym units sync`.",
             details={"app": name, "unit": unit},
         )
-    result = state.controller.act(unit, verb)
+    report = act_and_settle(state.controller, unit, verb)
     audit_id = record(
         state.database,
         action=f"unit.{verb}",
         actor="operator",
-        outcome="ok" if result.ok else "failed",
+        outcome=report.outcome,
         operator_id=principal.operator_id,
         app=name,
         target=unit,
         params={"verb": verb},
-        message=None if result.ok else result.failure_text,
+        message=report.note,
         request_id=getattr(request.state, "request_id", None),
     )
-    if not result.ok:
+    if report.outcome == "failed":
         raise UnitActionFailed(
-            f"systemctl {verb} {unit} failed: {result.failure_text}",
+            f"systemctl {verb} {unit} failed: {report.note}",
             details={
                 "app": name,
                 "unit": unit,
                 "audit_id": audit_id,
-                "stderr": result.stderr.strip(),
+                "stderr": report.result.stderr.strip(),
             },
         )
     state.versions.forget(name)

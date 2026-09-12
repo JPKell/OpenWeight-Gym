@@ -43,8 +43,11 @@ if TYPE_CHECKING:
 __all__ = [
     "ENV_ALLOWLIST",
     "OUTPUT_CAP_BYTES",
+    "SETTLED_STATE_BY_VERB",
     "SHOW_PROPERTIES",
+    "TIMEOUT_SECONDS",
     "UNIT_VERBS",
+    "ActReport",
     "CommandResult",
     "FakeSystemdController",
     "Runner",
@@ -58,6 +61,7 @@ __all__ = [
     "UnitState",
     "UnitStatus",
     "UnitUnsupported",
+    "act_and_settle",
     "executable_for",
     "plan_units",
     "run_command",
@@ -87,7 +91,12 @@ the ones the parser and the tests were written against whatever the operator's l
 OUTPUT_CAP_BYTES: Final = 1024 * 1024
 """Per-stream cap on captured output. ``systemctl show`` for five units is a few kilobytes."""
 
-_TIMEOUT_SECONDS: Final = 30.0
+TIMEOUT_SECONDS: Final = 30.0
+"""How long any one ``systemctl`` or ``loginctl`` call may take before it is killed.
+
+A verb that outlives it has not necessarily failed — a slow ``stop`` goes on in systemd after the
+client is gone — which is what :func:`act_and_settle` exists to find out (row WPF4).
+"""
 
 SHOW_PROPERTIES: Final[tuple[str, ...]] = (
     "Id",
@@ -143,12 +152,12 @@ class CommandResult:
     def failure_text(self) -> str:
         """The message to show an operator: the command's own words, never a rewrite."""
         if self.timed_out:
-            return f"{self.argv[0]} did not answer within {_TIMEOUT_SECONDS:.0f}s"
+            return f"{self.argv[0]} did not answer within {TIMEOUT_SECONDS:.0f}s"
         return (self.stderr.strip() or self.stdout.strip()) or f"exited {self.returncode}"
 
 
 def run_command(
-    argv: Sequence[str], env: Mapping[str, str], timeout_seconds: float = _TIMEOUT_SECONDS
+    argv: Sequence[str], env: Mapping[str, str], timeout_seconds: float = TIMEOUT_SECONDS
 ) -> CommandResult:
     """Launch ``argv`` with exactly ``env``, capped and timed out. The one launch site here.
 
@@ -309,6 +318,112 @@ def status_from_properties(
     )
 
 
+SETTLED_STATE_BY_VERB: Final[dict[str, UnitState]] = {
+    "start": "active",
+    "restart": "active",
+    "stop": "inactive",
+}
+"""The state each control verb asks the unit for, which is how a slow call is judged."""
+
+TRANSITIONAL_STATES: Final[frozenset[str]] = frozenset({"activating", "deactivating"})
+"""systemd is still working on it: neither the answer the verb asked for, nor a failure."""
+
+
+@dataclass(frozen=True, slots=True)
+class ActReport:
+    """One verb's result, reconciled with the unit's state when ``systemctl`` outlived its limit.
+
+    A ``systemctl stop`` that takes longer than :data:`TIMEOUT_SECONDS` has not failed — systemd
+    goes on stopping the unit after the client that asked is gone, and at row WP6 a restart the
+    console audited as ``failed`` had in fact succeeded ninety seconds later. So when the call is
+    killed, the console reads the unit again and answers for what it actually reached rather than
+    guessing from the timeout (`WP6_HANDOFF.md` finding 6, row WPF4).
+
+    Attributes:
+        result: What the call itself did.
+        verb: The verb that was run, which is what the unit's state is judged against.
+        settled: The unit as it was re-read after a timeout, or ``None`` when ``systemctl``
+            answered in time and there was nothing to reconcile.
+    """
+
+    result: CommandResult
+    verb: str
+    settled: UnitStatus | None = None
+
+    @property
+    def outcome(self) -> str:
+        """The audit outcome: ``ok``, ``failed``, or ``pending`` while systemd is still working.
+
+        A ``pending`` row is the trail's own word for "this was asked, and the answer was not in
+        yet"; the unit's live state is on every page of the application's tab.
+        """
+        if self.result.ok:
+            return "ok"
+        if self.settled is None:
+            return "failed"
+        if self.settled.state in TRANSITIONAL_STATES:
+            return "pending"
+        return "ok" if self.reached else "failed"
+
+    @property
+    def reached(self) -> bool:
+        """Whether the unit is in the state the verb asked it for."""
+        wanted = SETTLED_STATE_BY_VERB.get(self.verb)
+        return self.settled is not None and self.settled.state == wanted
+
+    @property
+    def note(self) -> str | None:
+        """What the audit row and the operator are told, or ``None`` when all went normally."""
+        if self.result.ok:
+            return None
+        if self.settled is None:
+            return self.result.failure_text
+        return (
+            f"{self.result.failure_text}; {self.settled.unit} is "
+            f"{self.settled.state}{f' ({self.settled.result})' if self.settled.result else ''}"
+        )
+
+
+def act_and_settle(
+    controller: SystemdController, unit: str, verb: str, *, scope: Scope = "user"
+) -> ActReport:
+    """Run ``verb`` against ``unit``, and on a timeout answer for the state the unit reached.
+
+    The call stays blocking: ``systemctl`` normally answers in well under a second and its own
+    words are the best refusal there is. Only a call that is killed at :data:`TIMEOUT_SECONDS`
+    costs one extra ``systemctl show``, because that is the one case where the result says nothing
+    about what happened (row WPF4; ADR-0125 rule 3 keeps the argv explicit either way).
+
+    Args:
+        controller: The systemd boundary.
+        unit: The unit to drive.
+        verb: One of :data:`UNIT_VERBS`.
+        scope: ``user`` or ``system``.
+
+    Returns:
+        The :class:`ActReport`. A verb outside :data:`SETTLED_STATE_BY_VERB` — ``enable``,
+        ``disable`` — has no state to check, so a timeout stays a failure.
+
+    Raises:
+        UnitUnsupported: This host has no ``systemctl``.
+        ValueError: ``verb`` is outside :data:`UNIT_VERBS`.
+    """
+    result = controller.act(unit, verb, scope=scope)
+    if not result.timed_out or verb not in SETTLED_STATE_BY_VERB:
+        return ActReport(result, verb)
+    try:
+        settled = controller.show([unit], scope=scope).get(unit)
+    except UnitActionFailed:
+        # The re-read failed too. Nothing is known about the verb, which is what the bare result
+        # already says; a second failure is not more information.
+        return ActReport(result, verb)
+    logger.info(
+        "systemd.settled",
+        extra={"unit": unit, "verb": verb, "state": None if settled is None else settled.state},
+    )
+    return ActReport(result, verb, settled=settled)
+
+
 class SubprocessSystemdController:
     """:class:`SystemdController` over the real ``systemctl`` and ``loginctl``.
 
@@ -353,7 +468,7 @@ class SubprocessSystemdController:
         return self._which("systemctl") is not None
 
     def _run(self, argv: Sequence[str]) -> CommandResult:
-        result = self._runner(argv, self._environment(), _TIMEOUT_SECONDS)
+        result = self._runner(argv, self._environment(), TIMEOUT_SECONDS)
         logger.debug(
             "systemd.command",
             extra={"argv": list(result.argv), "returncode": result.returncode},
@@ -464,6 +579,7 @@ class FakeSystemdController:
         linger: bool | None = True,
         properties: Mapping[str, Mapping[str, str]] | None = None,
         refuse: Mapping[tuple[str, str], str] | None = None,
+        slow: Mapping[tuple[str, str], UnitState] | None = None,
     ) -> None:
         """Build a fake host.
 
@@ -473,12 +589,16 @@ class FakeSystemdController:
             linger: What :meth:`linger_enabled` answers.
             properties: Raw properties per unit, for :meth:`properties`.
             refuse: ``{(unit, verb): stderr}`` — verbs this host refuses, with systemd's message.
+            slow: ``{(unit, verb): state}`` — verbs whose ``systemctl`` call is killed at
+                :data:`TIMEOUT_SECONDS`, and the state the unit is left in afterwards: the row WP6
+                restart that went on to succeed, or a unit still ``deactivating``.
         """
         self.states: dict[str, UnitState] = dict(states or {})
         self.supported = supported
         self.linger = linger
         self._properties = {unit: dict(values) for unit, values in (properties or {}).items()}
         self.refuse = dict(refuse or {})
+        self.slow = dict(slow or {})
         self.calls: list[tuple[str, ...]] = []
         self.reloads = 0
 
@@ -505,6 +625,7 @@ class FakeSystemdController:
                 uptime_seconds=61.0 if self.states.get(unit) == "active" else None,
                 main_pid=4242 if self.states.get(unit) == "active" else None,
                 restarts=0 if unit in self.states else None,
+                result="timeout" if self.states.get(unit) == "failed" else "",
             )
             for unit in units
         }
@@ -526,6 +647,12 @@ class FakeSystemdController:
         refusal = self.refuse.get((unit, verb))
         if refusal is not None:
             return CommandResult(("systemctl", verb, unit), returncode=1, stdout="", stderr=refusal)
+        eventual = self.slow.get((unit, verb))
+        if eventual is not None:
+            self.states[unit] = eventual
+            return CommandResult(
+                ("systemctl", verb, unit), returncode=-1, stdout="", stderr="", timed_out=True
+            )
         if verb in {"start", "restart"}:
             self.states[unit] = "active"
         elif verb == "stop":

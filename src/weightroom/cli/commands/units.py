@@ -144,7 +144,7 @@ def _control(verb: str, target: str, config: str | None) -> None:
     from weightroom.cli._backend import fail, open_ready_database
     from weightroom.domain.units import unit_name
     from weightroom.services.audit import record_cli
-    from weightroom.services.processes import SubprocessSystemdController
+    from weightroom.services.processes import SubprocessSystemdController, act_and_settle
 
     controller = SubprocessSystemdController()
     failures = 0
@@ -152,7 +152,7 @@ def _control(verb: str, target: str, config: str | None) -> None:
         for name in _targets(target):
             unit = unit_name(name)
             try:
-                result = controller.act(unit, verb)
+                report = act_and_settle(controller, unit, verb)
             except SuiteError as exc:
                 record_cli(
                     database,
@@ -162,18 +162,23 @@ def _control(verb: str, target: str, config: str | None) -> None:
                     message=exc.message,
                 )
                 raise fail(exc, exit_code=2) from exc
+            # A verb `systemctl` took too long to answer is judged by the state the unit reached,
+            # not by the timeout (row WPF4).
             record_cli(
                 database,
                 action=f"unit.{verb}",
-                outcome="ok" if result.ok else "failed",
+                outcome=report.outcome,
                 target=unit,
-                message=None if result.ok else result.failure_text,
+                message=report.note,
             )
-            if result.ok:
-                typer.echo(f"{unit:<24} {verb}ed")
+            if report.outcome == "ok":
+                note = "" if report.note is None else f" ({report.note})"
+                typer.echo(f"{unit:<24} {verb}ed{note}")
+            elif report.outcome == "pending":
+                typer.echo(f"{unit:<24} {verb} not settled: {report.note}", err=True)
             else:
                 failures += 1
-                typer.echo(f"{unit:<24} {verb} failed: {result.failure_text}", err=True)
+                typer.echo(f"{unit:<24} {verb} failed: {report.note}", err=True)
     if failures:
         raise typer.Exit(4)
 
