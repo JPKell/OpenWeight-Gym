@@ -38,6 +38,7 @@
       "rejection_reason": null,
       "response_hash": "sha256:58e638c7ed3c3013a5d61398597ef2555bf20caf2a94b95e2fa800794b12b6a4",
       "round": 0,
+      "transport_call": 0,
       "routing": null,
       "stage": "draft"
     },
@@ -81,6 +82,7 @@
       "rejection_reason": null,
       "response_hash": "sha256:58e638c7ed3c3013a5d61398597ef2555bf20caf2a94b95e2fa800794b12b6a4",
       "round": 0,
+      "transport_call": 0,
       "routing": null,
       "stage": "repair"
     },
@@ -124,6 +126,7 @@
       "rejection_reason": null,
       "response_hash": "sha256:58e638c7ed3c3013a5d61398597ef2555bf20caf2a94b95e2fa800794b12b6a4",
       "round": 0,
+      "transport_call": 0,
       "routing": null,
       "stage": "repair"
     },
@@ -165,6 +168,7 @@
       "rejection_reason": null,
       "response_hash": "sha256:01955df0bf2058912e1103399567e333c124917abe6048fa89711806a490bdfa",
       "round": 0,
+      "transport_call": 0,
       "routing": null,
       "stage": "draft"
     },
@@ -208,6 +212,7 @@
       "rejection_reason": null,
       "response_hash": "sha256:74b1df91fba10e5fac08d6ae710185611f24137af49463f6151eaa92a08c7b97",
       "round": 0,
+      "transport_call": 0,
       "routing": null,
       "stage": "audit_fast"
     },
@@ -251,6 +256,7 @@
       "rejection_reason": null,
       "response_hash": "sha256:b72d71110b8d8971e65322670da47b1b3e21808306879bd3e7fb34e8492ac794",
       "round": 0,
+      "transport_call": 0,
       "routing": null,
       "stage": "critique"
     },
@@ -292,6 +298,7 @@
       "rejection_reason": null,
       "response_hash": "sha256:eeaa0bce9958229471e7cc1e0924c05790a97ee00cadc3325d380d0dc2089777",
       "round": 1,
+      "transport_call": 0,
       "routing": null,
       "stage": "revise"
     },
@@ -333,6 +340,7 @@
       "rejection_reason": null,
       "response_hash": "sha256:74b1df91fba10e5fac08d6ae710185611f24137af49463f6151eaa92a08c7b97",
       "round": 1,
+      "transport_call": 0,
       "routing": null,
       "stage": "audit_fast"
     },
@@ -374,6 +382,7 @@
       "rejection_reason": null,
       "response_hash": "sha256:b72d71110b8d8971e65322670da47b1b3e21808306879bd3e7fb34e8492ac794",
       "round": 1,
+      "transport_call": 0,
       "routing": null,
       "stage": "critique"
     }
