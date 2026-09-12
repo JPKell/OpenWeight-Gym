@@ -10,7 +10,13 @@ import httpx
 import pytest
 import respx
 
-from tests.integration.test_promptcadence_pages import BASE, TRAJECTORY, _console, _mock_api
+from tests.integration.test_promptcadence_pages import (
+    BASE,
+    TRAJECTORY,
+    _console,
+    _fixture,
+    _mock_api,
+)
 from tests.support import (
     JSON_HEADERS,
     PROMPTCADENCE_URL,
@@ -241,6 +247,38 @@ def test_a_denial_sends_its_reason_and_next_cannot_leave_the_tab(tmp_path: Path)
     assert _audit(console, "trajectory.deny")[0]["outcome"] == "ok"
     landed = console.client.get(f"{BASE}/approvals?done=denied", headers={"Accept": "text/html"})
     assert "Denied. The trajectory is halted" in landed.text
+
+
+def test_a_request_promptcadence_resolved_is_never_offered_for_a_decision(
+    tmp_path: Path,
+) -> None:
+    """Row WPF3, against PromptCadence's own listings before and after the fix.
+
+    WP6 finding 5: a cancelled trajectory's request stayed ``pending``, the console offered Grant
+    and Deny on it, and PromptCadence refused both with ``APPROVAL_INVALID_STATE``. The console
+    does not filter the pending list and does not guess which request is still decidable — so the
+    proof is the pair: PromptCadence's pre-fix listing still renders both buttons here, and its
+    recorded answer after the cancel (2026-09-11) puts the same request only in the history.
+    """
+    console = _scoped(tmp_path, ["admin"])
+    resolved = _fixture("approvals-all")["items"][0]
+    assert resolved["status"] == "expired", "the recorded answer after the cancel"
+    pre_fix = {"items": [dict(resolved, status="pending", resolved_at=None,
+                             resolution_reason=None)]}  # fmt: skip
+    parked = resolved["trajectory_id"]
+    with respx.mock(assert_all_called=False) as router:
+        _mock_api(router, approvals=pre_fix)
+        before = console.client.get(f"{BASE}/approvals", headers=HTML).text
+    with respx.mock(assert_all_called=False) as router:
+        _mock_api(router)
+        after = console.client.get(f"{BASE}/approvals", headers=HTML).text
+    assert f'action="{BASE}/approvals/{parked}/grant"' in before
+    assert f'action="{BASE}/approvals/{parked}/deny"' in before
+    assert f"/approvals/{parked}/grant" not in after
+    assert f"/approvals/{parked}/deny" not in after
+    assert "Nothing is waiting for a person." in after
+    assert resolved["request_id"][:6] in after, "kept in Every request, never deleted"
+    assert resolved["resolution_reason"] in after, "and it says why"
 
 
 def test_the_pages_offer_the_forms_only_where_they_can_work(tmp_path: Path) -> None:
