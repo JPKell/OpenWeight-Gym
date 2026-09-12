@@ -285,7 +285,11 @@ def _audit_write(
     """The one ``settings.write`` row every write path leaves (spec §11 contract 2)."""
     refused = result.refused
     outcome = "refused" if refused else "ok"
-    keys = tuple(sorted(one.key for one in result.outcomes))
+    # The **page posts every field**, so the submitted set is the whole model — 85 keys for
+    # FreeWeight, which as a target made the row unreadable and buried the one key that moved. The
+    # target is what the write did; `params` still carries each list (row WPF1's live proof).
+    keys = tuple(sorted(one.key for one in result.outcomes if one.outcome != "unchanged"))
+    unchanged = len(result.outcomes) - len(keys)
     return record(
         request.app.state.database,
         action="settings.write",
@@ -294,7 +298,8 @@ def _audit_write(
         now=now_of(request),
         operator_id=principal.operator_id,
         app=app,
-        target=", ".join(keys) if keys else str(result.base_mtime),
+        target=", ".join(keys)
+        or (f"{unchanged} keys, none changed" if unchanged else str(result.base_mtime)),
         params={
             "applied": list(result.keys_with("applied")),
             "written": list(result.keys_with("written")),
@@ -643,7 +648,10 @@ def _save_from_form(
         # The *clear* button: the stored row goes, the key returns to the file's value; every
         # other field on the page is left as it is (WI1 §5 item 4b).
         changes, problems = {cleared: None}, []
-    submitted = sorted(changes) or [key for key, _reason in problems]
+    # The page posts every field, so a refusal named for "what was submitted" would name the whole
+    # model. What the operator asked to change is what the row is about (row WPF1's live proof).
+    submitted = sorted(key for key, value in changes.items() if _would_change(form, key, value))
+    submitted = submitted or [key for key, _reason in problems]
     password = str(raw.get("password") or "")
     if password:
         fresh = reauthenticated(request, principal, password)
@@ -756,11 +764,17 @@ def save_raw_from_page(
     ``text`` defaults to the empty string rather than being required: emptying the file is a
     legitimate write (it means *every key at its default*), and some clients drop an empty form
     value rather than sending it.
+
+    Line endings are normalised to ``\\n`` first. A browser posts a ``textarea``'s value with CRLF
+    endings whatever it was given (the HTML form-submission rule), so opening the editor and saving
+    a file back unedited rewrote every line of it — valid TOML that the operator never typed, in a
+    file their other tools diff. Found live at row WPF1 restoring FreeWeight's own file.
     """
     from weightroom.services.config_files import ConfigChangedOnDisk, ConfigValidationFailed
 
     name = require_settings_app(app)
     state = request.app.state
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
     form, _view = form_for(request, name)
     whole = ("<whole file>",)
     security = bool(form.security_keys)

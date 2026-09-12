@@ -181,7 +181,7 @@ def test_a_refresh_slower_than_the_timeout_is_pending_not_freeweights_refusal(
         )
         response = post(console, f"{BASE}/models/discover", {})
     assert response.status_code == 200
-    assert "may still be doing the work" in response.text
+    assert "work may still be running" in response.text
     (row,) = audit(console, "freeweight.discover")
     assert row["outcome"] == "pending"
 

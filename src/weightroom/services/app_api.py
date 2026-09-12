@@ -84,10 +84,13 @@ def _unreachable(
     """The error for a call that brought nothing back, saying which of the two it was."""
     route = f"{method} /api/v1/{path.lstrip('/')}"
     if isinstance(exc, httpx.TimeoutException):
+        # Never `app.capitalize()` in the sentence: the applications' names are `FreeWeight`,
+        # `LoadCoach`, `IdeaPress`, `PromptCadence`, and a sentence-initial `Freeweight` is a
+        # misspelling of the thing the operator is looking at (row WPF1's live proof).
         return AppTimedOut(
             f"{app} has not answered {route} within {timeout_seconds:g} s, so the console stopped "
-            f"waiting. {app.capitalize()} may still be doing the work — nothing was cancelled and "
-            f"nothing was sent again. Check the page again shortly.",
+            f"waiting. The work may still be running — nothing was cancelled and nothing was sent "
+            f"again. Check the page again shortly.",
             details={"app": app, "path": path, "timeout_seconds": timeout_seconds},
         )
     return AppUnreachable(

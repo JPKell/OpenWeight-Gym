@@ -124,7 +124,7 @@ def test_an_application_slower_than_the_timeout_is_not_a_refusal(settings: Setti
             )
     finally:
         server.shutdown()
-    assert "may still be doing the work" in caught.value.message
+    assert "work may still be running" in caught.value.message
     assert caught.value.code == AppUnreachable.code  # a client branching on the code sees no change
     assert outcome_of(caught.value) == "pending"
 

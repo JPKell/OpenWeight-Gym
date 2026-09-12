@@ -576,6 +576,27 @@ def test_a_wrong_password_writes_nothing(tmp_path: Path) -> None:
     assert 'host = "127.0.0.1"' in config.read_text()
 
 
+def test_the_raw_editor_saves_a_browsers_crlf_back_as_the_file_it_was_given(
+    tmp_path: Path,
+) -> None:
+    """A browser posts a ``textarea``'s value with CRLF endings whatever it was given, so saving a
+    file back unedited rewrote every line of it (found live at row WPF1)."""
+    original = "# mine\n[execution]\nmax_attempts = 3\n"
+    console, config = _console(tmp_path, config_toml=original)
+    console.login()
+    body = console.client.get("/api/v1/apps/loadcoach/config", headers=JSON_HEADERS).json()
+    response = console.post_form(
+        "/apps/loadcoach/settings/raw",
+        {
+            "text": body["text"].replace("\n", "\r\n"),
+            "base_mtime": str(body["base_mtime"] or ""),
+            "password": PASSWORD,
+        },
+    )
+    assert response.status_code == 200
+    assert config.read_text() == original
+
+
 def test_the_raw_editor_refuses_broken_toml_before_launching_anything(tmp_path: Path) -> None:
     console, config = _console(tmp_path, config_toml="[server]\nport = 8766\n")
     console.login()

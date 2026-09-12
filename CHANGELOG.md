@@ -81,6 +81,14 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   row is `pending`, the outcome vocabulary's word for *no state moved that we know of*, across
   every action of all four application tabs. A GGUF drop-in no longer reports an application as
   refreshed when its discovery pass did not answer. Spec §11 contract 2 now states both rules.
+- **The raw TOML editor rewrote every line of the file it saved** (row WPF1, found live). A browser
+  posts a `textarea`'s value with CRLF endings whatever it was given, so opening the editor and
+  saving a file back unedited replaced every line ending in the operator's file — valid TOML they
+  never typed. The editor normalises to `\n` before it validates and writes.
+- A `settings.write` audit row named every key the page posted — the whole model, 85 keys for
+  FreeWeight — burying the one key that moved. The row's target is now what the write did (or
+  *n keys, none changed*), and a refusal names the keys the operator asked to change rather than
+  every field on the form. `params` still carries each list in full.
 - Polish from WP6 §4 (row WPF1). A machine fingerprint or a model identity in a `.mono` span had
   no break opportunity and stretched the page at phone width: FreeWeight's machine page scrolled
   sideways by 138 px and its adapter page by 96 px on a 412 px screen, so `.mono` now breaks where
