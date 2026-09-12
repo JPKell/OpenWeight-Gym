@@ -184,8 +184,16 @@ pytest -m "not live and not performance"
 
 # nightly, on hardware
 pytest -m "live"
+
+# the reference machine only — never a hosted runner
 pytest -m "performance"
 ```
+
+A wall-clock budget is calibrated against the reference machine, so a GitHub-hosted runner — at
+roughly half its speed — fails it for the hardware rather than for a regression. No hosted job
+asserts a budget: `performance` runs where the numbers mean something, and nowhere else. Until a
+self-hosted runner with the hardware is registered (§5 of the packaging standards), that means a
+person runs it, and a budget change is demonstrated the way any other acceptance criterion is.
 
 The default suite must complete in **under 3 minutes** per repository. When it does not, the
 slowest tests move to a marked job — the fast suite's job is to be run constantly.

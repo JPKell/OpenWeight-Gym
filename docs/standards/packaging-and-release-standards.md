@@ -196,8 +196,11 @@ Every repository runs the same workflow on every push and pull request
 | install-check | clean venv, install the wheel, `python -c "import <pkg>"`, run `<app> --version` | catches missing package data and accidental app dependencies |
 | docs | configuration-reference regeneration diff | fails on drift |
 
-Nightly (`schedule`): `pytest -m performance`, `pytest -m live` on a self-hosted runner with a GPU
-and Ollama, plus the cross-repository compatibility matrix (§7).
+Nightly (`schedule`): `pytest -m live` and the cross-repository compatibility matrix (§7).
+`pytest -m performance` belongs on the same schedule but needs a self-hosted runner with the GPU
+and Ollama — its budgets are calibrated against the reference machine, and a hosted runner fails
+them for the hardware. Until such a runner is registered no scheduled job asserts a budget; they
+run on the reference machine (testing standards §10).
 
 ---
 
