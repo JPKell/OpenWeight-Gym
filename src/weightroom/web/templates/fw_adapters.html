@@ -23,6 +23,12 @@ base with one adapter applied, and its evidence is measured on it, never inherit
 {% elif data.get("directory") %}
 <p>Directory: <code>{{ data.get("directory") }}</code></p>
 {% endif %}
+{% if data.get("enabled") and data.get("provider_can_serve") is sameas false %}
+<p class="notice" role="alert">The configured provider cannot apply a LoRA adapter, so this directory is
+<strong>inert</strong>: FreeWeight reads and lists it, offers nothing to the provider, and refuses a run that names an
+adapter (ADR-0140). Set <code>provider.kind = "llamacpp"</code> on the <a href="/apps/freeweight/provider">Provider</a>
+page to measure them.</p>
+{% endif %}
 
 {% if data.get("adapters") %}
 {% set rows = [] %}

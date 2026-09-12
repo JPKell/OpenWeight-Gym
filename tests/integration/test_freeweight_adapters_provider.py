@@ -36,6 +36,7 @@ ADAPTERS: dict[str, Any] = {
     "enabled": True,
     "directory": "/home/jordan/models/adapters",
     "note": None,
+    "provider_can_serve": True,
     "adapters": [
         {
             "name": "damaged",
@@ -156,6 +157,20 @@ def test_adapters_off_says_which_key_turns_them_on(tmp_path: Path) -> None:
         text = page(console, f"{BASE}/adapters")
     assert "Adapters are off." in text
     assert "[adapters] directory" in text
+
+
+def test_a_directory_under_a_provider_that_cannot_serve_one_is_named_as_inert(
+    tmp_path: Path,
+) -> None:
+    """ADR-0140: configured and inert is a state, and the page says so rather than listing adapters
+    that will never be used (WP6 finding 9)."""
+    console, _database = freeweight_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router, bodies={"adapters": {**ADAPTERS, "provider_can_serve": False}})
+        text = page(console, f"{BASE}/adapters")
+    assert "inert" in text
+    assert 'provider.kind = "llamacpp"' in text
+    assert f'href="{BASE}/adapters/damaged"' in text
 
 
 def test_one_adapter_sets_its_scores_beside_the_bare_bases_with_its_runs_and_results(

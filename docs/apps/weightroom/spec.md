@@ -335,11 +335,12 @@ shape: lease, heartbeat, recovery pass at startup, ageing not needed for four ki
 a compare-and-set on `state = 'queued'`; the lease is renewed every `lease_seconds / 3` by a lease
 keeper thread of its own, never by the worker; recovery runs at startup and on every worker tick,
 requeuing an idempotent kind whose lease expired and failing any other as `worker_lost` (row W9).
-Kinds in 1.0: `freeweight_suite_run` (`freeweight run start --model … --suite … --json`, which
+Kinds in 1.0: `freeweight_suite_run` (`freeweight run start --model … --suite … [--adapter …] --json`, which
 executes the run and exits with its outcome, launched inside `systemd-run --user --scope` under
 `[host] memory_high`/`memory_max` — ADR-0119's wrapper for a run started outside FreeWeight's unit,
 refused rather than run uncapped without `systemd-run` — and followed with `freeweight run wait`
-when another process holds FreeWeight's execution slot), `freeweight_goal_calibrate`
+when another process holds FreeWeight's execution slot; `--adapter` is one more argument to the
+same command, never a second path — row WPF2), `freeweight_goal_calibrate`
 (`freeweight goals calibrate <slug> --progress --json` — a goal's jury grading its held-out samples,
 model loads under the same scope, prefix and cap; FreeWeight's API calibration is synchronous and
 unstreamed, so the job's output is how the Goals page follows it live, row WP4), `retention_trim` (WeightRoomGym's own

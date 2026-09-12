@@ -233,6 +233,28 @@ def model_page(  # noqa: PLR0913 — the results filters FreeWeight takes
 # --- Runs -----------------------------------------------------------------------------------------
 
 
+def _startable_adapters(catalog: object) -> list[dict[str, Any]]:
+    """The adapters the Start form may offer, from ``GET /adapters`` (api.md §2a).
+
+    Empty unless FreeWeight says an adapter can be served at all: under a provider that does not
+    declare ``adapter_hot_swap`` the directory is configured and inert (ADR-0140), so offering the
+    field would offer a run FreeWeight is bound to refuse. Available entries only, because an
+    unavailable one — a missing artifact, a digest that no longer matches — is refused for a reason
+    the operator fixes in the directory, not in this form. Compatibility with the chosen base stays
+    FreeWeight's to decide: the console never filters by base.
+    """
+    if not isinstance(catalog, dict) or catalog.get("provider_can_serve") is not True:
+        return []
+    listed = catalog.get("adapters")
+    if not isinstance(listed, list):
+        return []
+    return [
+        one
+        for one in listed
+        if isinstance(one, dict) and one.get("available") and one.get("in_directory")
+    ]
+
+
 def _runs(  # noqa: PLR0913 — the filters, and what a refused start leaves on the page
     request: Request,
     principal: Principal,
@@ -260,6 +282,7 @@ def _runs(  # noqa: PLR0913 — the filters, and what a refused start leaves on 
         next_href = _href(f"{BASE}/runs", **wanted, page=data["next_page"])
     benchmarks: list[dict[str, Any]] = []
     models: list[dict[str, Any]] = []
+    adapters: list[dict[str, Any]] = []
     if runs.live:
         benchmarks = (
             read_app_page(
@@ -276,6 +299,11 @@ def _runs(  # noqa: PLR0913 — the filters, and what a refused start leaves on 
             ).data
             or []
         )
+        adapters = _startable_adapters(
+            read_app_page(
+                request, view, api=lambda: fw.adapters_api(client, settings), database=None
+            ).data
+        )
     return render_app_page(
         request,
         principal,
@@ -289,6 +317,7 @@ def _runs(  # noqa: PLR0913 — the filters, and what a refused start leaves on 
         next_href=next_href,
         benchmarks=benchmarks,
         models=[one for one in models if one.get("enabled")],
+        adapters=adapters,
         start_error=start_error,
         form=dict(form or {}),
     )
@@ -318,22 +347,34 @@ def runs_page(  # noqa: PLR0913 — one parameter per filter FreeWeight's runs l
 
 
 @ui_router.post(f"{BASE}/runs", summary="Start a run from the page")
-def start_from_page(
+def start_from_page(  # noqa: PLR0913 — one parameter per field of FreeWeight's own start form
     request: Request,
     principal: CurrentOperator,
     model: Annotated[str, Form()] = "",
     suite: Annotated[str, Form()] = "",
     label: Annotated[str, Form()] = "",
+    adapter: Annotated[str, Form()] = "",
 ) -> Response:
     """Enqueue W9's ``freeweight_suite_run`` job (ADR-0119's cap, one ``job.enqueue`` row), then
-    follow it until FreeWeight names the run."""
-    form = {"model": model, "suite": suite, "label": label}
+    follow it until FreeWeight names the run.
+
+    ``adapter`` is one more argument to the same capped command (WP3 §2 item 2): the run is served
+    with that registered LoRA applied and measures a different subject (ADR-0058). FreeWeight
+    refuses one it cannot serve by name, and this page renders that refusal rather than deciding
+    compatibility itself.
+    """
+    form = {"model": model, "suite": suite, "label": label, "adapter": adapter}
     try:
         job = enqueue_job(
             request,
             principal,
             kind=SUITE_RUN,
-            params={"model": model, "suite": suite, "label": label or None},
+            params={
+                "model": model,
+                "suite": suite,
+                "label": label or None,
+                "adapter": adapter or None,
+            },
             schedule_id=None,
         )
     except SuiteError as exc:

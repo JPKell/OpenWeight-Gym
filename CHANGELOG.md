@@ -7,6 +7,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **The Runs page starts a run under an adapter** (row WPF2). FreeWeight's `run start --adapter` was
+  the only way to measure a base served with a registered LoRA, so the operator's step could not be
+  done from the console at all (WP6 finding 4). The Start form's adapter field lists what
+  FreeWeight's `GET /adapters` reports as available, and appears only where FreeWeight says an
+  adapter can be served at all (`provider_can_serve`, ADR-0140) — the console decides no
+  compatibility of its own, and renders FreeWeight's refusal. The name is one more argument to the
+  same capped `freeweight_suite_run` job (ADR-0119), checked against the manifest's own name
+  pattern because it reaches a child's argv, and **Repeat** keeps the adapter because FreeWeight's
+  repeat now does. FreeWeight's Adapters page names a configured directory that is inert under a
+  provider that cannot apply a LoRA.
 - **FreeWeight's Goals page** (row WP4 Gate A), at parity with FreeWeight's own `goals` pages
   and its authoring wizard, every one over its API (FreeWeight `4090275` added the routes the
   wizard and the goal pages lacked). **Goals**: each goal with its `goal_hash`, score method mix,

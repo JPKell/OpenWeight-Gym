@@ -86,6 +86,9 @@ def mock_api(
         f"models/{MODEL}/results": fixture("model-results"),
         "evidence": fixture("model-evidence"),
         "benchmarks": fixture("benchmarks"),
+        # The Runs page's Start form offers an adapter where one can be served (row WPF2); the
+        # recording is the reference machine's, which had no adapter directory configured.
+        "adapters": fixture("adapters"),
         "runs": fixture("runs"),
         f"runs/{RUN}": fixture("run"),
         f"runs/{RUN}/telemetry": fixture("run-telemetry"),
@@ -298,6 +301,7 @@ def test_start_enqueues_the_capped_suite_run_job_and_the_page_follows_it_to_the_
         "suite": "native.echo",
         "label": "wp3",
         "allow_prompt_override": False,
+        "adapter": None,
     }
     (row,) = audit(console, "job.enqueue")
     assert row["outcome"] == "ok"
@@ -314,6 +318,70 @@ def test_start_enqueues_the_capped_suite_run_job_and_the_page_follows_it_to_the_
     assert followed.headers["location"] == f"{BASE}/runs/{RUN}"
     swapped = console.client.get(location, headers={**HTML, "HX-Request": "true"})
     assert swapped.headers["hx-redirect"] == f"{BASE}/runs/{RUN}"
+
+
+def test_the_start_form_offers_an_adapter_only_where_one_can_be_served(tmp_path: Path) -> None:
+    """Row WPF2, decision 3: the field lists what ``GET /adapters`` says is available *and*
+    servable. Under a provider that cannot apply a LoRA the directory is inert (ADR-0140), so the
+    field is absent rather than offering a run FreeWeight is bound to refuse."""
+    from tests.integration.test_freeweight_adapters_provider import ADAPTERS
+
+    console, _database = freeweight_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router, bodies={"adapters": ADAPTERS})
+        servable = page(console, f"{BASE}/runs")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router, bodies={"adapters": {**ADAPTERS, "provider_can_serve": False}})
+        inert = page(console, f"{BASE}/runs")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        off = page(console, f"{BASE}/runs")
+
+    assert 'name="adapter"' in servable
+    assert '<option value="damaged"' in servable
+    # Listed and unavailable: refused for a reason the operator fixes in the directory, not here.
+    assert '<option value="retired"' not in servable
+    assert 'id="fw-start-adapter"' not in inert
+    assert 'id="fw-start-adapter"' not in off
+
+
+def test_a_start_under_an_adapter_carries_it_into_the_jobs_parameters(tmp_path: Path) -> None:
+    """The console decides nothing about compatibility: the name reaches the job, and the job
+    reaches ``run start --adapter`` (tests/integration/test_job_kinds.py)."""
+    from tests.integration.test_freeweight_adapters_provider import ADAPTERS
+
+    console, _database = freeweight_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router, bodies={"adapters": ADAPTERS})
+        response = post(
+            console,
+            f"{BASE}/runs",
+            {"model": CANONICAL, "suite": "native.echo", "label": "", "adapter": "damaged"},
+        )
+
+    assert response.status_code == 303
+    job = get_job(console.database, response.headers["location"].rsplit("/", 1)[1])
+    assert job.params["adapter"] == "damaged"
+
+
+def test_a_start_naming_an_adapter_the_console_cannot_spell_is_refused_before_the_job(
+    tmp_path: Path,
+) -> None:
+    """The name becomes a child's argv, so it is checked against the manifest's own pattern; the
+    page keeps the form and says so, and nothing is enqueued."""
+    console, _database = freeweight_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        response = post(
+            console,
+            f"{BASE}/runs",
+            {"model": CANONICAL, "suite": "native.echo", "label": "", "adapter": "--fit off"},
+        )
+
+    assert response.status_code == 200
+    assert "adapter" in response.text
+    (row,) = audit(console, "job.enqueue")
+    assert row["outcome"] == "refused"
 
 
 def test_a_start_the_queue_refuses_renders_its_code_and_keeps_the_label(tmp_path: Path) -> None:

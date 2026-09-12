@@ -242,6 +242,11 @@ _SUITE_KEY: Final = re.compile(r"^[a-z0-9_]+(\.[a-z0-9_]+)+$")
 _PULL_NAME: Final = re.compile(r"^[A-Za-z0-9._/:-]{1,256}$")
 _GOAL_SLUG: Final = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 """FreeWeight's own slug pattern (``domain/goals/pack.SLUG_PATTERN``); it is one CLI argument."""
+_ADAPTER_NAME: Final = re.compile(r"^[a-z][a-z0-9_-]{1,63}$")
+"""The adapter-name pattern ``model.adapter_manifest`` 1.0 states; it is one CLI argument.
+
+Checked here because it reaches a child process's argv, not to decide whether the adapter exists or
+can be served — that is FreeWeight's answer and the console renders it (ADR-0140, ADR-0058)."""
 
 
 class _Required:
@@ -271,7 +276,7 @@ def _text(pattern: re.Pattern[str] | None = None, *, max_chars: int = 4096) -> _
     return check
 
 
-def _optional_text(*, max_chars: int) -> _Check:
+def _optional_text(pattern: re.Pattern[str] | None = None, *, max_chars: int) -> _Check:
     """Text that may be left out: ``None`` or blank is ``None``, anything longer is refused."""
 
     def check(kind: str, name: str, value: Any) -> str | None:  # noqa: ANN401 — JSON input
@@ -279,7 +284,10 @@ def _optional_text(*, max_chars: int) -> _Check:
             return None
         if not isinstance(value, str) or len(value) > max_chars:
             raise _refuse(kind, name, f"must be text of at most {max_chars} characters")
-        return value.strip()
+        text = value.strip()
+        if pattern is not None and not pattern.match(text):
+            raise _refuse(kind, name, f"does not match {pattern.pattern}")
+        return text
 
     return check
 
@@ -321,6 +329,9 @@ _PARAMS: Final[Mapping[str, Mapping[str, tuple[_Check, Any]]]] = {
         "allow_prompt_override": (_flag, False),
         # Row WP3: the Runs page's label, passed through as `run start --label`.
         "label": (_optional_text(max_chars=120), None),
+        # Row WPF2: the adapter, passed through as `run start --adapter`. One more argument to the
+        # same capped command, never a second path (ADR-0119, WP3 §2 item 2).
+        "adapter": (_optional_text(_ADAPTER_NAME, max_chars=64), None),
     },
     # Row WP4: a goal's calibration — its jury grading the holdout — run as `goals calibrate`.
     "freeweight_goal_calibrate": {

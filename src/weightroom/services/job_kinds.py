@@ -4,16 +4,18 @@ Each executor takes a :class:`~weightroom.services.jobs.JobContext`, writes what
 should read into its output, checks ``context.cancelled()`` between steps, and returns an
 :class:`~weightroom.services.jobs.Outcome` — a failure is an outcome in words, not an exception.
 
-* ``freeweight_suite_run`` — ``freeweight run start --model … --suite … --json``, which executes
-  the run in the child and exits with its outcome. It is launched inside ``systemd-run --user
-  --scope`` under ``[host] memory_high``/``memory_max``: a run starts ``llama-server`` beneath
-  whatever launched it, WeightRoomGym's own unit carries no cap (ADR-0125 rule 6), and ADR-0119
-  decision 4's wrapper is what a run started outside FreeWeight's unit wears — never dropped
-  silently when ``systemd-run`` is missing. When another process holds FreeWeight's one execution
-  slot (exit 7) the run stays queued there, and the job follows it with ``freeweight run wait``.
-  Whether a benchmark may render an overridden prompt is FreeWeight's rule: the job passes
-  ``--allow-prompt-override`` only when its own parameter says so, and FreeWeight refuses
-  otherwise (prompt standards §6).
+* ``freeweight_suite_run`` — ``freeweight run start --model … --suite … [--adapter …] --json``,
+  which executes the run in the child and exits with its outcome. It is launched inside
+  ``systemd-run --user --scope`` under ``[host] memory_high``/``memory_max``: a run starts
+  ``llama-server`` beneath whatever launched it, WeightRoomGym's own unit carries no cap
+  (ADR-0125 rule 6), and ADR-0119 decision 4's wrapper is what a run started outside FreeWeight's
+  unit wears — never dropped silently when ``systemd-run`` is missing. When another process holds
+  FreeWeight's one execution slot (exit 7) the run stays queued there, and the job follows it with
+  ``freeweight run wait``. Whether a benchmark may render an overridden prompt is FreeWeight's
+  rule: the job passes ``--allow-prompt-override`` only when its own parameter says so, and
+  FreeWeight refuses otherwise (prompt standards §6). ``--adapter`` is one more argument to the
+  same command (row WPF2): an adapter FreeWeight cannot serve is refused by name, never replaced
+  by its base (ADR-0058, ADR-0140).
 * ``freeweight_goal_calibrate`` — ``freeweight goals calibrate <slug> --progress --json`` (row WP4):
   a goal's jury grading its held-out samples, under the same scope, prefix and cap as a suite run —
   the jurors are model loads — its output one JSON line per holdout sample judged, naming no grade,
@@ -198,6 +200,10 @@ def freeweight_suite_run(context: JobContext) -> Outcome:
     argv += ["--model", str(params["model"]), "--suite", str(params["suite"]), "--json"]
     if params.get("label"):
         argv += ["--label", str(params["label"])]
+    if params.get("adapter"):
+        # One more argument to the same command: an adapter run is a run, and FreeWeight refuses an
+        # adapter it cannot serve by name (ADR-0058, ADR-0140). The console decides nothing here.
+        argv += ["--adapter", str(params["adapter"])]
     if params.get("allow_prompt_override"):
         argv.append("--allow-prompt-override")
     started = time.monotonic()
