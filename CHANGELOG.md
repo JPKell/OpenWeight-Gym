@@ -80,6 +80,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   note that they were not on its API.
 
 ### Fixed
+- **A slow catalog call is audited `pending`, not `refused`** (row WPF11, left open at WPF1 §6
+  item 3). `set_enabled` and the delete path's two calls to Ollama's own API (`/api/tags`,
+  `/api/delete`) raised `CatalogRefused` for a timeout exactly as they did for an application
+  actually saying no, so `POST /catalog/{ref}/enabled`, `DELETE /catalog/{ref}` and the same
+  routes under `/apps/freeweight` and `/apps/loadcoach` all audited a slow answer as a refusal —
+  the same defect WPF1 fixed for every other application call. They now raise `AppTimedOut` on a
+  timeout, and every route audits the outcome with `app_api.outcome_of`, the function WPF1 built
+  for exactly this, rather than a bare `"refused"`. A genuine refusal, and Ollama being simply
+  unreachable, audit exactly as before. `catalog_pull` itself was moved onto the job queue at row
+  W9 and its own request only enqueues a row, so it was never exposed to this — the kickoff's
+  premise that this row would decide whether to queue it was already settled.
 - **The FreeWeight Dashboard's *Latest run* card fits its card** (row WPF5's browser check,
   2026-09-12). The full RFC 3339 stamp was rendered as a figure — mono, large, unwrappable — and
   overflowed the card at every width, scrolling the whole page sideways on a phone. The date is

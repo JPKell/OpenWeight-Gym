@@ -327,6 +327,24 @@ def test_disable_goes_through_the_catalog_call_and_returns_to_the_page(tmp_path:
     assert row["params"]["enabled"] is False
 
 
+def test_a_slow_enable_is_audited_pending_not_refused(tmp_path: Path) -> None:
+    """Row WPF11: LoadCoach may still be applying the change when the console gives up waiting —
+    the same distinction WPF1 gave every other application call (``app_api.outcome_of``), now
+    reused for the catalog's own ``set_enabled``."""
+    console, _database = loadcoach_console(tmp_path, state="active")
+    with respx.mock(assert_all_called=False) as router:
+        mock_api(router)
+        router.post(f"{API}/models/{MODEL}/enabled").mock(side_effect=httpx.ReadTimeout("slow"))
+        response = post(
+            console,
+            f"{BASE}/models/{MODEL}/enabled",
+            {"enabled": "false", "canonical_id": CANONICAL, "next": f"{BASE}/models/{MODEL}"},
+        )
+    assert response.status_code == 200, response.text  # the page re-renders with the notice
+    (row,) = audit(console, "catalog.enabled")
+    assert row["outcome"] == "pending"
+
+
 def test_a_reference_that_is_not_a_ulid_is_refused_before_anything_is_sent(
     tmp_path: Path,
 ) -> None:
