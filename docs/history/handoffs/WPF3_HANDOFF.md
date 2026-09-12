@@ -4,9 +4,10 @@
 **Model:** Claude Opus 5 · **Kickoff:**
 `history/prompts/wpf3-promptcadence-cancel-resolves-approvals.prompt.md`
 
-**Status: Gates A and B done, Gate C outstanding.** The operator held the live proof for the
-wave's live-demo staggering (ADR-0119) on 2026-09-11. The row is **not** marked done, and
-`weightroom-work.md` is untouched — see §6.
+**Status: done.** Gates A and B ran 2026-09-11; the operator held Gate C for the wave's
+live-demo staggering (ADR-0119) and it ran later the same night, on the reference machine, at the
+operator's instruction — **§7**. Both branches are merged (PromptCadence `47aeba6`, WeightRoomGym
+`aace437`) and the row is marked done.
 
 ## 1. What shipped
 
@@ -190,12 +191,42 @@ application units were not touched.
 
 ## 6. Left for the operator
 
-* **Gate C**, as §3 sets out, when the wave's live slot is free. It is the only thing between this
-  row and done.
-* **The row is not marked done**, and `roadmap/weightroom-work.md` was deliberately not edited:
-  it carried an uncommitted change on `main` when this row started (another session's staging), and
-  three other wave-1 rows are editing the same file. Mark WPF3 done in the same edit that lands
-  Gate C.
-* **Merge order.** PromptCadence's branch stands alone. Rebase the WeightRoomGym worktree onto
-  `main` before merging if WPF1 has landed.
+* **Nothing.** Gate C ran (§7); both branches are merged; the row is done.
 * **Nothing pushed**, per the standing instruction.
+
+## 7. Gate C, on the reference machine (2026-09-11/12)
+
+Run at the operator's instruction, through the operator's own console at
+`https://10.77.10.84:8769`, Chrome headless at 1440 × 900. `promptcadence.service` had been running
+since 12:51 PDT — before the merge at 18:40 — so it was **restarted onto `main`** first
+(MainPID 1349173, 23:10 PDT). No model call was made and no GPU was held: the one-token budget is
+refused at the pre-flight, as §4 predicted.
+
+**1. The sweep healed WP6's own request, before any new work.** `01M28YRRGKVNSZ03HZS5X3S3P1` — the
+request WP6 left `pending` behind trajectory `01M28YRRF5BBKP5PNMS49FRCY8` — is now `expired`,
+resolved `2026-09-12T06:10:55.754Z` (the restart), reason *the trajectory is cancelled and never
+answered this request*. It is gone from **Pending** and appears in **Every request** with that
+reason. This is finding 5 closed on the very row that found it.
+
+**2. WP6's path, repeated from the console.** Submitted from the Trajectories page with planning
+bypassed and a token budget of 1 (audit `01M2A43ZNQ0YX38AVAJJFND5PN`, `trajectory.submit`, `ok`):
+
+* trajectory `01M2A43ZN05T4EA77RXVPK8G4S`, parked at `awaiting_approval` with `ceiling_raise`
+  request `01M2A43ZP924CVYRMPTPXVSC3K`, cause *the trajectory budget refuses the next step on tier
+  local_fast: the tokens cap cannot admit it — counting this step the cap is over by 814 … the
+  estimate was 815 tokens (source historical, 70 samples)*;
+* **Cancel trajectory** from the record (audit `01M2A44J8GNAXZBSTPWJX420DM`, `trajectory.cancel`,
+  `ok`, `state: cancelled`);
+* the record reads `cancelled`; **Pending** reads *Nothing is waiting for a person*; **Every
+  request** carries the request as `expired`, requested `06:15:48.168Z`, resolved `06:16:07.178Z`,
+  reason *the trajectory was cancelled from awaiting_approval, unanswered*. No Grant or Deny is
+  offered anywhere for it.
+
+**3. Screenshots**, both themes, of the Approvals page and the trajectory record, in the session
+scratchpad (`wpf3-shots/`). Nothing else on the host was touched; the four application units and
+`weightroom.service` kept running throughout.
+
+**What Gate C found that the earlier gates could not:** nothing new — the reference machine
+behaved exactly as the recorded fixtures of §4 do. The one operational note is that the fix reaches
+a **running** application only on a restart, and the sweep then resolves the backlog at startup,
+which is what healed WP6's request here.
