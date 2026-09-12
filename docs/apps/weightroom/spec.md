@@ -220,10 +220,16 @@ disabled and a *start* button.
 
 | Application | Menu | Source per page |
 |---|---|---|
-| **FreeWeight** | Overview · Models · Runs · Results · Evidence · Goals · Adapters · Settings · Provider · Tokens · Logs · Database | API for runs, results, evidence, goals, provider; database for the models/runs listing when stopped; CLI for `token`, `db delete --model`, `run start` |
-| **LoadCoach** | Overview · Models · Routing · Queue · Evidence · Adapters · Reliability · Settings · Providers · Tokens · Logs · Database | API for everything it serves (`/route` explain, jobs, queue pause/resume/drain, providers, `models/{ref}/enabled`, settings); database for decisions history when stopped; CLI for `token` |
+| **FreeWeight** | Overview · Models · Runs · Results · **Dashboard** · Evidence · Goals · Adapters · **System** · Settings · Provider · Tokens · Logs · Database | API for runs, results, evidence, goals, provider; database for the models/runs listing when stopped; CLI for `token`, `db delete --model`, `run start`; *Dashboard* (summary cards, the model × suite comparison heatmap with FreeWeight's own *separated* marking) and *System* (version, health, ten components) from the API only — judged needed at row WP6, built at row WPF5 |
+| **LoadCoach** | Overview · Models · Routing · Queue · Evidence · Adapters · Reliability · **System** · Settings · Providers · Tokens · Logs · Database | API for everything it serves (`/route` explain, jobs, queue pause/resume/drain, providers, `models/{ref}/enabled`, settings); database for decisions history when stopped; CLI for `token`; *System* (version, machine fingerprint, health components; dispatch, residency and breakers link to Queue and Reliability rather than repeating them) from the API only — judged needed at row WP6, built at row WPF5 |
 | **IdeaPress** | Overview · Projects · Units · Workflows · Backends · Settings · Logs · Database | API for projects, units, stage runs, backends; database for the listing when stopped |
 | **PromptCadence** | Overview · Trajectories · Approvals · Tiers · Tools · Ledger · Egress · System · Settings · Tokens · Logs · Database | API for everything; approvals grant/deny with the `approve`-scoped token ([ADR-0049](../../adr/0049-approval-is-a-mode-with-its-own-scope.md)); database for the listing when stopped; *System* (health, active work, the last recovery pass) from the API only — added by the operator on 2026-09-10, built at row WPC1 |
+
+**Judged at WP6 and not added.** FreeWeight's **Sources** (a read-only credit list of nine external
+benchmark adapters, none installed; nothing on it is actionable from any interface — revisit when
+one can be installed) and IdeaPress's **System** (three health components, already covered by the
+Overview and the doctor). Neither gains a menu entry; see `history/handoffs/WP6_HANDOFF.md` §3 and
+`history/handoffs/WPF5_HANDOFF.md`.
 
 The Overview page of each application is the design brief's artboard: status and uptime,
 four figures, the primary table, the live log tail. Every action on these pages is an

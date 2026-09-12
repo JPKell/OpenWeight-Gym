@@ -17,6 +17,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
   pattern because it reaches a child's argv, and **Repeat** keeps the adapter because FreeWeight's
   repeat now does. FreeWeight's Adapters page names a configured directory that is inert under a
   provider that cannot apply a LoRA.
+
+- **FreeWeight's Dashboard and System pages, and LoadCoach's System page** (row WPF5), judged
+  needed at row WP6 (`WP6_HANDOFF.md` §3) and specced at spec §7.3. FreeWeight's **Dashboard**
+  reads its new `GET /api/v1/dashboard` (FreeWeight, `api.md` §5a): the summary cards and the
+  model × suite comparison heatmap, with FreeWeight's own *separated* marking — the cross-model
+  view Results and Compare do not offer. FreeWeight's and LoadCoach's **System** pages read
+  `GET /health` (and, for LoadCoach, `GET /system/status`): version, overall status and every
+  health component — ten for FreeWeight, five for LoadCoach — that the console showed nowhere
+  before. All three pages read the running API only, exactly as the Overview's *Start* form. Not
+  added: FreeWeight's **Sources** (a read-only credit list with nothing installed or actionable)
+  and IdeaPress's **System** (covered by the Overview and the doctor).
 - **FreeWeight's Goals page** (row WP4 Gate A), at parity with FreeWeight's own `goals` pages
   and its authoring wizard, every one over its API (FreeWeight `4090275` added the routes the
   wizard and the goal pages lacked). **Goals**: each goal with its `goal_hash`, score method mix,

@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "APP",
+    "DASHBOARD_FILTERS",
     "EVIDENCE_FILTERS",
     "EXPORT_FORMATS",
     "EXPORT_SCOPES",
@@ -49,6 +50,7 @@ __all__ = [
     "benchmarks_api",
     "charts",
     "compare_api",
+    "dashboard_api",
     "database_stats_api",
     "evidence_api",
     "evidence_record",
@@ -73,6 +75,7 @@ __all__ = [
     "samples_api",
     "samples_db",
     "segment",
+    "system_api",
 ]
 
 APP: Final = "freeweight"
@@ -942,6 +945,9 @@ EVIDENCE_FILTERS: Final[tuple[str, ...]] = (
 )
 """``GET /evidence``' filters (api.md §6); the bundle takes these and ``since``."""
 
+DASHBOARD_FILTERS: Final[tuple[str, ...]] = ("suite", "model", "machine", "since")
+"""``GET /dashboard``'s filters (api.md §5a) — the same four the HTML page's filter bar takes."""
+
 
 def results_api(
     client: httpx.Client, settings: Settings, filters: Mapping[str, str | None], cursor: str | None
@@ -1199,3 +1205,39 @@ def database_stats_api(client: httpx.Client, settings: Settings) -> dict[str, An
         AppUnreachable: It did not answer.
     """
     return _document(call(client, settings, APP, "GET", "database/stats", timeout_seconds=30.0))
+
+
+# --- Dashboard and System (row WPF5) ---------------------------------------------------------
+
+
+def dashboard_api(
+    client: httpx.Client, settings: Settings, filters: Mapping[str, str | None]
+) -> dict[str, Any]:
+    """``GET /dashboard`` (api.md §5a): the summary cards and the comparison heatmap.
+
+    The cross-model view Results and Compare do not offer (WP6's finding): Results is a
+    metric-level query and Compare works per subject. FreeWeight's own *separated* marking travels
+    on the heatmap, so this page never recomputes comparability.
+
+    Raises:
+        AppRefused: A refused filter (``MODEL_NOT_FOUND``, a malformed ``since``).
+        AppUnreachable: It did not answer.
+    """
+    params = {key: filters.get(key) or None for key in DASHBOARD_FILTERS}
+    return _document(
+        call(client, settings, APP, "GET", "dashboard", params=params, timeout_seconds=30.0)
+    )
+
+
+def system_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /health`` (row WPF5): version, overall status and FreeWeight's ten health components.
+
+    ``/health`` answers ``503`` when a component is unavailable; the console's client reads any
+    status of 400 or above as a refusal, so that case renders as the page's refusal rather than a
+    component table with nothing in it.
+
+    Raises:
+        AppRefused: FreeWeight answered 503 or otherwise refused.
+        AppUnreachable: It did not answer.
+    """
+    return _document(call(client, settings, APP, "GET", "health"))

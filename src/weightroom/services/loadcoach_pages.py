@@ -61,6 +61,7 @@ __all__ = [
     "reliability_api",
     "reliability_db",
     "segment",
+    "system_api",
     "task_profile_api",
     "task_profile_db",
     "task_profiles_api",
@@ -1006,4 +1007,34 @@ def adapters_db(handle: AppDatabase) -> dict[str, Any]:
         "invalid": [],
         "drafts": [],
         "unmanifested": [],
+    }
+
+
+# --- System -----------------------------------------------------------------------------------
+
+
+def system_api(client: httpx.Client, settings: Settings) -> dict[str, Any]:
+    """``GET /health`` and ``GET /system/status`` (row WPF5): version, health components, and the
+    queue report — dispatch latency, starving, active jobs, dispatch state, telemetry, residency
+    and circuit breakers.
+
+    ``/health`` answers ``503`` when a component is unavailable, and the console's client reads
+    any status of 400 or above as a refusal, so that case renders the refusal beside the status
+    half rather than failing the whole page (the same shape as PromptCadence's System page, WPC1).
+
+    Raises:
+        AppRefused: ``GET /system/status`` was refused.
+        AppUnreachable: It did not answer.
+    """
+    status = call(client, settings, APP, "GET", "system/status")
+    health: Any = None
+    health_error: SuiteError | None = None
+    try:
+        health = call(client, settings, APP, "GET", "health")
+    except SuiteError as exc:
+        health_error = exc
+    return {
+        "status": dict(status) if isinstance(status, Mapping) else {},
+        "health": dict(health) if isinstance(health, Mapping) else None,
+        "health_error": health_error,
     }

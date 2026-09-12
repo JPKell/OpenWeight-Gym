@@ -1063,3 +1063,56 @@ def provider_from_page(  # noqa: PLR0913 — one parameter per form field, as Fa
     return RedirectResponse(
         f"{BASE}/provider?saved=1#provider", status_code=status.HTTP_303_SEE_OTHER
     )
+
+
+# --- Dashboard and System (row WPF5) ---------------------------------------------------------
+
+
+@ui_router.get(f"{BASE}/dashboard", summary="Dashboard", response_class=HTMLResponse)
+def dashboard_page(
+    request: Request,
+    principal: CurrentOperator,
+    suite: str | None = None,
+    model: str | None = None,
+    machine: str | None = None,
+    since: str | None = None,
+) -> HTMLResponse:
+    """The cross-model summary and comparison heatmap over ``GET /dashboard`` (api.md §5a).
+
+    No console page shows this view otherwise: Results is a metric-level query and Compare works
+    per subject (WP6's finding). Read-only, over the running API only — the scatter panels and
+    per-metric tables stay on FreeWeight's own page.
+    """
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    wanted = {"suite": suite, "model": model, "machine": machine, "since": since}
+    sourced = read_app_page(
+        request, view, api=lambda: fw.dashboard_api(client, settings, wanted), database=None
+    )
+    return render_app_page(
+        request,
+        principal,
+        APP,
+        "fw_dashboard.html",
+        selected="Dashboard",
+        view=view,
+        sourced=sourced,
+        filters={key: value or "" for key, value in wanted.items()},
+    )
+
+
+@ui_router.get(f"{BASE}/system", summary="System", response_class=HTMLResponse)
+def system_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+    """Version, overall status and FreeWeight's ten health components, over ``GET /health``.
+
+    The console showed only the Overview's status and a *JSON · health* link (WP6's finding).
+    Read-only, over the running API only.
+    """
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request, view, api=lambda: fw.system_api(client, settings), database=None
+    )
+    return render_app_page(
+        request, principal, APP, "fw_system.html", selected="System", view=view, sourced=sourced
+    )

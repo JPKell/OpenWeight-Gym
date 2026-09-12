@@ -1,0 +1,41 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list, status_dot, table %}
+{% from "_app_page.html" import page_source, refusal %}
+{% block title %}System — LoadCoach — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>System {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/loadcoach/queue">Queue</a> · <a href="/apps/loadcoach/reliability">Reliability</a> · <a href="/apps/loadcoach/settings">Settings</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Version and health components — as LoadCoach's own System page shows them, read from its
+running API. Dispatch, residency and circuit breakers already have a home on
+<a href="/apps/loadcoach/queue">Queue</a> and <a href="/apps/loadcoach/reliability">Reliability</a>; this page
+does not repeat them.</p>
+{{ refusal(sourced.error) }}
+{% set data = sourced.data %}
+{% if data is not none %}
+{% set status = data.get("status") or {} %}
+{% set health = data.get("health") %}
+
+{{ kv_list([
+  {"label": "Version", "value": (health.get("version") if health else none) or "—"},
+  {"label": "Machine fingerprint", "value": "not served by the API — see LoadCoach's own System page"},
+  {"label": "Health", "value": (health.get("status") if health else none) or "—"},
+  {"label": "Workers", "value": "not served by /health or /system/status — configured at execution.max_concurrent_jobs on Settings"},
+  {"label": "Active jobs", "value": (status.get("active") ~ " of at most " ~ status.get("max_depth")) if status.get("active") is not none else "—"},
+]) }}
+
+<h3>Health components</h3>
+{{ refusal(data.get("health_error")) }}
+{% if health %}
+{% set rows = [] %}
+{% for component in health.get("components") or [] %}
+{% set _ = rows.append([component.get("name") or "—", status_dot({"ok": "ok", "degraded": "degraded", "unavailable": "stopped"}.get(component.get("status"), "unknown"), label=component.get("status") or "unknown"), component.get("detail") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Component"}, {"label": "Status"}, {"label": "Detail"}], rows, caption="LoadCoach's own health components", density="dense", complete=true, row_count=rows | length) }}
+<p class="muted">A degraded component is not a failure to serve.</p>
+{% endif %}
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}
