@@ -77,6 +77,44 @@
       "transport_call": 0,
       "stage": "draft",
       "unit_key": "U-02"
+    },
+    {
+      "attempt": 1,
+      "backend": "fake",
+      "degradations": [],
+      "error_code": "EMPTY_GENERATION",
+      "input_tokens": 538,
+      "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+      "outcome": "provider_error",
+      "output_tokens": 8192,
+      "prompt_id": "stages.revise.improve",
+      "prompt_source": "pack",
+      "prompt_version": "1.0.0",
+      "provider_ms": 0.0,
+      "round": 2,
+      "transport_call": 1,
+      "stage": "revise",
+      "unit_key": "U-01"
+    },
+    {
+      "attempt": 1,
+      "backend": "fake",
+      "degradations": [
+        "empty_generation_retried: the model exhausted its output budget without emitting any text, which a cold load of some models does; retried once, with reasoning suppressed"
+      ],
+      "error_code": null,
+      "input_tokens": 538,
+      "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+      "outcome": "completed",
+      "output_tokens": 257,
+      "prompt_id": "stages.revise.improve",
+      "prompt_source": "pack",
+      "prompt_version": "1.0.0",
+      "provider_ms": 0.0,
+      "round": 2,
+      "transport_call": 0,
+      "stage": "revise",
+      "unit_key": "U-01"
     }
   ],
   "backend": "fake",

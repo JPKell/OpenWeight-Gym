@@ -7,6 +7,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follo
 ## [Unreleased]
 
 ### Added
+- **IdeaPress's attempts tables name the transport call** (row WPF12). A stage run's *Attempts*
+  table and a unit's *Provenance* table now fold `transport_call` (IdeaPress migration `0012`, row
+  WPF7) into the attempt cell — `attempt N · round R · call C` — so two rows of one attempt are
+  told apart by what they are, not by outcome alone; one line of copy above each table says a call
+  above `0` is one IdeaPress discarded and retried, so its `provider_error` outcome does not read as
+  a second failed attempt. IdeaPress's `ExportAttempt` is untouched — a version question, not this
+  row's. The database-read path treats a schema older than migration `0012` (no such column) the
+  same as `0`, since every row it holds predates the concept.
+
 - **The Runs page starts a run under an adapter** (row WPF2). FreeWeight's `run start --adapter` was
   the only way to measure a base served with a registered LoRA, so the operator's step could not be
   done from the console at all (WP6 finding 4). The Start form's adapter field lists what

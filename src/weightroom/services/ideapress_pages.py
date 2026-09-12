@@ -515,6 +515,11 @@ def _attempt_row(row: Mapping[str, Any], unit_keys: Mapping[str, str]) -> dict[s
         "unit_key": unit_keys.get(str(row.get("unit_id"))),
         "attempt": row.get("attempt"),
         "round": row.get("round"),
+        # `0` for the call whose answer this attempt kept, `1` and up for a call it discarded and
+        # retried (IdeaPress migration 0012, row WPF7). A database older than that migration has no
+        # such column at all — `rows_where` then omits the key rather than raising — and every row
+        # it holds predates the concept of a discarded call, so `0` is what it always was.
+        "transport_call": row.get("transport_call") or 0,
         "outcome": row.get("outcome"),
         "backend": row.get("backend"),
         "model_canonical_id": row.get("model_canonical_id"),

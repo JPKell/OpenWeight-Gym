@@ -385,6 +385,92 @@
       "transport_call": 0,
       "routing": null,
       "stage": "critique"
+    },
+    {
+      "attempt": 1,
+      "attempt_id": "01M2A0000DISCARDEDCALL0001",
+      "backend": "fake",
+      "degradations": [],
+      "egress": {
+        "decided_at": "2026-09-11T06:41:02.104Z",
+        "decision_id": "01M2A0000EGRESSDISCARD0002",
+        "policy_name": "OrderedClassificationPolicy",
+        "policy_version": "1.0",
+        "reason": "target_not_remote",
+        "request": {
+          "data_classification": "public",
+          "requested_at": null,
+          "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+          "source_ref": "01M2A0000DISCARDEDCALL0001",
+          "target": {
+            "max_data_classification": null,
+            "name": "fake",
+            "provider_kind": null,
+            "remote": false
+          }
+        },
+        "verdict": "approved"
+      },
+      "idempotency_key": null,
+      "input_tokens": 538,
+      "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+      "outcome": "provider_error",
+      "output_tokens": 8192,
+      "prompt_id": "stages.revise.improve",
+      "prompt_sha256": "sha256:3a3fcd74a9da646be2a2c2c46095911887119a7c9ff655555940877cc7ba5330",
+      "prompt_source": "pack",
+      "prompt_version": "1.0.0",
+      "provider_ms": 0.0,
+      "rejection_reason": null,
+      "response_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000",
+      "round": 2,
+      "transport_call": 1,
+      "routing": null,
+      "stage": "revise"
+    },
+    {
+      "attempt": 1,
+      "attempt_id": "01M2A0000RETRIEDCALL00003",
+      "backend": "fake",
+      "degradations": [
+        "empty_generation_retried: the model exhausted its output budget without emitting any text, which a cold load of some models does; retried once, with reasoning suppressed"
+      ],
+      "egress": {
+        "decided_at": "2026-09-11T06:41:02.104Z",
+        "decision_id": "01M2A0000EGRESSDISCARD0002",
+        "policy_name": "OrderedClassificationPolicy",
+        "policy_version": "1.0",
+        "reason": "target_not_remote",
+        "request": {
+          "data_classification": "public",
+          "requested_at": null,
+          "run_id": "01M27K4PR4V29C7YQSQ7YBEQJQ",
+          "source_ref": "01M2A0000DISCARDEDCALL0001",
+          "target": {
+            "max_data_classification": null,
+            "name": "fake",
+            "provider_kind": null,
+            "remote": false
+          }
+        },
+        "verdict": "approved"
+      },
+      "idempotency_key": null,
+      "input_tokens": 538,
+      "model_canonical_id": "fake/qwen3.5:9b-q8_0@sha256:9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+      "outcome": "completed",
+      "output_tokens": 257,
+      "prompt_id": "stages.revise.improve",
+      "prompt_sha256": "sha256:3a3fcd74a9da646be2a2c2c46095911887119a7c9ff655555940877cc7ba5330",
+      "prompt_source": "pack",
+      "prompt_version": "1.0.0",
+      "provider_ms": 0.0,
+      "rejection_reason": null,
+      "response_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111",
+      "round": 2,
+      "transport_call": 0,
+      "routing": null,
+      "stage": "revise"
     }
   ],
   "committed_at": "2026-09-11T06:40:37.399668+00:00",

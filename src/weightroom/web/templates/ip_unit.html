@@ -115,13 +115,16 @@ time per project, so revising and resuming wait for it.</p>
 {% endif %}
 
 <h3>Provenance</h3>
+<p class="muted">A row's <code>transport_call</code> numbers the calls inside one attempt from 0: a
+call above 0 is one IdeaPress discarded — a <code>provider_error</code> there is the call it threw
+away, not a second failed attempt; the same attempt's call 0 is the retry whose answer it kept.</p>
 {% set rows = [] %}
 {% for a in u.get("attempts") or [] %}
 {% set eg = a.get("egress") %}
 {% set target = ((eg or {}).get("request") or {}).get("target") or {} %}
 {% set _ = rows.append([
   a.get("stage") or "—",
-  (a.get("attempt") | string) ~ " · round " ~ (a.get("round") | string),
+  (a.get("attempt") | string) ~ " · round " ~ (a.get("round") | string) ~ " · call " ~ (a.get("transport_call") | string),
   state_badge(a.get("outcome")),
   a.get("backend") or "—",
   a.get("model_canonical_id") or "—",
