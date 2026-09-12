@@ -1,0 +1,32 @@
+{
+  "checked_at": "2026-09-12T04:39:18.676Z",
+  "components": [
+    {
+      "detail": "sqlite at head",
+      "name": "database",
+      "status": "ok"
+    },
+    {
+      "detail": "fake fake-1.0, 1 model",
+      "name": "provider",
+      "status": "ok"
+    },
+    {
+      "detail": "0 active, none starving",
+      "name": "queue",
+      "status": "ok"
+    },
+    {
+      "detail": "No evidence source is configured ([evidence] freeweight_url is empty), so routing ranks on declared capabilities and priors and says so.",
+      "name": "evidence",
+      "status": "not_configured"
+    },
+    {
+      "detail": "no production evidence yet",
+      "name": "reliability",
+      "status": "ok"
+    }
+  ],
+  "status": "ok",
+  "version": "1.5.0"
+}

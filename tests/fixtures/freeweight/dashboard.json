@@ -1,0 +1,46 @@
+{
+  "cards": {
+    "completed_runs": 1,
+    "latest_run_at": "2026-09-12T04:37:47.832Z",
+    "machines": 1,
+    "models_measured": 1,
+    "samples_stored": 15,
+    "suites_run": 1,
+    "unsupported_metrics": 1
+  },
+  "filter": {
+    "machine": null,
+    "model": null,
+    "since": null,
+    "suite": null
+  },
+  "heatmap": {
+    "cells": [
+      {
+        "excluded_count": 0,
+        "higher_is_better": true,
+        "machine_fingerprint": "1faaa76899aa680991ba1fe70c98f5c520e191010c18b1033e17e41f0c9b1a09",
+        "metric_key": "harness_roundtrip_success",
+        "model": "fake/fake-model:8b-q8_0@sha256:fa4efa4efa4e",
+        "run_id": "01M29YGGP7KTBC7TPARGX29T2D",
+        "run_test_id": null,
+        "sample_count": 15,
+        "suite": "native.echo",
+        "suite_version": "1.0.0",
+        "unavailable_reason": null,
+        "unit": "ratio",
+        "value": 1.0
+      }
+    ],
+    "headline_metric": {
+      "native.echo": "harness_roundtrip_success"
+    },
+    "models": [
+      "fake/fake-model:8b-q8_0@sha256:fa4efa4efa4e"
+    ],
+    "separated": false,
+    "suites": [
+      "native.echo"
+    ]
+  }
+}

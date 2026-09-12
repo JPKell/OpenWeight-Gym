@@ -1038,3 +1038,21 @@ def adapters_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
     return render_app_page(
         request, principal, APP, "lc_adapters.html", selected="Adapters", view=view, sourced=sourced
     )
+
+
+@ui_router.get(f"{BASE}/system", summary="System", response_class=HTMLResponse)
+def system_page(request: Request, principal: CurrentOperator) -> HTMLResponse:
+    """Version, health components, dispatch, residency and breakers, over ``GET /health`` and
+    ``GET /system/status`` (WP6's finding: health components and workers appeared nowhere).
+
+    Dispatch latency, starving, active jobs, dispatch state, residency and breakers already have a
+    home on Queue and Reliability; this page does not repeat them, and links there instead.
+    """
+    view = app_view(request, APP)
+    client, settings = _clients(request)
+    sourced = read_app_page(
+        request, view, api=lambda: lc.system_api(client, settings), database=None
+    )
+    return render_app_page(
+        request, principal, APP, "lc_system.html", selected="System", view=view, sourced=sourced
+    )

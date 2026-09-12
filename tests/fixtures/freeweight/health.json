@@ -1,0 +1,57 @@
+{
+  "checked_at": "2026-09-12T04:37:48.100Z",
+  "components": [
+    {
+      "detail": "sqlite at head",
+      "name": "database",
+      "status": "ok"
+    },
+    {
+      "detail": "fake fake-1.0, 1 model",
+      "name": "provider",
+      "status": "ok"
+    },
+    {
+      "detail": "1 GPU(s) reporting",
+      "name": "gpu_telemetry",
+      "status": "ok"
+    },
+    {
+      "detail": "identified as 1faaa76899aa\u2026",
+      "name": "machine",
+      "status": "ok"
+    },
+    {
+      "detail": "no capability evidence yet",
+      "name": "evidence",
+      "status": "ok"
+    },
+    {
+      "detail": "18 prompt(s), pack sha256:b1b0ffd0a594\u2026",
+      "name": "prompts",
+      "status": "ok"
+    },
+    {
+      "detail": "tier container (docker)",
+      "name": "sandbox",
+      "status": "ok"
+    },
+    {
+      "detail": "9 adapter(s), 0 installed",
+      "name": "external_benchmarks",
+      "status": "ok"
+    },
+    {
+      "detail": "0 goal pack(s) parse and validate",
+      "name": "goals",
+      "status": "ok"
+    },
+    {
+      "detail": "jury_size 3",
+      "name": "judges",
+      "status": "ok"
+    }
+  ],
+  "status": "ok",
+  "version": "1.2.1"
+}

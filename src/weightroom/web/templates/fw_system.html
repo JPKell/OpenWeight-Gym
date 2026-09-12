@@ -1,0 +1,32 @@
+{% extends "_shell.html" %}
+{% from "mirrorwall/components.html" import badge, kv_list, status_dot, table %}
+{% from "_app_page.html" import page_source, refusal %}
+{% block title %}System — FreeWeight — WeightRoom{% endblock %}
+{% block page_content %}
+<div class="page-head">
+  <h2>System {{ badge(view.pill, tone=view.pill | pill_tone, title=view.error or view.unit_state) }}</h2>
+  <div class="page-actions"><a href="/apps/freeweight/dashboard">Dashboard</a> · <a href="/apps/freeweight/settings">Settings</a></div>
+</div>
+{% include "_app_state.html" %}
+<p class="muted">Version, overall status and every health component — as FreeWeight's own System page shows
+them, read from its running API.</p>
+{{ refusal(sourced.error) }}
+{% set data = sourced.data %}
+{% if data is not none %}
+{{ kv_list([
+  {"label": "Application", "value": "freeweight"},
+  {"label": "Version", "value": data.get("version") or "—"},
+  {"label": "Health", "value": data.get("status") or "—"},
+  {"label": "Checked", "value": data.get("checked_at") or "—"},
+]) }}
+
+<h3>Health components</h3>
+{% set rows = [] %}
+{% for component in data.get("components") or [] %}
+{% set _ = rows.append([component.get("name") or "—", status_dot({"ok": "ok", "degraded": "degraded", "unavailable": "stopped"}.get(component.get("status"), "unknown"), label=component.get("status") or "unknown"), component.get("detail") or "—"]) %}
+{% endfor %}
+{{ table([{"label": "Component"}, {"label": "Status"}, {"label": "Detail"}], rows, caption="Ten components: database, provider, gpu_telemetry, machine, evidence, prompts, sandbox, external_benchmarks, goals, judges", density="dense", complete=true, row_count=rows | length) }}
+<p class="muted">A degraded component is not a failure to serve.</p>
+{% endif %}
+{{ page_source(sourced) }}
+{% endblock %}
