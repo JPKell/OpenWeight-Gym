@@ -128,7 +128,13 @@ linking there rather than copying it. Two additions for this arc:
   (both WeightRoomGym, different files — `services/catalog.py` against the IdeaPress attempts
   template; branches under the parallel-row rules if run together) and WPF13 (ModelRack, then
   IdeaPress, under the local-pin rule) are independent of one another. WPF10 and WPF13 each need
-  the GPU for their Gate B and never share it. Not scheduled, on purpose: WPF2 §8 items 5 and 6 (a
+  the GPU for their Gate B and never share it.
+  **Wave 4 (2026-09-12) runs WPF10 ∥ WPF11 ∥ WPF12 agentically**, under one orchestrating Fable
+  session that owns the GPU, the shared `systemd --user` units, `main` in both repositories and
+  every merge, while three agents work in worktrees that touch none of those — which is also how
+  WPF10's *never overnight* mark is satisfied. Its prompt, the collision map and the GPU protocol
+  are `history/prompts/wave4-orchestrator-wpf10-wpf12.prompt.md`. WPF13 runs after that wave
+  merges. Not scheduled, on purpose: WPF2 §8 items 5 and 6 (a
   provider edit interrupting a run in flight; the fingerprint not naming the adapter) — candidates
   when adapter subjects are repeated across machines.
 
